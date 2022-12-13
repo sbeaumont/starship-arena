@@ -1,4 +1,13 @@
 # Starship Arena
+## Development installation
+
+This version has been developed with Python 3.10. You'll need to set up you venv with:
+
+- Python 3.10
+- weasyprint
+- Jinja2
+- Pillow
+
 The game is played in rounds, and every round consists of 10 ticks (1-10).
 
 ## Stuff that isn't implemented yet
