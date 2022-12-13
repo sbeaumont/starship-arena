@@ -1,0 +1,8 @@
+1: L30
+2: L30
+3: L30
+3: Fire Launcher1 -20
+5: Fire Launcher1 -45
+3: Fire Laser1 Blaster
+4: Fire Laser1 Blaster
+6: Fire Laser1 Blaster

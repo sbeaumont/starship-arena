@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Round {{ round }} report for {{ ship.name }}</title>
+    <style>
+        table, th, td {
+          border: 1px solid black;
+          border-collapse: collapse;
+        }
+        th, td {
+          padding: 5px;
+        }
+        th {
+          text-align: left;
+        }
+        img {
+            max-width: 100%
+        }
+    </style>
+</head>
+
+<body>
+    <h1>{{ ship.name }}: Round {{ round }}</h1>
+    <img src="{{ image_file_name }}" max-width="100%"/>
+    <h2>Status</h2>
+    <table>
+        <tr>
+            <td><b>Position</b></td><td>{{ ship.pos }}</td>
+            <td><b>Heading</b></td><td>{{ ship.heading }}</td>
+            <td><b>Speed</b></td><td>{{ ship.speed }}/{{ ship.max_speed }}</td>
+        </tr>
+        <tr>
+            <td><b>Battery</b></td><td colspan="5">{{ ship.battery }}/{{ ship.max_battery }}</td>
+        </tr>
+        <tr>
+            <td><b>Hull</b></td><td>{{ ship.hull }}/{{ ship.max_hull }}</td>
+            <td><b>Shields</b></td><td colspan="3">{{ ship.shields }}</td>
+        </tr>
+        {% for weapon in ship.weapons.values() %}
+        <tr>
+            <td><b>{{ weapon.name }}</b></td>
+            <td colspan="5">{% for stat_name, stat_value in weapon.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <h2>Scans</h2>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Position</th>
+            <th>Distance</th>
+            <th>Direction (Rel)</th>
+            <th>Heading (Abs)</th>
+        </tr>
+        {% for scan in ship.scans.values() %}
+        <tr>
+            <td>{{scan.name}}</td>
+            <td>{{scan.pos}}</td>
+            <td>{{scan.distance}}</td>
+            <td>{{scan.direction}}</td>
+            <td>{{scan.heading}}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <h2>Events</h2>
+    {% for tick in events %}
+    <h3>Tick {{tick}}</h3>
+        {% for e in events[tick] %}
+            {{e}}<br/>
+        {% endfor %}
+    {% endfor %}
+</body>
+</html>

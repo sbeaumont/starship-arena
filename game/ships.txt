@@ -1,0 +1,2 @@
+Blaster -100 0
+Shaper 100 0
