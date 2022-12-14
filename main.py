@@ -54,7 +54,6 @@ def do_tick(objects_in_space: dict, destroyed: dict, tick: int):
         ois.move()
 
     # After moving all ships scan and do post-move commands like firing weapons, and finally update the snapshot
-    new_objects_in_space = list()
     for ois in objects_in_space.copy().values():
         if isinstance(ois, command.Commandable):
             if tick in ois.commands:

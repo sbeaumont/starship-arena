@@ -1,3 +1,7 @@
+"""
+Configurations of types of weapons and ships
+"""
+
 from weapon import Laser, RocketLauncher
 
 

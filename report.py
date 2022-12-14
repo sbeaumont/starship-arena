@@ -12,6 +12,7 @@ def text_nudge(pos):
 
 
 def report_events(ship: Ship, vis: Visualizer):
+    """Add events of the ship to the report and to the round overview graphic."""
     events_per_tick = defaultdict(list)
     for i in range(1, 11):
         if i in ship.history:
@@ -27,6 +28,7 @@ def report_events(ship: Ship, vis: Visualizer):
 
 
 def find_boundaries(ship, padding=50):
+    """Find the optimal boundaries to fit everything the ship saw this round."""
     min_x = max_x = round(ship.history[0].pos[0])
     min_y = max_y = round(ship.history[0].pos[1])
 
@@ -52,6 +54,7 @@ def find_boundaries(ship, padding=50):
 
 
 def draw_round(ship: Ship, vis: Visualizer):
+    """Draw the paths of the ship and its scans"""
     # Initial location of ship
     vis.text(text_nudge(ship.history[0].pos), f"{ship.history[0].pos}")
 
@@ -78,6 +81,7 @@ def draw_round(ship: Ship, vis: Visualizer):
 
 
 def report_round(ships: dict, game_dir: str, round_nr: int):
+    """Generate HTML and PDF reports with the results, status and history of each ship in the round."""
     env = Environment(loader=FileSystemLoader('./templates'))
     template = env.get_template('round-template.html')
 

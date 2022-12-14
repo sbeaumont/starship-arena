@@ -2,6 +2,7 @@ from abc import abstractmethod
 
 
 class Snapshot(object):
+    """Snapshot of an object in space, for attributes and for events."""
     def __init__(self):
         self.events = list()
 
@@ -15,6 +16,7 @@ class Snapshot(object):
 
 
 class History(dict):
+    """Holds snapshots and events per tick for its owner, to be used to report on the round."""
     def __init__(self, owner, snapshot_cls, tick=0):
         super().__init__()
         self.owner = owner
@@ -46,6 +48,7 @@ class History(dict):
 
 
 class DrawableEvent(object):
+    """An event that should also be drawn on the round overview picture."""
     def __init__(self, event_type, position_or_line, msg):
         self.event_type = event_type
         self.position_or_line = position_or_line

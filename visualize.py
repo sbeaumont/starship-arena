@@ -25,6 +25,7 @@ COLORS = (
 
 
 class Visualizer(object):
+    """Convenience wrapper around the Pillow library to draw graphics."""
     @classmethod
     def boundaries(cls, pts, padding=1):
         """Convenience function to calculate boundaries that will nicely fit all points to be drawn.

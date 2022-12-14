@@ -3,6 +3,7 @@ from ship import Rocket
 
 
 class Weapon(object):
+    """An object that is attached to an owner (Ship) and can damage other objects in space."""
     def __init__(self, name: str):
         self.name = name
         self.owner = None
@@ -22,6 +23,7 @@ class Weapon(object):
 
 
 class RocketLauncher(Weapon):
+    """Fires Rockets in a given direction. Best to point it away from your friends."""
     def __init__(self, name: str, rocket_type, initial_load: int = 5):
         self.ammo = initial_load
         self.rocket_type = rocket_type

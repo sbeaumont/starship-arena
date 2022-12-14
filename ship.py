@@ -10,6 +10,7 @@ Point = namedtuple("Point", "x y")
 
 
 class Scan(object):
+    """A single instance of one object scanning another."""
     def __init__(self, ois, distance, direction, heading):
         self.ois = ois
         self.name = ois.name
@@ -34,6 +35,7 @@ def translate(p: Point, heading, distance) -> Point:
 
 
 class ObjectInSpace(object):
+    """Any object in space, which can be ships, rockets, starbases, black holes, etc."""
     def __init__(self, name: str, xy: tuple, heading: int = 0, speed: int = 0):
         super().__init__()
         assert isinstance(heading, int)
@@ -96,6 +98,7 @@ class ObjectInSpace(object):
 
 
 class Rocket(ObjectInSpace):
+    """Guided missile that locks on the nearest target and explodes when near."""
     energy_per_move: int = 5
 
     def __init__(self, name: str, xy: tuple, rocket_type, owner, heading: int = 0):
@@ -166,6 +169,7 @@ class Rocket(ObjectInSpace):
 
 
 class Ship(ObjectInSpace):
+    """A player-commanded space ship."""
     def __init__(self, name: str, shiptype, xy: tuple, heading=0, speed=0):
         super().__init__(name, xy, heading, speed)
         self.owner = self
