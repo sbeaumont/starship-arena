@@ -1,5 +1,5 @@
 from history import DrawableEvent, History, RocketSnapshot
-from ship import Rocket
+from objectinspace import Rocket
 
 
 class Weapon(object):

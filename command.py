@@ -3,7 +3,7 @@ from collections import defaultdict
 import logging
 from enum import Enum
 from typing import Protocol, runtime_checkable
-from ship import ObjectInSpace
+from objectinspace import ObjectInSpace
 
 logger = logging.getLogger(__name__)
 COMMAND_PATTERN: str = r"([A-Z|a-z]+)((\s*(-?[A-Z|a-z|0-9]+))+)"

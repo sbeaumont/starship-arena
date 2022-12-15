@@ -34,7 +34,7 @@
         </tr>
         <tr>
             <td><b>Hull</b></td><td>{{ ship.hull }}/{{ ship.max_hull }}</td>
-            <td><b>Shields</b></td><td colspan="3">{{ ship.shields }}</td>
+            <td><b>Shields</b></td><td colspan="3">{{ ship.defense[0].strengths }}</td>
         </tr>
         {% for weapon in ship.weapons.values() %}
         <tr>

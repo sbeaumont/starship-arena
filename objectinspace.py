@@ -1,5 +1,6 @@
 import logging
 from collections import namedtuple
+from typing import Protocol, runtime_checkable
 from math import sin, cos, radians, sqrt, atan2, pi
 
 from history import DrawableEvent
@@ -168,6 +169,18 @@ class Rocket(ObjectInSpace):
                 self.owner.add_event(f"{self.name} hit {ois.name} at {ois.pos} for {self.explode_damage}")
 
 
+class Attachable(Protocol):
+    def attach(self, owner):
+        ...
+
+    def tick(self, owner):
+        ...
+
+    @property
+    def status(self):
+        ...
+
+
 class Ship(ObjectInSpace):
     """A player-commanded space ship."""
     def __init__(self, name: str, shiptype, xy: tuple, heading=0, speed=0):
@@ -179,14 +192,16 @@ class Ship(ObjectInSpace):
         self.generators = shiptype.generators
         self.max_battery = shiptype.max_battery
         self.max_hull = shiptype.hull
-        self.max_shields = shiptype.shields
 
-        self.shields = shiptype.shields
         self.hull = self.max_hull
+        self.defense = shiptype.defense
+        for defense in self.defense:
+            defense.attach(self)
 
         self.weapons = shiptype.weapons
         for weapon in self.weapons.values():
             weapon.attach(self)
+
 
         self.battery = shiptype.start_battery
         self.scans = dict()
@@ -236,9 +251,16 @@ class Ship(ObjectInSpace):
         self.battery -= self.speed // 10
 
     def take_damage_from(self, source_event, source_location, amount):
-        self.hull -= amount
+        """First pass the damage to the defense components, any remaining damage goes to the hull."""
         self.add_event(source_event)
-        self.add_event(f"Hull decreased by {amount} to {self.hull}")
+        if hasattr(self, 'defense'):
+            for d in self.defense:
+                amount = d.take_damage_from(source_location, amount)
+                if amount <= 0:
+                    break
+        if amount > 0:
+            self.hull -= amount
+            self.add_event(f"Hull decreased by {amount} to {self.hull}")
 
     def generate(self):
         self.battery += self.generators

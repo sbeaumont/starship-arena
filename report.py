@@ -1,5 +1,5 @@
 from history import DrawableEvent
-from ship import Ship
+from objectinspace import Ship
 from visualize import Visualizer, COLORS
 from jinja2 import Environment, FileSystemLoader
 from collections import defaultdict

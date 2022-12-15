@@ -4,7 +4,7 @@ import command
 from command import read_command_file
 from log import configure_logger
 from report import report_round
-from ship import Ship
+from objectinspace import Ship
 from shiptype import H2545
 from history import History, ShipSnapshot
 import pickle
@@ -39,18 +39,22 @@ def do_tick(objects_in_space: dict, destroyed: dict, tick: int):
     for ois in objects_in_space.values():
         ois.history.set_tick(tick)
 
-    # Do all everything that has to happen before moving, then move each ship
+    # Do everything that has to happen before moving, then move each ship
     for ois in objects_in_space.values():
+        # Generate energy
         ois.generate()
+        # Some weapons need to know a tick started, e.g. allowing a laser to cool every tick.
         if hasattr(ois, 'weapons'):
             for weapon in ois.weapons.values():
                 weapon.tick(tick)
+        # process all player pre-move commands (acceleration, turning)
         if hasattr(ois, 'commands'):
             if tick in ois.commands:
                 logger.info(f"Tick {tick} Ship {ois.name}: {str(ois.commands[tick])}")
                 ois.commands[tick].pre_move_commands(ois)
             else:
                 logger.info(f"Ship {ois.name} no commands this tick")
+        # move ship
         ois.move()
 
     # After moving all ships scan and do post-move commands like firing weapons, and finally update the snapshot
@@ -75,10 +79,12 @@ def do_tick(objects_in_space: dict, destroyed: dict, tick: int):
 
 def do_round(ships: dict, destroyed: dict, game_dir: str, round_nr: int):
     """Execute a full round of 10 ticks."""
+    # Initialize all ships
     for ship in ships.values():
         command_file_name = f"{game_dir}/{ship.name}-commands-{round_nr}.txt"
         ship.commands = read_command_file(command_file_name)
         ship.scan(ships)
+    # Do 10 ticks, 1-10
     for i in range(1, 11):
         do_tick(ships, destroyed, i)
 
@@ -96,19 +102,22 @@ def main(game_round: int):
     # Execute the round
     destroyed = dict()
     do_round(objects_in_space, destroyed, game_directory, game_round)
+
+    # Report the round
     report_round(objects_in_space, game_directory, game_round)
+    # ...incl. the final report of any player ships destroyed this round.
     report_round(destroyed, game_directory, game_round)
 
+    # Clean up unnecessary data from the objects and pickle them as starting point for the next round.
     for ois in objects_in_space.values():
         ois.round_reset()
-
     status_file_name = f'{game_directory}/status_turn_{game_round}.pickle'
     with open(status_file_name, 'wb') as status_file:
         pickle.dump(objects_in_space, status_file)
 
 
 if __name__ == '__main__':
-    configure_logger()
+    configure_logger(False, ["fontTools", "PIL"])
     main(1)
     main(2)
 

@@ -3,6 +3,7 @@ Configurations of types of weapons and ships
 """
 
 from weapon import Laser, RocketLauncher
+from defense import Shields
 
 
 class Splinter(object):
@@ -25,8 +26,10 @@ class H2545(object):
     hull = 100
 
     @property
-    def shields(self):
-        return {'N': 150, 'E': 100, 'S': 130, 'W': 100}
+    def defense(self):
+        return [
+            Shields('Shields', {'N': 130, 'E': 100, 'S': 100, 'W': 100}),
+        ]
 
     @property
     def weapons(self):

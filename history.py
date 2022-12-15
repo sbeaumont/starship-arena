@@ -82,7 +82,7 @@ class ShipSnapshot(ObjectInSpaceSnapshot):
         super().update(ship)
         self.hull = ship.hull
         self.battery = ship.battery
-        self.shields = ship.shields.copy()
+        self.defense = ship.defense.copy()
         self.scans = ship.scans.copy()
         return self
 
