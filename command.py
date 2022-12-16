@@ -6,9 +6,9 @@ from typing import Protocol, runtime_checkable
 from objectinspace import ObjectInSpace
 
 logger = logging.getLogger(__name__)
-COMMAND_PATTERN: str = r"([A-Z|a-z]+)((\s*(-?[A-Z|a-z|0-9]+))+)"
+COMMAND_PATTERN: str = r"^([A-Z|a-z]+)((\s*(-?[A-Z|a-z|0-9]+))*)$"
 
-Cmd = Enum("Cmd", ['Turn', 'Accelerate', 'Fire'])
+Cmd = Enum("Cmd", ['Turn', 'Accelerate', 'Fire', 'Replenish'])
 
 
 @runtime_checkable
@@ -67,6 +67,7 @@ class CommandSet(object):
         self.turning: Command = None
         self.weapons = dict()
         self.utilities = list()
+        self.other = dict()
 
     def add(self, cmd: Command):
         match cmd.name:
@@ -80,6 +81,8 @@ class CommandSet(object):
                     logger.warning(f"Can not add second fire command for same weapon {cmd}")
                 else:
                     self.weapons[weapon_name] = cmd
+            case Cmd.Replenish:
+                self.other[Cmd.Replenish] = cmd
 
     def _add_turn_command(self, cmd: Command):
         """Ensure that multiple accelerate commands are added into a single command."""
@@ -109,7 +112,7 @@ class CommandSet(object):
             ship.add_event(f'Executing command "{self.turning.text}"')
             ship.turn(self.turning.value)
 
-    def post_move_commands(self, ship: Commandable, objects_in_space: dict, new_objects: list):
+    def post_move_commands(self, ship: Commandable, objects_in_space: dict, new_objects: list, tick: int):
         # Then utilities
         # Finally, fire weapons
         for wpn_cmd in self.weapons.values():
@@ -118,11 +121,15 @@ class CommandSet(object):
             if ois:
                 objects_in_space[ois.name] = ois
                 new_objects.append(ois)
+        if Cmd.Replenish in self.other:
+            ship.add_event(f'Executing command "Replenish"')
+            ship.replenish(objects_in_space)
 
     def __str__(self):
         util_str = ', '.join([str(cmd) for cmd in self.utilities])
         wpn_str = ', '.join([str(cmd) for cmd in self.weapons.values()])
-        return f"Commands(A: {str(self.acceleration)} T: {str(self.turning)} U: {util_str} W: {wpn_str})"
+        other_str = ', '.join([str(cmd) for cmd in self.other.values()])
+        return f"Commands(A: {str(self.acceleration)} T: {str(self.turning)} U: {util_str} W: {wpn_str} O: {other_str})"
 
 
 def read_command_file(command_file_name: str) -> dict:
@@ -153,6 +160,9 @@ def read_command_file(command_file_name: str) -> dict:
                 case 'F' | 'Fire':
                     # Fire <Weapon Name> <Direction or Target name>
                     commands[tick].add(Command(Cmd.Fire, cmd_text, weapon_name=params[0], at=params[1]))
+                case 'Replenish':
+                    # Replenish
+                    commands[tick].add(Command(Cmd.Replenish, cmd_text))
                 case _:
                     logger.warning(f"{command_file_name}: Unknown command {cmd} in line {line_nr}")
         line_nr += 1

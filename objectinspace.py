@@ -10,6 +10,19 @@ logger = logging.getLogger(__name__)
 Point = namedtuple("Point", "x y")
 
 
+# class Attachable(Protocol):
+#     """Any weapon, defense, utility, etc. that can be attached to a ship."""
+#     def attach(self, owner):
+#         ...
+#
+#     def tick(self, owner):
+#         ...
+#
+#     @property
+#     def status(self):
+#         ...
+
+
 class Scan(object):
     """A single instance of one object scanning another."""
     def __init__(self, ois, distance, direction, heading):
@@ -26,6 +39,9 @@ class Scan(object):
                    round(source.distance_to(scanned.xy), 1),
                    round(source.direction_to(scanned.xy), 1),
                    round(source.heading_to(scanned.xy), 1))
+
+    def __str__(self):
+        return f"Scan({self.name}, {self.pos}, {self.distance}, {self.heading}, {self.direction})"
 
 
 def translate(p: Point, heading, distance) -> Point:
@@ -111,7 +127,7 @@ class Rocket(ObjectInSpace):
         self.max_speed = rocket_type.max_speed
         self.explode_distance = rocket_type.explode_distance
         self.explode_damage = rocket_type.explode_damage
-        self.scan_distance = rocket_type.scan_distance
+        self.max_scan_distance = rocket_type.max_scan_distance
         self.scan_cone = rocket_type.scan_cone
 
         self.target = None
@@ -126,7 +142,7 @@ class Rocket(ObjectInSpace):
         for ois in [o for o in objects_in_space.values() if (o != self) and (o != self.owner)]:
             distance_to_target = self.distance_to(ois.xy)
             direction_to_target = self.direction_to(ois.xy)
-            if (distance_to_target <= self.scan_distance) and (-self.scan_cone <= direction_to_target <= self.scan_cone):
+            if (distance_to_target <= self.max_scan_distance) and (-self.scan_cone <= direction_to_target <= self.scan_cone):
                 self.target = ois
 
     def can_explode(self, objects_in_space: dict) -> bool:
@@ -151,8 +167,10 @@ class Rocket(ObjectInSpace):
         # Die when battery is dead.
         self.battery -= self.energy_per_move
         if not self.is_destroyed and (self.battery <= 0):
-            self.owner.add_event(f"{self.name} fizzled out.")
             self.hull = 0
+            msg = f"{self.name} fizzled out."
+            self.owner.add_event(msg)
+            logger.info(msg)
 
     def take_damage_from(self, source_event, source_location, amount):
         # Any damage will destroy a rocket
@@ -167,18 +185,9 @@ class Rocket(ObjectInSpace):
                 ois.add_event(DrawableEvent('Explosion', self.pos, f"{self.name} exploded"))
                 ois.take_damage_from(f"Hit by {self.name} for {self.explode_damage}", self.pos, self.explode_damage)
                 self.owner.add_event(f"{self.name} hit {ois.name} at {ois.pos} for {self.explode_damage}")
-
-
-class Attachable(Protocol):
-    def attach(self, owner):
-        ...
-
-    def tick(self, owner):
-        ...
-
-    @property
-    def status(self):
-        ...
+            elif (ois != self) and (ois != self.owner) and (self.distance_to(ois.xy) <= ois.max_scan_distance):
+                # object wasn't hit, but it did see what happened
+                ois.add_event(DrawableEvent('Explosion', self.pos, f"{self.name} exploded"))
 
 
 class Ship(ObjectInSpace):
@@ -192,6 +201,7 @@ class Ship(ObjectInSpace):
         self.generators = shiptype.generators
         self.max_battery = shiptype.max_battery
         self.max_hull = shiptype.hull
+        self.max_scan_distance = shiptype.max_scan_distance
 
         self.hull = self.max_hull
         self.defense = shiptype.defense
@@ -202,41 +212,30 @@ class Ship(ObjectInSpace):
         for weapon in self.weapons.values():
             weapon.attach(self)
 
-
         self.battery = shiptype.start_battery
         self.scans = dict()
         self.commands = None
-        # self.utilities = dict()
 
-    def round_reset(self):
-        super().round_reset()
-        self.scans = dict()
-        self.commands = None
+    # ---------------------------------------------------------------------- QUERIES
 
     @property
     def is_destroyed(self) -> bool:
         return self.hull <= 0
 
-    def turn(self, angle):
-        if (self.speed > 0) and (abs(angle) > self.max_turn):
-            self.add_event(f"Limiting turn {angle} to max turn |{self.max_turn}|")
-            angle = self.max_turn if angle > 0 else -self.max_turn
-        self.heading = (self.heading + angle) % 360
-        if angle != 0:
-            self.add_event(f"Turned {angle} to {self.heading}")
+    # ---------------------------------------------------------------------- COMMANDS
 
     def accelerate(self, delta_v):
         old_speed = self.speed
         if abs(delta_v) > self.max_delta_v:
-            self.add_event(f'Limiting acceleration {delta_v} to max acceleration |{self.max_delta_v}|')
+            self.add_event(f"Limiting acceleration {delta_v} to max acceleration |{self.max_delta_v}|")
             delta_v = self.max_delta_v if delta_v > 0 else -self.max_delta_v
         self.speed += delta_v
         if self.speed > self.max_speed:
             self.speed = self.max_speed
-            self.add_event(f'Limiting speed to max speed |{self.max_speed}|')
+            self.add_event(f"Limiting speed to max speed |{self.max_speed}|")
         if self.speed < -self.max_speed:
             self.speed = -self.max_speed
-            self.add_event(f'Limiting speed to max speed |{-self.max_speed}|')
+            self.add_event(f"Limiting speed to max speed |{-self.max_speed}|")
         if old_speed != self.speed:
             self.add_event(f"Changed speed from {old_speed} to {self.speed}")
 
@@ -246,9 +245,34 @@ class Ship(ObjectInSpace):
         else:
             self.add_event(f"No weapon named {weapon_name} found")
 
-    def post_move(self, objects_in_space):
-        # Spend energy based on speed
-        self.battery -= self.speed // 10
+    def generate(self):
+        self.battery += self.generators
+        if self.battery > self.max_battery:
+            self.battery = self.max_battery
+        self.add_event(f"Generators generated {self.generators} energy: battery at {self.battery}/{self.max_battery}")
+
+    def replenish(self, objects_in_space):
+        for starbase in [ois for ois in objects_in_space.values() if isinstance(ois, Starbase)]:
+            if (self.distance_to(starbase.xy) <= starbase.max_replenish_distance) and (self.speed <= starbase.max_replenish_speed):
+                starbase.replenish(self)
+                return
+        self.add_event("Failed to replenish.")
+
+    def turn(self, angle):
+        if (self.speed > 0) and (abs(angle) > self.max_turn):
+            self.add_event(f"Limiting turn {angle} to max turn |{self.max_turn}|")
+            angle = self.max_turn if (angle > 0) else -self.max_turn
+        self.heading = (self.heading + angle) % 360
+        if angle != 0:
+            self.add_event(f"Turned {angle} to {self.heading}")
+
+    def scan(self, objects_in_space: dict):
+        self.scans = dict()
+        for ois in objects_in_space.values():
+            if (ois != self) and self.distance_to(ois.xy) < self.max_scan_distance:
+                scan = Scan.create_scan(self, ois)
+                self.scans[ois.name] = scan
+                self.add_event(f"Scanned {scan.name} at {scan.pos}, distance {scan.distance}, direction {scan.direction}, heading {scan.heading}")
 
     def take_damage_from(self, source_event, source_location, amount):
         """First pass the damage to the defense components, any remaining damage goes to the hull."""
@@ -262,16 +286,42 @@ class Ship(ObjectInSpace):
             self.hull -= amount
             self.add_event(f"Hull decreased by {amount} to {self.hull}")
 
-    def generate(self):
-        self.battery += self.generators
-        if self.battery > self.max_battery:
-            self.battery = self.max_battery
-        self.add_event(f"Generators generated {self.generators} energy: battery at {self.battery}/{self.max_battery}")
+    # ---------------------------------------------------------------------- TIMED HANDLERS
 
-    def scan(self, objects_in_space: dict):
+    def post_move(self, objects_in_space):
+        # Spend energy based on speed
+        self.battery -= self.speed // 10
+
+    def round_reset(self):
+        super().round_reset()
         self.scans = dict()
-        for ois in objects_in_space.values():
-            if (ois != self) and self.distance_to(ois.xy) < 200:
-                scan = Scan.create_scan(self, ois)
-                self.scans[ois.name] = scan
-                self.add_event(f"Scanned {scan.name} at {scan.pos}, distance {scan.distance}, direction {scan.direction}, heading {scan.heading}")
+        self.commands = None
+
+
+class Starbase(Ship):
+    def __init__(self, name: str, shiptype, xy: tuple, heading=0, speed=0):
+        super().__init__(name, shiptype, xy, heading, speed)
+        self.max_replenish_distance = shiptype.max_replenish_distance
+        self.max_replenish_speed = shiptype.max_replenish_speed
+
+    def turn(self, angle):
+        """Starbases don't turn. Nice try."""
+        pass
+
+    def accelerate(self, delta_v):
+        """Starbases don't accelerate. Nice try."""
+        pass
+
+    def move(self):
+        """Starbases do not move."""
+        pass
+
+    def replenish(self, ship):
+        ship.hull = ship.max_hull
+        ship.battery = ship.max_battery
+        for weapon in ship.weapons.values():
+            weapon.reset()
+        self.add_event(f"Replenished {ship.name}")
+        ship.add_event(f"Replenished by {self.name}")
+
+

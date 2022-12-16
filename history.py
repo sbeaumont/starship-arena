@@ -17,7 +17,7 @@ class Snapshot(object):
 
 class History(dict):
     """Holds snapshots and events per tick for its owner, to be used to report on the round."""
-    def __init__(self, owner, snapshot_cls, tick=0):
+    def __init__(self, owner, snapshot_cls, tick: int):
         super().__init__()
         self.owner = owner
         self.snapshot_class = snapshot_cls
@@ -30,8 +30,8 @@ class History(dict):
         self.current = self[0]
 
     def add_event(self, event):
-        if event:
-            self.current.add_event(event)
+        assert event is not None
+        self.current.add_event(event)
 
     def update(self):
         self.current.update(self.owner)
@@ -84,5 +84,15 @@ class ShipSnapshot(ObjectInSpaceSnapshot):
         self.battery = ship.battery
         self.defense = ship.defense.copy()
         self.scans = ship.scans.copy()
+        return self
+
+
+class StarbaseSnapshot(ObjectInSpaceSnapshot):
+    def update(self, starbase):
+        super().update(starbase)
+        self.hull = starbase.hull
+        self.battery = starbase.battery
+        self.defense = starbase.defense.copy()
+        self.scans = starbase.scans.copy()
         return self
 

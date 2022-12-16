@@ -1,2 +1,3 @@
-Blaster -100 0
-Shaper 100 0
+Blaster H2545 -100 0
+Shaper H2545 100 0
+Starbase-1 SB2531 -80 20

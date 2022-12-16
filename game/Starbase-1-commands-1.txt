@@ -1,0 +1,4 @@
+1: Fire M1 -90
+1: Fire M2 60
+2: Fire M1 70
+2: Fire M2 80

@@ -1,7 +1,7 @@
 1: R30
 2: R30
 3: R30
-3: Fire Launcher1 30
+3: Fire M1 30
 4: R30
 5: R30
-5: Fire Launcher1 0
+5: Fire M1 0

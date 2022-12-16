@@ -5,19 +5,21 @@ from command import read_command_file
 from log import configure_logger
 from report import report_round
 from objectinspace import Ship
-from shiptype import H2545
+import shiptype
 from history import History, ShipSnapshot
 import pickle
 
 logger = logging.getLogger(__name__)
 
 
-def create_ship(line):
+def create_object_in_space(line):
+    """Create an object based on a starting file line."""
     name = line[0]
-    xy = (int(line[1]), int(line[2]))
-    ship = Ship(name, H2545(), xy)
-    ship.history = History(ship, ShipSnapshot)
-    return ship
+    type_name = line[1]
+    position = (int(line[2]), int(line[3]))
+    # Always for tick 0 in this case.
+    ois = shiptype.create(name, type_name, position, 0)
+    return ois
 
 
 def read_ship_file(file_name: str) -> list:
@@ -27,7 +29,7 @@ def read_ship_file(file_name: str) -> list:
         logger.info(f"Reading ship file {file_name}")
         lines = [line.strip().split(' ') for line in infile.readlines()]
         for line in lines:
-            ship = create_ship(line)
+            ship = create_object_in_space(line)
             ships[ship.name] = ship
     return ships
 
@@ -44,6 +46,7 @@ def do_tick(objects_in_space: dict, destroyed: dict, tick: int):
         # Generate energy
         ois.generate()
         # Some weapons need to know a tick started, e.g. allowing a laser to cool every tick.
+        # Or rocketlauncher needing to know tick to create rockets with correct history.
         if hasattr(ois, 'weapons'):
             for weapon in ois.weapons.values():
                 weapon.tick(tick)
@@ -62,9 +65,9 @@ def do_tick(objects_in_space: dict, destroyed: dict, tick: int):
         if isinstance(ois, command.Commandable):
             if tick in ois.commands:
                 new_objects = list()
-                ois.commands[tick].post_move_commands(ois, objects_in_space, new_objects)
-                for o in new_objects:
-                    o.history.set_tick(tick)
+                ois.commands[tick].post_move_commands(ois, objects_in_space, new_objects, tick)
+                # for o in new_objects:
+                #     o.history.set_tick(tick)
         ois.scan(objects_in_space)
         ois.post_move(objects_in_space)
         ois.history.update()
@@ -77,16 +80,16 @@ def do_tick(objects_in_space: dict, destroyed: dict, tick: int):
             del objects_in_space[ois_name]
 
 
-def do_round(ships: dict, destroyed: dict, game_dir: str, round_nr: int):
+def do_round(objects_in_space: dict, destroyed: dict, game_dir: str, round_nr: int):
     """Execute a full round of 10 ticks."""
-    # Initialize all ships
-    for ship in ships.values():
+    # Load all commands into player ships and do initial scan for reporting.
+    for ship in [s for s in objects_in_space.values() if isinstance(s, Ship)]:
         command_file_name = f"{game_dir}/{ship.name}-commands-{round_nr}.txt"
         ship.commands = read_command_file(command_file_name)
-        ship.scan(ships)
+        ship.scan(objects_in_space)
     # Do 10 ticks, 1-10
     for i in range(1, 11):
-        do_tick(ships, destroyed, i)
+        do_tick(objects_in_space, destroyed, i)
 
 
 def main(game_round: int):

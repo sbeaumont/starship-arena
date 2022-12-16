@@ -1,5 +1,5 @@
 from history import DrawableEvent
-from objectinspace import Ship
+from objectinspace import Ship, Starbase
 from visualize import Visualizer, COLORS
 from jinja2 import Environment, FileSystemLoader
 from collections import defaultdict
@@ -85,7 +85,7 @@ def report_round(ships: dict, game_dir: str, round_nr: int):
     env = Environment(loader=FileSystemLoader('./templates'))
     template = env.get_template('round-template.html')
 
-    for ship in [s for s in ships.values() if isinstance(s, Ship)]:
+    for ship in [s for s in ships.values() if isinstance(s, Ship) or isinstance(s, Starbase)]:
         boundaries = find_boundaries(ship, padding=50)
         vis = Visualizer(boundaries, scale=2)
         events_per_tick = report_events(ship, vis)

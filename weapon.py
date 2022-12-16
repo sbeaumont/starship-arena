@@ -17,6 +17,9 @@ class Weapon(object):
     def tick(self, tick_nr):
         pass
 
+    def reset(self):
+        pass
+
     @property
     def status(self):
         raise NotImplementedError
@@ -25,20 +28,26 @@ class Weapon(object):
 class RocketLauncher(Weapon):
     """Fires Rockets in a given direction. Best to point it away from your friends."""
     def __init__(self, name: str, rocket_type, initial_load: int = 5):
+        super().__init__(name)
+        self.rocket_number = 1
+        self.initial_load = initial_load
         self.ammo = initial_load
         self.rocket_type = rocket_type
-        super().__init__(name)
 
     def create_rocket(self, name, heading):
         rocket = Rocket(name, self.owner.xy, self.rocket_type, self.owner, heading)
-        rocket.history = History(rocket, RocketSnapshot)
+        rocket.history = History(rocket, RocketSnapshot, self.current_tick)
         return rocket
+
+    def tick(self, tick_nr):
+        self.current_tick = tick_nr
 
     def fire(self, direction: str):
         if self.ammo > 0:
-            self.owner.add_event(f"{self.name} fired rocket in direction {int(direction)}")
             rocket_heading = (self.owner.heading + int(direction)) % 360
-            rocket_name = f'{self.owner.name}-Rocket-{self.ammo}'
+            rocket_name = f'{self.owner.name}-Rocket-{self.name}-{self.rocket_number}'
+            self.rocket_number += 1
+            self.owner.add_event(f"{self.name} fired rocket {rocket_name} in direction {int(direction)}")
             rocket = self.create_rocket(rocket_name, heading=rocket_heading)
             self.ammo -= 1
             return rocket
@@ -49,6 +58,9 @@ class RocketLauncher(Weapon):
     @property
     def status(self):
         return {'Ammo': self.ammo}
+
+    def reset(self):
+        self.ammo = self.initial_load
 
 
 class Laser(Weapon):
@@ -81,6 +93,9 @@ class Laser(Weapon):
             self.temperature -= 5
         if self.temperature < 0:
             self.temperature = 0
+
+    def reset(self):
+        self.temperature = 0
 
     def fire(self, target_name: str):
         if self.can_fire_at(target_name):

@@ -1,5 +1,9 @@
 1: A30
-1: A100
-2: Fire Launcher1 90
-3: Fire Launcher1 90
-4: Fire Launcher1 90
+1: R30
+2: A-30
+2: L30
+2: Replenish
+3: A100
+2: Fire M1 90
+3: Fire M1 90
+4: Fire M1 90
