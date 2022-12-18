@@ -63,11 +63,34 @@
         {% endfor %}
     </table>
     <h2>Events</h2>
+
     {% for tick in events %}
-    <h3>Tick {{tick}}</h3>
+        <h3>Tick {{tick}}</h3>
+        <p>
         {% for e in events[tick] %}
             {{e}}<br/>
         {% endfor %}
+        </p>
+        {% if scans[tick] %}
+            <table>
+            <tr>
+                <th>Name</th>
+                <th>Position</th>
+                <th>Distance</th>
+                <th>Direction (Rel)</th>
+                <th>Heading (Abs)</th>
+            </tr>
+            {% for scan in scans[tick] %}
+                <tr>
+                    <td>{{scan.name}}</td>
+                    <td>{{scan.pos}}</td>
+                    <td>{{scan.distance}}</td>
+                    <td>{{scan.direction}}</td>
+                    <td>{{scan.heading}}</td>
+                </tr>
+            {% endfor %}
+            </table>
+        {% endif %}
     {% endfor %}
 </body>
 </html>

@@ -1,6 +1,7 @@
 from jinja2 import Environment, FileSystemLoader
 from collections import defaultdict
 from weasyprint import HTML
+from ois.objectinspace import Scan
 from ois.starbase import Starbase
 from ois.ship import Ship
 from rep.history import DrawableEvent
@@ -13,19 +14,25 @@ def text_nudge(pos):
 
 
 def report_events(ship: Ship, vis: Visualizer):
-    """Add events of the ship to the report and to the round overview graphic."""
+    """Add events of the ship to the report and to the round overview graphic.
+        Scans, DrawableEvents and other Events are handled separately."""
     events_per_tick = defaultdict(list)
+    scans_per_tick = defaultdict(list)
     for i in range(1, 11):
         if i in ship.history:
             for event in ship.history[i].events:
-                events_per_tick[i].append(str(event))
+                if isinstance(event, Scan):
+                    scans_per_tick[i].append(event)
+                else:
+                    events_per_tick[i].append(str(event))
+
                 if isinstance(event, DrawableEvent):
                     match event.event_type:
                         case 'Laser':
                             vis.draw_line(event.position_or_line, color=COLORS[3])
                         case 'Explosion':
                             vis.draw_circle(event.position_or_line, color=COLORS[3], size=20)
-    return events_per_tick
+    return events_per_tick, scans_per_tick
 
 
 def find_boundaries(ship, padding=50):
@@ -89,7 +96,7 @@ def report_round(ships: dict, game_dir: str, round_nr: int):
     for ship in [s for s in ships.values() if isinstance(s, Ship) or isinstance(s, Starbase)]:
         boundaries = find_boundaries(ship, padding=50)
         vis = Visualizer(boundaries, scale=2)
-        events_per_tick = report_events(ship, vis)
+        events_per_tick, scans_per_tick = report_events(ship, vis)
         draw_round(ship, vis)
         image_file_name = f'{ship.name}-round-{round_nr}.png'
         vis.save(f"{game_dir}/{image_file_name}")
@@ -98,6 +105,7 @@ def report_round(ships: dict, game_dir: str, round_nr: int):
             "image_file_name": image_file_name,
             "ship": ship,
             "events": events_per_tick,
+            "scans": scans_per_tick,
             "round": round_nr
         }
 
@@ -108,5 +116,3 @@ def report_round(ships: dict, game_dir: str, round_nr: int):
 
         print_html = HTML(string=html_out, base_url=f'{game_dir}')
         print_html.write_pdf(f'{report_file_name}.pdf')
-
-

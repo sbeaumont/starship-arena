@@ -71,7 +71,7 @@ class Rocket(ObjectInSpace):
             distance = self.distance_to(ois.xy)
             if (ois != self) and (distance <= self._type.explode_distance):
                 ois.add_drawable_event('Explosion', self.pos, f"{self.name} exploded")
-                damage = round(self._type.explode_damage / distance)
+                damage = round(self._type.explode_damage / (1 + distance))
                 ois.take_damage_from(f"Hit by {self.name} for {damage}", self.pos, damage)
                 self.owner.add_event(f"{self.name} hit {ois.name} at {ois.pos} for {damage}")
             elif (ois != self) and (ois != self.owner) and (distance <= ois._type.max_scan_distance):

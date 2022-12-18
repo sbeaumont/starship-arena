@@ -25,7 +25,7 @@ class Scan(object):
                    round(source.heading_to(scanned.xy), 1))
 
     def __str__(self):
-        return f"Scan({self.name}, {self.pos}, {self.distance}, {self.heading}, {self.direction})"
+        return f"Scanned {self.name} at {self.pos}, distance {self.distance}, direction {self.direction}, heading {self.heading}"
 
 
 def translate(p: Point, heading, distance) -> Point:

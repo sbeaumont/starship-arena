@@ -90,7 +90,7 @@ class Ship(ObjectInSpace):
             if (ois != self) and self.distance_to(ois.xy) < self._type.max_scan_distance:
                 scan = Scan.create_scan(self, ois)
                 self.scans[ois.name] = scan
-                self.add_event(f"Scanned {scan.name} at {scan.pos}, distance {scan.distance}, direction {scan.direction}, heading {scan.heading}")
+                self.add_event(scan)
 
     def take_damage_from(self, source_event, source_location, amount):
         """First pass the damage to the defense components, any remaining damage goes to the hull."""

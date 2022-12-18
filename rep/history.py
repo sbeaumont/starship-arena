@@ -1,10 +1,12 @@
 from abc import abstractmethod
+from ois.objectinspace import Scan
 
 
 class Snapshot(object):
     """Snapshot of an object in space, for attributes and for events."""
     def __init__(self):
         self.events = list()
+        self.scans = list()
 
     @abstractmethod
     def update(self, obj):
@@ -17,6 +19,17 @@ class Snapshot(object):
     def add_drawable_event(self, event_type, position, event):
         self.events.append(DrawableEvent(event_type, position, event))
         return self
+
+    def add_scan(self, scan):
+        self.scans.append(scan)
+
+    @property
+    def scan_events(self):
+        return [e for e in self.events if e is Scan]
+
+    @property
+    def non_scan_events(self):
+        return [e for e in self.events if e is not Scan]
 
 
 class History(dict):
@@ -73,6 +86,8 @@ class ObjectInSpaceSnapshot(Snapshot):
         self.pos = obj.pos
         self.heading = obj.heading
         self.speed = obj.speed
+        if hasattr(obj, 'scans'):
+            self.scans = obj.scans
         return self
 
 
