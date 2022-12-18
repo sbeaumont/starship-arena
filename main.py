@@ -1,13 +1,11 @@
 import logging
-
 import command
-from command import read_command_file
-from log import configure_logger
-from report import report_round
-from objectinspace import Ship
-import shiptype
-from history import History, ShipSnapshot
 import pickle
+from command import read_command_file, Commandable
+from log import configure_logger
+from ois import shiptype
+from rep.report import report_round
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +20,7 @@ def create_object_in_space(line):
     return ois
 
 
-def read_ship_file(file_name: str) -> list:
+def read_ship_file(file_name: str) -> dict:
     """Load and initialize all the ships to their status at the start of a round."""
     ships = dict()
     with open(file_name) as infile:
@@ -46,7 +44,7 @@ def do_tick(objects_in_space: dict, destroyed: dict, tick: int):
         # Generate energy
         ois.generate()
         # Some weapons need to know a tick started, e.g. allowing a laser to cool every tick.
-        # Or rocketlauncher needing to know tick to create rockets with correct history.
+        # Or rocket launcher needing to know tick to create rockets with correct history.
         if hasattr(ois, 'weapons'):
             for weapon in ois.weapons.values():
                 weapon.tick(tick)
@@ -66,8 +64,6 @@ def do_tick(objects_in_space: dict, destroyed: dict, tick: int):
             if tick in ois.commands:
                 new_objects = list()
                 ois.commands[tick].post_move_commands(ois, objects_in_space, new_objects, tick)
-                # for o in new_objects:
-                #     o.history.set_tick(tick)
         ois.scan(objects_in_space)
         ois.post_move(objects_in_space)
         ois.history.update()
@@ -83,7 +79,7 @@ def do_tick(objects_in_space: dict, destroyed: dict, tick: int):
 def do_round(objects_in_space: dict, destroyed: dict, game_dir: str, round_nr: int):
     """Execute a full round of 10 ticks."""
     # Load all commands into player ships and do initial scan for reporting.
-    for ship in [s for s in objects_in_space.values() if isinstance(s, Ship)]:
+    for ship in [s for s in objects_in_space.values() if isinstance(s, Commandable)]:
         command_file_name = f"{game_dir}/{ship.name}-commands-{round_nr}.txt"
         ship.commands = read_command_file(command_file_name)
         ship.scan(objects_in_space)

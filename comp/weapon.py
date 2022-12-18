@@ -1,5 +1,5 @@
-from history import DrawableEvent, History, RocketSnapshot
-from objectinspace import Rocket
+from rep.history import DrawableEvent, History, RocketSnapshot
+from ois.rocket import Rocket
 
 
 class Weapon(object):
@@ -34,7 +34,7 @@ class RocketLauncher(Weapon):
         self.ammo = initial_load
         self.rocket_type = rocket_type
 
-    def create_rocket(self, name, heading):
+    def _create_rocket(self, name, heading):
         rocket = Rocket(name, self.owner.xy, self.rocket_type, self.owner, heading)
         rocket.history = History(rocket, RocketSnapshot, self.current_tick)
         return rocket
@@ -48,7 +48,7 @@ class RocketLauncher(Weapon):
             rocket_name = f'{self.owner.name}-Rocket-{self.name}-{self.rocket_number}'
             self.rocket_number += 1
             self.owner.add_event(f"{self.name} fired rocket {rocket_name} in direction {int(direction)}")
-            rocket = self.create_rocket(rocket_name, heading=rocket_heading)
+            rocket = self._create_rocket(rocket_name, heading=rocket_heading)
             self.ammo -= 1
             return rocket
         else:

@@ -1,9 +1,10 @@
-from history import DrawableEvent
-from objectinspace import Ship, Starbase
-from visualize import Visualizer, COLORS
 from jinja2 import Environment, FileSystemLoader
 from collections import defaultdict
 from weasyprint import HTML
+from ois.starbase import Starbase
+from ois.ship import Ship
+from rep.history import DrawableEvent
+from rep.visualize import Visualizer, COLORS
 
 
 def text_nudge(pos):

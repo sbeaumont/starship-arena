@@ -1,14 +1,19 @@
 import re
 from collections import defaultdict
 import logging
-from enum import Enum
-from typing import Protocol, runtime_checkable
-from objectinspace import ObjectInSpace
+from enum import Enum, auto
+from typing import Protocol, Dict, runtime_checkable
+from ois.objectinspace import ObjectInSpace
 
 logger = logging.getLogger(__name__)
 COMMAND_PATTERN: str = r"^([A-Z|a-z]+)((\s*(-?[A-Z|a-z|0-9]+))*)$"
 
-Cmd = Enum("Cmd", ['Turn', 'Accelerate', 'Fire', 'Replenish'])
+
+class Cmd(Enum):
+    Turn = auto()
+    Accelerate = auto()
+    Fire = auto()
+    Replenish = auto()
 
 
 @runtime_checkable
@@ -24,7 +29,13 @@ class Commandable(Protocol):
     def fire(self, weapon_name: str, target_or_direction) -> ObjectInSpace:
         ...
 
-    def add_event(self, event: str):
+    def try_replenish(self):
+        ...
+
+    def scan(self):
+        ...
+
+    def add_event(self, event):
         ...
 
 
@@ -65,9 +76,9 @@ class CommandSet(object):
     def __init__(self):
         self.acceleration: Command = None
         self.turning: Command = None
-        self.weapons = dict()
-        self.utilities = list()
-        self.other = dict()
+        self.weapons: dict = dict()
+        self.utilities: list = list()
+        self.other: dict = dict()
 
     def add(self, cmd: Command):
         match cmd.name:
@@ -123,7 +134,7 @@ class CommandSet(object):
                 new_objects.append(ois)
         if Cmd.Replenish in self.other:
             ship.add_event(f'Executing command "Replenish"')
-            ship.replenish(objects_in_space)
+            ship.try_replenish(objects_in_space)
 
     def __str__(self):
         util_str = ', '.join([str(cmd) for cmd in self.utilities])

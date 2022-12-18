@@ -14,6 +14,10 @@ class Snapshot(object):
         self.events.append(event)
         return self
 
+    def add_drawable_event(self, event_type, position, event):
+        self.events.append(DrawableEvent(event_type, position, event))
+        return self
+
 
 class History(dict):
     """Holds snapshots and events per tick for its owner, to be used to report on the round."""
@@ -32,6 +36,10 @@ class History(dict):
     def add_event(self, event):
         assert event is not None
         self.current.add_event(event)
+
+    def add_drawable_event(self, event_type, position, event):
+        self.current.add_drawable_event(event_type, position, event)
+        return self
 
     def update(self):
         self.current.update(self.owner)

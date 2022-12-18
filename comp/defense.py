@@ -1,5 +1,5 @@
 from collections import namedtuple
-from objectinspace import Point
+from ois.objectinspace import Point
 
 Quadrants = namedtuple('Quadrants', 'north east south west')
 Section = namedtuple('Section', 'strength energy')

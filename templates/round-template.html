@@ -27,13 +27,13 @@
         <tr>
             <td><b>Position</b></td><td>{{ ship.pos }}</td>
             <td><b>Heading</b></td><td>{{ ship.heading }}</td>
-            <td><b>Speed</b></td><td>{{ ship.speed }}/{{ ship.max_speed }}</td>
+            <td><b>Speed</b></td><td>{{ ship.speed }}/{{ ship._type.max_speed }}</td>
         </tr>
         <tr>
-            <td><b>Battery</b></td><td colspan="5">{{ ship.battery }}/{{ ship.max_battery }}</td>
+            <td><b>Battery</b></td><td colspan="5">{{ ship.battery }}/{{ ship._type.max_battery }}</td>
         </tr>
         <tr>
-            <td><b>Hull</b></td><td>{{ ship.hull }}/{{ ship.max_hull }}</td>
+            <td><b>Hull</b></td><td>{{ ship.hull }}/{{ ship._type.max_hull }}</td>
             <td><b>Shields</b></td><td colspan="3">{{ ship.defense[0].strengths }}</td>
         </tr>
         {% for weapon in ship.weapons.values() %}
