@@ -7,6 +7,9 @@ from ois.ship import Ship
 from rep.history import DrawableEvent
 from rep.visualize import Visualizer, COLORS
 
+ROUND_ZERO_TEMPLATE = 'round-zero.html'
+ROUND_TEMPLATE = 'round-template.html'
+
 
 def text_nudge(pos):
     """Give text positions a nudge to clear them from the path lines."""
@@ -91,7 +94,7 @@ def draw_round(ship: Ship, vis: Visualizer):
 def report_round(ships: dict, game_dir: str, round_nr: int):
     """Generate HTML and PDF reports with the results, status and history of each ship in the round."""
     env = Environment(loader=FileSystemLoader('./templates'))
-    template = env.get_template('round-template.html')
+    template = env.get_template(ROUND_TEMPLATE)
 
     for ship in [s for s in ships.values() if isinstance(s, Ship) or isinstance(s, Starbase)]:
         boundaries = find_boundaries(ship, padding=50)
@@ -116,3 +119,30 @@ def report_round(ships: dict, game_dir: str, round_nr: int):
 
         print_html = HTML(string=html_out, base_url=f'{game_dir}')
         print_html.write_pdf(f'{report_file_name}.pdf')
+
+
+def report_round_zero(game_dir: str, ships: list):
+    env = Environment(loader=FileSystemLoader('./templates'))
+    template = env.get_template(ROUND_ZERO_TEMPLATE)
+
+    for ship in ships:
+        boundaries = find_boundaries(ship, padding=50)
+        vis = Visualizer(boundaries, scale=2)
+        draw_round(ship, vis)
+        image_file_name = f'{ship.name}-round-0.png'
+        vis.save(f"{game_dir}/{image_file_name}")
+
+        template_data = {
+            "image_file_name": image_file_name,
+            "ship": ship,
+            "scans": ship.scans,
+        }
+
+        html_out = template.render(template_data)
+        report_file_name = f'{game_dir}/{ship.name}-round-0'
+        with open(f'{report_file_name}.html', 'w') as fj:
+            fj.write(html_out)
+
+        print_html = HTML(string=html_out, base_url=f'{game_dir}')
+        print_html.write_pdf(f'{report_file_name}.pdf')
+
