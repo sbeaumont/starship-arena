@@ -139,7 +139,7 @@ def round_zero(game_directory):
 def clean(game_directory):
     gamedir_contents = os.listdir(game_directory)
     for file_type in ['*.html', '*.png', '*.pdf', '*.pickle']:
-        for f in filter(gamedir_contents, file_type):
+        for f in fnmatch.filter(gamedir_contents, file_type):
             os.remove(os.path.join(game_directory, f))
 
 
