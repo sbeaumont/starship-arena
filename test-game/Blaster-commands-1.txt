@@ -4,6 +4,9 @@
 2: L30
 2: Replenish
 3: A100
-2: Fire M1 90
-3: Fire M1 90
-4: Fire M1 90
+2: Fire S1 90
+3: Fire R1 50
+3: Fire R2 55
+5: Fire R1 50
+5: Fire R2 55
+7: Fire S1 90

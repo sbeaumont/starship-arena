@@ -151,21 +151,27 @@ class GameRound(object):
                 destroyed[ois_name] = self.ois[ois_name]
                 del self.ois[ois_name]
 
+    @property
+    def missing_command_files(self):
+        missing_command_files = list()
+        for ship in [s for s in self.ois.values() if isinstance(s, Commandable)]:
+            command_file_name = self._dir.command_file(ship.name, self.nr)
+            if not os.path.exists(command_file_name):
+                missing_command_files.append(command_file_name)
+        return missing_command_files
+
     def do_round(self, exit_on_missing_command_file=True):
         # Execute the round
         destroyed = dict()
         # Load all commands into player ships and do initial scan for reporting.
-        missing_command_files = list()
+        if exit_on_missing_command_file and self.missing_command_files:
+            sys.exit(f"Missing command files {self.missing_command_files}")
+
         for ship in [s for s in self.ois.values() if isinstance(s, Commandable)]:
             command_file_name = self._dir.command_file(ship.name, self.nr)
             if os.path.exists(command_file_name):
                 ship.commands = read_command_file(command_file_name)
                 ship.scan(self.ois)
-            else:
-                missing_command_files.append(command_file_name)
-
-        if exit_on_missing_command_file and missing_command_files:
-            sys.exit(f"Missing command files {missing_command_files}")
 
         # Do 10 ticks, 1-10
         for i in range(1, 11):
@@ -179,7 +185,7 @@ class GameRound(object):
         self.save()
 
     def save(self):
-        # Clean up unnecessary data from the objects and pickle them as starting point for the next round.
+        """Clean up unnecessary data from the objects and pickle them as starting point for the next round."""
         for ois in self.ois.values():
             ois.round_reset()
         status_file_name = self._dir.status_file_for_round(self.nr)
@@ -191,10 +197,11 @@ def main():
     configure_logger(False, ["fontTools", "PIL"])
     parser = argparse.ArgumentParser()
     parser.add_argument("gamedir", help="The game directory you want to process.")
-    parser.add_argument("-n", "--new", help="Initialize a new game in directory.", action="store_true")
-    parser.add_argument("-i", "--ignore", help="Ignore missing command files.", action="store_true")
-    parser.add_argument("--clean", help="Clean the output files of a game directory", action="store_true")
-    parser.add_argument("-s", "--send", help="Send the results via email to the players", type=int, default=-1)
+    parser.add_argument("round", choices=['zero', 'last', 'redo-all'], help="Which rounds to process")
+    parser.add_argument("-y", "--yolo", action="store_true", help="Don't ask safety questions.")
+    parser.add_argument("-c", "--clean", action="store_true", help="Clean the output files of a game directory")
+    parser.add_argument("-i", "--ignore", action="store_true", help="Ignore missing command files.")
+    parser.add_argument("-s", "--send", choices=['zero', 'last', 'all'], help="Send the results via email to the players")
     args = parser.parse_args()
 
     if not os.path.exists(args.gamedir):
@@ -203,36 +210,57 @@ def main():
     game_dir = GameDirectory(args.gamedir)
     last_round = game_dir.last_round_number
 
-    if args.send > -1:
-        if (last_round > -1) and (0 <= args.send <= last_round):
-            answer = input(f"Last round of {args.gamedir}: {last_round}. Type 'Y' to send round {args.send}.\n")
-            if answer == 'Y':
-                send_results_for_round(game_dir.name, game_dir.init_file_name, game_dir.email_cfg_name, args.send)
-        else:
-            sys.exit(f"No round {args.send} to send.")
-    elif args.clean:
-        answer = input(f"Type 'Y' if you're sure you want to clean directory '{args.gamedir}'.\n")
-        if answer == 'Y':
+    if args.clean or (args.round == 'redo_all'):
+        answer = None
+        if not args.yolo:
+            answer = input(f"Type 'Y' if you're sure you want to clean directory '{args.gamedir}'.\n")
+        if args.yolo or (answer == 'Y'):
             game_dir.clean()
-    elif args.new:
+
+    def do_zero():
         init_file = game_dir.init_file
         if not os.path.exists(init_file):
             sys.exit(f"Can not find initialization file '{init_file}'")
-        # if (len(game_dir.ls) != 1) and (game_dir.ls[0] != game_dir.init_file_name):
-        #     sys.exit(f"Expecting only one file '{game_dir.init_file_name}' in directory.")
         RoundZero(game_dir).run()
-    else:
-        # Deal with last round ending up -1 if there's nothing.
-        new_round = 1 if last_round == -1 else (last_round + 1)
-        answer = input(f"Type 'Y' if you're sure you want to process new round '{new_round}'.\n")
+
+    match args.round:
+        case 'zero':
+            do_zero()
+        case 'last':
+            # Deal with last round ending up -1 if there's nothing.
+            last_round = 1 if last_round == -1 else (last_round + 1)
+            answer = None
+            if not args.yolo:
+                answer = input(f"Type 'Y' if you're sure you want to process new round '{last_round}'.\n")
+            if args.yolo or (answer == 'Y'):
+                gr = GameRound(game_dir, last_round)
+                gr.do_round(not args.ignore)
+        case 'redo-all':
+            answer = None
+            if not args.yolo:
+                answer = input(f"Type 'Y' if you're sure you want to CLEAN AND REDO ALL.\n")
+            if args.yolo or (answer == 'Y'):
+                do_zero()
+                round_nr = 1
+                gr = GameRound(game_dir, round_nr)
+                while not gr.missing_command_files:
+                    # This will never be done with ignore missing command files, otherwise never stops.
+                    gr.do_round()
+                    round_nr += 1
+                    gr = GameRound(game_dir, round_nr)
+
+    if args.send:
+        answer = input(f"Type 'Y' to send out email.\n")
         if answer == 'Y':
-            gr = GameRound(game_dir, new_round)
-            gr.do_round(not args.ignore)
+            round_to_send = None
+            match args.send:
+                case 'last':
+                    round_to_send = last_round
+                case 'zero':
+                    round_to_send = 0
+            if round_to_send:
+                send_results_for_round(game_dir.name, game_dir.init_file_name, game_dir.email_cfg_name, round_to_send)
 
 
 if __name__ == '__main__':
     main()
-    # round_zero("./game")
-    # do_round(1)
-    # do_round(2)
-

@@ -1,5 +1,5 @@
-from rep.history import DrawableEvent, History, RocketSnapshot
-from ois.rocket import Rocket
+from rep.history import DrawableEvent, History, MissileSnapshot
+from ois.missile import GuidedMissile
 
 
 class Weapon(object):
@@ -25,39 +25,38 @@ class Weapon(object):
         raise NotImplementedError
 
 
-class RocketLauncher(Weapon):
+class MissileLauncher(Weapon):
     """Fires Rockets in a given direction. Best to point it away from your friends."""
-    def __init__(self, name: str, rocket_type, initial_load: int = 5):
+    def __init__(self, name: str, payload_type, initial_load: int = 5):
         super().__init__(name)
-        self.rocket_number = 1
+        self.missile_number = 1
         self.initial_load = initial_load
         self.ammo = initial_load
-        self.rocket_type = rocket_type
+        self.payload_type = payload_type
 
-    def _create_rocket(self, name, heading):
-        rocket = Rocket(name, self.owner.xy, self.rocket_type, self.owner, heading)
-        rocket.history = History(rocket, RocketSnapshot, self.current_tick)
-        return rocket
+    def _create_missile(self, name, heading):
+        missile = self.payload_type.base_type(name, self.owner.xy, self.payload_type, self.owner, heading)
+        missile.history = History(missile, MissileSnapshot, self.current_tick)
+        return missile
 
     def tick(self, tick_nr):
         self.current_tick = tick_nr
 
     def fire(self, direction: str):
         if self.ammo > 0:
-            rocket_heading = (self.owner.heading + int(direction)) % 360
-            rocket_name = f'{self.owner.name}-Rocket-{self.name}-{self.rocket_number}'
-            self.rocket_number += 1
-            self.owner.add_event(f"{self.name} fired rocket {rocket_name} in direction {int(direction)}")
-            rocket = self._create_rocket(rocket_name, heading=rocket_heading)
+            self.missile_number += 1
             self.ammo -= 1
-            return rocket
+            heading = (self.owner.heading + int(direction)) % 360
+            name = f'{self.owner.name}-{self.payload_type.name}-{self.name}-{self.missile_number}'
+            self.owner.add_event(f"{self.name} fired {name} in direction {int(direction)}")
+            return self._create_missile(name, heading=heading)
         else:
             self.owner.add_event(f"{self.name} could not fire: empty.")
             return None
 
     @property
     def status(self):
-        return {'Ammo': self.ammo}
+        return {'Ammo': f"{self.ammo} {self.payload_type.name}"}
 
     def reset(self):
         self.ammo = self.initial_load

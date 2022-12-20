@@ -1,9 +1,9 @@
 import logging
 from typing import Protocol, runtime_checkable
 from comp.defense import Shields
-from comp.weapon import Laser, RocketLauncher
+from comp.weapon import Laser, MissileLauncher
 from ois.objectinspace import ObjectInSpace, Scan
-from ois.rocket import Splinter
+from ois.missile import Splinter, Rocket
 from rep.history import ShipSnapshot
 
 logger = logging.getLogger(__name__)
@@ -129,7 +129,7 @@ class H2545(ShipType):
     start_battery = 125
     generators = 8
     max_battery = 500
-    max_scan_distance = 30
+    max_scan_distance = 100
 
     @property
     def defense(self):
@@ -141,8 +141,9 @@ class H2545(ShipType):
     def weapons(self):
         return {
             'L1': Laser('L1'),
-            'M1': RocketLauncher('M1', Splinter()),
-            'M2': RocketLauncher('M2', Splinter())
+            'S1': MissileLauncher('S1', Splinter),
+            'R1': MissileLauncher('R1', Rocket),
+            'R2': MissileLauncher('R2', Rocket)
         }
 
 
@@ -165,6 +166,6 @@ class H2552(ShipType):
     @property
     def weapons(self):
         return {
-            'L1': Beam('L1'),
-            'M1': RocketLauncher('M1', Splinter())
+            'L1': Laser('L1'),
+            'M1': MissileLauncher('M1', Splinter())
         }

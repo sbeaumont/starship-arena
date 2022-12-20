@@ -1,8 +1,9 @@
 1: L30
 2: L30
 3: L30
-3: Fire M1 -20
-5: Fire M1 -45
+3: Fire S1 -20
+3: Fire R1 -25
+5: Fire S1 -45
 3: Fire L1 Blaster
 4: Fire L1 Blaster
 6: Fire L1 Blaster

@@ -1,9 +1,9 @@
 import logging
 
 from comp.defense import Shields
-from comp.weapon import Laser, RocketLauncher
+from comp.weapon import Laser, MissileLauncher
 from ois.ship import Ship
-from ois.rocket import Splinter
+from ois.missile import Splinter, Rocket
 from rep.history import StarbaseSnapshot
 
 logger = logging.getLogger(__name__)
@@ -59,6 +59,8 @@ class SB2531(object):
         return {
             'L1': Laser('L1'),
             'L2': Laser('L2'),
-            'M1': RocketLauncher('M1', Splinter(), 75),
-            'M2': RocketLauncher('M2', Splinter(), 75)
+            'S1': MissileLauncher('S1', Splinter, 40),
+            'S2': MissileLauncher('S2', Splinter, 40),
+            'R1': MissileLauncher('R1', Rocket, 75),
+            'R2': MissileLauncher('R2', Rocket, 75)
         }

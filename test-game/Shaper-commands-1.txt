@@ -1,5 +1,5 @@
 1: A25
-1: Fire M1 -90
+1: Fire S1 -90
 3: Fire L1 Blaster
 5: Fire L1 Blaster
 6: Fire L1 Blaster

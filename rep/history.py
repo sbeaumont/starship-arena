@@ -91,12 +91,12 @@ class ObjectInSpaceSnapshot(Snapshot):
         return self
 
 
-class RocketSnapshot(ObjectInSpaceSnapshot):
-    def update(self, rocket):
-        super().update(rocket)
-        self.hull = rocket.hull
-        self.battery = rocket.battery
-        self.target = rocket.target
+class MissileSnapshot(ObjectInSpaceSnapshot):
+    def update(self, missile):
+        super().update(missile)
+        self.hull = missile.hull
+        self.battery = missile.battery
+        self.target = missile.target
         return self
 
 
