@@ -1,6 +1,6 @@
 import logging
-from rep.history import MissileSnapshot
 from ois.objectinspace import ObjectInSpace, translate
+from ois.event import ExplosionEvent, HitEvent, DrawType, InternalEvent
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +9,7 @@ class Missile(ObjectInSpace):
     """Guided missile that locks on the nearest target and explodes when near."""
     energy_per_move: int = 5
 
-    def __init__(self, name: str, xy: tuple, missile_type, owner: ObjectInSpace, heading: int = 0):
+    def __init__(self, name: str, missile_type, xy: tuple, owner: ObjectInSpace, heading: int = 0):
         super().__init__(name, xy, heading, missile_type.max_speed)
         self._type = missile_type
         self.hull = self._type.max_hull
@@ -17,14 +17,31 @@ class Missile(ObjectInSpace):
         self.target = None
         self.owner = owner
 
+    # ---------------------------------------------------------------------- QUERIES
+
     @property
     def is_destroyed(self) -> bool:
-        return self.hull <= 0
+        return (self.hull <= 0) or (self.battery <= 0)
 
-    def take_damage_from(self, source_event, source_location, amount):
+    # ---------------------------------------------------------------------- COMMANDS
+
+    def take_damage_from(self, hitevent):
         # Any damage will destroy a rocket
-        self.hull = 0
-        self.owner.add_event(f"{self.name} {source_event[0].lower() + source_event[1:]}")
+        if hitevent.amount > 0:
+            self.hull = 0
+            # self.owner.add_event(hitevent)
+
+    # ---------------------------------------------------------------------- HISTORY INTERFACE
+
+    @property
+    def snapshot(self):
+        sn = super().snapshot
+        sn['hull'] = self.hull
+        sn['battery'] = self.battery
+        sn['target'] = self.target
+        return sn
+
+    # ---------------------------------------------------------------------- ENGINE HOOKS
 
     def post_move(self, objects_in_space):
         if self._can_explode(objects_in_space):
@@ -34,17 +51,15 @@ class Missile(ObjectInSpace):
 
         # Die when battery is dead.
         self.battery -= self.energy_per_move
-        if not self.is_destroyed and (self.battery <= 0):
-            self.hull = 0
-            msg = f"{self.name} fizzled out."
-            self.owner.add_event(msg)
-            logger.info(msg)
+        if self.is_destroyed and (self.battery <= 0):
+            self.owner.add_event(InternalEvent(f"{self.name} fizzled out."))
 
     def _intercept(self):
         """Rockets just fly straight"""
         pass
 
     def _can_explode(self, objects_in_space: dict) -> bool:
+        """Explode if there is an object in range that is not itself or owned by the same owner"""
         for ois_name, ois in objects_in_space.items():
             ois_is_self = (ois is self) or (ois is self.owner) or (ois.owner is self.owner)
             ois_in_range = (self.distance_to(ois.xy) <= self._type.explode_distance)
@@ -54,17 +69,31 @@ class Missile(ObjectInSpace):
 
     def _explode(self, objects_in_space):
         self.hull = 0
-        self.owner.add_drawable_event('Explosion', self.pos, f"{self.name} exploded")
+
+        # Generate the explosion: first all who can scan it see it.
+        expl_event = ExplosionEvent(self.pos, 'Explosion', self, self._type.explode_distance)
         for ois in objects_in_space.values():
+            if ois.distance_to(expl_event.pos) <= ois._type.max_scan_distance:
+                ois.add_event(expl_event)
+
+        # The explosion generates hits on ALL in range
+        hits = list()
+        for ois in [ob for ob in objects_in_space.values() if ob != self]:
             distance = self.distance_to(ois.xy)
-            if (ois != self) and (distance <= self._type.explode_distance):
-                ois.add_drawable_event('Explosion', self.pos, f"{self.name} exploded")
+            if distance <= self._type.explode_distance:
                 damage = self._damage(ois)
-                ois.take_damage_from(f"Hit by {self.name} for {damage}", self.pos, damage)
-                self.owner.add_event(f"{self.name} hit {ois.name} at {ois.pos} for {damage}")
-            elif (ois != self) and (ois != self.owner) and (distance <= ois._type.max_scan_distance):
-                # object wasn't hit, but it did see what happened
-                ois.add_drawable_event('Explosion', self.pos, f"{self.name} exploded")
+                hit_event = HitEvent(self.pos, 'Explosion', self, ois, damage)
+                ois.take_damage_from(hit_event)
+                # Owner sees all hits. Note that double add is okay since events for a tick are a set, not a list.
+                self.owner.add_event(hit_event)
+                hits.append(hit_event)
+
+        # All who can observe the hits see it. Owner has already seen all, so filter out.
+        # Urgh, double loop. Not elegant. No performance problems so far.
+        for hit in hits:
+            for ois in objects_in_space.values():
+                if ois.distance_to(hit.pos) <= ois._type.max_scan_distance:
+                    ois.add_event(hit)
 
     def _damage(self, ois):
         return self._type.explode_damage
@@ -96,7 +125,6 @@ class Rocket(object):
     """Dumb rocket"""
     name = 'Rocket'
     base_type = Missile
-    snapshot_type = MissileSnapshot
     max_speed = 60
     explode_distance = 20
     explode_damage = 50
@@ -110,7 +138,6 @@ class Splinter(object):
     """The basic guided missile"""
     name = 'Splinter'
     base_type = GuidedMissile
-    snapshot_type = MissileSnapshot
     max_speed = 60
     explode_distance = 6
     explode_damage = 75

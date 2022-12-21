@@ -45,9 +45,9 @@ class Visualizer(object):
         x1, y1, x2, y2 = boundaries
         self.b_min = self._scale_point(Point(x1, y1))
         self.b_max = self._scale_point(Point(x2, y2))
-        self.im = Image.new('RGB', \
-                            (abs(self.b_max.x - self.b_min.x), \
-                             abs(self.b_max.y - self.b_min.y)), \
+        self.im = Image.new('RGB',
+                            (abs(self.b_max.x - self.b_min.x),
+                             abs(self.b_max.y - self.b_min.y)),
                             BACKGROUND_COLOR)
         self.draw = ImageDraw.Draw(self.im)
 
@@ -102,33 +102,3 @@ class Visualizer(object):
 
     def save(self, file_name):
         self.im.save(file_name, 'png')
-
-
-if __name__ == '__main__':
-    # At scale 2 this coordinate system will lead to a 420 x 420 pixel image.
-    viz = Visualizer((0, 0, 210, 210), scale=2)
-
-    # Draw a single line
-    viz.draw_line(((10, 20), (50, 100)), COLORS[0], width=5)
-
-    # Draw a list of four lines
-    lines = (((110, 10), (200, 10)), ((200, 10), (200, 100)), ((200, 100), (110, 100)), ((110, 100), (110, 10)))
-    viz.draw_lines(lines, COLORS[1], width=5)
-
-    # Draw a polyline based on a list of points
-    points = ((10, 110), (100, 110), (100, 200), (10, 200), (10, 110))
-    viz.draw_polyline(points, COLORS[2], width=5)
-
-    # Draw separate points
-    points2 = ((120, 120), (140, 140), (160, 160), (180, 180))
-    viz.draw_points(points2, COLORS[3], size=10)
-
-    # Draw a square
-    points3 = (140, 180)
-    viz.draw_square(points3, COLORS[4], size=10)
-
-    # Draw a single point
-    points3 = (120, 180)
-    viz.draw_point(points3, COLORS[5], size=10)
-
-    viz.show()

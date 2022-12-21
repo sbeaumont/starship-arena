@@ -4,7 +4,7 @@ from comp.defense import Shields
 from comp.weapon import Laser, MissileLauncher
 from ois.ship import Ship
 from ois.missile import Splinter, Rocket
-from rep.history import StarbaseSnapshot
+from ois.event import InternalEvent
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +29,13 @@ class Starbase(Ship):
             ship.battery = ship._type.max_battery
             for weapon in ship.weapons.values():
                 weapon.reset()
-            self.add_event(f"Replenished {ship.name}")
-            ship.add_event(f"Replenished by {self.name}")
+            self.add_event(InternalEvent(f"Replenished {ship.name}"))
+            ship.add_event(InternalEvent(f"Replenished by {self.name}"))
 
 
 class SB2531(object):
     """Default starbase"""
     base_type = Starbase
-    snapshot_type = StarbaseSnapshot
     max_delta_v = 0
     max_speed = 0
     max_turn = 0

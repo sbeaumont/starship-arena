@@ -1,5 +1,6 @@
 from collections import namedtuple
 from ois.objectinspace import Point
+from ois.event import HitEvent, InternalEvent
 
 Quadrants = namedtuple('Quadrants', 'north east south west')
 Section = namedtuple('Section', 'strength energy')
@@ -27,17 +28,17 @@ class Shields(object):
                 return name
         assert False, f"No quadrant found {source_location}, {heading}"
 
-    def take_damage_from(self, source_location: tuple, amount: int) -> int:
+    def take_damage_from(self, hit_event: HitEvent) -> int:
         """Absorb damage on shield quadrant, return any remaining damage."""
-        shield_quadrant = self.quadrant_of(source_location)
-        self.strengths[shield_quadrant] -= amount
+        shield_quadrant = self.quadrant_of(hit_event.source.pos)
+        self.strengths[shield_quadrant] -= hit_event.amount
         if self.strengths[shield_quadrant] < 0:
             breakthrough_damage = -self.strengths[shield_quadrant]
-            self.owner.add_event(f"Hit on shield {shield_quadrant} broke the shield: {breakthrough_damage} passed through.")
+            self.owner.add_event(InternalEvent("Hit on shield {shield_quadrant} broke the shield: {breakthrough_damage} passed through."))
             self.strengths[shield_quadrant] = 0
             return breakthrough_damage
         else:
-            self.owner.add_event(f"Shield {shield_quadrant} hit for {amount}. Remaining strength: {self.strengths[shield_quadrant]}")
+            self.owner.add_event(InternalEvent(f"Shield {shield_quadrant} hit for {hit_event.amount}. Remaining strength: {self.strengths[shield_quadrant]}"))
         return 0
 
     def tick(self, tick_nr):

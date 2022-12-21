@@ -1,31 +1,13 @@
 import logging
 from collections import namedtuple
 from math import sin, cos, radians, sqrt, atan2, pi
+from abc import abstractmethod
+
+from ois.event import InternalEvent, Event
 
 logger = logging.getLogger(__name__)
 
 Point = namedtuple("Point", "x y")
-
-
-class Scan(object):
-    """A single instance of one object scanning another."""
-    def __init__(self, ois, distance, direction, heading):
-        self.ois = ois
-        self.name = ois.name
-        self.pos = ois.pos
-        self.distance = distance
-        self.direction = direction
-        self.heading = heading
-
-    @classmethod
-    def create_scan(cls, source, scanned):
-        return cls(scanned,
-                   round(source.distance_to(scanned.xy), 1),
-                   round(source.direction_to(scanned.xy), 1),
-                   round(source.heading_to(scanned.xy), 1))
-
-    def __str__(self):
-        return f"Scanned {self.name} at {self.pos}, distance {self.distance}, direction {self.direction}, heading {self.heading}"
 
 
 def translate(p: Point, heading, distance) -> Point:
@@ -39,7 +21,6 @@ class ObjectInSpace(object):
     """Any object in space, which can be ships, rockets, starbases, black holes, etc."""
     def __init__(self, name: str, xy: tuple, heading: int = 0, speed: int = 0):
         super().__init__()
-        assert isinstance(heading, int)
         self.name = name
         self.xy = Point(xy[0], xy[1])
         self.heading = heading
@@ -54,6 +35,8 @@ class ObjectInSpace(object):
         return round(self.xy.x, 1), round(self.xy.y, 1)
 
     def distance_to(self, point: Point):
+        if isinstance(point, tuple):
+            point = Point(*point)
         return round(sqrt((self.xy.x - point.x)**2 + (self.xy.y - point.y)**2), 1)
 
     def heading_to(self, point: Point):
@@ -63,22 +46,34 @@ class ObjectInSpace(object):
         return self.heading_to(point) - self.heading
 
     @property
+    @abstractmethod
     def is_destroyed(self) -> bool:
         return False
 
     # ---------------------------------------------------------------------- HISTORY INTERFACE
 
-    def add_event(self, event):
-        if self.history and event:
-            self.history.add_event(event)
-
-    def add_drawable_event(self, event_type, position, msg):
-        self.history.add_drawable_event(event_type, position, msg)
+    def add_event(self, event: Event):
+        assert isinstance(event, Event)
+        self.history.add_event(event)
 
     def round_reset(self):
         self.history.reset()
 
+    @property
+    def snapshot(self):
+        return {
+            'name': self.name,
+            'xy': self.xy,
+            'pos': self.pos,
+            'heading': self.heading,
+            'speed': self.speed,
+            'owner': self.owner,
+        }
+
     # ---------------------------------------------------------------------- COMMANDS
+
+    def generate(self):
+        pass
 
     def move(self):
         """Move along heading with speed to next coordinate."""
@@ -86,18 +81,16 @@ class ObjectInSpace(object):
         self.xy = translate(self.xy, self.heading, self.speed)
         logger.debug(f"{self.name} moving from {old_pos} to {self.pos} heading {self.heading}")
         if old_pos != self.pos:
-            self.add_event(f"Moved from {old_pos} to {self.pos}")
-
-    def post_move(self, objects_in_space: dict):
-        pass
-
-    def generate(self):
-        pass
+            self.add_event(InternalEvent(f"Moved from {old_pos} to {self.pos}"))
 
     def scan(self, objects_in_space: dict):
         pass
 
-    def take_damage_from(self, source_event, source_location, amount: int):
+    def take_damage_from(self, hitevent):
         pass
 
+    # ---------------------------------------------------------------------- ENGINE HOOKS
+
+    def post_move(self, objects_in_space: dict):
+        pass
 

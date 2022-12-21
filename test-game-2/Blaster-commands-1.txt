@@ -1,0 +1,14 @@
+1: A10
+
+2: R30
+3: R30
+4: R30
+5: R30
+6: R30
+7: R30
+
+1: Fire S1 -91
+2: Fire L1 Dummy
+3: Fire L1 Dummy
+4: Fire S1 315
+7: Fire S1 775

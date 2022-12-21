@@ -1,121 +1,87 @@
-from abc import abstractmethod
-from ois.objectinspace import Scan
+from ois.event import ScanEvent
+from collections import defaultdict
 
 
-class Snapshot(object):
+class TickHistory(object):
+    __slots__ = ('data', 'events')
     """Snapshot of an object in space, for attributes and for events."""
     def __init__(self):
-        self.events = list()
-        self.scans = list()
+        self.data = dict()
+        self.events = set()
 
-    @abstractmethod
-    def update(self, obj):
-        raise NotImplementedError()
+    def __getitem__(self, item):
+        return self.data[item]
+
+    def __contains__(self, item):
+        return self.data.__contains__(item)
+
+    def __iter__(self):
+        return self.data.__iter__()
+
+    def keys(self):
+        return self.data.keys()
+
+    def update(self, snapshot: dict):
+        self.data.update(snapshot)
 
     def add_event(self, event):
-        self.events.append(event)
+        self.events.add(event)
         return self
-
-    def add_drawable_event(self, event_type, position, event):
-        self.events.append(DrawableEvent(event_type, position, event))
-        return self
-
-    def add_scan(self, scan):
-        self.scans.append(scan)
 
     @property
-    def scan_events(self):
-        return [e for e in self.events if e is Scan]
+    def scans(self):
+        return [e for e in self.events if isinstance(e, ScanEvent)]
+
+    def scan_by_name(self, name):
+        named_scans = [s for s in self.scans if s.name == name]
+        if len(named_scans) >= 1:
+            assert len(named_scans) == 1, f"Hey weird, got more than one scan for a name in a tick: {self.scans}"
+            return named_scans[0]
+        return None
 
     @property
     def non_scan_events(self):
-        return [e for e in self.events if e is not Scan]
+        return [e for e in self.events if not isinstance(e, ScanEvent)]
 
 
-class History(dict):
+class History(object):
+    __slots__ = ('owner', 'ticks', '_current')
     """Holds snapshots and events per tick for its owner, to be used to report on the round."""
-    def __init__(self, owner, snapshot_cls, tick: int):
+    def __init__(self, owner, tick: int):
         super().__init__()
         self.owner = owner
-        self.snapshot_class = snapshot_cls
-        self[tick] = self.create_snapshot()
-        self.current = self[tick]
+        self.ticks = defaultdict(TickHistory)
+        self._current: TickHistory = self.ticks[tick]
+        self.update()
+
+    def __getitem__(self, item):
+        return self.ticks[item]
+
+    def __contains__(self, item):
+        return self.ticks.__contains__(item)
+
+    def __iter__(self):
+        return self.ticks.__iter__()
+
+    def keys(self):
+        return self.ticks.keys()
 
     def reset(self):
-        self.clear()
-        self[0] = self.create_snapshot()
-        self.current = self[0]
+        self.ticks.clear()
+        self.ticks[0].update(self.create_snapshot())
+        self._current = self.ticks[0]
 
     def add_event(self, event):
         assert event is not None
-        self.current.add_event(event)
-
-    def add_drawable_event(self, event_type, position, event):
-        self.current.add_drawable_event(event_type, position, event)
-        return self
+        self._current.add_event(event)
 
     def update(self):
-        self.current.update(self.owner)
+        self._current.update(self.owner.snapshot)
 
     def create_snapshot(self):
-        return self.snapshot_class()
+        return self.owner.snapshot
 
     def set_tick(self, tick, update=True):
         if update:
             self.update()
-        if tick not in self:
-            self[tick] = self.create_snapshot()
-        self.current = self[tick]
-
-
-class DrawableEvent(object):
-    """An event that should also be drawn on the round overview picture."""
-    def __init__(self, event_type, position_or_line, msg):
-        self.event_type = event_type
-        self.position_or_line = position_or_line
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg
-
-
-class ObjectInSpaceSnapshot(Snapshot):
-    def update(self, obj):
-        self.name = obj.name
-        self.xy = obj.xy
-        self.pos = obj.pos
-        self.heading = obj.heading
-        self.speed = obj.speed
-        if hasattr(obj, 'scans'):
-            self.scans = obj.scans
-        return self
-
-
-class MissileSnapshot(ObjectInSpaceSnapshot):
-    def update(self, missile):
-        super().update(missile)
-        self.hull = missile.hull
-        self.battery = missile.battery
-        self.target = missile.target
-        return self
-
-
-class ShipSnapshot(ObjectInSpaceSnapshot):
-    def update(self, ship):
-        super().update(ship)
-        self.hull = ship.hull
-        self.battery = ship.battery
-        self.defense = ship.defense.copy()
-        self.scans = ship.scans.copy()
-        return self
-
-
-class StarbaseSnapshot(ObjectInSpaceSnapshot):
-    def update(self, starbase):
-        super().update(starbase)
-        self.hull = starbase.hull
-        self.battery = starbase.battery
-        self.defense = starbase.defense.copy()
-        self.scans = starbase.scans.copy()
-        return self
-
+        self._current = self.ticks[tick]

@@ -52,7 +52,7 @@
             <th>Direction (Rel)</th>
             <th>Heading (Abs)</th>
         </tr>
-        {% for scan in ship.scans.values() %}
+        {% for scan in final_scans %}
         <tr>
             <td>{{scan.name}}</td>
             <td>{{scan.pos}}</td>

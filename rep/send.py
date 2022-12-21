@@ -71,7 +71,7 @@ def send_results_for_round(game_directory: str, init_file_name: str, email_confi
         for ship_name in ship_names:
             results = fnmatch.filter(gamedir_contents, f"{ship_name}*{round_number}.pdf")
             if len(results) > 1:
-                sys.exit(f"Got multiple results for {ship_name} in round {round_number}: {result_pdf}")
+                sys.exit(f"Got multiple results for {ship_name} in round {round_number}: {results}")
             send_email(email_config_file_name, game_directory, results[0], name)
 
 

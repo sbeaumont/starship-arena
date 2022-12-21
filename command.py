@@ -2,8 +2,9 @@ import re
 from collections import defaultdict
 import logging
 from enum import Enum, auto
-from typing import Protocol, Dict, runtime_checkable
+from typing import Protocol, runtime_checkable
 from ois.objectinspace import ObjectInSpace
+from ois.event import InternalEvent
 
 logger = logging.getLogger(__name__)
 COMMAND_PATTERN: str = r"^([A-Z|a-z]+)((\s*(-?[A-Z|a-z|0-9]+))*)$"
@@ -32,7 +33,7 @@ class Commandable(Protocol):
     def try_replenish(self):
         ...
 
-    def scan(self):
+    def scan(self, objects_in_space: dict):
         ...
 
     def add_event(self, event):
@@ -116,24 +117,23 @@ class CommandSet(object):
     def pre_move_commands(self, ship: Commandable):
         # First handle acceleration
         if self.acceleration:
-            ship.add_event(f'Executing command "{self.acceleration.text}"')
+            ship.add_event(InternalEvent(f'Executing command "{self.acceleration.text}"'))
             ship.accelerate(self.acceleration.value)
         # Then turning
         if self.turning:
-            ship.add_event(f'Executing command "{self.turning.text}"')
+            ship.add_event(InternalEvent(f'Executing command "{self.turning.text}"'))
             ship.turn(self.turning.value)
 
-    def post_move_commands(self, ship: Commandable, objects_in_space: dict, new_objects: list, tick: int):
+    def post_move_commands(self, ship: Commandable, objects_in_space: dict, tick: int):
         # Then utilities
         # Finally, fire weapons
         for wpn_cmd in self.weapons.values():
-            ship.add_event(f'Executing command "{wpn_cmd.text}"')
-            ois = ship.fire(wpn_cmd.param('weapon_name'), wpn_cmd.param('at'))
+            ship.add_event(InternalEvent(f'Executing command "{wpn_cmd.text}"'))
+            ois = ship.fire(wpn_cmd.param('weapon_name'), wpn_cmd.param('at'), objects_in_space)
             if ois:
                 objects_in_space[ois.name] = ois
-                new_objects.append(ois)
         if Cmd.Replenish in self.other:
-            ship.add_event(f'Executing command "Replenish"')
+            ship.add_event(InternalEvent(f'Executing command "Replenish"'))
             ship.try_replenish(objects_in_space)
 
     def __str__(self):
@@ -147,35 +147,37 @@ def read_command_file(command_file_name: str) -> dict:
     """Read a command file with the commands for a ship."""
     with open(command_file_name) as infile:
         logger.info(f"Reading {command_file_name}")
-        lines = [line.strip().split(':') for line in infile.readlines() if not line.isspace()]
+        lines = [line.strip() for line in infile.readlines() if not line.isspace()]
 
     commands = defaultdict(CommandSet)
     line_nr = 1
-    for t, c in lines:
-        tick = int(t.strip())
-        cmds = re.finditer(COMMAND_PATTERN, c.strip())
-        for cmd in cmds:
-            cmd_text = cmd.group(0)
-            name = cmd.group(1)
-            params = cmd.group(2).split()
-            match name:
-                case 'H' | 'R':
-                    # H<degrees> -> Turn right
-                    commands[tick].add(Command(Cmd.Turn, cmd_text, value=int(params[0])))
-                case 'L':
-                    # L90 -> Turn left
-                    commands[tick].add(Command(Cmd.Turn, cmd_text, value=-int(params[0])))
-                case 'A':
-                    # A30 -> Accelerate faster (+) or slow down/reverse (-)
-                    commands[tick].add(Command(Cmd.Accelerate, cmd_text, value=int(params[0])))
-                case 'F' | 'Fire':
-                    # Fire <Weapon Name> <Direction or Target name>
-                    commands[tick].add(Command(Cmd.Fire, cmd_text, weapon_name=params[0], at=params[1]))
-                case 'Replenish':
-                    # Replenish
-                    commands[tick].add(Command(Cmd.Replenish, cmd_text))
-                case _:
-                    logger.warning(f"{command_file_name}: Unknown command {cmd} in line {line_nr}")
+    for line in lines:
+        if not line.startswith('#'):
+            t, c = line.split(':')
+            tick = int(t.strip())
+            cmds = re.finditer(COMMAND_PATTERN, c.strip())
+            for cmd in cmds:
+                cmd_text = cmd.group(0)
+                name = cmd.group(1)
+                params = cmd.group(2).split()
+                match name:
+                    case 'H' | 'R':
+                        # H<degrees> -> Turn right
+                        commands[tick].add(Command(Cmd.Turn, cmd_text, value=int(params[0])))
+                    case 'L':
+                        # L90 -> Turn left
+                        commands[tick].add(Command(Cmd.Turn, cmd_text, value=-int(params[0])))
+                    case 'A':
+                        # A30 -> Accelerate faster (+) or slow down/reverse (-)
+                        commands[tick].add(Command(Cmd.Accelerate, cmd_text, value=int(params[0])))
+                    case 'F' | 'Fire':
+                        # Fire <Weapon Name> <Direction or Target name>
+                        commands[tick].add(Command(Cmd.Fire, cmd_text, weapon_name=params[0], at=params[1]))
+                    case 'Replenish':
+                        # Replenish
+                        commands[tick].add(Command(Cmd.Replenish, cmd_text))
+                    case _:
+                        logger.warning(f"{command_file_name}: Unknown command {cmd} in line {line_nr}")
         line_nr += 1
     logger.info(f"Read command file {command_file_name}")
     return commands

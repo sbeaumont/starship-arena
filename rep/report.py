@@ -1,10 +1,9 @@
 from jinja2 import Environment, FileSystemLoader
 from collections import defaultdict
 from weasyprint import HTML
-from ois.objectinspace import Scan
+from ois.event import ScanEvent, Event, DrawType
 from ois.starbase import Starbase
 from ois.ship import Ship
-from rep.history import DrawableEvent
 from rep.visualize import Visualizer, COLORS
 
 ROUND_ZERO_TEMPLATE = 'round-zero.html'
@@ -24,24 +23,25 @@ def report_events(ship: Ship, vis: Visualizer):
     for i in range(1, 11):
         if i in ship.history:
             for event in ship.history[i].events:
-                if isinstance(event, Scan):
+                assert isinstance(event, Event), f"{event} is not an Event"
+                if isinstance(event, ScanEvent):
                     scans_per_tick[i].append(event)
                 else:
                     events_per_tick[i].append(str(event))
 
-                if isinstance(event, DrawableEvent):
-                    match event.event_type:
-                        case 'Laser':
-                            vis.draw_line(event.position_or_line, color=COLORS[3])
-                        case 'Explosion':
-                            vis.draw_circle(event.position_or_line, color=COLORS[3], size=20)
+                if event.draw_type:
+                    match event.draw_type:
+                        case DrawType.Line:
+                            vis.draw_line(event.pos, color=COLORS[3])
+                        case DrawType.Circle:
+                            vis.draw_circle(event.pos, color=COLORS[3], size=event.radius)
     return events_per_tick, scans_per_tick
 
 
 def find_boundaries(ship, padding=50):
     """Find the optimal boundaries to fit everything the ship saw this round."""
-    min_x = max_x = round(ship.history[0].pos[0])
-    min_y = max_y = round(ship.history[0].pos[1])
+    min_x = max_x = round(ship.history[0]['pos'][0])
+    min_y = max_y = round(ship.history[0]['pos'][1])
 
     def stretch(xy):
         nonlocal min_x, min_y, max_x, max_y
@@ -57,8 +57,8 @@ def find_boundaries(ship, padding=50):
 
     for i in range(11):
         if i in ship.history:
-            stretch(ship.history[i].pos)
-            for scan in ship.history[i].scans.values():
+            stretch(ship.history[i]['pos'])
+            for scan in ship.history[i].scans:
                 stretch(scan.pos)
 
     return min_x-padding, min_y-padding, max_x+padding, max_y+padding
@@ -67,28 +67,31 @@ def find_boundaries(ship, padding=50):
 def draw_round(ship: Ship, vis: Visualizer):
     """Draw the paths of the ship and its scans"""
     # Initial location of ship
-    vis.text(text_nudge(ship.history[0].pos), f"{ship.history[0].pos}")
+    vis.text(text_nudge(ship.history[0]['pos']), f"{ship.history[0]['pos']}")
 
     max_history = max(ship.history.keys())
     for i in range(1, 11):
         if i in ship.history:
             # Draw ship's path of this tick
-            vis.draw_line((ship.history[i - 1].pos, ship.history[i].pos), color=COLORS[0])
-            vis.draw_point(ship.history[i].pos, color=COLORS[0], size=2)
+            vis.draw_line((ship.history[i - 1]['pos'], ship.history[i]['pos']), color=COLORS[0])
+            vis.draw_point(ship.history[i]['pos'], color=COLORS[0], size=2)
 
             # Draw scans of this tick
-            for scan in ship.history[i].scans.values():
-                if scan.name in ship.history[i - 1].scans:
+            for scan in ship.history[i].scans:
+                vis.draw_point(scan.pos, size=2)
+                prev_scan = ship.history[i - 1].scan_by_name(scan.name)
+                if prev_scan:
                     # Draw line if there was an earlier scan
-                    vis.draw_line((scan.ois.history[i - 1].pos, scan.pos))
-                    vis.draw_point(scan.pos, size=2)
-                if (i == max_history) or (i + 1 in ship.history) and (scan.name not in ship.history[i + 1].scans):
+                    vis.draw_line((prev_scan.pos, scan.pos))
+                if (i == max_history) or (i + 1 in ship.history) and (not ship.history[i + 1].scan_by_name(scan.name)):
                     # Last scan of this ois, write name and position
-                    vis.text(text_nudge(scan.pos), f"{i}:{scan.name}\n{scan.pos}")
+                    # vis.text(text_nudge(scan.pos), f"{i}:{scan.name}\n{scan.pos}")
+                    vis.text(text_nudge(scan.pos), f"{i}:{scan.name}")
 
     # Final location of ship
     max_history = max(ship.history.keys())
-    vis.text(text_nudge(ship.history[max_history].pos), f"{max_history}:{ship.name}\n{ship.history[max_history].pos}")
+    max_pos = ship.history[max_history]['pos']
+    vis.text(text_nudge(max_pos), f"{max_history}:{ship.name}\n{max_pos}")
 
 
 def report_round(ships: dict, game_dir: str, round_nr: int):
@@ -109,6 +112,7 @@ def report_round(ships: dict, game_dir: str, round_nr: int):
             "ship": ship,
             "events": events_per_tick,
             "scans": scans_per_tick,
+            "final_scans": scans_per_tick.get(10, list()),
             "round": round_nr
         }
 
@@ -135,7 +139,7 @@ def report_round_zero(game_dir: str, ships: list):
         template_data = {
             "image_file_name": image_file_name,
             "ship": ship,
-            "scans": ship.scans,
+            "scans": ship.history[0].scans
         }
 
         html_out = template.render(template_data)
@@ -145,4 +149,3 @@ def report_round_zero(game_dir: str, ships: list):
 
         print_html = HTML(string=html_out, base_url=f'{game_dir}')
         print_html.write_pdf(f'{report_file_name}.pdf')
-

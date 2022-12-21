@@ -9,9 +9,9 @@ from collections import namedtuple
 
 from command import read_command_file, Commandable
 from log import configure_logger
-from ois import shiptype
+from ois import builder
 from rep.report import report_round, report_round_zero
-from rep.email import send_results_for_round
+from rep.send import send_results_for_round
 
 logger = logging.getLogger(__name__)
 InitLine = namedtuple('InitLine', 'name type x y player')
@@ -50,8 +50,8 @@ class GameDirectory(object):
             last_round = max([int(n) for s in pickle_files for n in re.split('[-_. ]+', s) if n.isdigit()])
         return last_round
 
-    def command_file(self, name, round):
-        return os.path.join(self._dir, self.command_file_template.format(name, round))
+    def command_file(self, name, round_nr):
+        return os.path.join(self._dir, self.command_file_template.format(name, round_nr))
 
     def status_file_for_round(self, nr):
         return os.path.join(self._dir, self.status_file_template.format(nr))
@@ -87,7 +87,7 @@ class RoundZero(object):
         for line in self._dir.init_lines:
             position = (int(line.x), int(line.y))
             # Always for tick 0 in this case.
-            ois = shiptype.create(line.name, line.type, position, 0)
+            ois = builder.create(line.name, line.type, position, 0)
             ois.player = line.player
             objects_in_space[ois.name] = ois
         return objects_in_space
@@ -135,11 +135,14 @@ class GameRound(object):
             # move ship
             ois.move()
 
-        # After moving all ships scan and do post-move commands like firing weapons, and finally update the snapshot
-        for ois in self.ois.copy().values():
+        # All ships perform their post move commands do post-move commands like firing weapons
+        for ois in list(self.ois.values()):
             if isinstance(ois, Commandable) and ois.commands and (tick in ois.commands):
-                new_objects = list()
-                ois.commands[tick].post_move_commands(ois, self.ois, new_objects, tick)
+                ois.commands[tick].post_move_commands(ois, self.ois, tick)
+
+        # All ships scan, do post-move logic (like guided missiles intercepting their target)
+        # and finally update the snapshot
+        for ois in list(self.ois.values()):
             ois.scan(self.ois)
             ois.post_move(self.ois)
             ois.history.update()
@@ -197,7 +200,7 @@ def main():
     configure_logger(False, ["fontTools", "PIL"])
     parser = argparse.ArgumentParser()
     parser.add_argument("gamedir", help="The game directory you want to process.")
-    parser.add_argument("round", choices=['zero', 'last', 'redo-all'], help="Which rounds to process")
+    parser.add_argument("round", choices=['zero', 'last', 'redo-all', 'none'], help="Which rounds to process")
     parser.add_argument("-y", "--yolo", action="store_true", help="Don't ask safety questions.")
     parser.add_argument("-c", "--clean", action="store_true", help="Clean the output files of a game directory")
     parser.add_argument("-i", "--ignore", action="store_true", help="Ignore missing command files.")
@@ -248,6 +251,8 @@ def main():
                     gr.do_round()
                     round_nr += 1
                     gr = GameRound(game_dir, round_nr)
+        case 'none':
+            pass
 
     if args.send:
         answer = input(f"Type 'Y' to send out email.\n")
