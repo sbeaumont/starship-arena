@@ -7,7 +7,7 @@ class TickHistory(object):
     """Snapshot of an object in space, for attributes and for events."""
     def __init__(self):
         self.data = dict()
-        self.events = set()
+        self.events = list()
         self.score = 0
 
     def __getitem__(self, item):
@@ -26,7 +26,8 @@ class TickHistory(object):
         self.data.update(snapshot)
 
     def add_event(self, event):
-        self.events.add(event)
+        if event not in self.events:
+            self.events.append(event)
         return self
 
     @property

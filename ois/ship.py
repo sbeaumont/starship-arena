@@ -105,7 +105,11 @@ class Ship(ObjectInSpace):
             self.add_event(ScanEvent.create_scan(self, ois))
 
     def take_damage_from(self, hit_event: HitEvent):
-        """First pass the damage to the defense components, any remaining damage goes to the hull."""
+        """First pass the damage to the defense components, any remaining damage goes to the hull.
+        Note that we allow hits (and scoring) on the tick a ship is destroyed, but only count one killing blow
+        for scoring."""
+        already_killed = self.is_destroyed
+
         amount = hit_event.amount
         if hasattr(self, 'defense'):
             for d in self.defense:
@@ -117,15 +121,15 @@ class Ship(ObjectInSpace):
             self.add_event(InternalEvent(f"Hull decreased by {amount} to {self.hull}"))
             # Score double points for hits on the hull
             hit_event.score += amount * 2
-        if self.is_destroyed:
-            # 100 points for an extra ship kill
+
+        if not already_killed and self.is_destroyed:
+            # 100 points for an extra ship kill, but only for the final blow
             hit_event.score += 100
             hit_event.source.add_event(InternalEvent(f"You landed the killing hit on {self.name}"))
             self.add_event(InternalEvent(f"You were destroyed. Killing blow by {self.name}."))
             # for ois in [ob for ob in objects_in_space.values() if self.can_scan(ob)]:
             #     self.add_event(InternalEvent(f"{self.name} was destroyed: killing blow by {hit_event.source.owner.name}"))
         self.add_event(hit_event)
-
 
     # ---------------------------------------------------------------------- TIMED HANDLERS
 
@@ -161,7 +165,7 @@ class H2545(ShipType):
     @property
     def weapons(self):
         return {
-            'L1': Laser('L1'),
+            'L1': Laser('L1', 180),
             'S1': MissileLauncher('S1', Splinter, 4, (270, 90)),
             'R1': MissileLauncher('R1', Rocket, 10),
             'R2': MissileLauncher('R2', Rocket, 10)
@@ -187,7 +191,7 @@ class H2552(ShipType):
     @property
     def weapons(self):
         return {
-            'L1': Laser('L1', (270, 90)),
+            'L1': Laser('L1', 180, (270, 90)),
             'S1': MissileLauncher('S1', Splinter, 10, (90, 270)),
             'R1': MissileLauncher('R1', Splinter, 15)
         }

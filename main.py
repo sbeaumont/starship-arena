@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import pickle
+import shutil
 import sys
 from collections import namedtuple
 
@@ -68,9 +69,10 @@ class GameDirectory(object):
         for file_type in types_to_remove:
             for f in fnmatch.filter(self.ls, file_type):
                 os.remove(os.path.join(self._dir, f))
+
         # Remove round directories
         for rd_dir in fnmatch.filter(self.ls, 'round*'):
-            os.rmdir(rd_dir)
+            shutil.rmtree(os.path.join(self._dir, rd_dir))
 
 
 class RoundZero(object):
@@ -217,7 +219,7 @@ def main():
     game_dir = GameDirectory(args.gamedir)
     last_round = game_dir.last_round_number
 
-    if args.clean or (args.round == 'redo_all'):
+    if args.clean or (args.round == 'redo-all'):
         answer = None
         if not args.yolo:
             answer = input(f"Type 'Y' if you're sure you want to clean directory '{args.gamedir}'.\n")

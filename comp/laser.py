@@ -4,11 +4,11 @@ from ois.event import InternalEvent, HitEvent, DrawType
 
 class Laser(Weapon):
     """A laser that directly fires at another named ship."""
-    def __init__(self, name, firing_arc=None):
+    def __init__(self, name: str, strength: int, firing_arc=None):
         super().__init__(name, firing_arc)
         self.max_temperature = 100
         self.energy_per_shot = 5
-        self.damage_per_shot = 10
+        self.strength = strength
         self.heat_per_shot = 20
 
         self.temperature = 0
@@ -22,7 +22,7 @@ class Laser(Weapon):
         return self.owner.battery >= self.energy_per_shot
 
     def can_fire_at(self, ois):
-        return self.temperature_ok and self.energy_ok and self.owner.can_scan(ois)
+        return self.temperature_ok and self.energy_ok and self.owner.can_scan(ois) and self.damage_to(ois)
 
     def tick(self, tick_nr):
         if self.temperature > 0:
@@ -32,6 +32,11 @@ class Laser(Weapon):
 
     def reset(self):
         self.temperature = 0
+
+    def damage_to(self, target):
+        """Damage reduces by 1 per distance."""
+        damage = round(self.strength - self.owner.distance_to(target.pos))
+        return damage if damage >= 0 else 0
 
     def fire(self, target_name: str, objects_in_space=None):
         target_ship = objects_in_space.get(target_name, None)
@@ -44,8 +49,12 @@ class Laser(Weapon):
             self.owner.add_event(InternalEvent(f"{self.name} can not fire at angle {firing_angle}: {self.firing_arc}."))
             return None
 
+        if self.owner.can_scan(target_ship) and not self.damage_to(target_ship):
+            self.owner.add_event(InternalEvent(f"{self.name} strength too low: no damage at this distance."))
+            return None
+
         if target_ship and self.can_fire_at(target_ship):
-            hit_event = HitEvent((self.owner.pos, target_ship.pos), 'Laser', self.owner, target_ship, self.damage_per_shot, DrawType.Line)
+            hit_event = HitEvent((self.owner.pos, target_ship.pos), 'Laser', self.owner, target_ship, self.damage_to(target_ship), DrawType.Line)
             target_ship.take_damage_from(hit_event)
             self.owner.add_event(hit_event)
         else:
@@ -60,5 +69,6 @@ class Laser(Weapon):
     def status(self):
         return {
             'Temperature': f"{self.temperature}/{self.max_temperature}",
+            'Strength': self.strength,
             'Firing Arc': self.firing_arc if self.firing_arc else '360'
         }

@@ -57,8 +57,8 @@ class SB2531(object):
     @property
     def weapons(self):
         return {
-            'L1': Laser('L1'),
-            'L2': Laser('L2'),
+            'L1': Laser('L1', 300),
+            'L2': Laser('L2', 300),
             'S1': MissileLauncher('S1', Splinter, 40),
             'S2': MissileLauncher('S2', Splinter, 40),
             'R1': MissileLauncher('R1', Rocket, 75),
