@@ -53,6 +53,7 @@ class HitEvent(Event):
         self.target = target
         self.amount = amount
         self.message = message
+        self.score = 0
 
     def __str__(self):
         if self.message:

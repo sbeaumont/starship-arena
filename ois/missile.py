@@ -29,7 +29,6 @@ class Missile(ObjectInSpace):
         # Any damage will destroy a rocket
         if hitevent.amount > 0:
             self.hull = 0
-            # self.owner.add_event(hitevent)
 
     # ---------------------------------------------------------------------- HISTORY INTERFACE
 

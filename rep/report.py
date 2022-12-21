@@ -1,7 +1,7 @@
 from jinja2 import Environment, FileSystemLoader
 from collections import defaultdict
 from weasyprint import HTML
-from ois.event import ScanEvent, Event, DrawType
+from ois.event import ScanEvent, Event, DrawType, HitEvent
 from ois.starbase import Starbase
 from ois.ship import Ship
 from rep.visualize import Visualizer, COLORS
@@ -20,6 +20,7 @@ def report_events(ship: Ship, vis: Visualizer):
         Scans, DrawableEvents and other Events are handled separately."""
     events_per_tick = defaultdict(list)
     scans_per_tick = defaultdict(list)
+    score_per_tick = defaultdict(int)
     for i in range(1, 11):
         if i in ship.history:
             for event in ship.history[i].events:
@@ -29,13 +30,16 @@ def report_events(ship: Ship, vis: Visualizer):
                 else:
                     events_per_tick[i].append(str(event))
 
+                if isinstance(event, HitEvent) and event.source.owner == ship:
+                    score_per_tick[i] += event.score
+
                 if event.draw_type:
                     match event.draw_type:
                         case DrawType.Line:
                             vis.draw_line(event.pos, color=COLORS[3])
                         case DrawType.Circle:
                             vis.draw_circle(event.pos, color=COLORS[3], size=event.radius)
-    return events_per_tick, scans_per_tick
+    return events_per_tick, scans_per_tick, score_per_tick
 
 
 def find_boundaries(ship, padding=50):
@@ -102,7 +106,7 @@ def report_round(ships: dict, game_dir: str, round_nr: int):
     for ship in [s for s in ships.values() if isinstance(s, Ship) or isinstance(s, Starbase)]:
         boundaries = find_boundaries(ship, padding=50)
         vis = Visualizer(boundaries, scale=2)
-        events_per_tick, scans_per_tick = report_events(ship, vis)
+        events_per_tick, scans_per_tick, scores_per_tick = report_events(ship, vis)
         draw_round(ship, vis)
         image_file_name = f'{ship.name}-round-{round_nr}.png'
         vis.save(f"{game_dir}/{image_file_name}")
@@ -112,6 +116,7 @@ def report_round(ships: dict, game_dir: str, round_nr: int):
             "ship": ship,
             "events": events_per_tick,
             "scans": scans_per_tick,
+            "scores": scores_per_tick,
             "final_scans": scans_per_tick.get(10, list()),
             "round": round_nr
         }

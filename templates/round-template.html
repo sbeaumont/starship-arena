@@ -23,6 +23,7 @@
     <h1>{{ ship.name }}: Round {{ round }}</h1>
     <img src="{{ image_file_name }}" max-width="100%"/>
     <h2>Status</h2>
+    <p>Score: {{ ship.score }}</p>
     <table>
         <tr>
             <td><b>Position</b></td><td>{{ ship.pos }}</td>
@@ -65,7 +66,7 @@
     <h2>Events</h2>
 
     {% for tick in events %}
-        <h3>Tick {{tick}}</h3>
+        <h3>Tick {{tick}} (Score {{ scores[tick] }})</h3>
         <p>
         {% for e in events[tick] %}
             {{e}}<br/>

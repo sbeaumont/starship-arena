@@ -1,13 +1,14 @@
-from ois.event import ScanEvent
+from ois.event import ScanEvent, HitEvent
 from collections import defaultdict
 
 
 class TickHistory(object):
-    __slots__ = ('data', 'events')
+    __slots__ = ('data', 'events', 'score')
     """Snapshot of an object in space, for attributes and for events."""
     def __init__(self):
         self.data = dict()
         self.events = set()
+        self.score = 0
 
     def __getitem__(self, item):
         return self.data[item]
@@ -73,7 +74,13 @@ class History(object):
 
     def add_event(self, event):
         assert event is not None
-        self._current.add_event(event)
+        # Bit of a hack to ensure we don't score an event twice for scoring...
+        if event not in self._current.events:
+            # Make sure the event first processed "take damage from" to ensure it has a score.
+            if isinstance(event, HitEvent) and (event.source.owner == self.owner):
+                self._current.score += event.score
+                self.owner.score += event.score
+            self._current.add_event(event)
 
     def update(self):
         self._current.update(self.owner.snapshot)

@@ -133,8 +133,8 @@ class Laser(Weapon):
 
         if target_ship and self.can_fire_at(target_ship):
             hit_event = HitEvent((self.owner.pos, target_ship.pos), 'Laser', self.owner, target_ship, self.damage_per_shot, DrawType.Line)
-            self.owner.add_event(hit_event)
             target_ship.take_damage_from(hit_event)
+            self.owner.add_event(hit_event)
         else:
             temp_status = 'Overheated' if not self.temperature_ok else ''
             battery_status = 'Low Battery' if not self.energy_ok else ''

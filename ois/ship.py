@@ -32,6 +32,7 @@ class Ship(ObjectInSpace):
             weapon.attach(self)
 
         self.battery = shiptype.start_battery
+        self.score = 0
         self.commands = None
 
     # ---------------------------------------------------------------------- QUERIES
@@ -50,7 +51,6 @@ class Ship(ObjectInSpace):
         sn['hull'] = self.hull
         sn['battery'] = self.battery
         sn['defense'] = self.defense.copy()
-        # sn['scans'] = self.scans.copy()
         return sn
 
     def can_scan(self, ois):
@@ -105,7 +105,6 @@ class Ship(ObjectInSpace):
 
     def take_damage_from(self, hit_event: HitEvent):
         """First pass the damage to the defense components, any remaining damage goes to the hull."""
-        self.add_event(hit_event)
         amount = hit_event.amount
         if hasattr(self, 'defense'):
             for d in self.defense:
@@ -115,6 +114,17 @@ class Ship(ObjectInSpace):
         if amount > 0:
             self.hull -= amount
             self.add_event(InternalEvent(f"Hull decreased by {amount} to {self.hull}"))
+            # Score double points for hits on the hull
+            hit_event.score += amount * 2
+        if self.is_destroyed:
+            # 100 points for an extra ship kill
+            hit_event.score += 100
+            hit_event.source.add_event(InternalEvent(f"You landed the killing hit on {self.name}"))
+            self.add_event(InternalEvent(f"You were destroyed. Killing blow by {self.name}."))
+            # for ois in [ob for ob in objects_in_space.values() if self.can_scan(ob)]:
+            #     self.add_event(InternalEvent(f"{self.name} was destroyed: killing blow by {hit_event.source.owner.name}"))
+        self.add_event(hit_event)
+
 
     # ---------------------------------------------------------------------- TIMED HANDLERS
 
@@ -124,7 +134,6 @@ class Ship(ObjectInSpace):
 
     def round_reset(self):
         super().round_reset()
-        # self.scans = dict()
         self.commands = None
 
 
