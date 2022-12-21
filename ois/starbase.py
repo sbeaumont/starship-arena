@@ -1,7 +1,8 @@
 import logging
 
 from comp.defense import Shields
-from comp.weapon import Laser, MissileLauncher
+from comp.missilelauncher import MissileLauncher
+from comp.laser import Laser
 from ois.ship import Ship
 from ois.missile import Splinter, Rocket
 from ois.event import InternalEvent

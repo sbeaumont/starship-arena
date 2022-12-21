@@ -68,6 +68,9 @@ class GameDirectory(object):
         for file_type in types_to_remove:
             for f in fnmatch.filter(self.ls, file_type):
                 os.remove(os.path.join(self._dir, f))
+        # Remove round directories
+        for rd_dir in fnmatch.filter(self.ls, 'round*'):
+            os.rmdir(rd_dir)
 
 
 class RoundZero(object):
@@ -79,6 +82,7 @@ class RoundZero(object):
         for ship in self.ships.values():
             ship.history.set_tick(0)
             ship.scan(self.ships)
+            ship.history.update()
         report_round_zero(self._dir.name, self.ships.values())
 
     def _init_ships(self) -> dict:

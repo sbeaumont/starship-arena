@@ -1,4 +1,5 @@
-*.html
-*.png
-*.pdf
-*.pickle
+**/*.html
+**/*.png
+**/*.pdf
+**/*.pickle
+round*

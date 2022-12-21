@@ -1,7 +1,8 @@
 import logging
 from typing import Protocol, runtime_checkable
 from comp.defense import Shields
-from comp.weapon import Laser, MissileLauncher
+from comp.missilelauncher import MissileLauncher
+from comp.laser import Laser
 from ois.objectinspace import ObjectInSpace
 from ois.event import ScanEvent, InternalEvent, HitEvent
 from ois.missile import Splinter, Rocket

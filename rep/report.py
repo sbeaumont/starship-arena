@@ -1,3 +1,4 @@
+import os
 from jinja2 import Environment, FileSystemLoader
 from collections import defaultdict
 from weasyprint import HTML
@@ -8,6 +9,7 @@ from rep.visualize import Visualizer, COLORS
 
 ROUND_ZERO_TEMPLATE = 'round-zero.html'
 ROUND_TEMPLATE = 'round-template.html'
+ROUND_ZERO_NAME = 'round-0'
 
 
 def text_nudge(pos):
@@ -103,13 +105,19 @@ def report_round(ships: dict, game_dir: str, round_nr: int):
     env = Environment(loader=FileSystemLoader('./templates'))
     template = env.get_template(ROUND_TEMPLATE)
 
+    # Set up round directory
+    round_name = f"round-{round_nr}"
+    round_dir = os.path.join(game_dir, round_name)
+    if not os.path.exists(round_dir):
+        os.mkdir(round_dir)
+
     for ship in [s for s in ships.values() if isinstance(s, Ship) or isinstance(s, Starbase)]:
         boundaries = find_boundaries(ship, padding=50)
         vis = Visualizer(boundaries, scale=2)
         events_per_tick, scans_per_tick, scores_per_tick = report_events(ship, vis)
         draw_round(ship, vis)
-        image_file_name = f'{ship.name}-round-{round_nr}.png'
-        vis.save(f"{game_dir}/{image_file_name}")
+        image_file_name = f'{ship.name}-{round_name}.png'
+        vis.save(os.path.join(round_dir, image_file_name))
 
         template_data = {
             "image_file_name": image_file_name,
@@ -122,11 +130,11 @@ def report_round(ships: dict, game_dir: str, round_nr: int):
         }
 
         html_out = template.render(template_data)
-        report_file_name = f'{game_dir}/{ship.name}-round-{round_nr}'
+        report_file_name = f'{round_dir}/{ship.name}-{round_name}'
         with open(f'{report_file_name}.html', 'w') as fj:
             fj.write(html_out)
 
-        print_html = HTML(string=html_out, base_url=f'{game_dir}')
+        print_html = HTML(string=html_out, base_url=f'{game_dir}/{round_name}')
         print_html.write_pdf(f'{report_file_name}.pdf')
 
 
@@ -134,12 +142,17 @@ def report_round_zero(game_dir: str, ships: list):
     env = Environment(loader=FileSystemLoader('./templates'))
     template = env.get_template(ROUND_ZERO_TEMPLATE)
 
+    # Set up round directory
+    round_dir = os.path.join(game_dir, ROUND_ZERO_NAME)
+    if not os.path.exists(round_dir):
+        os.mkdir(round_dir)
+
     for ship in ships:
         boundaries = find_boundaries(ship, padding=50)
         vis = Visualizer(boundaries, scale=2)
         draw_round(ship, vis)
-        image_file_name = f'{ship.name}-round-0.png'
-        vis.save(f"{game_dir}/{image_file_name}")
+        image_file_name = f'{ship.name}-{ROUND_ZERO_NAME}.png'
+        vis.save(os.path.join(round_dir, image_file_name))
 
         template_data = {
             "image_file_name": image_file_name,
@@ -148,9 +161,9 @@ def report_round_zero(game_dir: str, ships: list):
         }
 
         html_out = template.render(template_data)
-        report_file_name = f'{game_dir}/{ship.name}-round-0'
+        report_file_name = os.path.join(round_dir, f'{ship.name}-{ROUND_ZERO_NAME}')
         with open(f'{report_file_name}.html', 'w') as fj:
             fj.write(html_out)
 
-        print_html = HTML(string=html_out, base_url=f'{game_dir}')
+        print_html = HTML(string=html_out, base_url=f'{game_dir}/{ROUND_ZERO_NAME}')
         print_html.write_pdf(f'{report_file_name}.pdf')
