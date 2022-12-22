@@ -8,6 +8,7 @@ import shutil
 import sys
 from collections import namedtuple
 
+from cfg import *
 from command import read_command_file, Commandable
 from log import configure_logger
 from ois import builder
@@ -19,17 +20,16 @@ InitLine = namedtuple('InitLine', 'name type x y player')
 
 
 class GameDirectory(object):
-    init_file_name = "ships.txt"
-    email_cfg_name = "email.txt"
-    status_file_template = "status_round_{}.pickle"
-    command_file_template = "{}-commands-{}.txt"
-
     def __init__(self, directory: str):
         self._dir = directory
 
         with open(self.init_file) as infile:
             logger.info(f"Reading ship file {self.init_file}")
-            self.init_lines = [InitLine(*line.strip().split(' ')) for line in infile.readlines()]
+            self.init_lines = list()
+            for line in [l for l in infile.readlines() if l.strip()]:
+                split_line = line.strip().split(' ')
+                assert len(split_line) == 5, f"Expected {split_line} to have 5 elements"
+                self.init_lines.append(InitLine(*split_line))
 
     @property
     def ls(self):
@@ -41,7 +41,7 @@ class GameDirectory(object):
 
     @property
     def init_file(self):
-        return os.path.join(self._dir, self.init_file_name)
+        return os.path.join(self._dir, INIT_FILE_NAME)
 
     @property
     def last_round_number(self):
@@ -52,10 +52,10 @@ class GameDirectory(object):
         return last_round
 
     def command_file(self, name, round_nr):
-        return os.path.join(self._dir, self.command_file_template.format(name, round_nr))
+        return os.path.join(self._dir, COMMAND_FILE_TEMPLATE.format(name, round_nr))
 
     def status_file_for_round(self, nr):
-        return os.path.join(self._dir, self.status_file_template.format(nr))
+        return os.path.join(self._dir, STATUS_FILE_TEMPLATE.format(nr))
 
     @property
     def last_status_file(self):
@@ -262,15 +262,15 @@ def main():
 
     if args.send:
         answer = input(f"Type 'Y' to send out email.\n")
-        if answer == 'Y':
-            round_to_send = None
+        if answer.upper() == 'Y':
+            round_to_send = -1
             match args.send:
                 case 'last':
                     round_to_send = last_round
                 case 'zero':
                     round_to_send = 0
-            if round_to_send:
-                send_results_for_round(game_dir.name, game_dir.init_file_name, game_dir.email_cfg_name, round_to_send)
+            if round_to_send > -1:
+                send_results_for_round(game_dir.name, INIT_FILE_NAME, EMAIL_CFG_NAME, round_to_send)
 
 
 if __name__ == '__main__':

@@ -6,10 +6,7 @@ from ois.event import ScanEvent, Event, DrawType, HitEvent
 from ois.starbase import Starbase
 from ois.ship import Ship
 from rep.visualize import Visualizer, COLORS
-
-ROUND_ZERO_TEMPLATE = 'round-zero.html'
-ROUND_TEMPLATE = 'round-template.html'
-ROUND_ZERO_NAME = 'round-0'
+from cfg import *
 
 
 def text_nudge(pos):
@@ -102,7 +99,7 @@ def draw_round(ship: Ship, vis: Visualizer):
 
 def report_round(ships: dict, game_dir: str, round_nr: int):
     """Generate HTML and PDF reports with the results, status and history of each ship in the round."""
-    env = Environment(loader=FileSystemLoader('./templates'))
+    env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
     template = env.get_template(ROUND_TEMPLATE)
 
     # Set up round directory

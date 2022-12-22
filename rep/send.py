@@ -4,9 +4,11 @@ from collections import defaultdict
 import fnmatch
 import smtplib
 import ssl
+from jinja2 import Environment, FileSystemLoader
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
+from cfg import *
 
 SHIP_NAME_POS = 0
 PLAYER_NAME_POS = 4
@@ -18,7 +20,7 @@ PLAYER_NAME_POS = 4
 # (Player name) (Email)
 
 
-def send_email(email_cfg: str, game_dir: str, result_file: str, name: str):
+def send_email(email_cfg: str, game_dir: str, result_file: str, name: str, ship_name: str, round_number: int):
     with open(email_cfg) as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
         email_sender = lines[0]
@@ -31,20 +33,38 @@ def send_email(email_cfg: str, game_dir: str, result_file: str, name: str):
 
     print(f"Sending {result_file} to {name} email {email_receiver}")
 
-    msg_content = """Here's your result file!"""
-    body = MIMEText(msg_content, 'html')
-
     em = MIMEMultipart('mixed')
     em['From'] = email_sender
     em['To'] = player_emails[name]
-    em['Subject'] = f"[Space Arena] Game {game_dir} Result {result_file}"
+    em['Subject'] = f"[Space Arena] {game_dir}/{result_file}"
+
+    # Email Body
+    env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
+    template = env.get_template(ROUND_EMAIL_TEMPLATE)
+
+    template_data = {
+        "name": name,
+        "round_nr": str(round_number),
+        "next_round_deadline": 'TBD'
+    }
+
+    body = MIMEText(template.render(template_data), 'html')
     em.attach(body)
 
+    # Attachment: Report PDF
     with open(os.path.join(game_dir, result_file), "rb") as attachment:
         p = MIMEApplication(attachment.read(), _subtype="pdf")
-        p.add_header('Content-Disposition', f"attachment; filename={result_file}")
+        p.add_header('Content-Disposition', "attachment", filename=result_file)
         em.attach(p)
 
+    # Attachment: Command file template
+    with open(os.path.join(TEMPLATE_DIR, SHIP_COMMAND_TEMPLATE)) as f:
+        attachment = MIMEText(f.read())
+    command_template_name = COMMAND_FILE_TEMPLATE.format(ship_name, str(round_number + 1))
+    attachment.add_header('Content-Disposition', 'attachment', filename=command_template_name)
+    em.attach(attachment)
+
+    # Send email
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as smtp:
         smtp.login(email_sender, email_password)
@@ -52,6 +72,7 @@ def send_email(email_cfg: str, game_dir: str, result_file: str, name: str):
 
 
 def send_results_for_round(game_directory: str, init_file_name: str, email_config_file_name: str, round_number: int):
+    # Check if all is okay
     if not os.path.exists(game_directory):
         sys.exit(f"{game_directory} not found.")
     init_file = os.path.join(game_directory, init_file_name)
@@ -60,18 +81,21 @@ def send_results_for_round(game_directory: str, init_file_name: str, email_confi
     if not os.path.exists(email_config_file_name):
         sys.exit(f"{email_config_file_name} not found.")
 
+    # Collect ships per player
     player_ships = defaultdict(list)
     with open(os.path.join(game_directory, init_file_name)) as f:
         lines = [line.strip().split(' ') for line in f.readlines() if line.strip()]
         for line in lines:
             player_ships[line[PLAYER_NAME_POS]].append(line[SHIP_NAME_POS])
 
-    gamedir_contents = os.listdir(game_directory)
+    # For each player, for each ship, send one email
+    round_name = f"round-{round_number}"
+    round_dir = os.path.join(game_directory, round_name)
+    round_contents = os.listdir(round_dir)
     for name, ship_names in player_ships.items():
         for ship_name in ship_names:
-            results = fnmatch.filter(gamedir_contents, f"{ship_name}*{round_number}.pdf")
+            results = fnmatch.filter(round_contents, f"{ship_name}-{round_name}.pdf")
             if len(results) > 1:
                 sys.exit(f"Got multiple results for {ship_name} in round {round_number}: {results}")
-            send_email(email_config_file_name, game_directory, results[0], name)
-
-
+            elif len(results) == 1:
+                send_email(email_config_file_name, round_dir, results[0], name, ship_name, round_number)

@@ -1,0 +1,15 @@
+# Name {{ ship.name }}
+# Type {{ ship.__class__.__name__ }}
+# Max A   {{ ship._type.max_delta_v }}
+# Max V   {{ ship._type.max_speed }}
+# Max L/R {{ ship._type.max_turn }}
+
+# Examples:
+# 1: A30
+# 1: L35
+# 1: Fire S1 -45
+# 1: Fire L1 OtherShipName
+# 1: Replenish
+
+1:
+2:
