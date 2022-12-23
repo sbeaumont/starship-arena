@@ -12,14 +12,18 @@ The game is played in rounds, and every round consists of 10 ticks (1-10).
 
 ## Stuff that isn't implemented yet
 - A full energy system. Many things should cost energy, but now there are no implications for energy use.
-- Shields. Every hit goes straight to the hull
 - More weapon types, ship types
-- Star bases, docking, repair
 - Factions
 - Utilities like repair droids
 - Special scans
 - Cloaking / Anti Detection Systems
 - Other objects like black holes and gas clouds
+
+## Done
+
+- Energy cost for current weapons, shields and movement.
+- Shields, including boosting them
+- Star bases, including replenishment
 
 ## Commands
 You send commands in a .txt file. Enter one command per line, with the format `(tick number): (command)`.
@@ -51,6 +55,8 @@ If you multiple commands to fire a specific weapon in the same tick, only the fi
 - `L<degrees>`: turn left by x degrees (e.g. `L20`)
 - `A<units>`: accelerate or decelerate (negative e.g. `A-20`). Ships can equally go forwards and backwards. Note that if you have 0 speed you can turn as much as you want.
 - `F`/`Fire <Weapon Name> <Direction or Target>`: Fire a weapon. Lasers need the name of the target, rockets get fired in a relative direction (e.g. `Fire Laser1 MasterBlaster` or `F Launcher1 -45`). This command does need whitespace to separate the parameters.
+- `Replenish`: Fully replenish the ship if it gives this command within 10 distance, flying slower than 10.
+- `Boost <Shield quadrant> <Amount>`: Replenish / Boost the shield to up to twice its normal maximum. Anything over max dissipates at the end of the round.
 
 ## Tick execution order
 All ships and other objects performs each step simultaneously.
