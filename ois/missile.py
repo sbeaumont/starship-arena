@@ -99,14 +99,30 @@ class Missile(ObjectInSpace):
 
 
 class GuidedMissile(Missile):
+    # ---------------------------------------------------------------------- QUERIES
+
+    def can_scan(self, ois: ObjectInSpace) -> bool:
+        scan_distance = ois.modify_scan_range(self._type.max_scan_distance)
+        return (ois != self) and self.distance_to(ois.xy) < scan_distance
+
+    def in_scan_cone(self, ois: ObjectInSpace) -> bool:
+        direction_to_target = self.direction_to(ois.xy)
+        return -self._type.scan_cone <= direction_to_target <= self._type.scan_cone
+
+    def _damage(self, ois):
+        return round(self._type.explode_damage / (1 + self.distance_to(ois.xy)))
+
+    # ---------------------------------------------------------------------- COMMANDS
+
     def scan(self, objects_in_space: dict):
         self.target = None
         for ois in [o for o in objects_in_space.values() if (o != self) and (o != self.owner)]:
-            distance_to_target = self.distance_to(ois.xy)
-            direction_to_target = self.direction_to(ois.xy)
-            if (distance_to_target <= self._type.max_scan_distance) and \
-                    (-self._type.scan_cone <= direction_to_target <= self._type.scan_cone):
-                self.target = ois
+            if self.can_scan(ois) and self.in_scan_cone(ois):
+                if self.target:
+                    if self.distance_to(ois.xy) < self.distance_to(self.target.xy):
+                        self.target = ois
+                else:
+                    self.target = ois
 
     def _intercept(self):
         if self.target:
@@ -115,9 +131,6 @@ class GuidedMissile(Missile):
             if intercept_distance < self._type.max_speed:
                 self.speed = round(intercept_distance, 0)
             self.heading = self.heading_to(intercept_pos)
-
-    def _damage(self, ois):
-        return round(self._type.explode_damage / (1 + self.distance_to(ois.xy)))
 
 
 class Rocket(object):

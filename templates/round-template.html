@@ -37,10 +37,10 @@
             <td><b>Hull</b></td><td>{{ ship.hull }}/{{ ship._type.max_hull }}</td>
             <td><b>Shields</b></td><td colspan="3">{{ ship.defense[0].strengths }}</td>
         </tr>
-        {% for weapon in ship.weapons.values() %}
+        {% for component in ship.all_components.values() %}
         <tr>
-            <td><b>{{ weapon.name }}</b></td>
-            <td colspan="5">{% for stat_name, stat_value in weapon.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</td>
+            <td><b>{{ component.name }}</b></td>
+            <td colspan="5">{% for stat_name, stat_value in component.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</td>
         </tr>
         {% endfor %}
     </table>

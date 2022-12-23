@@ -55,6 +55,10 @@ class SB2531(object):
         ]
 
     @property
+    def ecm(self):
+        return dict()
+
+    @property
     def weapons(self):
         return {
             'L1': Laser('L1', 300),

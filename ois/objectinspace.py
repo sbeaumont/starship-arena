@@ -1,7 +1,7 @@
 import logging
 from collections import namedtuple
 from math import sin, cos, radians, sqrt, atan2, pi
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 
 from ois.event import InternalEvent, Event
 
@@ -17,9 +17,9 @@ def translate(p: Point, heading, distance) -> Point:
     return Point(new_x, new_y)
 
 
-class ObjectInSpace(object):
+class ObjectInSpace(ABC):
     """Any object in space, which can be ships, rockets, starbases, black holes, etc."""
-    def __init__(self, name: str, xy: tuple, heading: int = 0, speed: int = 0):
+    def __init__(self, name: str, xy: tuple, heading: int = 0, speed: int = 0, visibility: int = 100):
         super().__init__()
         self.name = name
         self.xy = Point(xy[0], xy[1])
@@ -27,6 +27,7 @@ class ObjectInSpace(object):
         self.speed = speed
         self.owner = None
         self.history = None
+        self.visibility = visibility
 
     # ---------------------------------------------------------------------- QUERIES
 
@@ -44,6 +45,10 @@ class ObjectInSpace(object):
 
     def direction_to(self, point: Point):
         return self.heading_to(point) - self.heading
+
+    def modify_scan_range(self, scan_range: float) -> float:
+        """Change a scanning object's scan range based on this object's visibility."""
+        return scan_range
 
     @property
     @abstractmethod
@@ -90,6 +95,12 @@ class ObjectInSpace(object):
         pass
 
     # ---------------------------------------------------------------------- ENGINE HOOKS
+
+    def tick(self, tick_nr):
+        pass
+
+    def use_energy(self):
+        pass
 
     def pre_move(self, objects_in_space: dict):
         pass

@@ -121,11 +121,13 @@ class GameRound(object):
         # Set up the reporting for the tick
         for ois in self.ois.values():
             ois.history.set_tick(tick)
+            ois.tick(tick)
 
         # Do everything that has to happen before moving, then move each ship
         for ois in self.ois.values():
-            # Generate energy
+            # Generate energy, components that consume energy do so.
             ois.generate()
+            ois.use_energy()
             # Some weapons need to know a tick started, e.g. allowing a laser to cool every tick.
             # Or rocket launcher needing to know tick to create rockets with correct history.
             if hasattr(ois, 'weapons'):

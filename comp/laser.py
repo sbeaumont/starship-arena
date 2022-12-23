@@ -4,14 +4,16 @@ from ois.event import InternalEvent, HitEvent, DrawType
 
 class Laser(Weapon):
     """A laser that directly fires at another named ship."""
+    max_temperature = 100
+    energy_per_shot = 5
+    heat_per_shot = 20
+
     def __init__(self, name: str, strength: int, firing_arc=None):
         super().__init__(name, firing_arc)
-        self.max_temperature = 100
-        self.energy_per_shot = 5
         self.strength = strength
-        self.heat_per_shot = 20
-
         self.temperature = 0
+
+    # ---------------------------------------------------------------------- QUERIES
 
     @property
     def temperature_ok(self):
@@ -24,19 +26,12 @@ class Laser(Weapon):
     def can_fire_at(self, ois):
         return self.temperature_ok and self.energy_ok and self.owner.can_scan(ois) and self.damage_to(ois)
 
-    def tick(self, tick_nr):
-        if self.temperature > 0:
-            self.temperature -= 5
-        if self.temperature < 0:
-            self.temperature = 0
-
-    def reset(self):
-        self.temperature = 0
-
     def damage_to(self, target):
         """Damage reduces by 1 per distance."""
         damage = round(self.strength - self.owner.distance_to(target.pos))
         return damage if damage >= 0 else 0
+
+    # ---------------------------------------------------------------------- COMMANDS
 
     def fire(self, target_name: str, objects_in_space=None):
         target_ship = objects_in_space.get(target_name, None)
@@ -64,6 +59,17 @@ class Laser(Weapon):
             self.owner.add_event(InternalEvent(f"Ship {self.owner.name} failed to laser {target_name}: {' '.join([temp_status, battery_status, target_status])}"))
         self.temperature += self.heat_per_shot
         self.owner.battery -= self.energy_per_shot
+
+    # ---------------------------------------------------------------------- ENGINE INTERFACE
+
+    def tick(self, tick_nr):
+        if self.temperature > 0:
+            self.temperature -= 5
+        if self.temperature < 0:
+            self.temperature = 0
+
+    def reset(self):
+        self.temperature = 0
 
     @property
     def status(self):

@@ -16,6 +16,7 @@ class Cmd(Enum):
     Fire = auto()
     Replenish = auto()
     Boost = auto()
+    Activation = auto()
 
 
 @runtime_checkable
@@ -36,6 +37,9 @@ class Commandable(Protocol):
         ...
 
     def scan(self, objects_in_space: dict):
+        ...
+
+    def activation(self, name: str, on_off: bool):
         ...
 
     def add_event(self, event):
@@ -95,8 +99,10 @@ class CommandSet(object):
                     logger.warning(f"Can not add second fire command for same weapon {cmd}")
                 else:
                     self.weapons[weapon_name] = cmd
-            case Cmd.Replenish | Cmd.Boost:
+            case Cmd.Replenish | Cmd.Boost | Cmd.Activation:
                 self.other.append(cmd)
+            case _:
+                assert False, f"Unknown command: {cmd}"
 
     def _add_turn_command(self, cmd: Command):
         """Ensure that multiple accelerate commands are added into a single command."""
@@ -125,6 +131,13 @@ class CommandSet(object):
         if self.turning:
             ship.add_event(InternalEvent(f'Executing command "{self.turning.text}"'))
             ship.turn(self.turning.value)
+        # Then activation
+        for other_cmd in self.other:
+            match other_cmd.name:
+                case Cmd.Activation:
+                    ship.add_event(InternalEvent(f'Executing command "{other_cmd.text}"'))
+                    active = other_cmd.param('on_off').lower() in ['yes', 'true', 'on']
+                    ship.activation(other_cmd.param('comp_name'), active)
 
     def post_move_commands(self, ship: Commandable, objects_in_space: dict, tick: int):
         # Then utilities
@@ -185,6 +198,9 @@ def read_command_file(command_file_name: str) -> dict:
                     case 'Boost':
                         # Boost shield quadrant
                         commands[tick].add(Command(Cmd.Boost, cmd_text, quadrant=params[0], amount=int(params[1])))
+                    case 'Activation':
+                        # Turn components on or off
+                        commands[tick].add(Command(Cmd.Activation, cmd_text, comp_name=params[0], on_off=params[1]))
                     case _:
                         logger.warning(f"{command_file_name}: Unknown command {cmd} in line {line_nr}")
         line_nr += 1

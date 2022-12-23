@@ -1,9 +1,9 @@
 import logging
-from collections import OrderedDict
 from typing import Protocol, runtime_checkable
 from comp.defense import Shields
 from comp.missilelauncher import MissileLauncher
 from comp.laser import Laser
+from comp.ecm import Cloak
 from ois.objectinspace import ObjectInSpace
 from ois.event import ScanEvent, InternalEvent, HitEvent
 from ois.missile import Splinter, Rocket
@@ -21,21 +21,30 @@ class Ship(ObjectInSpace):
     """A player-commanded space ship."""
     def __init__(self, name: str, shiptype, xy: tuple, heading=0, speed=0):
         super().__init__(name, xy, heading, speed)
+        # Type
         self.owner = self
         self._type = shiptype
         self.generators = self._type.generators
-        self.hull = self._type.max_hull
+
+        # Attach components
+        self.all_components = dict()
         self.defense = shiptype.defense
-        for defense in self.defense:
-            defense.attach(self)
-
+        self._attach_components(self.defense)
         self.weapons = shiptype.weapons
-        for weapon in self.weapons.values():
-            weapon.attach(self)
+        self._attach_components(self.weapons.values())
+        self.ecm = shiptype.ecm
+        self._attach_components(self.ecm.values())
 
+        # Variable
+        self.hull = self._type.max_hull
         self.battery = shiptype.start_battery
         self.score = 0
         self.commands = None
+
+    def _attach_components(self, comps):
+        for comp in comps:
+            self.all_components[comp.name] = comp
+            comp.attach(self)
 
     # ---------------------------------------------------------------------- QUERIES
 
@@ -59,8 +68,9 @@ class Ship(ObjectInSpace):
         sn['defense'] = self.defense.copy()
         return sn
 
-    def can_scan(self, ois):
-        return (ois != self) and self.distance_to(ois.xy) < self._type.max_scan_distance
+    def can_scan(self, ois: ObjectInSpace):
+        scan_distance = ois.modify_scan_range(self._type.max_scan_distance)
+        return (ois != self) and self.distance_to(ois.xy) < scan_distance
 
     # ---------------------------------------------------------------------- COMMANDS
 
@@ -85,6 +95,12 @@ class Ship(ObjectInSpace):
         else:
             self.add_event(InternalEvent(f"No weapon named {weapon_name} found"))
 
+    def activation(self, name: str, on_off: bool):
+        if name in self.all_components:
+            self.all_components[name].activation(on_off)
+        else:
+            self.add_event(InternalEvent(f"Can not activate/deactivate unknown component: {name}"))
+
     def generate(self):
         self.battery += self.generators
         if self.battery > self._type.max_battery:
@@ -108,6 +124,12 @@ class Ship(ObjectInSpace):
     def scan(self, objects_in_space: dict):
         for ois in [ob for ob in objects_in_space.values() if self.can_scan(ob)]:
             self.add_event(ScanEvent.create_scan(self, ois))
+
+    def modify_scan_range(self, scan_range: float) -> float:
+        """Change a scanning object's scan range based on this ship's ECM."""
+        for e in self.ecm.values():
+            scan_range = e.modify_scan_range(scan_range)
+        return round(scan_range, 1)
 
     def take_damage_from(self, hit_event: HitEvent):
         """First pass the damage to the defense components, any remaining damage goes to the hull.
@@ -136,6 +158,14 @@ class Ship(ObjectInSpace):
             self.add_event(InternalEvent(f"You were destroyed. Killing blow by {self.name}."))
 
     # ---------------------------------------------------------------------- TIMED HANDLERS
+
+    def tick(self, tick_nr):
+        for comp in self.all_components.values():
+            comp.tick(tick_nr)
+
+    def use_energy(self):
+        for comp in self.all_components.values():
+            comp.use_energy()
 
     def pre_move(self, objects_in_space):
         if self.battery < (self.speed // 10):
@@ -185,6 +215,10 @@ class H2545(ShipType):
             'R2': MissileLauncher('R2', Rocket, 10)
         }
 
+    @property
+    def ecm(self):
+        return dict()
+
 
 class H2552(ShipType):
     max_speed = 40
@@ -201,6 +235,12 @@ class H2552(ShipType):
         return [
             Shields('Shields', {'N': 150, 'E': 130, 'S': 140, 'W': 130}),
         ]
+
+    @property
+    def ecm(self):
+        return {
+            'C1': Cloak('C1', 0.2)
+        }
 
     @property
     def weapons(self):

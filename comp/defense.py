@@ -1,4 +1,5 @@
 from collections import namedtuple
+from comp.component import Component
 from ois.objectinspace import Point
 from ois.event import HitEvent, InternalEvent
 
@@ -6,20 +7,33 @@ Quadrants = namedtuple('Quadrants', 'north east south west')
 Section = namedtuple('Section', 'strength energy')
 
 
-class Shields(object):
+class Shields(Component):
     """An object that is attached to an owner (Ship) and can defend its owner."""
     quadrants = {(315, 45): 'N', (45, 135): 'E', (135, 225): 'S', (225, 315): 'W'}
 
     def __init__(self, name: str, strengths: dict):
-        self.name = name
-        self.owner = None
+        super().__init__(name)
         self.strengths = strengths.copy()
         self.max_strengths = strengths.copy()
-        self.quadrant_status = {'N': 'On', 'E': 'On', 'S': 'On', 'W': 'On'}
+        # self.quadrant_status = {'N': 'On', 'E': 'On', 'S': 'On', 'W': 'On'}
+
+    # ---------------------------------------------------------------------- QUERIES
 
     @property
     def status(self):
         return self.strengths.copy()
+
+    def quadrant_of(self, source_location: tuple) -> str:
+        heading = self.owner.heading_to(Point(*source_location))
+        for angles, name in self.quadrants.items():
+            if (angles[0] > angles[1]) and (heading >= angles[0]) or (heading <= angles[1]):
+                # North
+                return name
+            elif angles[0] <= heading <= angles[1]:
+                return name
+        assert False, f"No quadrant found {source_location}, {heading}"
+
+    # ---------------------------------------------------------------------- COMMANDS
 
     def boost(self, qdrt, amount):
         if amount > self.owner.battery:
@@ -32,19 +46,6 @@ class Shields(object):
             self.owner.add_event(InternalEvent(f"Shield {qdrt} can't boost beyond twice the strength."))
             self.strengths[qdrt] = 2 * self.max_strengths[qdrt]
         self.owner.add_event(InternalEvent(f"Boosted shield quadrant {qdrt} to {self.strengths[qdrt]}"))
-
-    def attach(self, owner):
-        self.owner = owner
-
-    def quadrant_of(self, source_location: tuple) -> str:
-        heading = self.owner.heading_to(Point(*source_location))
-        for angles, name in self.quadrants.items():
-            if (angles[0] > angles[1]) and (heading >= angles[0]) or (heading <= angles[1]):
-                # North
-                return name
-            elif angles[0] <= heading <= angles[1]:
-                return name
-        assert False, f"No quadrant found {source_location}, {heading}"
 
     def take_damage_from(self, hit_event: HitEvent) -> int:
         """Absorb damage on shield quadrant, return any remaining damage."""
@@ -64,8 +65,7 @@ class Shields(object):
             self.owner.add_event(InternalEvent(f"Shield {shield_quadrant} hit for {hit_event.amount}. Remaining strength: {self.strengths[shield_quadrant]}"))
         return 0
 
-    def tick(self, tick_nr):
-        pass
+    # ---------------------------------------------------------------------- ENGINE HANDLERS
 
     def round_reset(self):
         for qdrt in ['N', 'E', 'S', 'W']:
