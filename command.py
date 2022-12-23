@@ -15,11 +15,13 @@ class Cmd(Enum):
     Accelerate = auto()
     Fire = auto()
     Replenish = auto()
+    Boost = auto()
 
 
 @runtime_checkable
 class Commandable(Protocol):
     commands: list
+    defense: dict
 
     def accelerate(self, delta_v: int):
         ...
@@ -27,10 +29,10 @@ class Commandable(Protocol):
     def turn(self, angle: int):
         ...
 
-    def fire(self, weapon_name: str, target_or_direction) -> ObjectInSpace:
+    def fire(self, weapon_name: str, target_or_direction, objects_in_space: dict) -> ObjectInSpace:
         ...
 
-    def try_replenish(self):
+    def try_replenish(self, objects_in_space: dict):
         ...
 
     def scan(self, objects_in_space: dict):
@@ -79,7 +81,7 @@ class CommandSet(object):
         self.turning: Command = None
         self.weapons: dict = dict()
         self.utilities: list = list()
-        self.other: dict = dict()
+        self.other: list = list()
 
     def add(self, cmd: Command):
         match cmd.name:
@@ -93,8 +95,8 @@ class CommandSet(object):
                     logger.warning(f"Can not add second fire command for same weapon {cmd}")
                 else:
                     self.weapons[weapon_name] = cmd
-            case Cmd.Replenish:
-                self.other[Cmd.Replenish] = cmd
+            case Cmd.Replenish | Cmd.Boost:
+                self.other.append(cmd)
 
     def _add_turn_command(self, cmd: Command):
         """Ensure that multiple accelerate commands are added into a single command."""
@@ -132,14 +134,18 @@ class CommandSet(object):
             ois = ship.fire(wpn_cmd.param('weapon_name'), wpn_cmd.param('at'), objects_in_space)
             if ois:
                 objects_in_space[ois.name] = ois
-        if Cmd.Replenish in self.other:
-            ship.add_event(InternalEvent(f'Executing command "Replenish"'))
-            ship.try_replenish(objects_in_space)
+        for other_cmd in self.other:
+            match other_cmd.name:
+                case Cmd.Replenish:
+                    ship.add_event(InternalEvent(f'Executing command "Replenish"'))
+                    ship.try_replenish(objects_in_space)
+                case Cmd.Boost:
+                    ship.outer_defense.boost(other_cmd.param('quadrant'), other_cmd.param('amount'))
 
     def __str__(self):
         util_str = ', '.join([str(cmd) for cmd in self.utilities])
         wpn_str = ', '.join([str(cmd) for cmd in self.weapons.values()])
-        other_str = ', '.join([str(cmd) for cmd in self.other.values()])
+        other_str = ', '.join([str(cmd) for cmd in self.other])
         return f"Commands(A: {str(self.acceleration)} T: {str(self.turning)} U: {util_str} W: {wpn_str} O: {other_str})"
 
 
@@ -176,6 +182,9 @@ def read_command_file(command_file_name: str) -> dict:
                     case 'Replenish':
                         # Replenish
                         commands[tick].add(Command(Cmd.Replenish, cmd_text))
+                    case 'Boost':
+                        # Boost shield quadrant
+                        commands[tick].add(Command(Cmd.Boost, cmd_text, quadrant=params[0], amount=int(params[1])))
                     case _:
                         logger.warning(f"{command_file_name}: Unknown command {cmd} in line {line_nr}")
         line_nr += 1

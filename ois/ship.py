@@ -1,4 +1,5 @@
 import logging
+from collections import OrderedDict
 from typing import Protocol, runtime_checkable
 from comp.defense import Shields
 from comp.missilelauncher import MissileLauncher
@@ -41,6 +42,10 @@ class Ship(ObjectInSpace):
     @property
     def is_destroyed(self) -> bool:
         return self.hull <= 0
+
+    @property
+    def outer_defense(self):
+        return self.defense[0] if len(self.defense) >= 1 else None
 
     @property
     def scans(self):
@@ -106,12 +111,14 @@ class Ship(ObjectInSpace):
 
     def take_damage_from(self, hit_event: HitEvent):
         """First pass the damage to the defense components, any remaining damage goes to the hull.
-        Note that we allow hits (and scoring) on the tick a ship is destroyed, but only count one killing blow
-        for scoring."""
+        Note that we allow overkilling hits (and scoring) on the tick a ship is destroyed, but only
+        count one killing blow for scoring."""
+        self.add_event(hit_event)
+
         already_killed = self.is_destroyed
 
         amount = hit_event.amount
-        if hasattr(self, 'defense'):
+        if hasattr(self, 'outer_defense'):
             for d in self.defense:
                 amount = d.take_damage_from(hit_event)
                 if amount <= 0:
@@ -127,18 +134,25 @@ class Ship(ObjectInSpace):
             hit_event.score += 100
             hit_event.source.add_event(InternalEvent(f"You landed the killing hit on {self.name}"))
             self.add_event(InternalEvent(f"You were destroyed. Killing blow by {self.name}."))
-            # for ois in [ob for ob in objects_in_space.values() if self.can_scan(ob)]:
-            #     self.add_event(InternalEvent(f"{self.name} was destroyed: killing blow by {hit_event.source.owner.name}"))
-        self.add_event(hit_event)
 
     # ---------------------------------------------------------------------- TIMED HANDLERS
 
+    def pre_move(self, objects_in_space):
+        if self.battery < (self.speed // 10):
+            new_max_speed = self.battery * 10
+            self.add_event(InternalEvent(f"Not enough energy for current speed: slowing down to {new_max_speed}"))
+            self.speed = new_max_speed
+
     def post_move(self, objects_in_space):
         # Spend energy based on speed
-        self.battery -= self.speed // 10
+        movement_energy = self.speed // 10
+        self.battery -= movement_energy
+        self.add_event(InternalEvent(f"Used {movement_energy} energy for movement."))
 
     def round_reset(self):
         super().round_reset()
+        for d in self.defense:
+            d.round_reset()
         self.commands = None
 
 

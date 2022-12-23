@@ -14,6 +14,24 @@ class Shields(object):
         self.name = name
         self.owner = None
         self.strengths = strengths.copy()
+        self.max_strengths = strengths.copy()
+        self.quadrant_status = {'N': 'On', 'E': 'On', 'S': 'On', 'W': 'On'}
+
+    @property
+    def status(self):
+        return self.strengths.copy()
+
+    def boost(self, qdrt, amount):
+        if amount > self.owner.battery:
+            amount = self.owner.battery
+        self.owner.battery -= amount
+        self.owner.add_event(InternalEvent(f"Used {amount} energy: battery at {self.owner.battery}"))
+
+        self.strengths[qdrt] += amount
+        if self.strengths[qdrt] > 2 * self.max_strengths[qdrt]:
+            self.owner.add_event(InternalEvent(f"Shield {qdrt} can't boost beyond twice the strength."))
+            self.strengths[qdrt] = 2 * self.max_strengths[qdrt]
+        self.owner.add_event(InternalEvent(f"Boosted shield quadrant {qdrt} to {self.strengths[qdrt]}"))
 
     def attach(self, owner):
         self.owner = owner
@@ -21,10 +39,10 @@ class Shields(object):
     def quadrant_of(self, source_location: tuple) -> str:
         heading = self.owner.heading_to(Point(*source_location))
         for angles, name in self.quadrants.items():
-            if (angles[0] > angles[1]) and (heading > angles[0]) or (heading <= angles[0]):
+            if (angles[0] > angles[1]) and (heading >= angles[0]) or (heading <= angles[1]):
                 # North
                 return name
-            elif angles[0] <= heading < angles[1]:
+            elif angles[0] <= heading <= angles[1]:
                 return name
         assert False, f"No quadrant found {source_location}, {heading}"
 
@@ -49,6 +67,9 @@ class Shields(object):
     def tick(self, tick_nr):
         pass
 
-    @property
-    def status(self):
-        return self.strengths.copy()
+    def round_reset(self):
+        for qdrt in ['N', 'E', 'S', 'W']:
+            if self.strengths[qdrt] > self.max_strengths[qdrt]:
+                self.owner.add_event(InternalEvent(f"Shield {qdrt} boost dissipated."))
+                self.strengths[qdrt] = self.max_strengths[qdrt]
+

@@ -139,6 +139,7 @@ class GameRound(object):
                 else:
                     logger.info(f"Ship {ois.name} no commands this tick")
             # move ship
+            ois.pre_move(self.objects_in_space)
             ois.move()
 
         # All ships perform their post move commands do post-move commands like firing weapons

@@ -91,6 +91,9 @@ class ObjectInSpace(object):
 
     # ---------------------------------------------------------------------- ENGINE HOOKS
 
+    def pre_move(self, objects_in_space: dict):
+        pass
+
     def post_move(self, objects_in_space: dict):
         pass
 
