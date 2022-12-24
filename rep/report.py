@@ -1,3 +1,4 @@
+import datetime
 import os
 from jinja2 import Environment, FileSystemLoader
 from collections import defaultdict
@@ -154,7 +155,8 @@ def report_round_zero(game_dir: str, ships: list):
         template_data = {
             "image_file_name": image_file_name,
             "ship": ship,
-            "scans": ship.history[0].scans
+            "scans": ship.history[0].scans,
+            "ships": ships
         }
 
         html_out = template.render(template_data)
@@ -164,3 +166,17 @@ def report_round_zero(game_dir: str, ships: list):
 
         print_html = HTML(string=html_out, base_url=f'{game_dir}/{ROUND_ZERO_NAME}')
         print_html.write_pdf(f'{report_file_name}.pdf')
+
+
+def generate_manual():
+    env = Environment(loader=FileSystemLoader('./templates'))
+    template = env.get_template(MANUAL_TEMPLATE)
+
+    template_data = {
+        "date": datetime.date.today().strftime('%d %b %Y'),
+    }
+
+    html_out = template.render(template_data)
+    print_html = HTML(string=html_out, base_url=f'.')
+    print_html.write_pdf(MANUAL_FILENAME)
+

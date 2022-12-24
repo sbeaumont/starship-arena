@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Space Arena: Player Manual</title>
+    {% include 'styling.html' %}
+</head>
+<body>
+
+<h1>Welcome to Space Arena</h1>
+<p><i>Generated on {{ date }}</i></p>
+
+<p>This game is a recreation of an old Play-By-Mail game from 1991. In this game teams of space ships battle
+each other in a 2D arena. The game is a simulation where players all send in their orders before a round is
+processed. A round consists of 10 clock <i>ticks</i> and the results of the players' commands gets processed
+into a result output (HTML & PDF). Each ship receives their own result based on what they observed. This
+information is used to plan the next round and send in new orders, and the cycle continues until there is a
+winner.</p>
+
+<h2>Game rounds</h2>
+
+<p>The game is played in rounds of 10 ticks. Each round you send in a set of commands for that round. When the round
+is processed, all ships move and act according to their commands. The results of the round are then sent back to each
+ship's player and the cycle continues until the end conditions are reached.</p>
+
+<h2>Commands</h2>
+
+<p>Each round you send in sets of commands, with one line per command. You can give multiple commands per tick,
+but some commands get merged into a single command per tick, like acceleration or turning commands.</p>
+
+<table class="small-text">
+    <tr>
+        <th>Command</th>
+        <th>Parameter(s)</th>
+        <th>Example</th>
+        <th>Purpose</th>
+        <th>Notes</th>
+    </tr>
+    <tr>
+        <td>A</td>
+        <td>+/- Integer</td>
+        <td>A-30</td>
+        <td>Increase or decrease speed in units per tick</td>
+        <td>Limited to maximum acceleration, can be negative.</td>
+    </tr>
+    <tr>
+        <td>R / L / H</td>
+        <td>+/- degrees</td>
+        <td>L45</td>
+        <td>Turn right or left in degrees</td>
+        <td>Limited to maximum turn rate per tick. However, at speed 0 there is no limit to turn rate.</td>
+    </tr>
+    <tr>
+        <td>F / Fire</td>
+        <td>[Weapon Name] [target or direction]</td>
+        <td>Fire L1 MasterBlaster / F M1 90</td>
+        <td>Fire a named weapon. Depending on the weapon the next parameter is a direction (e.g. rockets) or the name of another object (e.g. Laser)</td>
+        <td>Can fire each weapon once per tick</td>
+    </tr>
+    <tr>
+        <td>Replenish</td>
+        <td>No parameters</td>
+        <td>Replenish</td>
+        <td>Replenish the ship (ammo, hull, shields, temperature, etc.) when close to a star base.</td>
+        <td>Only happens if after the move the ship is within 10 units and slower than 10 speed.</td>
+    </tr>
+    <tr>
+        <td>Boost</td>
+        <td>[Shield quadrant] [Amount]</td>
+        <td>Boost N 40</td>
+        <td>Boost a shield quadrant by amount. This costs 1 point of energy per point of shield.</td>
+        <td>You can boost a shield quadrant to twice its normal maximum. However, at the end of a round any excess dissipates.</td>
+    </tr>
+    <tr>
+        <td>Activation</td>
+        <td>[Component] [On/Off]</td>
+        <td>Activation C1 On</td>
+        <td>Activate/deactivate a component, for components that need activation.</td>
+        <td>Currently the only component is a Cloak on the H2552 that reduces your visibility by 20% for 10 energy per tick.</td>
+    </tr>
+</table>
+<p>A command set for a round could look like below. Note that the order of the lines can be mixed: there is a fixed
+order that commands will be executed.</p>
+<pre>
+    8: A-30
+    8: L180
+    1: Fire M1 35
+    1: Fire M1 50
+    6: R30
+    7: R30
+    1: L20
+    1: A30
+    1: A40
+    8: Replenish
+    9: A30
+</pre>
+<ul>
+    <li>Tick 1: the ship accelerates by 70 (1: A30, 1: A40) but will likely be limited to its maximum acceleration.</li>
+    <li>Tick 1: the ship turns left by 20 degrees (1: L20)</li>
+    <li>Tick 1: the ship fires a rocket 35 degrees to the right of its heading (1: Fire M1 35)</li>
+    <li>The second Fire command is ignored because it tries to fire the "M1" weapon for a second time that tick (1: Fire M1 50)</li>
+    <li>Tick 6 and 7: the ship turns right by 30 degrees for two ticks (6: R30, 7: R30) </li>
+    <li>Tick 8: the ship slows down by 30 (8: A-30) and because its speed is 0 it can make a full reverse turn (8: L180)</li>
+    <li>Tick 8: the ship - assuming it is close enough to a star base - fully replenishes (8: Replenish)</li>
+    <li>Tick 9: the ship accelerates by 30 to fly back to where it came from (9: A30)</li>
+</ul>
+
+
+</body>
+</html>

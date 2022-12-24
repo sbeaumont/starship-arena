@@ -3,7 +3,7 @@ import logging
 from comp.defense import Shields
 from comp.missilelauncher import MissileLauncher
 from comp.laser import Laser
-from ois.ship import Ship
+from ois.ship import Ship, ShipType
 from ois.missile import Splinter, Rocket
 from ois.event import InternalEvent
 
@@ -34,7 +34,7 @@ class Starbase(Ship):
             ship.add_event(InternalEvent(f"Replenished by {self.name}"))
 
 
-class SB2531(object):
+class SB2531(ShipType):
     """Default starbase"""
     base_type = Starbase
     max_delta_v = 0

@@ -32,4 +32,4 @@ def configure_logger(create_log_file=False, logger_blocklist=list):
 
     # Silence library logging
     for module in logger_blocklist:
-        logging.getLogger(module).setLevel(logging.WARNING)
+        logging.getLogger(module).setLevel(logging.ERROR)

@@ -189,6 +189,10 @@ class Ship(ObjectInSpace):
 class ShipType(object):
     base_type = Ship
 
+    @property
+    def name(self):
+        return self.__class__.__name__
+
 
 class H2545(ShipType):
     max_speed = 45

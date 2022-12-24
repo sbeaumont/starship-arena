@@ -2,21 +2,7 @@
 <html lang="en">
 <head>
     <title>Round {{ round }} report for {{ ship.name }}</title>
-    <style>
-        table, th, td {
-          border: 1px solid black;
-          border-collapse: collapse;
-        }
-        th, td {
-          padding: 5px;
-        }
-        th {
-          text-align: left;
-        }
-        img {
-            max-width: 100%
-        }
-    </style>
+    {% include 'styling.html' %}
 </head>
 
 <body>
@@ -73,7 +59,7 @@
         {% endfor %}
         </p>
         {% if scans[tick] %}
-            <table>
+            <table class="small-text">
             <tr>
                 <th>Name</th>
                 <th>Position</th>

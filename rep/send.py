@@ -20,7 +20,7 @@ PLAYER_NAME_POS = 4
 # (Player name) (Email)
 
 
-def send_email(email_cfg: str, game_dir: str, result_file: str, name: str, ship_name: str, round_number: int):
+def send_email(email_cfg: str, game_dir: str, result_file: str, name: str, ship_name: str, round_number: int, send_manual: bool):
     with open(email_cfg) as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
         email_sender = lines[0]
@@ -64,6 +64,13 @@ def send_email(email_cfg: str, game_dir: str, result_file: str, name: str, ship_
     attachment.add_header('Content-Disposition', 'attachment', filename=command_template_name)
     em.attach(attachment)
 
+    if send_manual:
+        # Attachment: Manual
+        with open(MANUAL_FILENAME, "rb") as attachment:
+            p = MIMEApplication(attachment.read(), _subtype="pdf")
+            p.add_header('Content-Disposition', "attachment", filename=MANUAL_FILENAME)
+            em.attach(p)
+
     # Send email
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as smtp:
@@ -71,7 +78,7 @@ def send_email(email_cfg: str, game_dir: str, result_file: str, name: str, ship_
         smtp.sendmail(email_sender, email_receiver, em.as_string())
 
 
-def send_results_for_round(game_directory: str, init_file_name: str, email_config_file_name: str, round_number: int):
+def send_results_for_round(game_directory: str, init_file_name: str, email_config_file_name: str, round_number: int, include_manual: bool):
     # Check if all is okay
     if not os.path.exists(game_directory):
         sys.exit(f"{game_directory} not found.")
@@ -98,4 +105,4 @@ def send_results_for_round(game_directory: str, init_file_name: str, email_confi
             if len(results) > 1:
                 sys.exit(f"Got multiple results for {ship_name} in round {round_number}: {results}")
             elif len(results) == 1:
-                send_email(email_config_file_name, round_dir, results[0], name, ship_name, round_number)
+                send_email(email_config_file_name, round_dir, results[0], name, ship_name, round_number, include_manual)
