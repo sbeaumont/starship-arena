@@ -13,6 +13,10 @@ class Component(ABC):
         """Returns a dictionary of names and values"""
         raise NotImplementedError
 
+    @property
+    def description(self):
+        return self.__class__.__name__
+
     def attach(self, owner):
         self.owner = owner
 

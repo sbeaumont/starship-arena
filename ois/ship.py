@@ -166,8 +166,6 @@ class Ship(ObjectInSpace):
     def use_energy(self):
         for comp in self.all_components.values():
             comp.use_energy()
-
-    def pre_move(self, objects_in_space):
         if self.battery < (self.speed // 10):
             new_max_speed = self.battery * 10
             self.add_event(InternalEvent(f"Not enough energy for current speed: slowing down to {new_max_speed}"))
@@ -251,5 +249,11 @@ class H2552(ShipType):
         return {
             'L1': Laser('L1', 180, (270, 90)),
             'S1': MissileLauncher('S1', Splinter, 10, (90, 270)),
-            'R1': MissileLauncher('R1', Splinter, 15)
+            'R1': MissileLauncher('R1', Rocket, 15)
         }
+
+
+all_ship_types = {
+    'H2545': H2545(),
+    'H2552': H2552()
+}

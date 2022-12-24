@@ -17,7 +17,7 @@ def main():
     configure_logger(False, ["fontTools", "PIL"])
     parser = argparse.ArgumentParser()
     parser.add_argument("gamedir", help="The game directory you want to process.")
-    parser.add_argument("round", choices=['zero', 'last', 'redo-all', 'none'], help="Which rounds to process")
+    parser.add_argument("round", choices=['manual', 'zero', 'last', 'redo-all', 'none'], help="Which rounds to process")
     parser.add_argument("-m", "--manual", action="store_true", help="Generate and include manual")
     parser.add_argument("-y", "--yolo", action="store_true", help="Don't ask safety questions.")
     parser.add_argument("-c", "--clean", action="store_true", help="Clean the output files of a game directory")

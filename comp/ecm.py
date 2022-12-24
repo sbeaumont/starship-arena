@@ -38,4 +38,8 @@ class Cloak(Component):
             'Active': 'Yes' if self.active else 'No'
         }
 
+    @property
+    def description(self):
+        return f"Cloak ({self.strength})"
+
 

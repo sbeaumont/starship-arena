@@ -61,11 +61,8 @@ class GameRound(object):
             cmd.execute(ship, self.ois, tick)
 
     def post_move_commands(self, ship: Commandable, cs: CommandSet, objects_in_space: dict, tick: int):
-        # Then utilities
-        # Finally, fire weapons
         for wpn_cmd in cs.weapons.values():
-            ship.add_event(InternalEvent(f'Executing command "{wpn_cmd.text}"'))
-            ois = ship.fire(wpn_cmd.weapon_name, wpn_cmd.target_or_direction, objects_in_space)
+            ois = wpn_cmd.execute(ship, self.ois, tick)
             if ois:
                 objects_in_space[ois.name] = ois
         for other_cmd in cs.post_move:

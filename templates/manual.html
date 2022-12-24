@@ -25,8 +25,31 @@ ship's player and the cycle continues until the end conditions are reached.</p>
 
 <h2>Commands</h2>
 
-<p>Each round you send in sets of commands, with one line per command. You can give multiple commands per tick,
-but some commands get merged into a single command per tick, like acceleration or turning commands.</p>
+<p>You send commands in a .txt file. Enter one command per line, with the format <span class="code-style">(tick number): (command)</span>.
+<b>You can write multiple commands per tick</b>, but they each should be on their own line. Whitespace in the commands does not matter: you can write R 90 or R90,
+whatever is your preference.</p>
+
+<p>The following commands let the ship accelerate by 25 and turn 90 degrees left on tick 1,
+and fire a rocket from the launcher called 'L1' 90 degrees from its current heading on tick 2. Note that the A25 line
+is after the L90 line: the acceleration will always be processed before the turn in that tick.</p>
+
+<pre class="code-style">
+    1: L90
+    1: A25
+    2: Fire L1 90
+</pre>
+
+<p>Commands are for changes: you do not have to enter a command for every tick. If given no commands, your ship will
+    fly straight at its current speed.</p>
+
+<p>It does not matter in which order you put these lines, and it also does not matter if the tick numbers of
+    the lines are out of order. All orders get processed in tick number order, and within a tick orders get processed
+    in a specific order. Empty lines and lines starting with '#' are ignored. You can use this for instance to group your
+    movement and weapon commands together.</p>
+
+<p> You can fire each weapon once per tick, and they might have
+    temperature or ammo to take into account.
+If you multiple commands to fire a specific weapon in the same tick, only the first command is executed. In this case line order does matter.</p>
 
 <table class="small-text">
     <tr>
@@ -34,54 +57,64 @@ but some commands get merged into a single command per tick, like acceleration o
         <th>Parameter(s)</th>
         <th>Example</th>
         <th>Purpose</th>
+        <th>Timing</th>
         <th>Notes</th>
     </tr>
     <tr>
         <td>A</td>
         <td>+/- Integer</td>
-        <td>A-30</td>
+        <td class="code-style">A-30</td>
         <td>Increase or decrease speed in units per tick</td>
+        <td>One per tick, pre-move, before turn command</td>
         <td>Limited to maximum acceleration, can be negative.</td>
     </tr>
     <tr>
         <td>R / L / H</td>
         <td>+/- degrees</td>
-        <td>L45</td>
+        <td class="code-style">L45</td>
         <td>Turn right or left in degrees</td>
+        <td>One per tick, pre-move, after acceleration command</td>
         <td>Limited to maximum turn rate per tick. However, at speed 0 there is no limit to turn rate.</td>
     </tr>
     <tr>
         <td>F / Fire</td>
         <td>[Weapon Name] [target or direction]</td>
-        <td>Fire L1 MasterBlaster / F M1 90</td>
+        <td class="code-style">Fire L1 MasterBlaster<br/>F M1 90</td>
         <td>Fire a named weapon. Depending on the weapon the next parameter is a direction (e.g. rockets) or the name of another object (e.g. Laser)</td>
+        <td>Post-move</td>
         <td>Can fire each weapon once per tick</td>
     </tr>
     <tr>
         <td>Replenish</td>
         <td>No parameters</td>
-        <td>Replenish</td>
+        <td class="code-style">Replenish</td>
         <td>Replenish the ship (ammo, hull, shields, temperature, etc.) when close to a star base.</td>
+        <td>Post-move</td>
         <td>Only happens if after the move the ship is within 10 units and slower than 10 speed.</td>
     </tr>
     <tr>
         <td>Boost</td>
         <td>[Shield quadrant] [Amount]</td>
-        <td>Boost N 40</td>
+        <td class="code-style">Boost N 40</td>
         <td>Boost a shield quadrant by amount. This costs 1 point of energy per point of shield.</td>
+        <td>Post-move</td>
         <td>You can boost a shield quadrant to twice its normal maximum. However, at the end of a round any excess dissipates.</td>
     </tr>
     <tr>
         <td>Activation</td>
         <td>[Component] [On/Off]</td>
-        <td>Activation C1 On</td>
+        <td class="code-style">Activation C1 On</td>
         <td>Activate/deactivate a component, for components that need activation.</td>
+        <td>Pre-move</td>
         <td>Currently the only component is a Cloak on the H2552 that reduces your visibility by 20% for 10 energy per tick.</td>
     </tr>
 </table>
+
 <p>A command set for a round could look like below. Note that the order of the lines can be mixed: there is a fixed
 order that commands will be executed.</p>
-<pre>
+
+<div>
+<pre class="code-style">
     8: A-30
     8: L180
     1: Fire M1 35
@@ -94,17 +127,280 @@ order that commands will be executed.</p>
     8: Replenish
     9: A30
 </pre>
+</div>
+<div>
+    <ul>
+        <li>Tick 1: the ship accelerates by <span class="code-style">70 (1: A30, 1: A40)</span> but will likely be limited
+            to its maximum acceleration.</li>
+        <li>Tick 1: the ship turns left by 20 degrees (<span class="code-style">1: L20</span>)</li>
+        <li>Tick 1: the ship fires a rocket 35 degrees to the right of its heading (<span class="code-style">1: Fire M1 35</span>)</li>
+        <li>The second Fire command is ignored because it tries to fire the "M1" weapon for a second time that tick (<span class="code-style">1: Fire M1 50</span>)</li>
+        <li>Tick 6 and 7: the ship turns right by 30 degrees for two ticks (<span class="code-style">6: R30, 7: R30</span>) </li>
+        <li>Tick 8: the ship slows down by 30 (<span class="code-style">8: A-30</span>) and because its speed is 0 it can make a full reverse turn (<span class="code-style">8: L180</span>)</li>
+        <li>Tick 8: the ship - assuming it is close enough to a star base - fully replenishes (<span class="code-style">8: Replenish</span>)</li>
+        <li>Tick 9: the ship accelerates by 30 to fly back to where it came from (<span class="code-style">9: A30</span>)</li>
+    </ul>
+</div>
+
+<h2>Tick Processing</h2>
+
+<p>Each tick is processed in a specific order, it is useful to know in what order everything is processed. For instance,
+acceleration is done before turning, so you can do a fast turn within one tick by slowing down to 0 and then turning as
+much as you want.</p>
+
+<ol>
+    <li>Start of tick. Some components do upkeep (Laser cools down).</li>
+    <li>Generators generate energy, 1 energy per generator.</li>
+    <li>Components that use energy per tick use their energy, draining the battery. Also the energy drain for the
+    upcoming movement is deducted.</li>
+    <li>Pre-move commands are executed.</li>
+    <ol>
+        <li>Acceleration</li>
+        <li>Turning</li>
+        <li>Other pre-move commands (Activation)</li>
+    </ol>
+    <li>Movement</li>
+    <li>Post-move commands are executed.</li>
+    <ol>
+        <li>Fire weapons. This is when new missiles appear. Damage is done.</li>
+        <li>Boost</li>
+    </ol>
+    <li>Ships, guided missiles etc. scan their environment.</li>
+    <li>Guided missiles choose and intercept their target. Missiles in range of target explode and do damage.</li>
+    <li>Destroyed objects are removed.</li>
+</ol>
+
+<h2>Energy</h2>
+
+<p>All the ships energy is stored on its central battery, and it can power several things, like lasers, shields and
+ship's movement. Every generator on a ship produces 1 energy per tick and stores it in the battery.</p>
+
+<p>Energy is used to:</p>
 <ul>
-    <li>Tick 1: the ship accelerates by 70 (1: A30, 1: A40) but will likely be limited to its maximum acceleration.</li>
-    <li>Tick 1: the ship turns left by 20 degrees (1: L20)</li>
-    <li>Tick 1: the ship fires a rocket 35 degrees to the right of its heading (1: Fire M1 35)</li>
-    <li>The second Fire command is ignored because it tries to fire the "M1" weapon for a second time that tick (1: Fire M1 50)</li>
-    <li>Tick 6 and 7: the ship turns right by 30 degrees for two ticks (6: R30, 7: R30) </li>
-    <li>Tick 8: the ship slows down by 30 (8: A-30) and because its speed is 0 it can make a full reverse turn (8: L180)</li>
-    <li>Tick 8: the ship - assuming it is close enough to a star base - fully replenishes (8: Replenish)</li>
-    <li>Tick 9: the ship accelerates by 30 to fly back to where it came from (9: A30)</li>
+    <li>Boost shields with the Boost command at 1 point of shield per point of energy.</li>
+    <li>Power movement at Speed / 10 energy per tick.</li>
+    <li>Power lasers at 5 energy per shot.</li>
 </ul>
 
+<p>Don't forget: a Replenish <b>completely</b> fills the battery!</p>
 
+<h2>Movement</h2>
+
+<p><b>In movement everything is per tick.</b></p>
+
+<p>Any object moves its speed every tick. So a ship with a speed of 30 moves 10 * 30 = 300 units in a full round of
+10 ticks. A ship has a maximum speed, and can fly backwards with the same (negative) speed.</p>
+
+<p>An object has a maximum turn rate in degrees per tick. An object with a maximum turn rate of 30 can make a full
+circle in 360 / 30 = 12 ticks.</p>
+
+<p>An object has a maximum acceleration in speed units per tick. So an object with a maximum acceleration of 20 and
+a maximum speed of 40 can reach maximum velocity in 2 ticks.</p>
+
+<p>Movement costs energy, at speed / 10 points energy per tick, rounded down. For instance, a ship with a speed
+of 46 will spend 46 / 10 rounded down = 4 energy per tick on movement.</p>
+
+<h3>Movement commands</h3>
+
+<p>The movement commands are all <em>per tick</em>. They are:</p>
+
+<dl>
+    <dt><span class="code-style">A[number]</span></dt>
+    <dd>Accelerate or decelerate by x units that tick. You can fly backwards (negative speed)</dd>
+    <dt><span class="code-style">L[degrees]</span></dt>
+    <dd>Turn x degrees to the left that tick.</dd>
+    <dt><span class="code-style">R[degrees]</span></dt>
+    <dd>Turn x degrees to the right that tick.</dd>
+</dl>
+
+<p>All movement-related commands are <b>relative</b> commands. Turning x degrees with respect to current heading,
+    acceleration changes current speed by x amount, etc.</p>
+
+<p><b>At speed 0 there is no limit to the turn rate.</b></p>
+
+<p>If you give multiple turn or accelerate commands <em>in a single tick</em>, they get combined (added)
+    into one command for that tick. If you turn beyond the maximum turn rate of the ship, the command gets constrained
+    to the maximum. The same goes for maximum acceleration and speed.</p>
+
+<h2>Weapons</h2>
+
+<h3>Lasers</h3>
+
+<p>Lasers are fired at a specific ship and always hit if they are in range. Lasers heat up per shot and can't fire
+    when they are at or over their maximum temperature.Lasers always heat and use energy when fired, even when
+    there's no target, so don't just spam fire commands!</p>
+
+<p>
+<table>
+    <tr>
+        <th>Energy per shot</th>
+        <th>Damage per shot</th>
+        <th>Heat per shot</th>
+        <th>Max Temperature</th>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Strength - Distance</td>
+        <td>20</td>
+        <td>100</td>
+    </tr>
+</table>
+</p>
+
+<h3>Missiles</h3>
+
+<p>Missiles are fired in a direction from a missile launcher. Guided missiles (Splinter) will target the
+nearest object they see, but not the firing ship or its missiles. Regular Rockets fly in a straight line.
+    Missiles do not target their origin ship and its missiles. However, when a missile explodes,
+it damages *everything* in range, including its origin ship and rockets.</p>
+
+<p>Missile launchers have limited ammo, but can be restocked by replenishing at a star base.</p>
+
+<p>Currently all missiles have speed 60 and fizzle out after 15 ticks. This means they have a range of 60 * 15 = 750.</p>
+
+<p><b>Rockets</b> are unguided missiles with a scan- and blast radius of 20 and 50 damage. They fly at a speed of
+60 units per tick.</p>
+
+<p><b>Splinter</b> missiles are guided missile that chase the closest target that is not its originator or its
+missiles. They fly at a speed of 60 units per tick. The have a scan- and blast radius of 6, and their damage linearly
+    scales down from 75 at 0 distance to 0
+damage at 6 distance. They are quite smart in that they predict a target's movement and will on approach will slow
+down to exactly close the distance to their target. Guided missiles will target other missiles, so shooting a missile
+    back at them is a good way to defend against them.</p>
+
+<h2>Defense</h2>
+
+<h3>Shields</h3>
+
+<p>Shields are the outer defense of a ship: a shield has to be broken before the hull is damaged. A ship's shield
+is divided in quadrants that each cover an arc of 90 degrees (North, East, South, West). Each quadrant has its own
+    strength and needs to be boosted separately. Each point of shield prevents one point of damage.</p>
+
+<p>Shields can be <span class="code-style">Boost</span>ed to recover them. This uses energy from the battery: 1 point
+of energy for 1 point of shield. Shields can be boosted to twice their normal maximum, but any excess strength is lost
+at the end of the round. However, well timed boosts allow you to tank quite some damage!</p>
+
+<h3>Cloak</h3>
+
+<p>Ships and guided missiles have a scan range within which they can scan objects around them.
+    Some ships have a cloaking device. It shortens the range at which the cloaked ship can be detected. The strength of
+the cloak determines how much the others' scan range is shortened when detecting the cloaked ship.</p>
+
+<p>If the strength of a cloak is 0.2, it makes the others' scan range a factor 0.2 (20%) shorter, e.g.
+    <span class="code-style">100 - 20% = 80</span>. A ship with a scan range of 100 will not detect a
+    strength-0.2-cloaked ship if it is beyond a range of 80.</p>
+
+<p>Cloaks use 10 energy per tick, and can be turned on and off with the <span class="code-style">Activate</span>
+command.</p>
+
+<h2>Ships</h2>
+
+<p>Ships are player-controlled war machines. They come in different configurations.</p>
+
+{% for st in ship_types %}
+<h3>{{ st.name }}</h3>
+<table>
+    <tr>
+        <td>Speed</td>
+        <td>Turn</td>
+        <td>Acceleration</td>
+        <td>Hull</td>
+        <td>Battery</td>
+        <td>Generators</td>
+        <td>Scan Distance</td>
+    </tr>
+    <tr>
+        <td>{{st.max_speed}}</td>
+        <td>{{st.max_turn}}</td>
+        <td>{{st.max_delta_v}}</td>
+        <td>{{st.max_hull}}</td>
+        <td>{{st.start_battery}}/{{st.max_battery}}</td>
+        <td>{{st.generators}}</td>
+        <td>{{st.max_scan_distance}}</td>
+    </tr>
+    <tr>
+        <td colspan="4"><b>Weapons</b></td>
+        <td colspan="3"><b>Defense</b></td>
+    </tr>
+    <tr>
+        <td colspan="4">
+            {% for w in st.weapons.values() %}
+            {{w.name}}: {{w.description}}<br/>
+            {% endfor %}
+        </td>
+        <td colspan="3">
+            {% for d in st.defense %}
+            {{d.description}}<br/>
+            {% endfor %}
+        </td>
+    </tr>
+    {% if st.ecm %}
+    <tr>
+        <td colspan="7"><b>ECM</b></td>
+    </tr>
+    <tr>
+        <td colspan="7">
+        {% for e in st.ecm.values() %}
+            {{e.name}}: {{e.description}}<br/>
+        {% endfor %}
+        </td>
+    </tr>
+    {% endif %}
+</table>
+{% endfor %}
+
+<h2>Starbases</h2>
+
+<p>Starbases can not move, but they have powerful weapons and defense, and can replenish ships.</p>
+
+{% for sbt in starbase_types %}
+<h3>{{ sbt.name }}</h3>
+<table>
+    <tr>
+        <td>Replenish distance</td>
+        <td>Replenish speed</td>
+        <td>Hull</td>
+        <td>Battery</td>
+        <td>Generators</td>
+        <td>Scan Distance</td>
+    </tr>
+    <tr>
+        <td>{{sbt.max_replenish_distance}}</td>
+        <td>{{sbt.max_replenish_speed}}</td>
+        <td>{{sbt.max_hull}}</td>
+        <td>{{sbt.start_battery}}/{{sbt.max_battery}}</td>
+        <td>{{sbt.generators}}</td>
+        <td>{{sbt.max_scan_distance}}</td>
+    </tr>
+    <tr>
+        <td colspan="3"><b>Weapons</b></td>
+        <td colspan="3"><b>Defense</b></td>
+    </tr>
+    <tr>
+        <td colspan="3">
+            {% for w in sbt.weapons.values() %}
+            {{w.name}}: {{w.description}}<br/>
+            {% endfor %}
+        </td>
+        <td colspan="3">
+            {% for d in sbt.defense %}
+            {{d.description}}<br/>
+            {% endfor %}
+        </td>
+    </tr>
+    {% if sbt.ecm %}
+    <tr>
+        <td colspan="6"><b>ECM</b></td>
+    </tr>
+    <tr>
+        <td colspan="6">
+        {% for e in sbt.ecm.values() %}
+            {{e.name}}: {{e.description}}<br/>
+        {% endfor %}
+        </td>
+    </tr>
+    {% endif %}
+</table>
+{% endfor %}
 </body>
 </html>

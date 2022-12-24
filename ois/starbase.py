@@ -68,3 +68,8 @@ class SB2531(ShipType):
             'R1': MissileLauncher('R1', Rocket, 75),
             'R2': MissileLauncher('R2', Rocket, 75)
         }
+
+
+all_starbase_types = {
+    'SB2531': SB2531()
+}

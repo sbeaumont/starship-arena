@@ -23,6 +23,11 @@ class Shields(Component):
     def status(self):
         return self.strengths.copy()
 
+    @property
+    def description(self):
+        ms = [str(s) for s in self.max_strengths.values()]
+        return f"Shield ({'/'.join(ms)})"
+
     def quadrant_of(self, source_location: tuple) -> str:
         heading = self.owner.heading_to(Point(*source_location))
         for angles, name in self.quadrants.items():

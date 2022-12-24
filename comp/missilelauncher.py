@@ -43,5 +43,10 @@ class MissileLauncher(Weapon):
             'Firing Arc': self.firing_arc if self.firing_arc else '360'
         }
 
+    @property
+    def description(self):
+        fa = self.firing_arc if self.firing_arc else "(360)"
+        return f"Launcher ({self.initial_load} {self.payload_type.name} {fa})"
+
     def reset(self):
         self.ammo = self.initial_load

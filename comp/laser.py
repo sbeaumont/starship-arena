@@ -78,3 +78,8 @@ class Laser(Weapon):
             'Strength': self.strength,
             'Firing Arc': self.firing_arc if self.firing_arc else '360'
         }
+
+    @property
+    def description(self):
+        fa = self.firing_arc if self.firing_arc else "(360)"
+        return f"{self.__class__.__name__} ({self.strength} {fa})"
