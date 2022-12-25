@@ -1,12 +1,13 @@
 import logging
 from ois.objectinspace import ObjectInSpace, translate
-from ois.event import ExplosionEvent, HitEvent, DrawType, InternalEvent
+from ois.event import Event, InternalEvent
+from comp.bomb import Bomb, RocketWarhead, SplinterWarhead
 
 logger = logging.getLogger(__name__)
 
 
 class Missile(ObjectInSpace):
-    """Guided missile that locks on the nearest target and explodes when near."""
+    """Flying thing that explodes when near its target."""
     energy_per_move: int = 5
 
     def __init__(self, name: str, missile_type, xy: tuple, owner: ObjectInSpace, heading: int = 0):
@@ -14,6 +15,8 @@ class Missile(ObjectInSpace):
         self._type = missile_type
         self.hull = self._type.max_hull
         self.battery = self._type.max_battery
+        self.warhead = missile_type.warhead
+        self.warhead.attach(self)
         self.target = None
         self.owner = owner
 
@@ -43,9 +46,8 @@ class Missile(ObjectInSpace):
     # ---------------------------------------------------------------------- ENGINE HOOKS
 
     def post_move(self, objects_in_space):
-        if self._can_explode(objects_in_space):
-            self._explode(objects_in_space)
-        else:
+        self.warhead.post_move(objects_in_space)
+        if not self.is_destroyed:
             self._intercept()
 
         # Die when battery is dead.
@@ -57,48 +59,10 @@ class Missile(ObjectInSpace):
         """Rockets just fly straight"""
         pass
 
-    def _can_explode(self, objects_in_space: dict) -> bool:
-        """Explode if there is an object in range that is not itself or owned by the same owner"""
-        for ois_name, ois in objects_in_space.items():
-            ois_is_self = (ois is self) or (ois is self.owner) or (ois.owner is self.owner)
-            ois_in_range = (self.distance_to(ois.xy) <= self._type.explode_distance)
-            if not ois_is_self and ois_in_range:
-                return True
-        return False
-
-    def _explode(self, objects_in_space):
-        self.hull = 0
-
-        # Generate the explosion: first all who can scan it see it.
-        expl_event = ExplosionEvent(self.pos, 'Explosion', self, self._type.explode_distance)
-        for ois in objects_in_space.values():
-            if ois.distance_to(expl_event.pos) <= ois._type.max_scan_distance:
-                ois.add_event(expl_event)
-
-        # The explosion generates hits on ALL in range
-        hits = list()
-        for ois in [ob for ob in objects_in_space.values() if ob != self]:
-            distance = self.distance_to(ois.xy)
-            if distance <= self._type.explode_distance:
-                damage = self._damage(ois)
-                hit_event = HitEvent(self.pos, 'Explosion', self, ois, damage)
-                ois.take_damage_from(hit_event)
-                # Owner sees all hits. Note that double add is okay since events for a tick are a set, not a list.
-                self.owner.add_event(hit_event)
-                hits.append(hit_event)
-
-        # All who can observe the hits see it. Owner has already seen all, so filter out.
-        # Urgh, double loop. Not elegant. No performance problems so far.
-        for hit in hits:
-            for ois in objects_in_space.values():
-                if ois.distance_to(hit.pos) <= ois._type.max_scan_distance:
-                    ois.add_event(hit)
-
-    def _damage(self, ois):
-        return self._type.explode_damage
-
 
 class GuidedMissile(Missile):
+    """Guided version of the Missile. Has the ability to lock on and intercept its closest target."""
+
     # ---------------------------------------------------------------------- QUERIES
 
     def can_scan(self, ois: ObjectInSpace) -> bool:
@@ -137,6 +101,7 @@ class Rocket(object):
     """Dumb rocket"""
     name = 'Rocket'
     base_type = Missile
+    warhead = Bomb('Warhead', RocketWarhead())
     max_speed = 60
     explode_distance = 20
     explode_damage = 50
@@ -150,6 +115,7 @@ class Splinter(object):
     """The basic guided missile"""
     name = 'Splinter'
     base_type = GuidedMissile
+    warhead = Bomb('Warhead', SplinterWarhead())
     max_speed = 60
     explode_distance = 6
     explode_damage = 75

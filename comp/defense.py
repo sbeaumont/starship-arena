@@ -29,7 +29,7 @@ class Shields(Component):
         return f"Shield ({'/'.join(ms)})"
 
     def quadrant_of(self, source_location: tuple) -> str:
-        heading = self.owner.heading_to(Point(*source_location))
+        heading = self.container.heading_to(Point(*source_location))
         for angles, name in self.quadrants.items():
             if (angles[0] > angles[1]) and (heading >= angles[0]) or (heading <= angles[1]):
                 # North
@@ -41,16 +41,16 @@ class Shields(Component):
     # ---------------------------------------------------------------------- COMMANDS
 
     def boost(self, qdrt, amount):
-        if amount > self.owner.battery:
-            amount = self.owner.battery
-        self.owner.battery -= amount
-        self.owner.add_event(InternalEvent(f"Used {amount} energy: battery at {self.owner.battery}"))
+        if amount > self.container.battery:
+            amount = self.container.battery
+        self.container.battery -= amount
+        self.add_internal_event(f"Used {amount} energy: battery at {self.container.battery}")
 
         self.strengths[qdrt] += amount
         if self.strengths[qdrt] > 2 * self.max_strengths[qdrt]:
-            self.owner.add_event(InternalEvent(f"Shield {qdrt} can't boost beyond twice the strength."))
+            self.add_internal_event(f"Shield {qdrt} can't boost beyond twice the strength.")
             self.strengths[qdrt] = 2 * self.max_strengths[qdrt]
-        self.owner.add_event(InternalEvent(f"Boosted shield quadrant {qdrt} to {self.strengths[qdrt]}"))
+        self.add_internal_event(f"Boosted shield quadrant {qdrt} to {self.strengths[qdrt]}")
 
     def take_damage_from(self, hit_event: HitEvent) -> int:
         """Absorb damage on shield quadrant, return any remaining damage."""
@@ -63,11 +63,11 @@ class Shields(Component):
             # 25 extra points for a shield break
             hit_event.score += 25
             breakthrough_damage = -self.strengths[shield_quadrant]
-            self.owner.add_event(InternalEvent(f"Hit on shield {shield_quadrant} broke the shield: {breakthrough_damage} passed through."))
+            self.add_internal_event(f"Hit on shield {shield_quadrant} broke the shield: {breakthrough_damage} passed through.")
             self.strengths[shield_quadrant] = 0
             return breakthrough_damage
         else:
-            self.owner.add_event(InternalEvent(f"Shield {shield_quadrant} hit for {hit_event.amount}. Remaining strength: {self.strengths[shield_quadrant]}"))
+            self.add_internal_event(f"Shield {shield_quadrant} hit for {hit_event.amount}. Remaining strength: {self.strengths[shield_quadrant]}")
         return 0
 
     # ---------------------------------------------------------------------- ENGINE HANDLERS
@@ -75,6 +75,6 @@ class Shields(Component):
     def round_reset(self):
         for qdrt in ['N', 'E', 'S', 'W']:
             if self.strengths[qdrt] > self.max_strengths[qdrt]:
-                self.owner.add_event(InternalEvent(f"Shield {qdrt} boost dissipated."))
+                self.add_internal_event(f"Shield {qdrt} boost dissipated.")
                 self.strengths[qdrt] = self.max_strengths[qdrt]
 

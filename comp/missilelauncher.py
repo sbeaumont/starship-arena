@@ -22,18 +22,18 @@ class MissileLauncher(Weapon):
     def fire(self, direction: str, objects_in_space=None):
         firing_angle = int(direction)
         if self.ammo <= 0:
-            self.owner.add_event(InternalEvent(f"{self.name} could not fire: empty."))
+            self.add_internal_event(f"{self.name} could not fire: empty.")
             return None
 
         if self.firing_arc and not self.in_firing_arc(firing_angle):
-            self.owner.add_event(InternalEvent(f"{self.name} can not fire at angle {firing_angle}: {self.firing_arc}."))
+            self.add_internal_event(f"{self.name} can not fire at angle {firing_angle}: {self.firing_arc}.")
             return None
 
         self.missile_number += 1
         self.ammo -= 1
-        heading = (self.owner.heading + int(direction)) % 360
-        name = f'{self.owner.name}-{self.payload_type.name}-{self.name}-{self.missile_number}'
-        self.owner.add_event(InternalEvent(f"Launcher {self.name} fired {name} in direction {int(direction)}"))
+        heading = (self.container.heading + int(direction)) % 360
+        name = f'{self.container.name}-{self.payload_type.name}-{self.name}-{self.missile_number}'
+        self.add_internal_event(f"Launcher {self.name} fired {name} in direction {int(direction)}")
         return self._create_missile(name, heading=heading)
 
     @property

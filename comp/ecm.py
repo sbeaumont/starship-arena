@@ -13,18 +13,18 @@ class Cloak(Component):
     def activation(self, yes_no: bool):
         was_active = self.active
         self.active = yes_no
-        self.owner.add_event(InternalEvent(f"Cloak {self.name} {'activated' if self.active else 'deactivated'}."))
+        self.add_internal_event(f"Cloak {self.name} {'activated' if self.active else 'deactivated'}.")
         if not was_active and self.active:
             self.use_energy()
 
     def use_energy(self):
         if self.active:
-            if self.owner.battery < self.energy_per_tick:
+            if self.container.battery < self.energy_per_tick:
                 self.active = False
-                self.owner.add_event(InternalEvent(f"Not enough energy for Cloak {self.name}: shutting down."))
+                self.add_internal_event(f"Not enough energy for Cloak {self.name}: shutting down.")
             else:
-                self.owner.battery -= self.energy_per_tick
-                self.owner.add_event(InternalEvent(f"Cloak {self.name} used {self.energy_per_tick} energy."))
+                self.container.battery -= self.energy_per_tick
+                self.add_internal_event(f"Cloak {self.name} used {self.energy_per_tick} energy.")
 
     def modify_scan_range(self, scan_range: float) -> float:
         if self.active:

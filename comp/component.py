@@ -4,9 +4,9 @@ from ois.event import InternalEvent
 
 class Component(ABC):
     """An object that is attached to an owner (Ship) and can damage other objects in space."""
-    def __init__(self, name: str, owner=None):
+    def __init__(self, name: str, container=None):
         self.name = name
-        self.owner = owner
+        self.container = container
 
     @property
     def status(self) -> dict:
@@ -14,11 +14,18 @@ class Component(ABC):
         raise NotImplementedError
 
     @property
+    def owner(self):
+        return self.container.owner
+
+    @property
     def description(self):
         return self.__class__.__name__
 
-    def attach(self, owner):
-        self.owner = owner
+    def add_internal_event(self, message: str):
+        self.owner.add_event(InternalEvent(message))
+
+    def attach(self, container):
+        self.container = container
 
     def reset(self):
         pass

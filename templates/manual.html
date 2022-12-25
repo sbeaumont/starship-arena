@@ -140,8 +140,10 @@ If you multiple commands to fire a specific weapon in the same tick, only the fi
 <p>A command set for a round could look like below. Note that the order of the lines can be mixed: there is a fixed
 order that commands will be executed.</p>
 
-<div>
-<pre class="code-style">
+<table>
+    <tr>
+        <td>
+            <pre class="code-style">
     8: A-30
     8: L180
     1: Fire M1 35
@@ -154,20 +156,27 @@ order that commands will be executed.</p>
     8: Replenish
     9: A30
 </pre>
-</div>
-<div>
+
+        </td>
+        <td>
+
     <ul>
-        <li>Tick 1: the ship accelerates by <span class="code-style">70 (1: A30, 1: A40)</span> but will likely be limited
+        <li><em>Tick 1</em>: the ship accelerates by <span class="code-style">70 (1: A30, 1: A40)</span> but will likely be limited
             to its maximum acceleration.</li>
-        <li>Tick 1: the ship turns left by 20 degrees (<span class="code-style">1: L20</span>)</li>
-        <li>Tick 1: the ship fires a rocket 35 degrees to the right of its heading (<span class="code-style">1: Fire M1 35</span>)</li>
+        <li><em>Tick 1</em>: the ship turns left by 20 degrees (<span class="code-style">1: L20</span>)</li>
+        <li><em>Tick 1</em>Tick 1: the ship fires a rocket 35 degrees to the right of its heading (<span class="code-style">1: Fire M1 35</span>)</li>
         <li>The second Fire command is ignored because it tries to fire the "M1" weapon for a second time that tick (<span class="code-style">1: Fire M1 50</span>)</li>
-        <li>Tick 6 and 7: the ship turns right by 30 degrees for two ticks (<span class="code-style">6: R30, 7: R30</span>) </li>
-        <li>Tick 8: the ship slows down by 30 (<span class="code-style">8: A-30</span>) and because its speed is 0 it can make a full reverse turn (<span class="code-style">8: L180</span>)</li>
-        <li>Tick 8: the ship - assuming it is close enough to a star base - fully replenishes (<span class="code-style">8: Replenish</span>)</li>
-        <li>Tick 9: the ship accelerates by 30 to fly back to where it came from (<span class="code-style">9: A30</span>)</li>
+        <li><em>Tick 6 and 7</em>: the ship turns right by 30 degrees for two ticks (<span class="code-style">6: R30, 7: R30</span>) </li>
+        <li><em>Tick 8</em>: the ship slows down by 30 (<span class="code-style">8: A-30</span>) and because its speed is 0 it can make a full reverse turn (<span class="code-style">8: L180</span>)</li>
+        <li><em>Tick 8</em>: the ship - assuming it is close enough to a star base - fully replenishes (<span class="code-style">8: Replenish</span>)</li>
+        <li><em>Tick 9</em>: the ship accelerates by 30 to fly back to where it came from (<span class="code-style">9: A30</span>)</li>
     </ul>
-</div>
+
+        </td>
+
+    </tr>
+</table>
+
 
 <h2>Tick Processing</h2>
 
@@ -378,7 +387,8 @@ command.</p>
 
 <h2>Starbases</h2>
 
-<p>Starbases can not move, but they have powerful weapons and defense, and can replenish ships.</p>
+<p>Starbases can not move, but they have powerful weapons and defense, and can replenish ships that fly within the
+    maximum replenish distance and speed, and then give the Replenish command.</p>
 
 {% for sbt in starbase_types %}
 <h3>{{ sbt.name }}</h3>
