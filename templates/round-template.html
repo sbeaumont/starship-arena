@@ -12,7 +12,7 @@
     <p><b>Score: {{ ship.score }}</b></p>
     <table>
         <tr>
-            <td><b>Position</b></td><td>{{ ship.pos }}</td>
+            <td><b>Position</b></td><td>{{ ship.pos.as_tuple }}</td>
             <td><b>Heading</b></td><td>{{ ship.heading }}</td>
             <td><b>Speed</b></td><td>{{ ship.speed }}/{{ ship._type.max_speed }}</td>
         </tr>
@@ -41,7 +41,7 @@
         {% for scan in final_scans %}
         <tr>
             <td>{{scan.name}}</td>
-            <td>{{scan.pos}}</td>
+            <td>{{scan.pos.as_tuple}}</td>
             <td>{{scan.distance}}</td>
             <td>{{scan.direction}}</td>
             <td>{{scan.heading}}</td>
@@ -69,7 +69,7 @@
             {% for scan in scans[tick] %}
                 <tr>
                     <td>{{scan.name}}</td>
-                    <td>{{scan.pos}}</td>
+                    <td>{{scan.pos.as_tuple}}</td>
                     <td>{{scan.distance}}</td>
                     <td>{{scan.direction}}</td>
                     <td>{{scan.heading}}</td>

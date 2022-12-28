@@ -1,4 +1,4 @@
-from ois.objectinspace import ObjectInSpace
+from ois.objectinspace import ObjectInSpace, Point
 from comp.component import Component
 from abc import ABCMeta
 
@@ -31,8 +31,9 @@ class MachineType(metaclass=ABCMeta):
 
 class MachineInSpace(ObjectInSpace, metaclass=ABCMeta):
     """A machine in space."""
-    def __init__(self, name: str, _type: MachineType, xy: tuple, owner=None, heading=0, speed=0, tick=0):
+    def __init__(self, name: str, _type: MachineType, xy: Point, owner=None, heading=0, speed=0, tick=0):
         assert isinstance(_type, MachineType), f"{_type} is not an instance of MachineType"
+        assert isinstance(xy, Point)
         super().__init__(name, xy, heading, speed, tick=tick)
         self._type: MachineType = _type
         self.hull: int = self._type.max_hull

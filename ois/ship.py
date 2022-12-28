@@ -5,7 +5,7 @@ from comp.launcher import MissileLauncher
 from comp.laser import Laser
 from comp.ecm import Cloak
 from ois.machineinspace import MachineInSpace, MachineType
-from ois.objectinspace import ObjectInSpace
+from ois.objectinspace import ObjectInSpace, Point
 from ois.event import ScanEvent, InternalEvent, HitEvent
 from ois.missile import Splinter, Rocket
 from ois.mine import SplinterMine
@@ -24,7 +24,8 @@ shipType = NewType("ShipType", MachineType)
 
 class Ship(MachineInSpace):
     """A player-commanded space ship."""
-    def __init__(self, name: str, _type: shipType, xy: tuple, owner=None, heading=0, speed=0, tick=0):
+    def __init__(self, name: str, _type: shipType, xy: Point, owner=None, heading=0, speed=0, tick=0):
+        assert isinstance(xy, Point)
         super().__init__(name, _type, xy, owner=self, heading=heading, speed=speed, tick=tick)
         self.generators = _type.generators
         self.score = 0
@@ -61,17 +62,17 @@ class Ship(MachineInSpace):
     def accelerate(self, delta_v):
         old_speed = self.speed
         if abs(delta_v) > self._type.max_delta_v:
-            self.add_event(InternalEvent(f"Limiting acceleration {delta_v} to max acceleration |{self._type.max_delta_v}|"))
+            self.add_internal_event(f"Limiting acceleration {delta_v} to max acceleration |{self._type.max_delta_v}|")
             delta_v = self._type.max_delta_v if delta_v > 0 else -self._type.max_delta_v
-        self.speed += delta_v
+        self.vector = self.vector.accelerate(delta_v)
         if self.speed > self._type.max_speed:
             self.speed = self._type.max_speed
-            self.add_event(InternalEvent(f"Limiting speed to max speed |{self._type.max_speed}|"))
+            self.add_internal_event(f"Limiting speed to max speed |{self._type.max_speed}|")
         if self.speed < -self._type.max_speed:
-            self.speed = -self._type.max_speed
-            self.add_event(InternalEvent(f"Limiting speed to max speed |{-self._type.max_speed}|"))
+            self.vector.length = -self._type.max_speed
+            self.add_internal_event((f"Limiting speed to max speed |{-self._type.max_speed}|")
         if old_speed != self.speed:
-            self.add_event(InternalEvent(f"Changed speed from {old_speed} to {self.speed}"))
+            self.add_internal_event(f"Changed speed from {old_speed} to {self.speed}")
 
     def fire(self, weapon_name: str, target_or_direction, objects_in_space=None):
         if weapon_name in self.weapons:
@@ -83,27 +84,27 @@ class Ship(MachineInSpace):
         if name in self.all_components:
             self.all_components[name].activation(on_off)
         else:
-            self.add_event(InternalEvent(f"Can not activate/deactivate unknown component: {name}"))
+            self.add_internal_event(f"Can not activate/deactivate unknown component: {name}")
 
     def generate(self):
         self.battery += self.generators
         if self.battery > self._type.max_battery:
             self.battery = self._type.max_battery
-        self.add_event(InternalEvent(f"Generators generated {self.generators} energy: battery at {self.battery}/{self._type.max_battery}"))
+        self.add_internal_event(f"Generators generated {self.generators} energy: battery at {self.battery}/{self._type.max_battery}")
 
     def try_replenish(self, objects_in_space: dict):
         for replenisher in [ois for ois in objects_in_space.values() if isinstance(ois, Replenisher)]:
             replenisher.replenish(self)
             return
-        self.add_event(InternalEvent("Failed to replenish."))
+        self.add_internal_event("Failed to replenish.")
 
     def turn(self, angle):
         if (self.speed > 0) and (abs(angle) > self._type.max_turn):
             self.add_event(InternalEvent(f"Limiting turn {angle} to max turn |{self._type.max_turn}|"))
             angle = self._type.max_turn if (angle > 0) else -self._type.max_turn
-        self.heading = (self.heading + angle) % 360
+        self.vector.angle = (self.heading + angle) % 360
         if angle != 0:
-            self.add_event(InternalEvent(f"Turned {angle} degrees to {self.heading}"))
+            self.add_internal_event(f"Turned {angle} degrees to {self.heading}")
 
     def scan(self, objects_in_space: dict):
         for ois in [ob for ob in objects_in_space.values() if self.can_scan(ob)]:
@@ -131,7 +132,7 @@ class Ship(MachineInSpace):
                     break
         if amount > 0:
             self.hull -= amount
-            self.add_event(InternalEvent(f"Hull decreased by {amount} to {self.hull}"))
+            self.add_internal_event(f"Hull decreased by {amount} to {self.hull}")
             # Score double points for hits on the hull
             score = 0
             if hit_event.can_score:
@@ -146,7 +147,7 @@ class Ship(MachineInSpace):
                 score = 100
                 hit_event.score += 100
             hit_event.notify_owner(f"{hit_event.source.name} landed the killing blow on {self.name}: ({score} points)")
-            self.add_event(InternalEvent(f"You were destroyed. Killing blow by {self.name}."))
+            self.add_internal_event(f"You were destroyed. Killing blow by {self.name}.")
 
     # ---------------------------------------------------------------------- TIMED HANDLERS
 
@@ -159,14 +160,14 @@ class Ship(MachineInSpace):
             comp.use_energy()
         if self.battery < (self.speed // 10):
             new_max_speed = self.battery * 10
-            self.add_event(InternalEvent(f"Not enough energy for current speed: slowing down to {new_max_speed}"))
+            self.add_internal_event(f"Not enough energy for current speed: slowing down to {new_max_speed}")
             self.speed = new_max_speed
 
     def post_move(self, objects_in_space):
         # Spend energy based on speed
         movement_energy = self.speed // 10
         self.battery -= movement_energy
-        self.add_event(InternalEvent(f"Used {movement_energy} energy for movement."))
+        self.add_internal_event(f"Used {movement_energy} energy for movement.")
 
     def round_reset(self):
         super().round_reset()

@@ -30,15 +30,15 @@ class Shields(Component):
         ms = [str(s) for s in self.max_strengths.values()]
         return f"Shield ({'/'.join(ms)})"
 
-    def quadrant_of(self, source_location: tuple) -> str:
-        heading = self.container.heading_to(Point(*source_location))
+    def quadrant_of(self, source_location: Point) -> str:
+        heading = self.container.heading_to(source_location)
         for angles, name in self.quadrants.items():
             if (angles[0] > angles[1]) and (heading >= angles[0]) or (heading <= angles[1]):
                 # North
                 return name
             elif angles[0] <= heading <= angles[1]:
                 return name
-        assert False, f"No quadrant found {source_location}, {heading}"
+        assert False, f"No quadrant found {source_location.as_tuple}, {heading}"
 
     # ---------------------------------------------------------------------- COMMANDS
 

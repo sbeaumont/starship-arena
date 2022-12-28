@@ -43,7 +43,7 @@ class Mine(MachineInSpace):
     def post_move(self, objects_in_space):
         self.warhead.post_move(objects_in_space)
         speed = self.speed - self.slow_down_rate
-        self.speed = speed if speed > 0 else 0
+        self.vector.length = speed if speed > 0 else 0
 
         # Die when battery is dead.
         self.battery -= self.energy_per_tick

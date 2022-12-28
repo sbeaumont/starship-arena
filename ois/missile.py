@@ -1,5 +1,5 @@
 import logging
-from ois.objectinspace import ObjectInSpace, translate
+from ois.objectinspace import ObjectInSpace
 from ois.machineinspace import MachineInSpace, MachineType
 from ois.event import InternalEvent
 from comp.warhead import RocketWarhead, SplinterWarhead
@@ -86,11 +86,11 @@ class GuidedMissile(Missile):
 
     def _intercept(self):
         if self.target:
-            intercept_pos = translate(self.target.xy, self.target.heading, self.target.speed)
+            intercept_pos = self.target.vector.translate(self.target.heading, self.target.speed).pos
             intercept_distance = self.distance_to(intercept_pos)
             if intercept_distance < self._type.max_speed:
-                self.speed = round(intercept_distance, 0)
-            self.heading = self.heading_to(intercept_pos)
+                self.vector.length = round(intercept_distance, 0)
+            self.vector.angle = self.heading_to(intercept_pos)
 
 
 class MissileType(MachineType):

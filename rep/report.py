@@ -5,13 +5,14 @@ from weasyprint import HTML
 from ois.event import ScanEvent, Event, DrawType, HitEvent
 from ois.starbase import Starbase
 from ois.ship import Ship
+from ois.objectinspace import Point
 from rep.visualize import Visualizer, COLORS
 from cfg import *
 
 
-def text_nudge(pos):
+def text_nudge(pos: Point) -> Point:
     """Give text positions a nudge to clear them from the path lines."""
-    return pos[0] + 2, pos[1] - 2
+    return Point(pos.x + 2, pos.y - 2)
 
 
 def report_events(ship: Ship, vis: Visualizer):
@@ -43,12 +44,13 @@ def report_events(ship: Ship, vis: Visualizer):
 
 def find_boundaries(ship, padding=50):
     """Find the optimal boundaries to fit everything the ship saw this round."""
-    min_x = max_x = round(ship.history[0]['pos'][0])
-    min_y = max_y = round(ship.history[0]['pos'][1])
+    min_x = max_x = round(ship.history[0]['pos'].x)
+    min_y = max_y = round(ship.history[0]['pos'].y)
 
     def stretch(xy):
         nonlocal min_x, min_y, max_x, max_y
-        x, y = xy
+        x = xy.x
+        y = xy.y
         if x < min_x:
             min_x = x
         elif x > max_x:
