@@ -10,6 +10,8 @@ class TickHistory(object):
         self.events = list()
         self.score = 0
 
+    # ---------------------------------------------------------------------- QUERIES
+
     def __getitem__(self, item):
         return self.data[item]
 
@@ -21,14 +23,6 @@ class TickHistory(object):
 
     def keys(self):
         return self.data.keys()
-
-    def update(self, snapshot: dict):
-        self.data.update(snapshot)
-
-    def add_event(self, event):
-        if event not in self.events:
-            self.events.append(event)
-        return self
 
     @property
     def scans(self):
@@ -45,6 +39,16 @@ class TickHistory(object):
     def non_scan_events(self):
         return [e for e in self.events if not isinstance(e, ScanEvent)]
 
+    # ---------------------------------------------------------------------- COMMANDS
+
+    def update(self, snapshot: dict):
+        self.data.update(snapshot)
+
+    def add_event(self, event):
+        if event not in self.events:
+            self.events.append(event)
+        return self
+
 
 class History(object):
     __slots__ = ('owner', 'ticks', 'current')
@@ -54,7 +58,8 @@ class History(object):
         self.owner = owner
         self.ticks = defaultdict(TickHistory)
         self.current: TickHistory = self.ticks[tick]
-        # self.update()
+
+    # ---------------------------------------------------------------------- QUERIES
 
     def __getitem__(self, item):
         return self.ticks[item]
@@ -68,10 +73,7 @@ class History(object):
     def keys(self):
         return self.ticks.keys()
 
-    def reset(self):
-        self.ticks.clear()
-        self.ticks[0].update(self.create_snapshot())
-        self.current = self.ticks[0]
+    # ---------------------------------------------------------------------- COMMANDS
 
     def add_event(self, event):
         assert event is not None
@@ -83,13 +85,18 @@ class History(object):
                 self.owner.score += event.score
             self.current.add_event(event)
 
-    def update(self):
-        self.current.update(self.owner.snapshot)
-
     def create_snapshot(self):
         return self.owner.snapshot
+
+    def reset(self):
+        self.ticks.clear()
+        self.ticks[0].update(self.create_snapshot())
+        self.current = self.ticks[0]
 
     def set_tick(self, tick, update=True):
         if update:
             self.update()
         self.current = self.ticks[tick]
+
+    def update(self):
+        self.current.update(self.owner.snapshot)

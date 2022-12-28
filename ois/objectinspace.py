@@ -1,7 +1,7 @@
 import logging
 from math import sin, cos, radians, sqrt, atan2, pi
 from abc import abstractmethod, ABC
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from ois.event import InternalEvent, Event
 from rep.history import History
@@ -31,8 +31,8 @@ class Point(object):
 @dataclass
 class Vector(object):
     pos: Point
-    angle: float
-    length: float
+    heading: float
+    speed: float
 
     @property
     def x(self):
@@ -45,30 +45,33 @@ class Vector(object):
     def rounded(self, digits=1):
         return Vector(
             pos=self.pos.rounded(digits),
-            angle=round(self.angle, digits),
-            length=round(self.length, digits)
+            heading=round(self.heading, digits),
+            speed=round(self.speed, digits)
         )
 
     def translate(self, direction, distance):
-        return Vector(self.pos.translate(direction, distance), self.angle, self.length)
+        return replace(self, pos=self.pos.translate(direction, distance))
 
     def move(self):
-        return self.translate(self.angle, self.length)
+        return self.translate(self.heading, self.speed)
 
     def turn(self, angle):
-        return Vector(self.pos, self.angle + angle, self.length)
+        return replace(self, heading=self.heading + angle)
 
     def accelerate(self, delta_v):
-        return Vector(self.pos, self.angle, self.length + delta_v)
+        return replace(self, speed=self.speed + delta_v)
+
+    def copy(self):
+        return replace(self)
 
 
 class ObjectInSpace(ABC):
     """Any object in space, which can be ships, rockets, starbases, black holes, etc."""
-    def __init__(self, name: str, xy: Point, heading: int = 0, speed: int = 0, visibility: int = 100, tick: int = 0):
-        assert isinstance(xy, Point)
+    def __init__(self, name: str, vector: Vector, visibility: int = 100, tick: int = 0):
+        assert isinstance(vector, Vector)
         super().__init__()
         self.name = name
-        self.vector = Vector(xy, angle=heading, length=speed)
+        self.vector = vector
         self.owner = None
         self.history = History(self, tick)
         self.visibility = visibility
@@ -86,11 +89,11 @@ class ObjectInSpace(ABC):
 
     @property
     def heading(self):
-        return round(self.vector.angle, 1)
+        return round(self.vector.heading, 1)
 
     @property
     def speed(self):
-        return round(self.vector.length, 1)
+        return round(self.vector.speed, 1)
 
     def distance_to(self, point: Point) -> float:
         assert isinstance(point, Point), f"{point} is not a Point"
@@ -118,13 +121,15 @@ class ObjectInSpace(ABC):
     def add_event(self, event: Event):
         assert isinstance(event, Event)
         self.history.add_event(event)
+        logger.debug(f"{self.name} event: {str(event)}")
 
     def add_internal_event(self, message: str):
         assert message is not None
-        self.history.add_event(InternalEvent(message))
+        self.add_event(InternalEvent(message))
 
     def round_reset(self):
         self.history.reset()
+        logger.debug(f"{self.name} round reset.")
 
     @property
     def snapshot(self):
@@ -141,24 +146,21 @@ class ObjectInSpace(ABC):
 
     def move(self):
         """Move along heading with speed to next coordinate."""
-        old_pos = self.vector.pos
+        old_pos = self.vector.pos.rounded().as_tuple
         self.vector = self.vector.move()
-        logger.debug(f"{self.name} moving from {old_pos} to {self.vector.pos} heading {self.heading}")
-        if old_pos != self.pos:
-            self.add_event(InternalEvent(f"Moved from {old_pos} to {self.pos}"))
+        new_pos = self.vector.pos.rounded().as_tuple
+        if old_pos != new_pos:
+            logger.debug(f"{self.name} moving from {old_pos} to {new_pos} heading {self.heading}")
+            self.add_internal_event(f"Moved from {old_pos} to {new_pos}")
+        else:
+            logger.debug(f"{self.name} no movement at {old_pos}")
 
     def accelerate(self, delta_v):
         self.vector = self.vector.accelerate(delta_v)
 
     @speed.setter
     def speed(self, amount):
-        self.vector.length = amount
-
-    def generate(self):
-        pass
-
-    def scan(self, objects_in_space: dict):
-        pass
+        self.vector = replace(self.vector, speed=amount)
 
     def take_damage_from(self, hitevent):
         pass
@@ -168,7 +170,13 @@ class ObjectInSpace(ABC):
     def tick(self, tick_nr):
         pass
 
+    def generate(self):
+        pass
+
     def use_energy(self):
+        pass
+
+    def scan(self, objects_in_space: dict):
         pass
 
     def pre_move(self, objects_in_space: dict):
@@ -176,4 +184,3 @@ class ObjectInSpace(ABC):
 
     def post_move(self, objects_in_space: dict):
         pass
-

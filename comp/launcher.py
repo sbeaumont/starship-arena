@@ -1,9 +1,18 @@
 from comp.weapon import Weapon
+from typing import Protocol
+from ois.objectinspace import Vector
+
+
+class PayloadType(Protocol):
+    name: str
+
+    def create(self, name: str, vector: Vector, owner=None):
+        ...
 
 
 class MissileLauncher(Weapon):
     """Fires Rockets in a given direction. Best to point it away from your friends."""
-    def __init__(self, name: str, payload_type, initial_load: int, firing_arc=None):
+    def __init__(self, name: str, payload_type: PayloadType, initial_load: int, firing_arc=None):
         super().__init__(name, firing_arc)
         self.missile_number = 0
         self.initial_load = initial_load
@@ -11,7 +20,8 @@ class MissileLauncher(Weapon):
         self.payload_type = payload_type
 
     def _create_missile(self, name, heading):
-        return self.payload_type.create(name, self.owner.xy, owner=self.owner, heading=heading)
+        vector = Vector(pos=self.container.vector.pos, heading=heading, speed=self.container.speed)
+        return self.payload_type.create(name, vector, owner=self.owner)
 
     def fire(self, direction: str, objects_in_space=None):
         firing_angle = int(direction)

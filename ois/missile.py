@@ -1,5 +1,5 @@
 import logging
-from ois.objectinspace import ObjectInSpace
+from ois.objectinspace import ObjectInSpace, Vector
 from ois.machineinspace import MachineInSpace, MachineType
 from ois.event import InternalEvent
 from comp.warhead import RocketWarhead, SplinterWarhead
@@ -11,8 +11,8 @@ class Missile(MachineInSpace):
     """Flying thing that explodes when near its target."""
     energy_per_move: int = 5
 
-    def __init__(self, name: str, _type, xy: tuple, owner: ObjectInSpace, heading: int = 0, speed=0, tick: int = 0):
-        super().__init__(name, _type, xy, owner=owner, heading=heading, speed=_type.max_speed, tick=tick)
+    def __init__(self, name: str, _type, vector: Vector, owner: ObjectInSpace, tick: int = 0):
+        super().__init__(name, _type, vector, owner=owner, tick=tick)
         self.target = None
 
     # ---------------------------------------------------------------------- QUERIES
@@ -89,12 +89,17 @@ class GuidedMissile(Missile):
             intercept_pos = self.target.vector.translate(self.target.heading, self.target.speed).pos
             intercept_distance = self.distance_to(intercept_pos)
             if intercept_distance < self._type.max_speed:
-                self.vector.length = round(intercept_distance, 0)
-            self.vector.angle = self.heading_to(intercept_pos)
+                self.vector.speed = round(intercept_distance, 0)
+            self.vector.heading = self.heading_to(intercept_pos)
 
 
 class MissileType(MachineType):
     base_type = Missile
+    max_speed = 0
+
+    def create(self, name: str, vector: Vector, owner=None, tick: int = 0):
+        vector = Vector(vector.pos, vector.heading, self.max_speed)
+        return super().create(name, vector, owner, tick)
 
 
 class Rocket(MissileType):

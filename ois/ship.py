@@ -4,11 +4,12 @@ from comp.defense import Shields
 from comp.launcher import MissileLauncher
 from comp.laser import Laser
 from comp.ecm import Cloak
+from comp.warhead import DamageType
 from ois.machineinspace import MachineInSpace, MachineType
-from ois.objectinspace import ObjectInSpace, Point
+from ois.objectinspace import ObjectInSpace, Point, Vector
 from ois.event import ScanEvent, InternalEvent, HitEvent
 from ois.missile import Splinter, Rocket
-from ois.mine import SplinterMine
+from ois.mine import SplinterMine, NanocyteMine
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +25,9 @@ shipType = NewType("ShipType", MachineType)
 
 class Ship(MachineInSpace):
     """A player-commanded space ship."""
-    def __init__(self, name: str, _type: shipType, xy: Point, owner=None, heading=0, speed=0, tick=0):
-        assert isinstance(xy, Point)
-        super().__init__(name, _type, xy, owner=self, heading=heading, speed=speed, tick=tick)
+    def __init__(self, name: str, _type: shipType, vector: Vector, owner=None, tick=0):
+        assert isinstance(vector, Vector)
+        super().__init__(name, _type, vector, owner=self, tick=tick)
         self.generators = _type.generators
         self.score = 0
         self.commands = None
@@ -69,7 +70,7 @@ class Ship(MachineInSpace):
             self.speed = self._type.max_speed
             self.add_internal_event(f"Limiting speed to max speed |{self._type.max_speed}|")
         if self.speed < -self._type.max_speed:
-            self.vector.length = -self._type.max_speed
+            self.vector.speed = -self._type.max_speed
             self.add_internal_event(f"Limiting speed to max speed |{-self._type.max_speed}|")
         if old_speed != self.speed:
             self.add_internal_event(f"Changed speed from {old_speed} to {self.speed}")
@@ -90,7 +91,7 @@ class Ship(MachineInSpace):
         self.battery += self.generators
         if self.battery > self._type.max_battery:
             self.battery = self._type.max_battery
-        self.add_internal_event(f"Generators generated {self.generators} energy: battery at {self.battery}/{self._type.max_battery}")
+        self.add_internal_event(f"Generated {self.generators} energy: battery at {self.battery}/{self._type.max_battery}")
 
     def try_replenish(self, objects_in_space: dict):
         for replenisher in [ois for ois in objects_in_space.values() if isinstance(ois, Replenisher)]:
@@ -102,7 +103,7 @@ class Ship(MachineInSpace):
         if (self.speed > 0) and (abs(angle) > self._type.max_turn):
             self.add_event(InternalEvent(f"Limiting turn {angle} to max turn |{self._type.max_turn}|"))
             angle = self._type.max_turn if (angle > 0) else -self._type.max_turn
-        self.vector.angle = (self.heading + angle) % 360
+        self.vector.heading = (self.heading + angle) % 360
         if angle != 0:
             self.add_internal_event(f"Turned {angle} degrees to {self.heading}")
 
@@ -120,6 +121,7 @@ class Ship(MachineInSpace):
         """First pass the damage to the defense components, any remaining damage goes to the hull.
         Note that we allow overkilling hits (and scoring) on the tick a ship is destroyed, but only
         count one killing blow for scoring."""
+        logger.debug(f"{self.name} taking damage from HitEvent {str(hit_event)}")
         self.add_event(hit_event)
 
         already_killed = self.is_destroyed
@@ -131,8 +133,13 @@ class Ship(MachineInSpace):
                 if amount <= 0:
                     break
         if amount > 0:
-            self.hull -= amount
-            self.add_internal_event(f"Hull decreased by {amount} to {self.hull}")
+            if hit_event._type == DamageType.Nanocyte:
+                amount = 2 * amount
+                self.hull -= amount
+                self.add_internal_event(f"Nanocytes burned your hull for {amount} to {self.hull}")
+            else:
+                self.hull -= amount
+                self.add_internal_event(f"Hull decreased by {amount} to {self.hull}")
             # Score double points for hits on the hull
             score = 0
             if hit_event.can_score:
@@ -151,7 +158,8 @@ class Ship(MachineInSpace):
 
     # ---------------------------------------------------------------------- TIMED HANDLERS
 
-    def tick(self, tick_nr):
+    def tick(self, tick_nr: int):
+        logger.debug(f"{self.name} starting tick {tick_nr}")
         for comp in self.all_components.values():
             comp.tick(tick_nr)
 
@@ -211,7 +219,7 @@ class H2545(ShipType):
             MissileLauncher('S1', Splinter(), 4, (270, 90)),
             MissileLauncher('R1', Rocket(), 10),
             MissileLauncher('R2', Rocket(), 10),
-            MissileLauncher('M1', SplinterMine(), 10, (135, 225))
+            MissileLauncher('M1', SplinterMine(), 10)
         ]
 
 
@@ -229,7 +237,8 @@ class H2552(ShipType):
         return [
             Laser('L1', 180, (270, 90)),
             MissileLauncher('S1', Splinter(), 10, (90, 270)),
-            MissileLauncher('R1', Rocket(), 15)
+            MissileLauncher('R1', Rocket(), 15),
+            MissileLauncher('N1', NanocyteMine(), 10)
         ]
 
     @property

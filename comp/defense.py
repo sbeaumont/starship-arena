@@ -2,6 +2,7 @@ from collections import namedtuple
 from comp.component import Component
 from ois.objectinspace import Point
 from ois.event import HitEvent
+from .warhead import DamageType
 
 Quadrants = namedtuple('Quadrants', 'north east south west')
 Section = namedtuple('Section', 'strength energy')
@@ -58,6 +59,15 @@ class Shields(Component):
         """Absorb damage on shield quadrant, return any remaining damage."""
         shield_quadrant = self.quadrant_of(hit_event.source.pos)
         old_strength = self.strengths[shield_quadrant]
+
+        # Nanocytes can not penetrate shields, but if there's no shield there, everything gets passed through... uh oh.
+        if (hit_event._type == DamageType.Nanocyte):
+            if old_strength > 0:
+                hit_event.notify_owner(f"Nanocytes splashed harmlessly against {self.container.name}'s shield.")
+                return 0
+            else:
+                return hit_event.amount
+
         self.strengths[shield_quadrant] -= hit_event.amount
         if old_strength >= hit_event.amount:
             shield_score = 0
@@ -86,6 +96,6 @@ class Shields(Component):
     def round_reset(self):
         for qdrt in ['N', 'E', 'S', 'W']:
             if self.strengths[qdrt] > self.max_strengths[qdrt]:
-                self.add_internal_event(f"Shield {qdrt} boost dissipated.")
+                self.add_internal_event(f"Shield {qdrt} boost dissipated: now at {self.strengths[qdrt]}.")
                 self.strengths[qdrt] = self.max_strengths[qdrt]
 

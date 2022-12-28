@@ -8,6 +8,12 @@ class DamageFalloff(Enum):
     Flat = auto()
 
 
+class DamageType(Enum):
+    Explosion = 'Explosion'
+    Nanocyte = 'Nanocyte'
+    EMP = 'EMP'
+
+
 class Warhead(Component):
     """Component that goes BOOM. Centralizes explode code into one component, like for missiles and mines."""
     @property
@@ -33,7 +39,7 @@ class Warhead(Component):
         self.container.hull = 0
 
         # Generate the explosion: first all who can scan it see it.
-        expl_event = ExplosionEvent(self.container.pos, 'Explosion', self.container, self.range)
+        expl_event = ExplosionEvent(self.container.pos, self.damage_type, self.container, self.range)
         for ois in objects_in_space.values():
             if ois.distance_to(expl_event.pos) <= ois._type.max_scan_distance:
                 ois.add_event(expl_event)
@@ -44,7 +50,7 @@ class Warhead(Component):
             distance = self.container.distance_to(ois.xy)
             if distance <= self.range:
                 damage = self._damage(ois)
-                hit_event = HitEvent(self.container.pos, 'Explosion', self.container, ois, damage)
+                hit_event = HitEvent(self.container.pos, self.damage_type, self.container, ois, damage)
                 ois.take_damage_from(hit_event)
                 self.owner.add_event(hit_event)
                 hits.append(hit_event)
@@ -66,12 +72,21 @@ class Warhead(Component):
 
 
 class SplinterWarhead(Warhead):
+    damage_type = DamageType.Explosion
     damage = 75
     range = 6
     falloff = DamageFalloff.Linear
 
 
 class RocketWarhead(Warhead):
+    damage_type = DamageType.Explosion
     damage = 50
     range = 20
     falloff = DamageFalloff.Flat
+
+
+class NanocyteWarhead(Warhead):
+    damage_type = DamageType.Nanocyte
+    damage = 100
+    range = 50
+    falloff = DamageFalloff.Linear

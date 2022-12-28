@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Protocol, NewType
 
 
 class DrawType(Enum):
@@ -7,8 +8,37 @@ class DrawType(Enum):
     Line = 'Line'
 
 
+class EventLocation(Protocol):
+    x: float
+    y: float
+
+
+eventType = NewType('Event', object)
+
+
+class EventSink(Protocol):
+    name: str
+
+    def add_event(self, event: eventType):
+        ...
+
+
+class EventSource(Protocol):
+    name: str
+    owner: EventSink
+
+    def distance_to(self, p: EventLocation):
+        ...
+
+    def direction_to(self, p: EventLocation):
+        ...
+
+    def heading_to(self, p: EventLocation):
+        ...
+
+
 class Event(object):
-    def __init__(self, location, event_type, source, draw_type: DrawType=None):
+    def __init__(self, location: EventLocation, event_type: str, source: EventSource, draw_type: DrawType=None):
         self.pos = location
         self._type = event_type
         self.source = source
@@ -48,12 +78,20 @@ class ScanEvent(Event):
 
 
 class HitEvent(Event):
-    def __init__(self, location, hit_type, source, target, amount: int, draw_type: DrawType=None, message: str=None):
+    def __init__(self, location, hit_type, source, target, amount: int, draw_type: DrawType = None, message: str = None):
         super().__init__(location, hit_type, source, draw_type)
         self.target = target
         self.amount = int(round(amount, 0))
         self.message = message
         self.score = 0
+
+    @property
+    def can_score(self):
+        """You don't score for hitting yourself."""
+        if self.target:
+            return self.source.owner is not self.target.owner
+        else:
+            return True
 
     def __str__(self):
         if self.message:
@@ -63,14 +101,6 @@ class HitEvent(Event):
 
     def notify_owner(self, message: str):
         self.source.owner.add_event(InternalEvent(message))
-
-    @property
-    def can_score(self):
-        """You don't score for hitting yourself."""
-        if self.target:
-            return self.source.owner is not self.target.owner
-        else:
-            return True
 
 
 class ExplosionEvent(Event):
