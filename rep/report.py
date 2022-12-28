@@ -1,11 +1,10 @@
-import datetime
 import os
 from jinja2 import Environment, FileSystemLoader
 from collections import defaultdict
 from weasyprint import HTML
 from ois.event import ScanEvent, Event, DrawType, HitEvent
-from ois.starbase import Starbase, all_starbase_types
-from ois.ship import Ship, all_ship_types
+from ois.starbase import Starbase
+from ois.ship import Ship
 from rep.visualize import Visualizer, COLORS
 from cfg import *
 
@@ -166,19 +165,3 @@ def report_round_zero(game_dir: str, ships: list):
 
         print_html = HTML(string=html_out, base_url=f'{game_dir}/{ROUND_ZERO_NAME}')
         print_html.write_pdf(f'{report_file_name}.pdf')
-
-
-def generate_manual():
-    env = Environment(loader=FileSystemLoader('./templates'))
-    template = env.get_template(MANUAL_TEMPLATE)
-
-    template_data = {
-        "starbase_types": all_starbase_types.values(),
-        "ship_types": all_ship_types.values(),
-        "date": datetime.date.today().strftime('%d %b %Y'),
-    }
-
-    html_out = template.render(template_data)
-    print_html = HTML(string=html_out, base_url=f'.')
-    print_html.write_pdf(MANUAL_FILENAME)
-
