@@ -360,7 +360,7 @@ command.</p>
     </tr>
     <tr>
         <td colspan="4">
-            {% for w in st.weapons.values() %}
+            {% for w in st.weapons %}
             {{w.name}}: {{w.description}}<br/>
             {% endfor %}
         </td>
@@ -376,7 +376,7 @@ command.</p>
     </tr>
     <tr>
         <td colspan="7">
-        {% for e in st.ecm.values() %}
+        {% for e in st.ecm %}
             {{e.name}}: {{e.description}}<br/>
         {% endfor %}
         </td>
@@ -415,7 +415,7 @@ command.</p>
     </tr>
     <tr>
         <td colspan="3">
-            {% for w in sbt.weapons.values() %}
+            {% for w in sbt.weapons %}
             {{w.name}}: {{w.description}}<br/>
             {% endfor %}
         </td>
@@ -431,7 +431,7 @@ command.</p>
     </tr>
     <tr>
         <td colspan="6">
-        {% for e in sbt.ecm.values() %}
+        {% for e in sbt.ecm %}
             {{e.name}}: {{e.description}}<br/>
         {% endfor %}
         </td>

@@ -35,7 +35,7 @@ def main():
         answer = None
         if not args.yolo:
             answer = input(f"Type 'Y' if you're sure you want to clean directory '{args.gamedir}'.\n")
-        if args.yolo or (answer == 'Y'):
+        if args.yolo or (answer.upper() == 'Y'):
             game_dir.clean()
 
     if args.manual:
@@ -53,7 +53,7 @@ def main():
         ans = None
         if not args.yolo:
             ans = input(f"Type 'Y' if you're sure you want to process new round '{last_round}'.\n")
-        if args.yolo or (ans == 'Y'):
+        if args.yolo or (ans.upper() == 'Y'):
             gr = GameRound(game_dir, last_round)
             gr.do_round(not args.ignore)
 
@@ -61,7 +61,7 @@ def main():
         answer = None
         if not args.yolo:
             answer = input(f"Type 'Y' if you're sure you want to CLEAN AND REDO ALL.\n")
-        if args.yolo or (answer == 'Y'):
+        if args.yolo or (answer.upper() == 'Y'):
             do_zero()
             round_nr = 1
             gr = GameRound(game_dir, round_nr)

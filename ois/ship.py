@@ -70,7 +70,7 @@ class Ship(MachineInSpace):
             self.add_internal_event(f"Limiting speed to max speed |{self._type.max_speed}|")
         if self.speed < -self._type.max_speed:
             self.vector.length = -self._type.max_speed
-            self.add_internal_event((f"Limiting speed to max speed |{-self._type.max_speed}|")
+            self.add_internal_event(f"Limiting speed to max speed |{-self._type.max_speed}|")
         if old_speed != self.speed:
             self.add_internal_event(f"Changed speed from {old_speed} to {self.speed}")
 
