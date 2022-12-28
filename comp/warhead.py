@@ -13,6 +13,9 @@ class DamageType(Enum):
     Nanocyte = 'Nanocyte'
     EMP = 'EMP'
 
+    def __str__(self):
+        return f"{self.value}"
+
 
 class Warhead(Component):
     """Component that goes BOOM. Centralizes explode code into one component, like for missiles and mines."""
