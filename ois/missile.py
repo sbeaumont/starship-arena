@@ -1,30 +1,29 @@
 import logging
 from ois.objectinspace import ObjectInSpace, translate
-from ois.event import Event, InternalEvent
-from comp.bomb import Bomb, RocketWarhead, SplinterWarhead
+from ois.machineinspace import MachineInSpace, MachineType
+from ois.event import InternalEvent
+from comp.warhead import RocketWarhead, SplinterWarhead
 
 logger = logging.getLogger(__name__)
 
 
-class Missile(ObjectInSpace):
+class Missile(MachineInSpace):
     """Flying thing that explodes when near its target."""
     energy_per_move: int = 5
 
-    def __init__(self, name: str, missile_type, xy: tuple, owner: ObjectInSpace, heading: int = 0):
-        super().__init__(name, xy, heading, missile_type.max_speed)
-        self._type = missile_type
-        self.hull = self._type.max_hull
-        self.battery = self._type.max_battery
-        self.warhead = missile_type.warhead
-        self.warhead.attach(self)
+    def __init__(self, name: str, _type, xy: tuple, owner: ObjectInSpace, heading: int = 0, speed=0, tick: int = 0):
+        super().__init__(name, _type, xy, owner=owner, heading=heading, speed=_type.max_speed, tick=tick)
         self.target = None
-        self.owner = owner
 
     # ---------------------------------------------------------------------- QUERIES
 
     @property
     def is_destroyed(self) -> bool:
         return (self.hull <= 0) or (self.battery <= 0)
+
+    @property
+    def warhead(self):
+        return self.weapons['warhead']
 
     # ---------------------------------------------------------------------- COMMANDS
 
@@ -73,14 +72,11 @@ class GuidedMissile(Missile):
         direction_to_target = self.direction_to(ois.xy)
         return -self._type.scan_cone <= direction_to_target <= self._type.scan_cone
 
-    def _damage(self, ois):
-        return round(self._type.explode_damage / (1 + self.distance_to(ois.xy)))
-
     # ---------------------------------------------------------------------- COMMANDS
 
     def scan(self, objects_in_space: dict):
         self.target = None
-        for ois in [o for o in objects_in_space.values() if (o != self) and (o != self.owner)]:
+        for ois in [o for o in objects_in_space.values() if (o != self) and (o.owner != self.owner)]:
             if self.can_scan(ois) and self.in_scan_cone(ois):
                 if self.target:
                     if self.distance_to(ois.xy) < self.distance_to(self.target.xy):
@@ -97,29 +93,43 @@ class GuidedMissile(Missile):
             self.heading = self.heading_to(intercept_pos)
 
 
-class Rocket(object):
-    """Dumb rocket"""
-    name = 'Rocket'
+class MissileType(MachineType):
     base_type = Missile
-    warhead = Bomb('Warhead', RocketWarhead())
+
+
+class Rocket(MissileType):
+    """Dumb rocket"""
+    base_type = Missile
     max_speed = 60
     explode_distance = 20
     explode_damage = 50
     max_battery = 75
+    start_battery = 75
     max_hull = 1
     scan_cone = 0
-    max_scan_distance = 0
+    max_scan_distance = 20
+
+    @property
+    def weapons(self):
+        return [
+            RocketWarhead('warhead'),
+        ]
 
 
-class Splinter(object):
+class Splinter(MissileType):
     """The basic guided missile"""
-    name = 'Splinter'
     base_type = GuidedMissile
-    warhead = Bomb('Warhead', SplinterWarhead())
     max_speed = 60
     explode_distance = 6
     explode_damage = 75
-    scan_cone = 45
     max_battery = 75
+    start_battery = 75
     max_hull = 1
+    scan_cone = 45
     max_scan_distance = 150
+
+    @property
+    def weapons(self):
+        return [
+            SplinterWarhead('warhead'),
+        ]

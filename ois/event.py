@@ -48,10 +48,10 @@ class ScanEvent(Event):
 
 
 class HitEvent(Event):
-    def __init__(self, location, hit_type, source, target, amount, draw_type: DrawType=None, message: str=None):
+    def __init__(self, location, hit_type, source, target, amount: int, draw_type: DrawType=None, message: str=None):
         super().__init__(location, hit_type, source, draw_type)
         self.target = target
-        self.amount = amount
+        self.amount = int(round(amount, 0))
         self.message = message
         self.score = 0
 
@@ -60,6 +60,17 @@ class HitEvent(Event):
             return self.message
         else:
             return f"{self.source.name} hit {self.target.name} with {self._type} for {self.amount}"
+
+    def notify_owner(self, message: str):
+        self.source.owner.add_event(InternalEvent(message))
+
+    @property
+    def can_score(self):
+        """You don't score for hitting yourself."""
+        if self.target:
+            return self.source.owner is not self.target.owner
+        else:
+            return True
 
 
 class ExplosionEvent(Event):

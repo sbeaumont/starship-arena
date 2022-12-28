@@ -8,7 +8,7 @@ from engine.round import RoundZero, GameRound
 from engine.gamedirectory import GameDirectory
 from log import configure_logger
 from rep.send import send_results_for_round
-from rep.report import generate_manual
+from rep.manual import generate_manual
 
 logger = logging.getLogger(__name__)
 

@@ -1,2 +1,3 @@
 Blaster H2545 0 0 Serge
 Dummy H2552 100 100 Serge
+Dummy2 H2552 -50 -20 Serge

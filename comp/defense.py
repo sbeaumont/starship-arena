@@ -1,13 +1,15 @@
 from collections import namedtuple
 from comp.component import Component
 from ois.objectinspace import Point
-from ois.event import HitEvent, InternalEvent
+from ois.event import HitEvent
 
 Quadrants = namedtuple('Quadrants', 'north east south west')
 Section = namedtuple('Section', 'strength energy')
 
 
 class Shields(Component):
+    shield_break_score = 25
+
     """An object that is attached to an owner (Ship) and can defend its owner."""
     quadrants = {(315, 45): 'N', (45, 135): 'E', (135, 225): 'S', (225, 315): 'W'}
 
@@ -57,18 +59,27 @@ class Shields(Component):
         shield_quadrant = self.quadrant_of(hit_event.source.pos)
         old_strength = self.strengths[shield_quadrant]
         self.strengths[shield_quadrant] -= hit_event.amount
-        # Half point per shield point hit
-        hit_event.score += (old_strength - self.strengths[shield_quadrant]) // 2
-        if self.strengths[shield_quadrant] < 0:
-            # 25 extra points for a shield break
-            hit_event.score += 25
-            breakthrough_damage = -self.strengths[shield_quadrant]
-            self.add_internal_event(f"Hit on shield {shield_quadrant} broke the shield: {breakthrough_damage} passed through.")
-            self.strengths[shield_quadrant] = 0
-            return breakthrough_damage
-        else:
+        if old_strength >= hit_event.amount:
+            shield_score = 0
+            if hit_event.can_score:
+                shield_score = (old_strength - self.strengths[shield_quadrant]) // 2
+                hit_event.score += shield_score
+            hit_event.notify_owner(f"{hit_event.source.name} hit {self.container.name}'s shield: ({shield_score} points).")
             self.add_internal_event(f"Shield {shield_quadrant} hit for {hit_event.amount}. Remaining strength: {self.strengths[shield_quadrant]}")
-        return 0
+            return 0
+        else:
+            shield_score = 0
+            if hit_event.can_score:
+                shield_score = old_strength // 2
+                hit_event.score += shield_score
+            hit_event.notify_owner(f"{hit_event.source.name} hit {self.container.name}'s shield: ({shield_score} points).")
+            if hit_event.can_score:
+                hit_event.score += self.shield_break_score
+                hit_event.notify_owner(f"{hit_event.source.name} broke {self.container.name}'s shield: ({self.shield_break_score} points).")
+            breakthrough_damage = -self.strengths[shield_quadrant]
+            self.strengths[shield_quadrant] = 0
+            self.add_internal_event(f"Hit on shield {shield_quadrant} broke the shield: {breakthrough_damage} passed through.")
+            return breakthrough_damage
 
     # ---------------------------------------------------------------------- ENGINE HANDLERS
 

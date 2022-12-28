@@ -47,14 +47,14 @@ class TickHistory(object):
 
 
 class History(object):
-    __slots__ = ('owner', 'ticks', '_current')
+    __slots__ = ('owner', 'ticks', 'current')
     """Holds snapshots and events per tick for its owner, to be used to report on the round."""
     def __init__(self, owner, tick: int):
         super().__init__()
         self.owner = owner
         self.ticks = defaultdict(TickHistory)
-        self._current: TickHistory = self.ticks[tick]
-        self.update()
+        self.current: TickHistory = self.ticks[tick]
+        # self.update()
 
     def __getitem__(self, item):
         return self.ticks[item]
@@ -71,20 +71,20 @@ class History(object):
     def reset(self):
         self.ticks.clear()
         self.ticks[0].update(self.create_snapshot())
-        self._current = self.ticks[0]
+        self.current = self.ticks[0]
 
     def add_event(self, event):
         assert event is not None
         # Bit of a hack to ensure we don't score an event twice for scoring...
-        if event not in self._current.events:
+        if event not in self.current.events:
             # Make sure the event first processed "take damage from" to ensure it has a score.
             if isinstance(event, HitEvent) and (event.source.owner == self.owner):
-                self._current.score += event.score
+                self.current.score += event.score
                 self.owner.score += event.score
-            self._current.add_event(event)
+            self.current.add_event(event)
 
     def update(self):
-        self._current.update(self.owner.snapshot)
+        self.current.update(self.owner.snapshot)
 
     def create_snapshot(self):
         return self.owner.snapshot
@@ -92,4 +92,4 @@ class History(object):
     def set_tick(self, tick, update=True):
         if update:
             self.update()
-        self._current = self.ticks[tick]
+        self.current = self.ticks[tick]

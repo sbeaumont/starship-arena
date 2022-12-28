@@ -3,10 +3,9 @@ import pickle
 import logging
 import sys
 
-from engine.command import Commandable, Cmd, read_command_file, CommandSet
+from engine.command import Commandable, read_command_file, CommandSet
 from engine.gamedirectory import GameDirectory
-from ois.event import InternalEvent
-from ois import builder
+from engine import builder
 from rep.report import report_round_zero, report_round
 
 logger = logging.getLogger(__name__)
@@ -30,7 +29,7 @@ class RoundZero(object):
         for line in self._dir.init_lines:
             position = (int(line.x), int(line.y))
             # Always for tick 0 in this case.
-            ois = builder.create(line.name, line.type, position, 0)
+            ois = builder.create(line.name, line.type, position)
             ois.player = line.player
             objects_in_space[ois.name] = ois
         return objects_in_space
@@ -62,9 +61,7 @@ class GameRound(object):
 
     def post_move_commands(self, ship: Commandable, cs: CommandSet, objects_in_space: dict, tick: int):
         for wpn_cmd in cs.weapons.values():
-            ois = wpn_cmd.execute(ship, self.ois, tick)
-            if ois:
-                objects_in_space[ois.name] = ois
+            wpn_cmd.execute(ship, self.ois, tick)
         for other_cmd in cs.post_move:
             other_cmd.execute(ship, self.ois, tick)
 

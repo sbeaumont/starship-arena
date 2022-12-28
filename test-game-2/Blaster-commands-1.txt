@@ -9,6 +9,14 @@
 
 1: Fire S1 -91
 2: Fire L1 Dummy
+2: Fire M1 180
 3: Fire L1 Dummy
 4: Fire S1 315
-7: Fire S1 775
+7: Fire S1 90
+7: Fire R1 90
+8: Fire S1 90
+8: Fire R1 90
+9: Fire S1 90
+9: Fire R1 90
+10: Fire S1 90
+10: Fire R1 90

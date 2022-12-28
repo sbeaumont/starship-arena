@@ -4,6 +4,7 @@ from math import sin, cos, radians, sqrt, atan2, pi
 from abc import abstractmethod, ABC
 
 from ois.event import InternalEvent, Event
+from rep.history import History
 
 logger = logging.getLogger(__name__)
 
@@ -19,14 +20,14 @@ def translate(p: Point, heading, distance) -> Point:
 
 class ObjectInSpace(ABC):
     """Any object in space, which can be ships, rockets, starbases, black holes, etc."""
-    def __init__(self, name: str, xy: tuple, heading: int = 0, speed: int = 0, visibility: int = 100):
+    def __init__(self, name: str, xy: tuple, heading: int = 0, speed: int = 0, visibility: int = 100, tick: int = 0):
         super().__init__()
         self.name = name
         self.xy = Point(xy[0], xy[1])
         self.heading = heading
         self.speed = speed
         self.owner = None
-        self.history = None
+        self.history = History(self, tick)
         self.visibility = visibility
 
     # ---------------------------------------------------------------------- QUERIES
@@ -48,7 +49,7 @@ class ObjectInSpace(ABC):
 
     def modify_scan_range(self, scan_range: float) -> float:
         """Change a scanning object's scan range based on this object's visibility."""
-        return scan_range
+        return scan_range * (self.visibility / 100)
 
     @property
     @abstractmethod

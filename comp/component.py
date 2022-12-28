@@ -5,6 +5,7 @@ from ois.event import InternalEvent
 class Component(ABC):
     """An object that is attached to an owner (Ship) and can damage other objects in space."""
     def __init__(self, name: str, container=None):
+        assert name, "name may not be None"
         self.name = name
         self.container = container
 

@@ -1,12 +1,14 @@
 import logging
-from typing import Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable, NewType
 from comp.defense import Shields
-from comp.missilelauncher import MissileLauncher
+from comp.launcher import MissileLauncher
 from comp.laser import Laser
 from comp.ecm import Cloak
+from ois.machineinspace import MachineInSpace, MachineType
 from ois.objectinspace import ObjectInSpace
 from ois.event import ScanEvent, InternalEvent, HitEvent
 from ois.missile import Splinter, Rocket
+from ois.mine import SplinterMine
 
 logger = logging.getLogger(__name__)
 
@@ -17,34 +19,16 @@ class Replenisher(Protocol):
         ...
 
 
-class Ship(ObjectInSpace):
+shipType = NewType("ShipType", MachineType)
+
+
+class Ship(MachineInSpace):
     """A player-commanded space ship."""
-    def __init__(self, name: str, shiptype, xy: tuple, heading=0, speed=0):
-        super().__init__(name, xy, heading, speed)
-        # Type
-        self.owner = self
-        self._type = shiptype
-        self.generators = self._type.generators
-
-        # Attach components
-        self.all_components = dict()
-        self.defense = shiptype.defense
-        self._attach_components(self.defense)
-        self.weapons = shiptype.weapons
-        self._attach_components(self.weapons.values())
-        self.ecm = shiptype.ecm
-        self._attach_components(self.ecm.values())
-
-        # Variable
-        self.hull = self._type.max_hull
-        self.battery = shiptype.start_battery
+    def __init__(self, name: str, _type: shipType, xy: tuple, owner=None, heading=0, speed=0, tick=0):
+        super().__init__(name, _type, xy, owner=self, heading=heading, speed=speed, tick=tick)
+        self.generators = _type.generators
         self.score = 0
         self.commands = None
-
-    def _attach_components(self, comps):
-        for comp in comps:
-            self.all_components[comp.name] = comp
-            comp.attach(self)
 
     # ---------------------------------------------------------------------- QUERIES
 
@@ -58,7 +42,7 @@ class Ship(ObjectInSpace):
 
     @property
     def scans(self):
-        return self.history._current.scans
+        return self.history.current.scans
 
     @property
     def snapshot(self):
@@ -149,12 +133,19 @@ class Ship(ObjectInSpace):
             self.hull -= amount
             self.add_event(InternalEvent(f"Hull decreased by {amount} to {self.hull}"))
             # Score double points for hits on the hull
-            hit_event.score += amount * 2
+            score = 0
+            if hit_event.can_score:
+                score = amount * 2
+                hit_event.score += score
+            hit_event.notify_owner(f"{hit_event.source.name} hit {self.name}'s hull for {amount}: ({score} points)")
 
         if not already_killed and self.is_destroyed:
             # 100 points for an extra ship kill, but only for the final blow
-            hit_event.score += 100
-            hit_event.source.add_event(InternalEvent(f"You landed the killing hit on {self.name}"))
+            score = 0
+            if hit_event.can_score:
+                score = 100
+                hit_event.score += 100
+            hit_event.notify_owner(f"{hit_event.source.name} landed the killing blow on {self.name}: ({score} points)")
             self.add_event(InternalEvent(f"You were destroyed. Killing blow by {self.name}."))
 
     # ---------------------------------------------------------------------- TIMED HANDLERS
@@ -184,12 +175,17 @@ class Ship(ObjectInSpace):
         self.commands = None
 
 
-class ShipType(object):
+class ShipType(MachineType):
     base_type = Ship
 
-    @property
-    def name(self):
-        return self.__class__.__name__
+    max_speed = None
+    max_turn = None
+    max_delta_v = None
+
+    generators = None
+    max_battery = 500
+
+    max_scan_distance = None
 
 
 class H2545(ShipType):
@@ -199,7 +195,6 @@ class H2545(ShipType):
     max_hull = 100
     start_battery = 125
     generators = 8
-    max_battery = 500
     max_scan_distance = 200
 
     @property
@@ -210,16 +205,13 @@ class H2545(ShipType):
 
     @property
     def weapons(self):
-        return {
-            'L1': Laser('L1', 180),
-            'S1': MissileLauncher('S1', Splinter, 4, (270, 90)),
-            'R1': MissileLauncher('R1', Rocket, 10),
-            'R2': MissileLauncher('R2', Rocket, 10)
-        }
-
-    @property
-    def ecm(self):
-        return dict()
+        return [
+            Laser('L1', 180),
+            MissileLauncher('S1', Splinter(), 4, (270, 90)),
+            MissileLauncher('R1', Rocket(), 10),
+            MissileLauncher('R2', Rocket(), 10),
+            MissileLauncher('M1', SplinterMine(), 10, (135, 225))
+        ]
 
 
 class H2552(ShipType):
@@ -229,8 +221,15 @@ class H2552(ShipType):
     max_hull = 110
     start_battery = 100
     generators = 7
-    max_battery = 500
     max_scan_distance = 250
+
+    @property
+    def weapons(self):
+        return [
+            Laser('L1', 180, (270, 90)),
+            MissileLauncher('S1', Splinter(), 10, (90, 270)),
+            MissileLauncher('R1', Rocket(), 15)
+        ]
 
     @property
     def defense(self):
@@ -240,17 +239,9 @@ class H2552(ShipType):
 
     @property
     def ecm(self):
-        return {
-            'C1': Cloak('C1', 0.2)
-        }
-
-    @property
-    def weapons(self):
-        return {
-            'L1': Laser('L1', 180, (270, 90)),
-            'S1': MissileLauncher('S1', Splinter, 10, (90, 270)),
-            'R1': MissileLauncher('R1', Rocket, 15)
-        }
+        return [
+            Cloak('C1', 0.2),
+        ]
 
 
 all_ship_types = {

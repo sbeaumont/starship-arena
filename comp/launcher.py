@@ -1,6 +1,4 @@
 from comp.weapon import Weapon
-from ois import builder
-from ois.event import InternalEvent
 
 
 class MissileLauncher(Weapon):
@@ -13,11 +11,7 @@ class MissileLauncher(Weapon):
         self.payload_type = payload_type
 
     def _create_missile(self, name, heading):
-        missile = builder.create(name, self.payload_type.__name__, self.owner.xy, self.current_tick, owner=self.owner, heading=heading)
-        return missile
-
-    def tick(self, tick_nr):
-        self.current_tick = tick_nr
+        return self.payload_type.create(name, self.owner.xy, owner=self.owner, heading=heading)
 
     def fire(self, direction: str, objects_in_space=None):
         firing_angle = int(direction)

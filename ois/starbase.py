@@ -1,7 +1,7 @@
 import logging
 
 from comp.defense import Shields
-from comp.missilelauncher import MissileLauncher
+from comp.launcher import MissileLauncher
 from comp.laser import Laser
 from ois.ship import Ship, ShipType
 from ois.missile import Splinter, Rocket
@@ -55,19 +55,15 @@ class SB2531(ShipType):
         ]
 
     @property
-    def ecm(self):
-        return dict()
-
-    @property
     def weapons(self):
-        return {
-            'L1': Laser('L1', 300),
-            'L2': Laser('L2', 300),
-            'S1': MissileLauncher('S1', Splinter, 40),
-            'S2': MissileLauncher('S2', Splinter, 40),
-            'R1': MissileLauncher('R1', Rocket, 75),
-            'R2': MissileLauncher('R2', Rocket, 75)
-        }
+        return [
+            Laser('L1', 300),
+            Laser('L2', 300),
+            MissileLauncher('S1', Splinter(), 40),
+            MissileLauncher('S2', Splinter(), 40),
+            MissileLauncher('R1', Rocket(), 75),
+            MissileLauncher('R2', Rocket(), 75)
+        ]
 
 
 all_starbase_types = {
