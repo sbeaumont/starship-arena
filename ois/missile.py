@@ -1,19 +1,19 @@
 import logging
-from ois.objectinspace import ObjectInSpace, Vector
-from ois.machineinspace import MachineInSpace, MachineType
-from ois.event import InternalEvent
-from comp.warhead import RocketWarhead, SplinterWarhead
+from dataclasses import replace
+
+from .event import InternalEvent
+from .objectinspace import ObjectInSpace, Vector
+from .machineinspace import MachineInSpace, MachineType
 
 logger = logging.getLogger(__name__)
 
 
 class Missile(MachineInSpace):
     """Flying thing that explodes when near its target."""
-    energy_per_move: int = 5
-
     def __init__(self, name: str, _type, vector: Vector, owner: ObjectInSpace, tick: int = 0):
         super().__init__(name, _type, vector, owner=owner, tick=tick)
         self.target = None
+        self.energy_per_move = _type.energy_per_move
 
     # ---------------------------------------------------------------------- QUERIES
 
@@ -88,53 +88,16 @@ class GuidedMissile(Missile):
         if self.target:
             intercept_pos = self.target.vector.translate(self.target.heading, self.target.speed).pos
             intercept_distance = self.distance_to(intercept_pos)
-            if intercept_distance < self._type.max_speed:
+            if intercept_distance < self.speed:
                 self.vector.speed = round(intercept_distance, 0)
             self.vector.heading = self.heading_to(intercept_pos)
 
 
 class MissileType(MachineType):
     base_type = Missile
+    energy_per_move: int = 5
     max_speed = 0
 
     def create(self, name: str, vector: Vector, owner=None, tick: int = 0):
-        vector = Vector(vector.pos, vector.heading, self.max_speed)
+        vector = replace(vector, speed=self.max_speed)
         return super().create(name, vector, owner, tick)
-
-
-class Rocket(MissileType):
-    """Dumb rocket"""
-    base_type = Missile
-    max_speed = 60
-    explode_distance = 20
-    explode_damage = 50
-    max_battery = 75
-    start_battery = 75
-    max_hull = 1
-    scan_cone = 0
-    max_scan_distance = 20
-
-    @property
-    def weapons(self):
-        return [
-            RocketWarhead('warhead'),
-        ]
-
-
-class Splinter(MissileType):
-    """The basic guided missile"""
-    base_type = GuidedMissile
-    max_speed = 60
-    explode_distance = 6
-    explode_damage = 75
-    max_battery = 75
-    start_battery = 75
-    max_hull = 1
-    scan_cone = 45
-    max_scan_distance = 150
-
-    @property
-    def weapons(self):
-        return [
-            SplinterWarhead('warhead'),
-        ]

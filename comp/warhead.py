@@ -81,6 +81,13 @@ class SplinterWarhead(Warhead):
     falloff = DamageFalloff.Linear
 
 
+class PowerSplinterWarhead(Warhead):
+    damage_type = DamageType.Explosion
+    damage = 100
+    range = 6
+    falloff = DamageFalloff.Linear
+
+
 class RocketWarhead(Warhead):
     damage_type = DamageType.Explosion
     damage = 50
@@ -93,3 +100,11 @@ class NanocyteWarhead(Warhead):
     damage = 100
     range = 50
     falloff = DamageFalloff.Linear
+
+
+class EMPWarhead(Warhead):
+    damage_type = DamageType.EMP
+    damage = 100
+    range = 10
+    falloff = DamageFalloff.Linear
+

@@ -1,15 +1,10 @@
 import logging
 from typing import Protocol, runtime_checkable, NewType
-from comp.defense import Shields
-from comp.launcher import MissileLauncher
-from comp.laser import Laser
-from comp.ecm import Cloak
+
 from comp.warhead import DamageType
-from ois.machineinspace import MachineInSpace, MachineType
-from ois.objectinspace import ObjectInSpace, Point, Vector
-from ois.event import ScanEvent, InternalEvent, HitEvent
-from ois.missile import Splinter, Rocket
-from ois.mine import SplinterMine, NanocyteMine
+from .machineinspace import MachineInSpace, MachineType
+from .objectinspace import ObjectInSpace, Point, Vector
+from .event import ScanEvent, InternalEvent, HitEvent
 
 logger = logging.getLogger(__name__)
 
@@ -137,15 +132,23 @@ class Ship(MachineInSpace):
                 amount = 2 * amount
                 self.hull -= amount
                 self.add_internal_event(f"Nanocytes burned your hull for {amount} to {self.hull}")
+                score = amount * 2
+            elif hit_event._type == DamageType.EMP:
+                battery_drain = amount if amount <= self.battery else self.battery
+                self.battery -= battery_drain
+                self.add_internal_event(f"EMP blast drained out battery by {battery_drain}: {self.battery} left.")
+                score = amount // 2
             else:
                 self.hull -= amount
                 self.add_internal_event(f"Hull decreased by {amount} to {self.hull}")
+                score = amount
             # Score double points for hits on the hull
-            score = 0
             if hit_event.can_score:
-                score = amount * 2
                 hit_event.score += score
-            hit_event.notify_owner(f"{hit_event.source.name} hit {self.name}'s hull for {amount}: ({score} points)")
+            else:
+                score = 0
+            what_was_hit = 'battery' if hit_event._type == DamageType.EMP else 'hull'
+            hit_event.notify_owner(f"{hit_event.source.name} hit {self.name}'s {what_was_hit} for {amount}: ({score} points)")
 
         if not already_killed and self.is_destroyed:
             # 100 points for an extra ship kill, but only for the final blow
@@ -195,66 +198,3 @@ class ShipType(MachineType):
     max_battery = 500
 
     max_scan_distance = None
-
-
-class H2545(ShipType):
-    max_speed = 45
-    max_turn = 35
-    max_delta_v = 25
-    max_hull = 100
-    start_battery = 125
-    generators = 8
-    max_scan_distance = 200
-
-    @property
-    def defense(self):
-        return [
-            Shields('Shields', {'N': 150, 'E': 100, 'S': 130, 'W': 100}),
-        ]
-
-    @property
-    def weapons(self):
-        return [
-            Laser('L1', 180),
-            MissileLauncher('S1', Splinter(), 4, (270, 90)),
-            MissileLauncher('R1', Rocket(), 10),
-            MissileLauncher('R2', Rocket(), 10),
-            MissileLauncher('M1', SplinterMine(), 10)
-        ]
-
-
-class H2552(ShipType):
-    max_speed = 40
-    max_turn = 35
-    max_delta_v = 20
-    max_hull = 110
-    start_battery = 100
-    generators = 7
-    max_scan_distance = 250
-
-    @property
-    def weapons(self):
-        return [
-            Laser('L1', 180, (270, 90)),
-            MissileLauncher('S1', Splinter(), 10, (90, 270)),
-            MissileLauncher('R1', Rocket(), 15),
-            MissileLauncher('N1', NanocyteMine(), 10)
-        ]
-
-    @property
-    def defense(self):
-        return [
-            Shields('Shields', {'N': 150, 'E': 130, 'S': 140, 'W': 130}),
-        ]
-
-    @property
-    def ecm(self):
-        return [
-            Cloak('C1', 0.2),
-        ]
-
-
-all_ship_types = {
-    'H2545': H2545(),
-    'H2552': H2552()
-}

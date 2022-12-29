@@ -109,4 +109,4 @@ class ExplosionEvent(Event):
         self.radius = radius
 
     def __str__(self):
-        return f"{self.source.name} exploded at {self.pos}"
+        return f"{self.source.name} exploded at {self.pos.as_tuple}"

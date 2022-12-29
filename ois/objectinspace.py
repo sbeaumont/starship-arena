@@ -3,7 +3,7 @@ from math import sin, cos, radians, sqrt, atan2, pi
 from abc import abstractmethod, ABC
 from dataclasses import dataclass, replace
 
-from ois.event import InternalEvent, Event
+from .event import InternalEvent, Event
 from rep.history import History
 
 logger = logging.getLogger(__name__)

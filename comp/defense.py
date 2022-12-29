@@ -59,17 +59,26 @@ class Shields(Component):
         """Absorb damage on shield quadrant, return any remaining damage."""
         shield_quadrant = self.quadrant_of(hit_event.source.pos)
         old_strength = self.strengths[shield_quadrant]
+        damage_amount = hit_event.amount
 
         # Nanocytes can not penetrate shields, but if there's no shield there, everything gets passed through... uh oh.
-        if (hit_event._type == DamageType.Nanocyte):
+        if hit_event._type == DamageType.Nanocyte:
             if old_strength > 0:
                 hit_event.notify_owner(f"Nanocytes splashed harmlessly against {self.container.name}'s shield.")
                 return 0
             else:
                 return hit_event.amount
+        elif hit_event._type == DamageType.EMP:
+            if old_strength >= damage_amount * 2:
+                # All damage to shield
+                damage_amount = damage_amount * 2
+            else:
+                # Add half of the shield strength to the damage to simulate
+                # double damage to shields, but not anything else.
+                damage_amount += old_strength // 2
 
-        self.strengths[shield_quadrant] -= hit_event.amount
-        if old_strength >= hit_event.amount:
+        self.strengths[shield_quadrant] -= damage_amount
+        if old_strength >= damage_amount:
             shield_score = 0
             if hit_event.can_score:
                 shield_score = (old_strength - self.strengths[shield_quadrant]) // 2

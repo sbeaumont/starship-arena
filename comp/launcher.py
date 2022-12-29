@@ -1,16 +1,19 @@
 from comp.weapon import Weapon
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 from ois.objectinspace import Vector
 
 
+@runtime_checkable
 class PayloadType(Protocol):
-    name: str
+    @property
+    def name(self):
+        ...
 
-    def create(self, name: str, vector: Vector, owner=None):
+    def create(self, name: str, vector: Vector, owner=None, tick: int = 0):
         ...
 
 
-class MissileLauncher(Weapon):
+class Launcher(Weapon):
     """Fires Rockets in a given direction. Best to point it away from your friends."""
     def __init__(self, name: str, payload_type: PayloadType, initial_load: int, firing_arc=None):
         super().__init__(name, firing_arc)

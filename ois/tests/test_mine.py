@@ -1,6 +1,6 @@
 from unittest import TestCase
 from .ois_fixtures import create_ship_fixture
-from ois.mine import SplinterMine
+from ..registry.mines import SplinterMine
 
 
 class TestMine(TestCase):

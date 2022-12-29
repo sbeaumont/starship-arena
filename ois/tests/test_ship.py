@@ -1,5 +1,5 @@
 from unittest import TestCase
-from engine import builder
+from ois.registry import builder
 
 
 class TestH2545(TestCase):

@@ -1,6 +1,6 @@
-from ois.objectinspace import ObjectInSpace, Point, Vector
-from comp.component import Component
 from abc import ABCMeta
+from .objectinspace import ObjectInSpace, Vector
+from comp.component import Component
 
 
 class MachineType(metaclass=ABCMeta):
@@ -13,7 +13,7 @@ class MachineType(metaclass=ABCMeta):
         return self.base_type(name, self, vector, owner=owner, tick=tick)
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.__class__.__name__
 
     @property
@@ -54,3 +54,4 @@ class MachineInSpace(ObjectInSpace, metaclass=ABCMeta):
             assert isinstance(comp, Component), f"{comp} is not a Component for {self._type}"
             self.all_components[comp.name] = comp
             comp.attach(self)
+

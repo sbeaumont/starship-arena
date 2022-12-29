@@ -5,7 +5,7 @@ import sys
 
 from engine.command import Commandable, read_command_file, CommandSet
 from engine.gamedirectory import GameDirectory
-from engine import builder
+from ois.registry import builder
 from rep.report import report_round_zero, report_round
 
 logger = logging.getLogger(__name__)

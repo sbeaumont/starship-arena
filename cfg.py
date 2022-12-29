@@ -15,3 +15,11 @@ COMMAND_FILE_TEMPLATE = "{}-commands-{}.txt"
 INIT_FILE_NAME = "ships.txt"
 EMAIL_CFG_NAME = "email.txt"
 MANUAL_FILENAME = 'starship-arena-manual.pdf'
+
+# ============================================= SHIP CORE METRICS
+
+MAX_SCAN_MULTIPLIER = 6
+
+
+def max_scan(value):
+    return int(value * MAX_SCAN_MULTIPLIER)

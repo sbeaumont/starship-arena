@@ -44,6 +44,10 @@ ship's player and the cycle continues until the end conditions are reached.</p>
         <td>2 points per point of hull damaged</td>
     </tr>
     <tr>
+        <td>Drain battery</td>
+        <td>0.5 points per point of energy drained</td>
+    </tr>
+    <tr>
         <td>Deal killing blow to other ship (0 hull)</td>
         <td>100 points</td>
     </tr>
@@ -303,6 +307,17 @@ missiles. They fly at a speed of 60 units per tick. The have a scan- and blast r
 damage at 6 distance. They are quite smart in that they predict a target's movement and will on approach will slow
 down to exactly close the distance to their target. Guided missiles will target other missiles, so shooting a missile
     back at them is a good way to defend against them.</p>
+
+<p><b>Power Splinter</b> missiles are more powerful versions of the Splinter missile. They have a base damage of
+100 vs. the regular Splinter's 75.</p>
+
+<p><b>Nano</b> missiles release a cloud of nanites that are specialized in eating through matter, and are therefore
+dangerous to a ship's hull: they do double damage to it. However, they completely burn up against a shield and do
+not damage it, so this weapon will <b>only</b> work if it hits a ship through a broken shield!</p>
+
+<p><b>EMP</b> missiles drain energy from shields and batteries. When they hit shields they do double damage, and
+any remaining strength when it hits the hull does not damage it, but drains the battery. EMP missiles score 1
+point for every two units of energy they drain, whether from shields or battery.</p>
 
 <h2>Defense</h2>
 
