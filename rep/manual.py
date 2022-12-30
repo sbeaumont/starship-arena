@@ -23,4 +23,9 @@ def generate_manual():
 
 
 if __name__ == '__main__':
+    for st in all_ship_types:
+        print(st)
+
+    print('\nGenerating manual...')
     generate_manual()
+    print('Done')

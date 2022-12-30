@@ -1,6 +1,6 @@
 import re
-from collections import defaultdict
 import logging
+from collections import defaultdict
 from enum import Enum, auto
 from typing import Protocol, runtime_checkable
 
@@ -9,6 +9,7 @@ from comp.defense import Shields
 from ois.event import InternalEvent
 
 logger = logging.getLogger(__name__)
+
 COMMAND_PATTERN: str = r"^([A-Z|a-z]+)((\s*(-?[A-Z|a-z|0-9]+))*)$"
 
 

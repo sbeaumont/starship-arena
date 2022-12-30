@@ -72,7 +72,7 @@ def find_boundaries(ship, padding=50):
 def draw_round(ship: Ship, vis: Visualizer):
     """Draw the paths of the ship and its scans"""
     # Initial location of ship
-    vis.text(text_nudge(ship.history[0]['pos']), f"{ship.history[0]['pos']}")
+    vis.text(text_nudge(ship.history[0]['pos']), f"{ship.history[0]['pos'].as_tuple}")
 
     max_history = max(ship.history.keys())
     for i in range(1, 11):
@@ -96,7 +96,7 @@ def draw_round(ship: Ship, vis: Visualizer):
     # Final location of ship
     max_history = max(ship.history.keys())
     max_pos = ship.history[max_history]['pos']
-    vis.text(text_nudge(max_pos), f"{max_history}:{ship.name}\n{max_pos}")
+    vis.text(text_nudge(max_pos), f"{max_history}:{ship.name}\n{max_pos.as_tuple}")
 
 
 def report_round(ships: dict, game_dir: str, round_nr: int):

@@ -2,4 +2,4 @@
 **/*.png
 **/*.pdf
 **/*.pickle
-round*
+round-*/

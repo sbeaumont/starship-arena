@@ -7,9 +7,16 @@
 
 <body>
     <h1>{{ ship.name }}: Round {{ round }}</h1>
+    <table>
+        <tr>
+            <td><b>Score</b></td><td>{{ ship.score }}</td>
+            <td><b>Ship Type</b></td><td>{{ ship._type.name }}</td>
+        </tr>
+    </table>
+    <br/>
     <img src="{{ image_file_name }}" max-width="100%"/>
+
     <h2>Status</h2>
-    <p><b>Score: {{ ship.score }}</b></p>
     <table>
         <tr>
             <td><b>Position</b></td><td>{{ ship.pos.as_tuple }}</td>
@@ -17,15 +24,32 @@
             <td><b>Speed</b></td><td>{{ ship.speed }}/{{ ship._type.max_speed }}</td>
         </tr>
         <tr>
-            <td><b>Battery</b></td><td colspan="5">{{ ship.battery }}/{{ ship._type.max_battery }}</td>
+            <td><b>Hull</b></td><td>{{ ship.hull }}/{{ ship._type.max_hull }}</td>
+            <td><b>Battery</b></td><td>{{ ship.battery }}/{{ ship._type.max_battery }}</td>
+            <td colspan="2"></td>
         </tr>
-        <tr>
-            <td><b>Hull</b></td><td colspan="5">{{ ship.hull }}/{{ ship._type.max_hull }}</td>
-        </tr>
-        {% for component in ship.all_components.values() %}
+        {% for component in ship.defense %}
         <tr>
             <td><b>{{ component.name }}</b></td>
             <td colspan="5">{% for stat_name, stat_value in component.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br/>
+    <table>
+        {% for component in ship.weapons.values() %}
+        <tr>
+            <td><b>{{ component.name }}</b></td>
+            <td colspan="3">{% for stat_name, stat_value in component.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br/>
+    <table>
+        {% for component in ship.ecm.values() %}
+        <tr>
+            <td><b>{{ component.name }}</b></td>
+            <td colspan="3">{% for stat_name, stat_value in component.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</td>
         </tr>
         {% endfor %}
     </table>
@@ -38,6 +62,11 @@
             <th>Direction (Rel)</th>
             <th>Heading (Abs)</th>
         </tr>
+        {% if not final_scans %}
+        <tr>
+            <td colspan="5">No end of round scans</tdc>
+        </tr>
+        {% endif %}
         {% for scan in final_scans %}
         <tr>
             <td>{{scan.name}}</td>

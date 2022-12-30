@@ -1,12 +1,20 @@
+"""
+Recreation of a Play-By-Mail game of 1991.
+"""
+
+__version__ = '0.1'
+__author__ = 'Serge Beaumont'
+
 import argparse
 import logging
 import os
 import sys
 
 from cfg import *
+from log import configure_logger
+
 from engine.round import RoundZero, GameRound
 from engine.gamedirectory import GameDirectory
-from log import configure_logger
 from rep.send import send_results_for_round
 from rep.manual import generate_manual
 

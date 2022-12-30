@@ -1,7 +1,7 @@
 from cfg import max_scan
 from ois.ship import ShipType
-from ois.registry.missiles import Rocket, Splinter, NanoMissile, PowerSplinter
-from ois.registry.mines import SplinterMine, NanocyteMine
+from ois.registry.missiles import Rocket, NanoMissile, PowerSplinter
+from ois.registry.mines import SplinterMine
 from comp.defense import Shields
 from comp.launcher import Launcher
 from comp.laser import Laser
