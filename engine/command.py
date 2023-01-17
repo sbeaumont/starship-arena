@@ -13,6 +13,10 @@ logger = logging.getLogger(__name__)
 COMMAND_PATTERN: str = r"^([A-Z|a-z]+)((\s*(-?[A-Z|a-z|0-9]+))*)$"
 
 
+class ParsingError(Exception):
+    pass
+
+
 class Cmd(Enum):
     Turn = auto()
     Accelerate = auto()
@@ -207,6 +211,8 @@ def read_command_file(command_file_name: str) -> dict:
         t, c = line.split(':')
         tick = int(t.strip())
         cmd = re.match(COMMAND_PATTERN, c.strip())
+        if not cmd:
+            raise ParsingError(f"File {command_file_name} Line Nr {line_nr} no match: {line}")
         cmd_text = cmd.group(0)
         name = cmd.group(1)
         params = cmd.group(2).split()

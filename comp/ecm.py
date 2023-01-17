@@ -1,5 +1,4 @@
 from comp.component import Component
-from ois.event import InternalEvent
 
 
 class Cloak(Component):

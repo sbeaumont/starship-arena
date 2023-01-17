@@ -28,4 +28,3 @@ if __name__ == '__main__':
 
     print('\nGenerating manual...')
     generate_manual()
-    print('Done')

@@ -1,6 +1,7 @@
 from collections import namedtuple
 from comp.component import Component
 from ois.objectinspace import Point
+from ois.machineinspace import MachineInSpace
 from ois.event import HitEvent
 from .warhead import DamageType
 
@@ -14,8 +15,8 @@ class Shields(Component):
     """An object that is attached to an owner (Ship) and can defend its owner."""
     quadrants = {(315, 45): 'N', (45, 135): 'E', (135, 225): 'S', (225, 315): 'W'}
 
-    def __init__(self, name: str, strengths: dict):
-        super().__init__(name)
+    def __init__(self, name: str, strengths: dict, container: MachineInSpace=None):
+        super().__init__(name, container)
         self.strengths = strengths.copy()
         self.max_strengths = strengths.copy()
         # self.quadrant_status = {'N': 'On', 'E': 'On', 'S': 'On', 'W': 'On'}
@@ -103,6 +104,7 @@ class Shields(Component):
     # ---------------------------------------------------------------------- ENGINE HANDLERS
 
     def round_reset(self):
+        super().round_reset()
         for qdrt in ['N', 'E', 'S', 'W']:
             if self.strengths[qdrt] > self.max_strengths[qdrt]:
                 self.add_internal_event(f"Shield {qdrt} boost dissipated: now at {self.strengths[qdrt]}.")
