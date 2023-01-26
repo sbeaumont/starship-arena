@@ -291,20 +291,21 @@ of 46 will spend 46 / 10 rounded down = 4 energy per tick on movement.</p>
 
 <p>Missiles are fired in a direction from a missile launcher. Guided missiles (Splinter) will target the
 nearest object they see, but not the firing ship or its missiles. Regular Rockets fly in a straight line.
-    Missiles do not target their origin ship and its missiles. However, when a missile explodes,
-it damages *everything* in range, including its origin ship and rockets.</p>
+A missile has a triggering range. Once a target moves within this range, the missile will explode. When a 
+missile explodes, it damages *everything* in range, including its origin ship and rockets. Guided missiles 
+will scan for near targets in a 45 degree cone in front of them and adapt their trajectory to intercept. 
+These missiles do not target their origin ship and its missiles. </p>
 
-<p>Missile launchers have limited ammo, but can be restocked by replenishing at a star base.</p>
+<p>Missile launchers have limited ammo, but can be restocked by replenishing at a star base. Currently all 
+    missiles have speed 60 and fizzle out after 15 ticks. This means they have a range of 60 * 15 = 750.</p>
 
-<p>Currently all missiles have speed 60 and fizzle out after 15 ticks. This means they have a range of 60 * 15 = 750.</p>
-
-<p><b>Rockets</b> are unguided missiles with a scan- and blast radius of 20 and 50 damage. They fly at a speed of
+<p><b>Rockets</b> are unguided missiles with a trigger- and blast radius of 20 and 50 damage. They fly at a speed of
 60 units per tick.</p>
 
 <p><b>Splinter</b> missiles are guided missile that chase the closest target that is not its originator or its
-missiles. They fly at a speed of 60 units per tick. The have a scan- and blast radius of 6, and their damage linearly
-    scales down from 75 at 0 distance to 0
-damage at 6 distance. They are quite smart in that they predict a target's movement and will on approach will slow
+missiles. They fly at a speed of 60 units per tick. The missile will scan for targets in cone shaped 45 degrees and 150
+distance units in front. It has a trigger- and blast radius of 6, and their damage linearly scales down from 75 at 0 distance 
+to 0 damage at 6 distance. They are quite smart in that they predict a target's movement and will on approach will slow
 down to exactly close the distance to their target. Guided missiles will target other missiles, so shooting a missile
     back at them is a good way to defend against them.</p>
 
