@@ -20,9 +20,10 @@ class GameDirectory(object):
             logger.info(f"Reading ship file {self.init_file}")
             self.init_lines = list()
             for line in [l for l in infile.readlines() if l.strip()]:
-                split_line = line.strip().split(' ')
-                assert len(split_line) == 5, f"Expected {split_line} to have 5 elements"
-                self.init_lines.append(InitLine(*split_line))
+                if not line.startswith('#'):
+                    split_line = line.strip().split()
+                    assert len(split_line) == 5, f"Expected {split_line} to have 5 elements"
+                    self.init_lines.append(InitLine(*split_line))
 
     @property
     def ls(self):

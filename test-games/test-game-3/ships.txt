@@ -1,25 +1,25 @@
-Name             Type Faction   Player
-Amphibian-SB   SB2531 Amphibian Amp
-Amphibian-2527  A2527 Amphibian Amp
-Amphibian-2539  A2539 Amphibian Amp
-Amphibian-2545  A2545 Amphibian Amp
-Amphibian-2553  A2553 Amphibian Amp
-Feline-SB      SB2531 Feline    Fel
-Feline-F2551    F2551 Feline    Fel
-Feline-F2547    F2547 Feline    Fel
-Feline-F2534    F2534 Feline    Fel
-Feline-F2533    F2533 Feline    Fel
-Human-SB       SB2531 Human     Hum
-Human-2545      H2545 Human     Hum
-Human-2552      H2552 Human     Hum
-Human-2535      H2535 Human     Hum
-Human-2527      H2527 Human     Hum
-Insectoid-SB   SB2531 Insectoid Ins
-Insectoid-2544  I2544 Insectoid Ins
-Insectoid-2552  I2552 Insectoid Ins
-Insectoid-2526  I2526 Insectoid Ins
-Reptilian-SB   SB2531 Reptilian Rep
-Reptilian-2545  R2545 Reptilian Rep
-Reptilian-2525  R2525 Reptilian Rep
-Reptilian-2531  R2531 Reptilian Rep
-Reptilian-2551  R2551 Reptilian Rep
+#Name          Type   Faction   Player Email
+Amphibian-SB   SB2531 Amphibian Amp    a@a.com
+Amphibian-2527  A2527 Amphibian Amp    a@a.com
+Amphibian-2539  A2539 Amphibian Amp    a@a.com
+Amphibian-2545  A2545 Amphibian Amp    a@a.com
+Amphibian-2553  A2553 Amphibian Amp    a@a.com
+Feline-SB      SB2531 Feline    Fel    a@a.com
+Feline-F2551    F2551 Feline    Fel    a@a.com
+Feline-F2547    F2547 Feline    Fel    a@a.com
+Feline-F2534    F2534 Feline    Fel    a@a.com
+Feline-F2533    F2533 Feline    Fel    a@a.com
+Human-SB       SB2531 Human     Hum    a@a.com
+Human-2545      H2545 Human     Hum    a@a.com
+Human-2552      H2552 Human     Hum    a@a.com
+Human-2535      H2535 Human     Hum    a@a.com
+Human-2527      H2527 Human     Hum    a@a.com
+Insectoid-SB   SB2531 Insectoid Ins    a@a.com
+Insectoid-2544  I2544 Insectoid Ins    a@a.com
+Insectoid-2552  I2552 Insectoid Ins    a@a.com
+Insectoid-2526  I2526 Insectoid Ins    a@a.com
+Reptilian-SB   SB2531 Reptilian Rep    a@a.com
+Reptilian-2545  R2545 Reptilian Rep    a@a.com
+Reptilian-2525  R2525 Reptilian Rep    a@a.com
+Reptilian-2531  R2531 Reptilian Rep    a@a.com
+Reptilian-2551  R2551 Reptilian Rep    a@a.com
