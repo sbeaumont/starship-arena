@@ -44,9 +44,9 @@ class MachineInSpace(ObjectInSpace, metaclass=ABCMeta):
         self.all_components: dict = dict()
         self.defense: list = self._type.defense
         self._attach_components(self.defense)
-        self.weapons: dict = {comp.name: comp for comp in self._type.weapons}
+        self.weapons: dict = {comp.path: comp for comp in self._type.weapons}
         self._attach_components(self.weapons.values())
-        self.ecm: dict = {comp.name: comp for comp in self._type.ecm}
+        self.ecm: dict = {comp.path: comp for comp in self._type.ecm}
         self._attach_components(self.ecm.values())
 
     def _attach_components(self, comps):

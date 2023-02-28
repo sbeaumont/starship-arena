@@ -7,7 +7,6 @@ __author__ = 'Serge Beaumont'
 
 import argparse
 import logging
-import os
 import sys
 
 from cfg import *
@@ -65,30 +64,31 @@ def main():
                 gr = GameRound(game_dir, round_nr)
 
     def do_send(game_dir: GameDirectory, what_to_send: list, last_round):
-        check_ok_to_send(EMAIL_CFG_NAME, game_dir.name, INIT_FILE_NAME)
+        check_ok_to_send(game_dir)
         if not args.yolo:
             answer = input(f"Type 'Y' to send out email.\n")
         if args.yolo or (answer.upper() == 'Y'):
             send_manual = 'manual' in what_to_send
             if 'zero' in what_to_send:
-                send_results_for_round(game_dir.name, INIT_FILE_NAME, EMAIL_CFG_NAME, 0, send_manual)
+                send_results_for_round(game_dir, 0, send_manual)
             if 'last' in what_to_send:
-                send_results_for_round(game_dir.name, INIT_FILE_NAME, EMAIL_CFG_NAME, last_round, send_manual)
+                send_results_for_round(game_dir, last_round, send_manual)
 
     configure_logger(False, ["fontTools", "PIL"])
     parser = create_parser()
     args = parser.parse_args()
 
-    if not os.path.exists(args.gamedir):
-        sys.exit(f"Game directory '{args.gamedir}' not found.")
+    data_root = os.environ.get('GAME_DATA_DIR', '.')
+    game_dir = GameDirectory(data_root, args.gamedir)
 
-    game_dir = GameDirectory(args.gamedir)
+    game_dir.check_ok()
+
     last_round = game_dir.last_round_number
 
     if args.clean or args.all:
         answer = None
         if not args.yolo:
-            answer = input(f"Type 'Y' if you're sure you want to clean directory '{args.gamedir}'.\n")
+            answer = input(f"Type 'Y' if you're sure you want to clean directory '{game_directory_path}'.\n")
         if args.yolo or (answer.upper() == 'Y'):
             game_dir.clean()
 

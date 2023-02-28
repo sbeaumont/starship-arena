@@ -204,7 +204,7 @@ def read_command_file(command_file_name: str) -> dict:
     commands = defaultdict(CommandSet)
     line_nr = 1
     for line in lines:
-        if line.startswith('#'):
+        if line.startswith('#') or (line.strip() == ''):
             continue
 
         t, c = line.split(':')

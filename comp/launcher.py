@@ -40,7 +40,7 @@ class Launcher(Weapon):
         self.missile_number += 1
         self.ammo -= 1
         heading = (self.container.heading + int(direction)) % 360
-        name = f'{self.container.name}-{self.payload_type.name}-{self.name}-{self.missile_number}'
+        name = f'{self.container.path}-{self.payload_type.name}-{self.name}-{self.missile_number}'
         self.add_internal_event(f"Launcher {self.name} fired {name} in direction {int(direction)}")
         return self._create_missile(name, heading=heading)
 

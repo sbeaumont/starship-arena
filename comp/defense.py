@@ -65,7 +65,7 @@ class Shields(Component):
         # Nanocytes can not penetrate shields, but if there's no shield there, everything gets passed through... uh oh.
         if hit_event._type == DamageType.Nanocyte:
             if old_strength > 0:
-                hit_event.notify_owner(f"Nanocytes splashed harmlessly against {self.container.name}'s shield.")
+                hit_event.notify_owner(f"Nanocytes splashed harmlessly against {self.container.path}'s shield.")
                 return 0
             else:
                 return hit_event.amount
@@ -84,7 +84,7 @@ class Shields(Component):
             if hit_event.can_score:
                 shield_score = (old_strength - self.strengths[shield_quadrant]) // 2
                 hit_event.score += shield_score
-            hit_event.notify_owner(f"{hit_event.source.name} hit {self.container.name}'s shield: ({shield_score} points).")
+            hit_event.notify_owner(f"{hit_event.source.name} hit {self.container.path}'s shield: ({shield_score} points).")
             self.add_internal_event(f"Shield {shield_quadrant} hit for {hit_event.amount}. Remaining strength: {self.strengths[shield_quadrant]}")
             return 0
         else:
@@ -92,10 +92,10 @@ class Shields(Component):
             if hit_event.can_score:
                 shield_score = old_strength // 2
                 hit_event.score += shield_score
-            hit_event.notify_owner(f"{hit_event.source.name} hit {self.container.name}'s shield: ({shield_score} points).")
+            hit_event.notify_owner(f"{hit_event.source.name} hit {self.container.path}'s shield: ({shield_score} points).")
             if hit_event.can_score:
                 hit_event.score += self.shield_break_score
-                hit_event.notify_owner(f"{hit_event.source.name} broke {self.container.name}'s shield: ({self.shield_break_score} points).")
+                hit_event.notify_owner(f"{hit_event.source.name} broke {self.container.path}'s shield: ({self.shield_break_score} points).")
             breakthrough_damage = -self.strengths[shield_quadrant]
             self.strengths[shield_quadrant] = 0
             self.add_internal_event(f"Hit on shield {shield_quadrant} broke the shield: {breakthrough_damage} passed through.")

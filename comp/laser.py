@@ -56,7 +56,7 @@ class Laser(Weapon):
             temp_status = 'Overheated' if not self.temperature_ok else ''
             battery_status = 'Low Battery' if not self.energy_ok else ''
             target_status = 'Target not visible' if not self.owner.can_scan(target_ship) else ''
-            self.add_internal_event(f"Ship {self.owner.name} failed to laser {target_name}: {' '.join([temp_status, battery_status, target_status])}")
+            self.add_internal_event(f"Ship {self.owner.path} failed to laser {target_name}: {' '.join([temp_status, battery_status, target_status])}")
         self.temperature += self.heat_per_shot
         self.container.battery -= self.energy_per_shot
 

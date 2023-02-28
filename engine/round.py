@@ -21,7 +21,7 @@ class RoundZero(object):
             ship.history.set_tick(0)
             ship.scan(self.ships)
             ship.history.update()
-        report_round_zero(self._dir.name, self.ships.values())
+        report_round_zero(self._dir.path, self.ships.values())
 
     def _init_ships(self) -> dict:
         """Load and initialize all the ships to their status at the start of a round."""
@@ -29,9 +29,9 @@ class RoundZero(object):
         for line in self._dir.init_lines:
             position = (int(line.x), int(line.y))
             # Always for tick 0 in this case.
-            ois = builder.create(line.name, line.type, position)
+            ois = builder.create(line.path, line.type, position)
             ois.player = line.player
-            objects_in_space[ois.name] = ois
+            objects_in_space[ois.path] = ois
         return objects_in_space
 
 
@@ -128,9 +128,9 @@ class GameRound(object):
             self.do_tick(destroyed, i)
 
         # Report the round
-        report_round(self.ois, self._dir.name, self.nr)
+        report_round(self.ois, self._dir.path, self.nr)
         # ...incl. the final report of any player ships destroyed this round.
-        report_round(destroyed, self._dir.name, self.nr)
+        report_round(destroyed, self._dir.path, self.nr)
 
         self.save()
 
