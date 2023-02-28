@@ -161,7 +161,7 @@ def report_round_zero(game_dir: str, ships: list):
         }
 
         html_out = template.render(template_data)
-        report_file_name = os.path.join(round_dir, f'{ship.path}-{ROUND_ZERO_NAME}')
+        report_file_name = os.path.join(round_dir, f'{ship.name}-{ROUND_ZERO_NAME}')
         with open(f'{report_file_name}.html', 'w') as fj:
             fj.write(html_out)
 
