@@ -92,14 +92,13 @@ def main():
         if args.yolo or (answer.upper() == 'Y'):
             game_dir.clean()
 
-    if args.zero:
-        do_zero()
-
     match args.action:
         case 'manual':
             generate_manual()
         case 'generate':
-            if args.all:
+            if args.zero:
+                do_zero()
+            elif args.all:
                 redo_all()
             else:
                 do_last(last_round)

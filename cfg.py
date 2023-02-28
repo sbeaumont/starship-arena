@@ -1,3 +1,4 @@
+import os
 
 TEMPLATE_DIR = './templates'
 
@@ -9,12 +10,15 @@ ROUND_EMAIL_TEMPLATE = 'round-email-body.html'
 SHIP_COMMAND_TEMPLATE = 'ship-command-round.txt'
 MANUAL_TEMPLATE = 'manual.html'
 
+GAME_DATA_DIR = os.environ.get('GAME_DATA_DIR')
+print(f"Loading game data from {GAME_DATA_DIR}")
+
 STATUS_FILE_TEMPLATE = "status_round_{}.pickle"
-COMMAND_FILE_TEMPLATE = "{}-commands-{}.txt"
+COMMAND_FILE_TEMPLATE = "commands/{}-commands-{}.txt"
 
 INIT_FILE_NAME = "ships.txt"
 EMAIL_CFG_NAME = "email.txt"
-MANUAL_FILENAME = 'starship-arena-manual.pdf'
+MANUAL_FILENAME = "starship-arena-manual.pdf"
 
 # ============================================= SHIP CORE METRICS
 

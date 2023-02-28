@@ -93,9 +93,9 @@ class AccelerateCommand(Command):
         super().__init__(Cmd.Accelerate, original_text)
         self.amount = int(amount)
 
-    def merge(self, cmd_text, amount):
-        self.amount += int(amount)
-        self.text = ' '.join((self.text, cmd_text))
+    def merge(self, cmd):
+        self.amount += int(cmd.amount)
+        self.text = ' '.join((self.text, cmd.text))
 
     def execute(self, target: Commandable, objects_in_space: dict, tick: int):
         target.add_event(InternalEvent(f'Executing command "{self.text}"'))
@@ -155,10 +155,9 @@ class TurnCommand(Command):
         super().__init__(Cmd.Turn, original_text)
         self.amount = int(amount) if direction in ('R', 'H') else -int(amount)
 
-    def merge(self, cmd_text, direction, amount):
-        assert direction in ('R', 'H', 'L')
-        self.amount += int(amount) if direction in ('R', 'H') else -int(amount)
-        self.text = ' '.join((self.text, cmd_text))
+    def merge(self, cmd):
+        self.amount += cmd.amount
+        self.text = ' '.join((self.text, cmd.text))
 
     def execute(self, target: Commandable, objects_in_space: dict, tick: int):
         target.add_event(InternalEvent(f'Executing command "{self.text}"'))
