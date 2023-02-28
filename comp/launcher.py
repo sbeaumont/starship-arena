@@ -27,7 +27,7 @@ class Launcher(Weapon):
         return self.payload_type.create(name, vector, owner=self.owner)
 
     def fire(self, direction: str, objects_in_space=None):
-        assert direction.isnumeric(), f"{direction} is not numeric"
+        assert direction.strip('-').isnumeric(), f"{direction} is not numeric"
         firing_angle = int(direction)
         if self.ammo <= 0:
             self.add_internal_event(f"{self.name} could not fire: empty.")

@@ -21,7 +21,7 @@ PLAYER_NAME_POS = 4
 
 
 def send_email(email_cfg: str, game_dir: str, result_file: str, name: str, ship_name: str, round_number: int, send_manual: bool):
-    email_password, email_sender, player_emails = load_email_config(email_cfg)
+    email_password, email_sender, player_emails = load_email_config(game_dir, email_cfg)
 
     if name not in player_emails:
         sys.exit(f"Player {name} not found in email list to send {result_file}.")
@@ -74,8 +74,8 @@ def send_email(email_cfg: str, game_dir: str, result_file: str, name: str, ship_
         smtp.sendmail(email_sender, email_receiver, em.as_string())
 
 
-def load_email_config(email_cfg):
-    with open(email_cfg) as f:
+def load_email_config(game_directory, email_cfg):
+    with open(os.path.join(game_directory, email_cfg)) as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
         email_sender = lines[0]
         email_password = lines[1]
@@ -90,10 +90,10 @@ def check_ok_to_send(email_config_file_name, game_directory, init_file_name):
     init_file = os.path.join(game_directory, init_file_name)
     if not os.path.exists(init_file):
         sys.exit(f"{init_file} not found.")
-    if not os.path.exists(email_config_file_name):
-        sys.exit(f"{email_config_file_name} not found.")
+    if not os.path.exists(os.path.join(game_directory, email_config_file_name)):
+        sys.exit(f"{os.path.join(game_directory, email_config_file_name)} not found.")
 
-    player_emails = load_email_config(email_config_file_name)[2]
+    player_emails = load_email_config(game_directory, email_config_file_name)[2]
     player_ships = load_init_file(game_directory, init_file_name)
     emails_not_present = list()
     for player_name in player_ships.keys():

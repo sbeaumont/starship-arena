@@ -94,15 +94,20 @@ def main():
 
     match args.action:
         case 'manual':
+            print("Generating manual...")
             generate_manual()
         case 'generate':
             if args.zero:
+                print("Generating round zero...")
                 do_zero()
             elif args.all:
+                print("Regenerating all rounds...")
                 redo_all()
             else:
+                print("Regenerating last round...")
                 do_last(last_round)
         case 'send':
+            print("Sending results...")
             do_send(game_dir, args.send, last_round)
         case _:
             raise ValueError(f"Action {args.action} unknown. Try manual, generate or send")
