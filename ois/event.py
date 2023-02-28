@@ -61,7 +61,7 @@ class ScanEvent(Event):
     """A single instance of one object scanning another."""
     def __init__(self, ois, distance, direction, heading):
         super().__init__(ois.pos, 'Scan', ois, DrawType.Point)
-        self.name = ois.path
+        self.name = ois.name
         self.distance = distance
         self.direction = direction
         self.heading = heading
@@ -97,7 +97,7 @@ class HitEvent(Event):
         if self.message:
             return self.message
         else:
-            return f"{self.source.name} hit {self.target.path} with {self._type} for {self.amount}"
+            return f"{self.source.name} hit {self.target.name} with {self._type} for {self.amount}"
 
     def notify_owner(self, message: str):
         self.source.owner.add_event(InternalEvent(message))

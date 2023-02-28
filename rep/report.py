@@ -84,14 +84,14 @@ def draw_round(ship: Ship, vis: Visualizer):
             # Draw scans of this tick
             for scan in ship.history[i].scans:
                 vis.draw_point(scan.pos, size=2)
-                prev_scan = ship.history[i - 1].scan_by_name(scan.path)
+                prev_scan = ship.history[i - 1].scan_by_name(scan.name)
                 if prev_scan:
                     # Draw line if there was an earlier scan
                     vis.draw_line((prev_scan.pos, scan.pos))
-                if (i == max_history) or (i + 1 in ship.history) and (not ship.history[i + 1].scan_by_name(scan.path)):
+                if (i == max_history) or (i + 1 in ship.history) and (not ship.history[i + 1].scan_by_name(scan.name)):
                     # Last scan of this ois, write name and position
                     # vis.text(text_nudge(scan.pos), f"{i}:{scan.name}\n{scan.pos}")
-                    vis.text(text_nudge(scan.pos), f"{i}:{scan.path}")
+                    vis.text(text_nudge(scan.pos), f"{i}:{scan.name}")
 
     # Final location of ship
     max_history = max(ship.history.keys())
@@ -150,7 +150,7 @@ def report_round_zero(game_dir: str, ships: list):
         boundaries = find_boundaries(ship, padding=50)
         vis = Visualizer(boundaries, scale=2)
         draw_round(ship, vis)
-        image_file_name = f'{ship.path}-{ROUND_ZERO_NAME}.png'
+        image_file_name = f'{ship.name}-{ROUND_ZERO_NAME}.png'
         vis.save(os.path.join(round_dir, image_file_name))
 
         template_data = {

@@ -29,9 +29,9 @@ class RoundZero(object):
         for line in self._dir.init_lines:
             position = (int(line.x), int(line.y))
             # Always for tick 0 in this case.
-            ois = builder.create(line.path, line.type, position)
+            ois = builder.create(line.name, line.type, position)
             ois.player = line.player
-            objects_in_space[ois.path] = ois
+            objects_in_space[ois.name] = ois
         return objects_in_space
 
 
