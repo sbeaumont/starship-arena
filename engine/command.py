@@ -2,7 +2,7 @@ import re
 import logging
 from collections import defaultdict
 from enum import Enum, auto
-from typing import Protocol, runtime_checkable, Self
+from typing import Protocol, runtime_checkable
 
 from ois.objectinspace import ObjectInSpace
 from comp.defense import Shields
@@ -176,7 +176,7 @@ class AccelerateCommand(Command):
     def _get_type_name(self) -> Cmd:
         return Cmd.Accelerate
 
-    def merge(self, cmd: Self):
+    def merge(self, cmd):
         if not isinstance(cmd, AccelerateCommand):
             raise ValueError(f"Can not merge AccelerateCommand and {cmd.__class__}")
         self.value += int(cmd.value)
