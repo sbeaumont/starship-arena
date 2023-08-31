@@ -1,0 +1,9 @@
+{% block round_nav %}
+<div>
+    <a href="{{ url_for('game_overview', game=game) }}">Overview</a></td> |
+    {% for i in range(total_rounds) %}
+        <a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a> |
+    {% endfor %}
+    <a href="{{ url_for('plan_round', game=game, ship_name=ship.name) }}">Current round</a>
+</div>
+{% endblock round_nav %}

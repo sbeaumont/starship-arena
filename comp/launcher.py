@@ -26,9 +26,9 @@ class Launcher(Weapon):
         vector = Vector(pos=self.container.vector.pos, heading=heading, speed=self.container.speed)
         return self.payload_type.create(name, vector, owner=self.owner)
 
-    def fire(self, direction: str, objects_in_space=None):
-        assert direction.strip('-').isnumeric(), f"{direction} is not numeric"
-        firing_angle = int(direction)
+    def fire(self, firing_angle: int, objects_in_space=None):
+        # assert direction.strip('-').isnumeric(), f"{direction} is not numeric"
+        # firing_angle = int(direction)
         if self.ammo <= 0:
             self.add_internal_event(f"{self.name} could not fire: empty.")
             return None
@@ -39,9 +39,9 @@ class Launcher(Weapon):
 
         self.missile_number += 1
         self.ammo -= 1
-        heading = (self.container.heading + int(direction)) % 360
+        heading = (self.container.heading + firing_angle) % 360
         name = f'{self.container.name}-{self.payload_type.name}-{self.name}-{self.missile_number}'
-        self.add_internal_event(f"Launcher {self.name} fired {name} in direction {int(direction)}")
+        self.add_internal_event(f"Launcher {self.name} fired {name} in direction {firing_angle}")
         return self._create_missile(name, heading=heading)
 
     @property

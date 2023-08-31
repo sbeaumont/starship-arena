@@ -55,3 +55,7 @@ class MachineInSpace(ObjectInSpace, metaclass=ABCMeta):
             self.all_components[comp.name] = comp
             comp.attach(self)
 
+    @property
+    def type_name(self):
+        return self._type.name
+

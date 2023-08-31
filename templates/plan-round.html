@@ -1,0 +1,39 @@
+{% extends './templates/base.html' %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Plan Round{% endblock %}</title>
+</head>
+<body>
+{% block content %}
+<div>
+    {% include './templates/round-nav-block.html' %}
+</div>
+<div>
+<table><tr>
+    <td style="vertical-align: top;font-family: monospace">
+        <table>
+            {% for command in commands %}
+            <tr><td {% if command[0] %}class="ok"{% else %}class="error"{% endif %}>{{ command[1] }}</td></tr>
+            {% endfor %}
+        </table>
+    </td>
+    <td>
+        <form action="{{ request.path }}" method="POST">
+            <!-- have to put the textarea on one line to prevent crap in the box -->
+            <textarea id="commands" name="commands" rows="10" cols="80">{% for command in commands -%}{{ command[1] }}{{ "\n" }}{%- endfor %}</textarea>
+            <div>
+                <input type="submit" name="action" value="Check"/>
+                <input type="submit" name="action" value="Save"/>
+                {{ message }}
+            </div>
+        </form>
+    </td>
+</tr></table>
+</div>
+<div>
+    {% include './templates/ship-status-block.html' %}
+</div>
+{% endblock %}
+</body>
+</html>

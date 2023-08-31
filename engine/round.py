@@ -5,47 +5,22 @@ import sys
 
 from engine.command import Commandable, read_command_file, CommandSet
 from engine.gamedirectory import GameDirectory
-from ois.registry import builder
-from rep.report import report_round_zero, report_round
+from rep.report import report_round
 
 logger = logging.getLogger(__name__)
 
 
-class RoundZero(object):
-    def __init__(self, game_directory: GameDirectory):
-        self._dir = game_directory
-        self.ships = self._init_ships()
-
-    def run(self):
-        for ship in self.ships.values():
-            ship.history.set_tick(0)
-            ship.scan(self.ships)
-            ship.history.update()
-        report_round_zero(self._dir.path, self.ships.values())
-
-    def _init_ships(self) -> dict:
-        """Load and initialize all the ships to their status at the start of a round."""
-        objects_in_space = dict()
-        for line in self._dir.init_lines:
-            position = (int(line.x), int(line.y))
-            # Always for tick 0 in this case.
-            ois = builder.create(line.name, line.type, position)
-            ois.player = line.player
-            objects_in_space[ois.name] = ois
-        return objects_in_space
-
-
 class GameRound(object):
-    def __init__(self, game_directory: GameDirectory, nr: int):
+    def __init__(self, gd: GameDirectory, nr: int):
         assert nr > 0, "GameRound is only intended for rounds 1 and up."
-        self._dir = game_directory
+        self._dir = gd
         self.nr = nr
-        if self.nr == 1:
-            self.objects_in_space = RoundZero(self._dir).ships
-        else:
-            old_status_file_name = self._dir.status_file_for_round(nr - 1)
+        old_status_file_name = self._dir.status_file_for_round(nr - 1)
+        if os.path.exists(old_status_file_name):
             with open(old_status_file_name, 'rb') as old_status_file:
                 self.objects_in_space = pickle.load(old_status_file)
+        else:
+            raise Exception(f"Can't find status file {old_status_file_name}")
 
     @property
     def ois(self):
@@ -117,11 +92,14 @@ class GameRound(object):
         if exit_on_missing_command_file and self.missing_command_files:
             sys.exit(f"Missing command files {self.missing_command_files}")
 
+        for ois in self.ois.values():
+            ois.round_reset()
+
         for ship in [s for s in self.ois.values() if isinstance(s, Commandable)]:
             command_file_name = self._dir.command_file(ship.name, self.nr)
             if os.path.exists(command_file_name):
                 ship.commands = read_command_file(command_file_name)
-                ship.scan(self.ois)
+                # ship.scan(self.ois)
 
         # Do 10 ticks, 1-10
         for i in range(1, 11):
@@ -135,9 +113,4 @@ class GameRound(object):
         self.save()
 
     def save(self):
-        """Clean up unnecessary data from the objects and pickle them as starting point for the next round."""
-        for ois in self.ois.values():
-            ois.round_reset()
-        status_file_name = self._dir.status_file_for_round(self.nr)
-        with open(status_file_name, 'wb') as status_file:
-            pickle.dump(self.ois, status_file)
+        self._dir.save(self.ois, self.nr)

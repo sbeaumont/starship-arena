@@ -28,10 +28,18 @@ class TickHistory(object):
     def scans(self):
         return [e for e in self.events if isinstance(e, ScanEvent)]
 
+    @property
+    def hits(self):
+        return [e for e in self.events if isinstance(e, HitEvent)]
+
+    @property
+    def hit_score(self):
+        return sum([e.score for e in self.hits])
+
     def scan_by_name(self, name):
         named_scans = [s for s in self.scans if s.name == name]
         if len(named_scans) >= 1:
-            assert len(named_scans) == 1, f"Hey weird, got more than one scan for a name in a tick: {self.scans}"
+            assert len(named_scans) == 1, f"Hey weird, got more than one scan for a name in a tick: {[str(s) for s in self.scans]}"
             return named_scans[0]
         return None
 
@@ -100,3 +108,24 @@ class History(object):
 
     def update(self):
         self.current.update(self.owner.snapshot)
+
+    @property
+    def events_per_tick(self):
+        result = defaultdict(list)
+        for tick, th in self.ticks.items():
+            result[tick] = th.non_scan_events
+        return result
+
+    @property
+    def scans_per_tick(self):
+        result = defaultdict(list)
+        for tick, th in self.ticks.items():
+            result[tick] = th.scans
+        return result
+
+    @property
+    def hit_scores_per_tick(self):
+        result = defaultdict(list)
+        for tick, th in self.ticks.items():
+            result[tick] = th.hit_score
+        return result

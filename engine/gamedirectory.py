@@ -3,28 +3,21 @@ import os
 import re
 import shutil
 import logging
+import pickle
 from collections import namedtuple
 
-from cfg import INIT_FILE_NAME, COMMAND_FILE_TEMPLATE, STATUS_FILE_TEMPLATE, EMAIL_CFG_NAME
+from cfg import INIT_FILE_NAME, COMMAND_FILE_TEMPLATE, \
+                 STATUS_FILE_TEMPLATE, EMAIL_CFG_NAME, PICTURE_TEMPLATE, PDF_TEMPLATE
 
 logger = logging.getLogger(__name__)
 
-InitLine = namedtuple('InitLine', 'name type x y player')
+InitLine = namedtuple('InitLine', 'name type faction player')
 
 
 class GameDirectory(object):
     def __init__(self, data_root: str, game_name: str):
         self._dir = os.path.join(data_root, game_name)
         self.game_name = game_name
-
-        with open(self.init_file) as infile:
-            logger.info(f"Reading ship file {self.init_file}")
-            self.init_lines = list()
-            for line in [l for l in infile.readlines() if l.strip()]:
-                if not line.startswith('#'):
-                    split_line = line.strip().split()
-                    assert len(split_line) == 5, f"Expected {split_line} to have 5 elements"
-                    self.init_lines.append(InitLine(*split_line))
 
     @property
     def ls(self):
@@ -38,6 +31,22 @@ class GameDirectory(object):
     def init_file(self):
         return os.path.join(self._dir, INIT_FILE_NAME)
 
+    def load_current_status(self) -> dict | None:
+        if self.last_round_number > -1:
+            return self.load_status(self.last_round_number)
+        else:
+            return None
+
+    def load_status(self, round_nr) -> dict:
+        status_file_name = self.status_file_for_round(round_nr)
+        with open(status_file_name, 'rb') as f:
+            return pickle.load(f)
+
+    def save(self, obj, nr):
+        status_file_name = self.status_file_for_round(nr)
+        with open(status_file_name, 'wb') as status_file:
+            pickle.dump(obj, status_file)
+
     @property
     def last_round_number(self):
         last_round = -1
@@ -46,12 +55,29 @@ class GameDirectory(object):
             last_round = max([int(n) for s in pickle_files for n in re.split('[-_. ]+', s) if n.isdigit()])
         return last_round
 
+    def info_of(self, ship_name):
+        for line in self.init_lines:
+            if line.name == ship_name:
+                return line
+        return None
+
+    def get_turn_picture_name(self, round_nr, ship_name):
+        relpath = os.path.join(self._dir, PICTURE_TEMPLATE.format(rnr=round_nr, name=ship_name))
+        return os.path.abspath(relpath)
+
+    def get_turn_pdf_name(self, round_nr, ship_name):
+        relpath = os.path.join(self._dir, PDF_TEMPLATE.format(rnr=round_nr, name=ship_name))
+        return os.path.abspath(relpath)
+
     @property
     def email_file(self):
         return os.path.join(self._dir, EMAIL_CFG_NAME)
 
     def command_file(self, name, round_nr):
         return os.path.join(self._dir, COMMAND_FILE_TEMPLATE.format(name, round_nr))
+
+    def command_file_exists(self, name, round_nr):
+        return os.path.exists(self.command_file(name, round_nr))
 
     def status_file_for_round(self, nr):
         return os.path.join(self._dir, STATUS_FILE_TEMPLATE.format(nr))

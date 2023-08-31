@@ -1,0 +1,39 @@
+{% block ship_status %}
+    <h2>Status</h2>
+    <table>
+        <tr>
+            <td><b>Position</b></td><td>{{ ship.pos.as_tuple }}</td>
+            <td><b>Heading</b></td><td>{{ ship.heading }}</td>
+            <td><b>Speed</b></td><td>{{ ship.speed }}/{{ ship._type.max_speed }}</td>
+        </tr>
+        <tr>
+            <td><b>Hull</b></td><td>{{ ship.hull }}/{{ ship._type.max_hull }}</td>
+            <td><b>Battery</b></td><td>{{ ship.battery }}/{{ ship._type.max_battery }}</td>
+            <td colspan="2"></td>
+        </tr>
+        {% for component in ship.defense %}
+        <tr>
+            <td><b>{{ component.name }}</b></td>
+            <td colspan="5">{% for stat_name, stat_value in component.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br/>
+    <table>
+        {% for component in ship.weapons.values() %}
+        <tr>
+            <td><b>{{ component.name }}</b></td>
+            <td colspan="3">{% for stat_name, stat_value in component.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br/>
+    <table>
+        {% for component in ship.ecm.values() %}
+        <tr>
+            <td><b>{{ component.name }}</b></td>
+            <td colspan="3">{% for stat_name, stat_value in component.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+{% endblock ship_status %}

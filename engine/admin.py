@@ -3,8 +3,11 @@ from dataclasses import dataclass
 from math import cos, sin, radians
 from random import randint
 
+from engine.gamedirectory import GameDirectory
 from ois.objectinspace import Point
 from rep.visualize import Visualizer
+import ois.registry.builder as builder
+from rep.report import report_round_zero
 
 
 @dataclass
@@ -62,7 +65,7 @@ def centers_for(num_factions, distance, random_rotation=60, angle_tweak=(0, 0), 
     return result
 
 
-def group_by_faction(ships):
+def group_by_faction(ships) -> dict:
     result = defaultdict(list)
     for s in ships:
         result[s.faction].append(s)
@@ -86,7 +89,7 @@ def distribute_factions(ships, distance):
         num_ships_in_faction = len(group)
         offsets = centers_for(num_ships_in_faction, 20, angle_tweak=(-30, 30), distance_tweak=(0, 30))
         for ship, offset in zip(group, offsets):
-            ship.move(center).move(offset)
+            ship.vector.pos = Point(0, 0).move(center).move(offset)
 
 
 def ships_to_lines(ships):
@@ -98,13 +101,34 @@ def ships_to_lines(ships):
     return lines
 
 
-if __name__ == '__main__':
-    distance_from_origin = 500
-    all_ships = load_ship_file('test-games/test-game-3/ships.txt')
-    distribute_factions(all_ships, distance_from_origin)
+class GameSetup(object):
+    def __init__(self, game_directory: GameDirectory):
+        self._dir: GameDirectory = game_directory
+        self.ships: dict = self._init_ships()
 
-    # all_positions = [(s.x, s.y) for s in all_ships]
-    # visualise_points(all_positions)
+    def run(self, distance_from_center=500):
+        distribute_factions(self.ships.values(), distance_from_center)
+        for ship in self.ships.values():
+            ship.history.set_tick(0)
+            ship.scan(self.ships)
+            ship.history.update()
 
-    for line in ships_to_lines(all_ships):
-        print(line)
+    def report(self):
+        report_round_zero(self._dir.path, self.ships.values())
+
+    def _init_ships(self) -> dict:
+        """Load and initialize all the ships to their status at the start of a round."""
+        objects_in_space = dict()
+        for line in load_ship_file(self._dir.init_file):
+            # position = (int(line.x), int(line.y))
+            position = (0, 0)
+            # Always for tick 0 in this case.
+            ois = builder.create(line.name, line.type, position)
+            ois.player = line.player
+            ois.faction = line.faction
+            objects_in_space[ois.name] = ois
+        return objects_in_space
+
+    def save(self):
+        self._dir.save(self.ships, 0)
+

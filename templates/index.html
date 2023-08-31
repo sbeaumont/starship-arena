@@ -1,0 +1,20 @@
+{% extends './templates/base.html' %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Starship Arena{% endblock %}</title>
+</head>
+<body>
+{% block content %}
+<div>
+    <table>
+    {% for game in games %}
+        <tr>
+            <td><a href="{{ url_for('game_overview', game=game) }}">{{game}}</a></td>
+        </tr>
+    {% endfor %}
+    </table>
+</div>
+{% endblock content %}
+</body>
+</html>

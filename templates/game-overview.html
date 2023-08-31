@@ -1,0 +1,33 @@
+{% extends './templates/base.html' %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Game Overview: {{game}}{% endblock %}</title>
+</head>
+<body>
+{% block content %}
+<h1>Overview of game {{game}} Round {{round_nr}}</h1>
+<div>
+    {% if all_command_files_ok %}<a href="{{ url_for('process_turn', game=game) }}">PROCESS TURN IF YOU DARE</a>{% endif %}
+</div>
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Position</th>
+        <th colspan="{{round_nr}}">Past rounds</th>
+        <th>Command file?</th>
+    </tr>
+{% for ship in ships %}
+    <tr>
+        <td><a href="{{ url_for('plan_round', game=game, ship_name=ship.name) }}">{{ship.name}}</a></td>
+        <td>{{ship.pos.as_tuple}}</td>
+        {% for i in range(round_nr) %}
+            <td><a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a></td>
+        {% endfor %}
+        <td {% if not command_file[ship.name] %}class="error">No{% else %}class="OK">Yes{% endif %}</td>
+    </tr>
+{% endfor %}
+</table>
+{% endblock content %}
+</body>
+</html>

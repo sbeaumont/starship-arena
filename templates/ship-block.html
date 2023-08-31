@@ -1,11 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Round {{ round }} report for {{ ship.name }}</title>
-    {% include 'styling.html' %}
-</head>
-
-<body>
+{% block ship %}
     <h1>{{ ship.name }}: Round {{ round }}</h1>
     <table>
         <tr>
@@ -14,45 +7,10 @@
         </tr>
     </table>
     <br/>
-    <img src="{{ image_file_name }}" max-width="100%"/>
+    <img src="{{ url_for('turn_picture', game=game, ship_name=ship.name, round=round) }}" max-width="100%"/>
 
-    <h2>Status</h2>
-    <table>
-        <tr>
-            <td><b>Position</b></td><td>{{ ship.pos.as_tuple }}</td>
-            <td><b>Heading</b></td><td>{{ ship.heading }}</td>
-            <td><b>Speed</b></td><td>{{ ship.speed }}/{{ ship._type.max_speed }}</td>
-        </tr>
-        <tr>
-            <td><b>Hull</b></td><td>{{ ship.hull }}/{{ ship._type.max_hull }}</td>
-            <td><b>Battery</b></td><td>{{ ship.battery }}/{{ ship._type.max_battery }}</td>
-            <td colspan="2"></td>
-        </tr>
-        {% for component in ship.defense %}
-        <tr>
-            <td><b>{{ component.name }}</b></td>
-            <td colspan="5">{% for stat_name, stat_value in component.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    <br/>
-    <table>
-        {% for component in ship.weapons.values() %}
-        <tr>
-            <td><b>{{ component.name }}</b></td>
-            <td colspan="3">{% for stat_name, stat_value in component.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    <br/>
-    <table>
-        {% for component in ship.ecm.values() %}
-        <tr>
-            <td><b>{{ component.name }}</b></td>
-            <td colspan="3">{% for stat_name, stat_value in component.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</td>
-        </tr>
-        {% endfor %}
-    </table>
+    {% include './templates/ship-status-block.html' %}
+
     <h2>Scans</h2>
     <table>
         <tr>
@@ -78,7 +36,6 @@
         {% endfor %}
     </table>
     <h2>Events</h2>
-
     {% for tick in range(1, 11) %}
         <h3>Tick {{tick}} (Score {{ ship.history[tick].hit_score }})</h3>
         <p>
@@ -107,5 +64,4 @@
             </table>
         {% endif %}
     {% endfor %}
-</body>
-</html>
+{% endblock ship %}

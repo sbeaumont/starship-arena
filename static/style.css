@@ -1,0 +1,32 @@
+html * {
+    background-color: black;
+    color: white;
+}
+
+a {
+    color: lightblue;
+}
+
+nav {
+    width: 150px;
+    float: left;
+}
+
+td {
+    border-width: 5px;
+    border-color: yellow;
+}
+
+#content {
+    margin-left: 150px
+}
+
+td .error {
+    background-color: red;
+    color: white;
+}
+
+td .ok {
+    background-color: green;
+    color: white;
+}

@@ -20,6 +20,9 @@ class Point(object):
         new_y = self.y + (cos(angle) * distance)
         return Point(new_x, new_y)
 
+    def move(self, xy: tuple):
+        return Point(self.x + xy[0], self.y + xy[1])
+
     def rounded(self, digits=1):
         return Point(x=round(self.x, digits), y=round(self.y, digits))
 
@@ -114,6 +117,10 @@ class ObjectInSpace(ABC):
     @property
     @abstractmethod
     def is_destroyed(self) -> bool:
+        return False
+
+    @property
+    def is_player_controlled(self):
         return False
 
     # ---------------------------------------------------------------------- HISTORY INTERFACE

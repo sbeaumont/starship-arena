@@ -1,4 +1,4 @@
-#Name          Type   Faction   Player Email
+Name           Type   Faction   Player Email
 Amphibian-SB   SB2531 Amphibian Amp    a@a.com
 Amphibian-2527  A2527 Amphibian Amp    a@a.com
 Amphibian-2539  A2539 Amphibian Amp    a@a.com

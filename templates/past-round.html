@@ -1,0 +1,20 @@
+{% extends './templates/base.html' %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Game {{game}} {{ship.name}} round {{round}}{% endblock %}}</title>
+</head>
+<body>
+{% block content %}
+<div>
+    {% include './templates/round-nav-block.html' %}
+</div>
+<div>
+    <a href="{{ url_for('turn_pdf', game=game, ship_name=ship.name, round=round) }}">Download turn as PDF</a>
+</div>
+<div>
+    {% include './templates/ship-block.html' %}
+</div>
+{% endblock content %}
+</body>
+</html>

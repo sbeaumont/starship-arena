@@ -30,6 +30,10 @@ class Ship(MachineInSpace):
     # ---------------------------------------------------------------------- QUERIES
 
     @property
+    def is_player_controlled(self):
+        return True
+
+    @property
     def is_destroyed(self) -> bool:
         return self.hull <= 0
 

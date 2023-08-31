@@ -24,7 +24,7 @@ class H2545(ShipType):
         ]
 
     @property
-    def weapons(self):
+    def weapons(self) -> list:
         return [
             Laser('L1', 180),
             Launcher('S1', Splinter(), 4, (270, 90)),

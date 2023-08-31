@@ -1,0 +1,123 @@
+{% extends './templates/base.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ship Overview</title>
+</head>
+<body>
+{% block content %}
+<h2>Ships</h2>
+
+<p>Ships are player-controlled war machines. They come in different configurations.</p>
+
+{% for st in ship_types %}
+<h3>{{ st.name }}</h3>
+<table>
+    <tr>
+        <td>Speed</td>
+        <td>Turn</td>
+        <td>Acceleration</td>
+        <td>Hull</td>
+        <td>Battery</td>
+        <td>Generators</td>
+        <td>Scan Distance</td>
+    </tr>
+    <tr>
+        <td>{{st.max_speed}}</td>
+        <td>{{st.max_turn}}</td>
+        <td>{{st.max_delta_v}}</td>
+        <td>{{st.max_hull}}</td>
+        <td>{{st.start_battery}}/{{st.max_battery}}</td>
+        <td>{{st.generators}}</td>
+        <td>{{st.max_scan_distance}}</td>
+    </tr>
+    <tr>
+        <td colspan="4"><b>Weapons</b></td>
+        <td colspan="3"><b>Defense</b></td>
+    </tr>
+    <tr>
+        <td colspan="4">
+            {% for w in st.weapons %}
+            {{w.name}}: {{w.description}}<br/>
+            {% endfor %}
+        </td>
+        <td colspan="3">
+            {% for d in st.defense %}
+            {{d.description}}<br/>
+            {% endfor %}
+        </td>
+    </tr>
+    {% if st.ecm %}
+    <tr>
+        <td colspan="7"><b>ECM</b></td>
+    </tr>
+    <tr>
+        <td colspan="7">
+        {% for e in st.ecm %}
+            {{e.name}}: {{e.description}}<br/>
+        {% endfor %}
+        </td>
+    </tr>
+    {% endif %}
+</table>
+{% endfor %}
+
+<h2>Starbases</h2>
+
+<p>Starbases can not move, but they have powerful weapons and defense, and can replenish ships that fly within the
+    maximum replenish distance and speed, and then give the Replenish command.</p>
+
+{% for sbt in starbase_types %}
+<h3>{{ sbt.name }}</h3>
+<table>
+    <tr>
+        <td>Replenish distance</td>
+        <td>Replenish speed</td>
+        <td>Hull</td>
+        <td>Battery</td>
+        <td>Generators</td>
+        <td>Scan Distance</td>
+    </tr>
+    <tr>
+        <td>{{sbt.max_replenish_distance}}</td>
+        <td>{{sbt.max_replenish_speed}}</td>
+        <td>{{sbt.max_hull}}</td>
+        <td>{{sbt.start_battery}}/{{sbt.max_battery}}</td>
+        <td>{{sbt.generators}}</td>
+        <td>{{sbt.max_scan_distance}}</td>
+    </tr>
+    <tr>
+        <td colspan="3"><b>Weapons</b></td>
+        <td colspan="3"><b>Defense</b></td>
+    </tr>
+    <tr>
+        <td colspan="3">
+            {% for w in sbt.weapons %}
+            {{w.name}}: {{w.description}}<br/>
+            {% endfor %}
+        </td>
+        <td colspan="3">
+            {% for d in sbt.defense %}
+            {{d.description}}<br/>
+            {% endfor %}
+        </td>
+    </tr>
+    {% if sbt.ecm %}
+    <tr>
+        <td colspan="6"><b>ECM</b></td>
+    </tr>
+    <tr>
+        <td colspan="6">
+        {% for e in sbt.ecm %}
+            {{e.name}}: {{e.description}}<br/>
+        {% endfor %}
+        </td>
+    </tr>
+    {% endif %}
+</table>
+{% endfor %}
+
+{% endblock content %}
+</body>
+</html>

@@ -1,8 +1,8 @@
 import re
 import logging
 from collections import defaultdict
-from enum import Enum, auto
-from typing import Protocol, runtime_checkable
+from enum import StrEnum, auto
+from typing import Protocol, runtime_checkable, Self
 
 from ois.objectinspace import ObjectInSpace
 from comp.defense import Shields
@@ -10,20 +10,50 @@ from ois.event import InternalEvent
 
 logger = logging.getLogger(__name__)
 
-COMMAND_PATTERN: str = r"^([A-Z|a-z]+)((\s*(-?[A-Z|a-z|0-9]+))*)$"
+
+def is_valid_number(value: str):
+    return re.match(r"-?\d+", value) is not None
 
 
 class ParsingError(Exception):
     pass
 
 
-class Cmd(Enum):
+class Cmd(StrEnum):
     Turn = auto()
     Accelerate = auto()
     Fire = auto()
     Replenish = auto()
     Boost = auto()
     Activation = auto()
+    Unknown = auto()
+
+
+class CommandLine(object):
+    COMMAND_PATTERN = r"^(\d+):\s*([A-Za-z]+)((\s*-?\w+)*)$"
+    TICK_NAME_PARAMS = r"^(\d+):\s*([A-Za-z]+)(.*)$"
+
+    def __init__(self, text: str):
+        self.errors = list()
+        self.text = text
+        if self.is_valid:
+            match = re.match(CommandLine.TICK_NAME_PARAMS, self.text)
+            self.tick = int(match.group(1))
+            self.name = match.group(2)
+            self.params = match.group(3).split()
+        else:
+            self.tick = self.name = self.params = None
+            self.errors.append("Missing basic '<tick number>:<command><parameter> <parameter>' structure")
+
+    @property
+    def is_valid(self) -> bool:
+        return re.match(CommandLine.COMMAND_PATTERN, self.text) is not None
+
+    def __repr__(self):
+        if self.is_valid:
+            return f"CommandLine({self.tick}, {self.name}, {self.params})"
+        else:
+            return f"CommandLine({self.text})"
 
 
 @runtime_checkable
@@ -54,126 +84,247 @@ class Commandable(Protocol):
 
 
 class Command(object):
-    def __init__(self, name: Cmd, original_text: str, **params):
-        self.text = original_text
-        self._name = name
-        self._params = params
+    @classmethod
+    def for_command_line(cls, command_line):
+        match command_line.name:
+            case 'L' | 'R':
+                # L90 -> Turn left
+                return TurnCommand(command_line)
+            case 'A':
+                # A30 -> Accelerate faster (+) or slow down/reverse (-)
+                return AccelerateCommand(command_line)
+            case 'F' | 'Fire':
+                # Fire <Weapon Name> <Direction or Target name>
+                return FireCommand(command_line)
+            case 'Replenish':
+                # Replenish
+                return ReplenishCommand(command_line)
+            case 'Boost':
+                # Boost shield quadrant
+                return BoostCommand(command_line)
+            case 'Activation':
+                # Turn components on or off
+                return ActivationCommand(command_line)
+            case _:
+                logger.warning(f"Unknown command {command_line}")
+                return UnknownCommand(command_line)
+
+    def __init__(self, command_line: CommandLine):
+        self.command_line = command_line
+        self.param = dict()
+        if self._check_params(self.command_line.params):
+            self._fill_params(self.command_line.params)
+
+    def _check_name(self) -> bool:
+        ...
+
+    def _check_params(self, params: list) -> bool:
+        ...
+
+    def _fill_params(self, params: list):
+        ...
+
+    def _get_type_name(self) -> Cmd:
+        ...
+
+    @property
+    def is_valid(self):
+        return self.command_line.is_valid and self._check_params(self.command_line.params)
+
+    @property
+    def tick(self) -> int:
+        return self.command_line.tick
 
     @property
     def name(self) -> Cmd:
-        return self._name
+        return self._get_type_name()
+
+    @property
+    def text(self):
+        return self.command_line.text
 
     @property
     def value(self):
-        return self._params['value']
+        return self.param.get('value')
 
     @value.setter
     def value(self, value):
-        self._params['value'] = value
+        self.param['value'] = value
 
-    def param(self, name):
-        return self._params[name]
+    @property
+    def selector(self):
+        return self.param.get('selector')
+
+    @selector.setter
+    def selector(self, value):
+        self.param['selector'] = value
 
     def execute(self, commandable: Commandable, objects_in_space: dict, tick: int):
-        pass
+        commandable.add_event(InternalEvent(f'Executing command "{self.command_line.text}"'))
 
     def __repr__(self):
-        return f"Command(name='{self.name}', params='{self._params}')"
-
-    def __str__(self):
-        if len(self._params.keys()) == 1:
-            return f"{self.name.name}({self.value})"
-        else:
-            param_str = ', '.join([f'{k}={v}' for k, v in self._params.items()])
-            return f"{self.name.name}({param_str})"
+        return f"Command({self._get_type_name()}, {self.command_line})"
 
 
 class AccelerateCommand(Command):
-    def __init__(self, original_text: str, amount):
-        super().__init__(Cmd.Accelerate, original_text)
-        self.amount = int(amount)
+    def _check_params(self, params: list) -> bool:
+        return len(params) == 1 and is_valid_number(params[0])
 
-    def merge(self, cmd):
-        self.amount += int(cmd.amount)
-        self.text = ' '.join((self.text, cmd.text))
+    def _fill_params(self, params: list):
+        self.value = int(params[0])
+
+    def _get_type_name(self) -> Cmd:
+        return Cmd.Accelerate
+
+    def merge(self, cmd: Self):
+        if not isinstance(cmd, AccelerateCommand):
+            raise ValueError(f"Can not merge AccelerateCommand and {cmd.__class__}")
+        self.value += int(cmd.value)
 
     def execute(self, target: Commandable, objects_in_space: dict, tick: int):
-        target.add_event(InternalEvent(f'Executing command "{self.text}"'))
-        target.accelerate(self.amount)
+        super().execute(target, objects_in_space, tick)
+        target.accelerate(self.value)
 
 
 class ActivationCommand(Command):
-    def __init__(self, original_text: str, comp_name: str, on_off: str):
-        super().__init__(Cmd.Activation, original_text)
-        assert on_off.lower() in ['yes', 'no', 'true', 'false', 'on', 'off']
-        self.active = on_off.lower() in ['yes', 'true', 'on']
-        self.comp_name = comp_name
+    def _check_params(self, params: list) -> bool:
+        if len(params) != 2:
+            return False
+        if params[1].lower() not in ['yes', 'no', 'true', 'false', 'on', 'off']:
+            return False
+        return params[0].isalnum()
+
+    def _fill_params(self, params: list):
+        self.selector = params[0]
+        self.value = params[1] in ['yes', 'true', 'on']
+
+    def _get_type_name(self) -> Cmd:
+        return Cmd.Activation
 
     def execute(self, target: Commandable, objects_in_space: dict, tick: int):
-        target.add_event(InternalEvent(f'Executing command "{self.text}"'))
-        target.activation(self.comp_name, self.active)
+        super().execute(target, objects_in_space, tick)
+        target.activation(self.selector, self.value)
 
 
 class BoostCommand(Command):
-    def __init__(self, original_text: str, quadrant, amount):
-        super().__init__(Cmd.Boost, original_text)
-        assert quadrant in ('N', 'E', 'S', 'W')
-        self.quadrant = quadrant
-        self.amount = int(amount)
+    def _check_params(self, params: list) -> bool:
+        if len(params) != 2:
+            return False
+        if params[0].upper() not in ('N', 'E', 'S', 'W'):
+            return False
+        return is_valid_number(params[1])
+
+    def _fill_params(self, params: list):
+        self.selector = params[0]
+        self.amount = int(params[1])
+
+    def _get_type_name(self) -> Cmd:
+        return Cmd.Boost
 
     def execute(self, target: Commandable, objects_in_space: dict, tick: int):
+        super().execute(target, objects_in_space, tick)
         for d in target.defense:
             if isinstance(d, Shields):
-                d.boost(self.quadrant, self.amount)
+                d.boost(self.selector, self.amount)
                 break
 
 
 class FireCommand(Command):
-    def __init__(self, original_text: str, weapon_name, target_or_direction):
-        super().__init__(Cmd.Fire, original_text)
-        self.weapon_name = weapon_name
-        self.target_or_direction = target_or_direction
+    def _check_params(self, params: list) -> bool:
+        if len(params) != 2:
+            return False
+        if not params[0].isalnum():
+            return False
+        return params[1].isalnum() or is_valid_number(params[1])
+
+    def _fill_params(self, params: list):
+        self.selector = params[0]
+        self.value = int(params[1]) if is_valid_number(params[1]) else params[1]
+
+    def _get_type_name(self) -> Cmd:
+        return Cmd.Fire
 
     def execute(self, target: Commandable, objects_in_space: dict, tick: int):
-        target.add_event(InternalEvent(f'Executing command "{self.text}"'))
-        ois = target.fire(self.weapon_name, self.target_or_direction, objects_in_space)
-        if ois:
-            objects_in_space[ois.name] = ois
+        super().execute(target, objects_in_space, tick)
+        fired_object = target.fire(self.selector, self.value, objects_in_space)
+        if fired_object:
+            objects_in_space[fired_object.name] = fired_object
 
 
 class ReplenishCommand(Command):
-    def __init__(self, original_text: str):
-        super().__init__(Cmd.Replenish, original_text)
+    def _check_params(self, params: list) -> bool:
+        return len(params) == 0
+
+    def _fill_params(self, params: list):
+        pass
+
+    def _get_type_name(self) -> Cmd:
+        return Cmd.Replenish
 
     def execute(self, target: Commandable, objects_in_space: dict, tick: int):
-        target.add_event(InternalEvent(f'Executing command "Replenish"'))
+        super().execute(target, objects_in_space, tick)
         target.try_replenish(objects_in_space)
 
 
 class TurnCommand(Command):
-    def __init__(self, original_text: str, direction, amount):
-        super().__init__(Cmd.Turn, original_text)
-        self.amount = int(amount) if direction in ('R', 'H') else -int(amount)
+    def _check_params(self, params: list) -> bool:
+        if len(params) != 1:
+            return False
+        return is_valid_number(params[0])
+
+    def _fill_params(self, params: list):
+        self.value = int(params[0]) if self.command_line.name in ('R', 'H') else -int(params[0])
+
+    def _get_type_name(self) -> Cmd:
+        return Cmd.Turn
 
     def merge(self, cmd):
-        self.amount += cmd.amount
-        self.text = ' '.join((self.text, cmd.text))
+        self.value += cmd.value
 
     def execute(self, target: Commandable, objects_in_space: dict, tick: int):
-        target.add_event(InternalEvent(f'Executing command "{self.text}"'))
-        target.turn(self.amount)
+        super().execute(target, objects_in_space, tick)
+        target.turn(self.value)
+
+
+class UnknownCommand(Command):
+    def _check_params(self, params: list) -> bool:
+        return False
+
+    def _fill_params(self, params: list):
+        pass
+
+    def _get_type_name(self) -> Cmd:
+        return Cmd.Unknown
+
+    @property
+    def is_valid(self) -> bool:
+        # This command is never valid.
+        return False
+
+    def execute(self, target: Commandable, objects_in_space: dict, tick: int):
+        target.add_event(f"Can't execute unknown command {self.command_line.text}")
 
 
 class CommandSet(object):
     """The set of commands for one ship for one tick. Manipulates the ship in the correct order."""
     def __init__(self):
-        self.acceleration: Command = None
-        self.turning: Command = None
-        self.weapons: dict = dict()
-        self.pre_move: list = list()
-        self.post_move: list = list()
+        self.acceleration: AccelerateCommand | None = None
+        self.turning: TurnCommand | None = None
+        self.weapons = dict()
+        self.pre_move = list()
+        self.post_move = list()
+        self.errors = list()
+
+    @property
+    def all(self):
+        all_cmds = [self.acceleration, self.turning, *self.weapons.values(), *self.pre_move, *self.post_move, *self.errors]
+        return [e for e in all_cmds if e is not None]
 
     def add(self, cmd: Command):
+        if not cmd.is_valid:
+            print(str(cmd), 'not valid')
+            self.errors.append(cmd)
+            return
         match cmd.name:
             case Cmd.Accelerate:
                 if self.acceleration:
@@ -186,13 +337,23 @@ class CommandSet(object):
                 else:
                     self.turning = cmd
             case Cmd.Fire:
-                self.weapons[cmd.weapon_name] = cmd
+                self.weapons[cmd.selector] = cmd
             case Cmd.Activation:
                 self.pre_move.append(cmd)
             case Cmd.Replenish | Cmd.Boost:
                 self.post_move.append(cmd)
+            case Cmd.Unknown:
+                self.errors.append(cmd)
             case _:
                 assert False, f"Unknown command: {cmd}"
+
+    def __str__(self):
+        wpn_str = 'W ' + '|'.join(f"{k}: {v}" for k, v in self.weapons.items()) if self.weapons else None
+        pre_str = 'Pre ' + '|'.join([str(e) for e in self.pre_move]) if self.pre_move else None
+        post_str = 'Post ' + '|'.join([str(e) for e in self.post_move]) if self.post_move else None
+        unknown_str = 'Err ' + '|'.join([str(e) for e in self.errors]) if self.errors else None
+        all_str = [str(e) for e in (self.acceleration, self.turning, wpn_str, pre_str, post_str, unknown_str) if e is not None]
+        return f"CommandSet({', '.join(all_str)})"
 
 
 def read_command_file(command_file_name: str) -> dict:
@@ -201,41 +362,21 @@ def read_command_file(command_file_name: str) -> dict:
         logger.info(f"Reading {command_file_name}")
         lines = [line.strip() for line in infile.readlines() if not line.isspace()]
 
-    commands = defaultdict(CommandSet)
-    line_nr = 1
-    for line in lines:
-        if line.startswith('#') or (line.strip() == ''):
-            continue
+    commands = parse_commands(lines)
+    logger.info(f"Parsed command file {command_file_name}")
+    return commands
 
-        t, c = line.split(':')
-        tick = int(t.strip())
-        cmd = re.match(COMMAND_PATTERN, c.strip())
-        if not cmd:
-            raise ParsingError(f"File {command_file_name} Line Nr {line_nr} no match: {line}")
-        cmd_text = cmd.group(0)
-        name = cmd.group(1)
-        params = cmd.group(2).split()
-        match name:
-            case 'L' | 'R':
-                # L90 -> Turn left
-                commands[tick].add(TurnCommand(cmd_text, name, int(params[0])))
-            case 'A':
-                # A30 -> Accelerate faster (+) or slow down/reverse (-)
-                commands[tick].add(AccelerateCommand(cmd_text, int(params[0])))
-            case 'F' | 'Fire':
-                # Fire <Weapon Name> <Direction or Target name>
-                commands[tick].add(FireCommand(cmd_text, weapon_name=params[0], target_or_direction=params[1]))
-            case 'Replenish':
-                # Replenish
-                commands[tick].add(ReplenishCommand(cmd_text))
-            case 'Boost':
-                # Boost shield quadrant
-                commands[tick].add(BoostCommand(cmd_text, quadrant=params[0], amount=int(params[1])))
-            case 'Activation':
-                # Turn components on or off
-                commands[tick].add(ActivationCommand(cmd_text, comp_name=params[0], on_off=params[1]))
-            case _:
-                logger.warning(f"{command_file_name}: Unknown command {cmd} in line {line_nr}")
-        line_nr += 1
-    logger.info(f"Read command file {command_file_name}")
+
+def parse_commands(lines: list[str]):
+    commands = defaultdict(CommandSet)
+    for line_nr, line in enumerate(lines, start=1):
+        try:
+            if line.startswith('#') or (line.strip() == ''):
+                continue
+            command_line = CommandLine(line)
+            if command_line.is_valid:
+                commands[command_line.tick].add(Command.for_command_line(command_line))
+        except Exception:
+            logger.error(f"Error while trying to parse line {line} ({line_nr})")
+            raise
     return commands
