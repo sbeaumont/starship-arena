@@ -77,6 +77,12 @@ def turn_pdf(game: str, ship_name:str, round: int):
     return send_file(filename, mimetype='application/pdf', as_attachment=False)
 
 
+@app.route('/manual_pdf')
+def manual_pdf():
+    filename = facade().get_manual_pdf()
+    return send_file(filename, mimetype='application/pdf', as_attachment=False)
+
+
 @app.route('/plan_round/<game>/<ship_name>', methods=['GET', 'POST'])
 def plan_round(game: str, ship_name: str):
     ship = facade().get_ship(game, ship_name)

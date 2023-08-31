@@ -7,6 +7,7 @@ from engine.gamedirectory import GameDirectory
 from engine.round import GameRound
 from secret import GAME_DATA_DIR
 from ois.registry.builder import all_ship_types
+from cfg import MANUAL_FILENAME
 
 logger = logging.getLogger('starship-arena.facade')
 
@@ -24,6 +25,9 @@ class AppFacade(object):
     def get_turn_pdf_name(self, game: str, ship_name: str, round: int):
         gd = GameDirectory(str(self.data_root), game)
         return gd.get_turn_pdf_name(round, ship_name)
+
+    def get_manual_pdf(self):
+        return MANUAL_FILENAME
 
     @property
     def all_ship_types(self) -> dict:
