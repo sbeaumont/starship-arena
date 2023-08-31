@@ -1,7 +1,7 @@
 import re
 import logging
 from collections import defaultdict
-from enum import StrEnum, auto
+from enum import Enum, auto
 from typing import Protocol, runtime_checkable, Self
 
 from ois.objectinspace import ObjectInSpace
@@ -19,7 +19,7 @@ class ParsingError(Exception):
     pass
 
 
-class Cmd(StrEnum):
+class Cmd(Enum):
     Turn = auto()
     Accelerate = auto()
     Fire = auto()
