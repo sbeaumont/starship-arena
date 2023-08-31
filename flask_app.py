@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from flask import Flask, render_template, request, g, send_file, redirect, url_for
 
 from webapp.appfacade import AppFacade
@@ -26,8 +27,12 @@ def overview():
 
 @app.route('/game_overview/<game>')
 def game_overview(game: str):
+    factions = defaultdict(list)
+    for s in facade().ships_for_game(game):
+        factions[s.faction].append(s)
+
     return render_template('./templates/game-overview.html',
-                           ships=facade().ships_for_game(game),
+                           factions=factions,
                            round_nr=facade().current_round_of_game(game),
                            game=game,
                            command_file=facade().command_file_status_of_game(game),

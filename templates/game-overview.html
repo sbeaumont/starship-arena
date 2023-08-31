@@ -16,15 +16,18 @@
         <th colspan="{{round_nr}}">Past rounds</th>
         <th>Command file?</th>
     </tr>
-{% for ship in ships %}
-    <tr>
-        <td><a href="{{ url_for('plan_round', game=game, ship_name=ship.name) }}">{{ship.name}}</a></td>
-        {% for i in range(round_nr) %}
-            <td><a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a></td>
+    {% for faction, ships in factions.items() %}
+        <tr><td colspan="{{ round_nr + 2}}">{{faction}}</td></tr>
+        {% for ship in ships %}
+        <tr>
+            <td><a href="{{ url_for('plan_round', game=game, ship_name=ship.name) }}">{{ship.name}}</a></td>
+            {% for i in range(round_nr) %}
+                <td><a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a></td>
+            {% endfor %}
+            <td {% if not command_file[ship.name] %}class="error">No{% else %}class="OK">Yes{% endif %}</td>
+        </tr>
         {% endfor %}
-        <td {% if not command_file[ship.name] %}class="error">No{% else %}class="OK">Yes{% endif %}</td>
-    </tr>
-{% endfor %}
+    {% endfor %}
 </table>
 {% endblock content %}
 </body>
