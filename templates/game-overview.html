@@ -20,7 +20,6 @@
 {% for ship in ships %}
     <tr>
         <td><a href="{{ url_for('plan_round', game=game, ship_name=ship.name) }}">{{ship.name}}</a></td>
-        <td>{{ship.pos.as_tuple}}</td>
         {% for i in range(round_nr) %}
             <td><a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a></td>
         {% endfor %}
