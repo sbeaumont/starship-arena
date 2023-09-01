@@ -28,7 +28,7 @@ class Ship:
         return f"{self.name},{self.type},{self.faction},{self.player},{round(self.x)},{round(self.y)}"
 
 
-def load_ship_file(file_name):
+def load_ship_file(file_name) -> list:
     with open(file_name) as f:
         lines = [line.strip().split() for line in f.readlines()]
     field_defs = {sl[1]: sl[0] for sl in enumerate(lines[0])}
@@ -44,17 +44,17 @@ def load_ship_file(file_name):
     return ships
 
 
-def polar_to_cartesian(r, theta):
+def polar_to_cartesian(r, theta) -> (int, int):
     """theta in degrees
 
-    returns tuple; (float, float); (x, y)
+    returns tuple; (int, int); (x, y)
     """
     x = r * cos(radians(theta))
     y = r * sin(radians(theta))
     return round(x), round(y)
 
 
-def centers_for(num_factions, distance, random_rotation=60, angle_tweak=(0, 0), distance_tweak=(0, 0)):
+def centers_for(num_factions, distance, random_rotation=60, angle_tweak=(0, 0), distance_tweak=(0, 0)) -> list[(int, int)]:
     result = list()
     rotation = randint(0, random_rotation)
     for i in range(num_factions):
@@ -92,7 +92,7 @@ def distribute_factions(ships, distance):
             ship.vector.pos = Point(0, 0).move(center).move(offset)
 
 
-def ships_to_lines(ships):
+def ships_to_lines(ships) -> list[str]:
     lines = list()
     faction_groups = group_by_faction(ships)
     for members in faction_groups.values():

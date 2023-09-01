@@ -8,7 +8,7 @@ from ois.objectinspace import ObjectInSpace
 from comp.defense import Shields
 from ois.event import InternalEvent
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('starship-arena.command')
 
 
 def is_valid_number(value: str):
@@ -128,7 +128,7 @@ class Command(object):
         ...
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         return self.command_line.is_valid and self._check_params(self.command_line.params)
 
     @property
@@ -140,7 +140,7 @@ class Command(object):
         return self._get_type_name()
 
     @property
-    def text(self):
+    def text(self) -> str:
         return self.command_line.text
 
     @property

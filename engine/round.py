@@ -7,15 +7,15 @@ from engine.command import Commandable, read_command_file, CommandSet
 from engine.gamedirectory import GameDirectory
 from rep.report import report_round
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('starship-arena.round')
 
 
 class GameRound(object):
-    def __init__(self, gd: GameDirectory, nr: int):
-        assert nr > 0, "GameRound is only intended for rounds 1 and up."
+    def __init__(self, gd: GameDirectory, round_nr: int):
+        assert round_nr > 0, "GameRound is only intended for rounds 1 and up."
         self._dir = gd
-        self.nr = nr
-        old_status_file_name = self._dir.status_file_for_round(nr - 1)
+        self.nr = round_nr
+        old_status_file_name = self._dir.status_file_for_round(round_nr - 1)
         if os.path.exists(old_status_file_name):
             with open(old_status_file_name, 'rb') as old_status_file:
                 self.objects_in_space = pickle.load(old_status_file)
@@ -99,7 +99,7 @@ class GameRound(object):
             command_file_name = self._dir.command_file(ship.name, self.nr)
             if os.path.exists(command_file_name):
                 ship.commands = read_command_file(command_file_name)
-                # ship.scan(self.ois)
+                ship.scan(self.ois)
 
         # Do 10 ticks, 1-10
         for i in range(1, 11):

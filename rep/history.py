@@ -34,7 +34,7 @@ class TickHistory(object):
 
     @property
     def hit_score(self):
-        return sum([e.score for e in self.hits])
+        return sum([e.score for e in self.hits if e.can_score])
 
     def scan_by_name(self, name):
         named_scans = [s for s in self.scans if s.name == name]

@@ -3,8 +3,8 @@
     <table>
         <tr>
             <td><b>Position</b></td><td>{{ ship.pos.as_tuple }}</td>
-            <td><b>Heading</b></td><td>{{ ship.heading }}</td>
-            <td><b>Speed</b></td><td>{{ ship.speed }}/{{ ship._type.max_speed }}</td>
+            <td><b>Heading</b></td><td>{{ ship.heading }} |{{ ship._type.max_turn }}|</td>
+            <td><b>Speed</b></td><td>{{ ship.speed }}/{{ ship._type.max_speed }} |{{ship._type.max_delta_v }}|</td>
         </tr>
         <tr>
             <td><b>Hull</b></td><td>{{ ship.hull }}/{{ ship._type.max_hull }}</td>

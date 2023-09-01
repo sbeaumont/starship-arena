@@ -18,15 +18,15 @@ class AppFacade(object):
 
     # ---------------------------------------------------------------------- QUERIES - Reference
 
-    def get_turn_picture_name(self, game: str, ship_name: str, round: int):
+    def get_turn_picture_name(self, game: str, ship_name: str, round: int) -> str:
         gd = GameDirectory(str(self.data_root), game)
         return gd.get_turn_picture_name(round, ship_name)
 
-    def get_turn_pdf_name(self, game: str, ship_name: str, round: int):
+    def get_turn_pdf_name(self, game: str, ship_name: str, round: int) -> str:
         gd = GameDirectory(str(self.data_root), game)
         return gd.get_turn_pdf_name(round, ship_name)
 
-    def get_manual_pdf(self):
+    def get_manual_pdf(self) -> str:
         return MANUAL_FILENAME
 
     @property
@@ -46,11 +46,11 @@ class AppFacade(object):
         gd = GameDirectory(str(self.data_root), game)
         return [s for s in gd.load_current_status().values() if s.is_player_controlled]
 
-    def current_round_of_game(self, game):
+    def current_round_of_game(self, game) -> int:
         gd = GameDirectory(str(self.data_root), game)
         return gd.last_round_number + 1
 
-    def command_file_status_of_game(self, game):
+    def command_file_status_of_game(self, game) -> dict:
         gd = GameDirectory(str(self.data_root), game)
         ship_names = [s.name for s in self.ships_for_game(game)]
         round_nr = self.current_round_of_game(game)
@@ -97,13 +97,17 @@ class AppFacade(object):
         gd = GameDirectory(str(self.data_root), game)
         round_nr = self.current_round_of_game(game)
         file_name = gd.command_file(ship, round_nr)
-        print(f"Writing {commands} to {file_name}")
+        logger.info(f"Writing G:{game} S:{ship} R:{round_nr} to {file_name}")
         with open(file_name, 'w') as f:
             f.write('\n'.join(commands))
+            logger.debug(f"{commands} written to {file_name}")
 
     def process_turn(self, game):
-        if not self.all_command_files_ok(game):
-            return
-        gd = GameDirectory(str(self.data_root), game)
-        gr = GameRound(gd, self.current_round_of_game(game))
-        gr.do_round()
+        if self.all_command_files_ok(game):
+            current_round = self.current_round_of_game(game)
+            gd = GameDirectory(str(self.data_root), game)
+            gr = GameRound(gd, current_round)
+            logger.info(f"Processing round {current_round} of game {game}")
+            gr.do_round()
+        else:
+            logger.info(f"Not proceeding to process {game}: not all command files ok")

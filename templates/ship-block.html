@@ -22,7 +22,7 @@
         </tr>
         {% if not final_scans %}
         <tr>
-            <td colspan="5">No end of round scans</tdc>
+            <td colspan="5">No end of round scans</td>
         </tr>
         {% endif %}
         {% for scan in final_scans %}
@@ -39,7 +39,7 @@
     {% for tick in range(1, 11) %}
         <h3>Tick {{tick}} (Score {{ ship.history[tick].hit_score }})</h3>
         <p>
-        {% for e in ship.history[tick].events %}
+        {% for e in ship.history[tick].non_scan_events %}
             {{e}}<br/>
         {% endfor %}
         </p>
