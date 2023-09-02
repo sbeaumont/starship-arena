@@ -3,8 +3,17 @@
 <head>
     {% block head %}
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.bundle.css') }}"/>
     <title>{% block title %}{% endblock %}</title>
     {% endblock %}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+    body {
+        background-image: url('{{ url_for("static", filename="gfx/peakpx.jpg") }}'), url('{{ url_for("static", filename="gfx/peakpx-flipped.jpg") }}');
+        background-repeat: repeat-y, repeat-y;
+    }
+</style>
 </head>
 <body>
 
@@ -20,5 +29,6 @@
 
 <div id="footer">{% block footer %}{% endblock %}</div>
 
+<script src="{{ url_for('static', filename='js/bootstrap.bundle.js') }}"/>
 </body>
 </html>

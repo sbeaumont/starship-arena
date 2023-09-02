@@ -1,5 +1,5 @@
 html * {
-    background-color: black;
+    /* background-color: black; */
     color: white;
 }
 
@@ -14,11 +14,17 @@ a {
 nav {
     width: 150px;
     float: left;
+    padding: 5px;
+}
+
+nav li {
+    background-color: black;
 }
 
 td {
     border-width: 5px;
     border-color: yellow;
+    background-color: black;
 }
 
 #content {
@@ -33,4 +39,17 @@ td .error {
 td .ok {
     background-color: green;
     color: white;
+}
+
+textarea {
+    background-color: black;
+}
+
+input {
+    background-color: blue;
+}
+
+#round_nav {
+    padding: 10px;
+    background-color: black;
 }
