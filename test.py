@@ -17,10 +17,8 @@ def go():
     setup.save()
     print("Current status:", gd.load_current_status())
 
-    round_1 = GameRound(gd, 1)
-    round_1.do_round()
-    round_2 = GameRound(gd, 2)
-    round_2.do_round()
+    # round_1 = GameRound(gd, 1)
+    # round_1.do_round()
 
 
 if __name__ == '__main__':

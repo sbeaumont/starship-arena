@@ -7,28 +7,41 @@ html,body,h1,h2,h3,h4,h5 {
     font-family: "Raleway", sans-serif
 }
 
+h1,h2,h3,h4,h5 {
+    background-color: #1f1f1f;
+}
+
 a {
     color: lightblue;
 }
 
 nav {
-    width: 150px;
+    width: 200px;
     float: left;
     padding: 5px;
 }
 
-nav li {
+nav ul {
     background-color: black;
 }
 
-td {
+td, th {
     border-width: 5px;
     border-color: yellow;
     background-color: black;
 }
 
 #content {
-    margin-left: 150px
+    /* margin-left: 150px; */
+    display: inline-block;
+}
+
+div#ship p {
+    background-color: black;
+}
+
+div#ship table {
+    background-color: black;
 }
 
 td .error {
