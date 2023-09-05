@@ -150,11 +150,7 @@ class History(object):
         return self.owner.snapshot
 
     def reset(self):
-        # self.ticks.clear()
-        # self.ticks[0].update(self.create_snapshot())
-        # self.current = self.ticks[0]
         self.update()
-        pass
 
     def set_tick(self, tick: Tick, update=True):
         assert isinstance(tick, Tick)
