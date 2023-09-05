@@ -8,7 +8,7 @@ from ois.objectinspace import Point
 from rep.visualize import Visualizer
 import ois.registry.builder as builder
 from rep.report import report_round_zero
-from rep.history import TICK_ZERO
+from rep.history import TICK_ZERO, Tick
 
 
 @dataclass

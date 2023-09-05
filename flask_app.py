@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 from flask import Flask, render_template, request, g, send_file, redirect, url_for
+from rep.history import Tick
 
 from webapp.appfacade import AppFacade
 
@@ -56,12 +57,14 @@ def ship_overview():
 
 @app.route('/past_round/<game>/<ship_name>/<round>', methods=['GET', 'POST'])
 def past_round(game: str, ship_name: str, round: int):
+    round = int(round)
     ship = facade().get_ship(game, ship_name, round)
     return render_template('./templates/past-round.html',
                            ship=ship,
                            game=game,
                            round=round,
-                           total_rounds=facade().current_round_of_game(game)
+                           total_rounds=facade().current_round_of_game(game),
+                           start_tick=Tick(round, 0)
                            )
 
 

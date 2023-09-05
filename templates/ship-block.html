@@ -21,12 +21,7 @@
             <th>Direction (Rel)</th>
             <th>Heading (Abs)</th>
         </tr>
-        {% if not final_scans %}
-        <tr>
-            <td colspan="5">No end of round scans</td   >
-        </tr>
-        {% endif %}
-        {% for scan in final_scans %}
+        {% for scan in ship.history[ship.history.first].scans %}
         <tr>
             <td>{{scan.name}}</td>
             <td>{{scan.pos.as_tuple}}</td>
@@ -36,34 +31,36 @@
         </tr>
         {% endfor %}
     </table>
-    <h2>Events</h2>
-    {% for tick in range(1, 11) %}
-        <h3>Tick {{tick}} (Score {{ ship.history[tick].hit_score }})</h3>
-        <p>
-        {% for e in ship.history[tick].non_scan_events %}
-            {{e}}<br/>
-        {% endfor %}
-        </p>
-        {% if ship.history[tick].scans %}
-            <table class="small-text">
-            <tr>
-                <th>Name</th>
-                <th>Position</th>
-                <th>Distance</th>
-                <th>Direction (Rel)</th>
-                <th>Heading (Abs)</th>
-            </tr>
-            {% for scan in ship.history[tick].scans %}
-                <tr>
-                    <td>{{scan.name}}</td>
-                    <td>{{scan.pos.as_tuple}}</td>
-                    <td>{{scan.distance}}</td>
-                    <td>{{scan.direction}}</td>
-                    <td>{{scan.heading}}</td>
-                </tr>
+    {% if start_tick.round > 0 %}
+        <h2>Events</h2>
+        {% for tick in start_tick.ticks_for_round %}
+            <h3>Tick {{tick}} (Score {{ ship.history[tick].hit_score }})</h3>
+            <p>
+            {% for e in ship.history[tick].non_scan_events %}
+                {{e}}<br/>
             {% endfor %}
-            </table>
-        {% endif %}
-    {% endfor %}
+            </p>
+            {% if ship.history[tick].scans %}
+                <table class="small-text">
+                <tr>
+                    <th>Name</th>
+                    <th>Position</th>
+                    <th>Distance</th>
+                    <th>Direction (Rel)</th>
+                    <th>Heading (Abs)</th>
+                </tr>
+                {% for scan in ship.history[tick].scans %}
+                    <tr>
+                        <td>{{scan.name}}</td>
+                        <td>{{scan.pos.as_tuple}}</td>
+                        <td>{{scan.distance}}</td>
+                        <td>{{scan.direction}}</td>
+                        <td>{{scan.heading}}</td>
+                    </tr>
+                {% endfor %}
+                </table>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
 </div>
 {% endblock ship %}

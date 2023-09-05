@@ -77,8 +77,8 @@
         </tr>
         {% endfor %}
     </table>
+{% if start_tick.round > 0 %}
     <h2>Events</h2>
-
     {% for tick in start_tick.ticks_for_round %}
         <h3>Tick {{tick.abs_tick - start_tick.abs_tick}} (Score {{ ship.history[tick].hit_score }})</h3>
         <p>
@@ -107,5 +107,6 @@
             </table>
         {% endif %}
     {% endfor %}
+{% endif %}
 </body>
 </html>

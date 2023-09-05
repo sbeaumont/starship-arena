@@ -131,6 +131,10 @@ class History(object):
         return self.ticks.keys()
 
     @property
+    def first(self):
+        return sorted(self.ticks.keys())[0]
+
+    @property
     def last(self):
         return sorted(self.ticks.keys())[-1]
 
