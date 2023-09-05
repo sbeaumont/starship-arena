@@ -62,12 +62,7 @@
             <th>Direction (Rel)</th>
             <th>Heading (Abs)</th>
         </tr>
-        {% if not final_scans %}
-        <tr>
-            <td colspan="5">No end of round scans</tdc>
-        </tr>
-        {% endif %}
-        {% for scan in final_scans %}
+        {% for scan in ship.history[ship.history.first].scans %}
         <tr>
             <td>{{scan.name}}</td>
             <td>{{scan.pos.as_tuple}}</td>
