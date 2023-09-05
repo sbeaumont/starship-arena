@@ -4,7 +4,7 @@ from abc import abstractmethod, ABC
 from dataclasses import dataclass, replace
 
 from .event import InternalEvent, Event
-from rep.history import History
+from rep.history import History, Tick, TICK_ZERO
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class Vector(object):
 
 class ObjectInSpace(ABC):
     """Any object in space, which can be ships, rockets, starbases, black holes, etc."""
-    def __init__(self, name: str, vector: Vector, visibility: int = 100, tick: int = 0):
+    def __init__(self, name: str, vector: Vector, visibility: int = 100, tick: Tick = TICK_ZERO):
         assert isinstance(vector, Vector)
         super().__init__()
         self.name = name
@@ -174,7 +174,7 @@ class ObjectInSpace(ABC):
 
     # ---------------------------------------------------------------------- ENGINE HOOKS
 
-    def tick(self, tick_nr):
+    def tick(self, tick: Tick):
         pass
 
     def generate(self):

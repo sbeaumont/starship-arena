@@ -3,7 +3,7 @@ import logging
 
 
 locale.setlocale(locale.LC_ALL, 'nl_NL.UTF-8')
-logger = logging.getLogger()
+logger = logging.getLogger('starship-arena')
 LOG_FILE_NAME = "./logfile.txt"
 FILE_LOG_LEVEL = logging.DEBUG
 CONSOLE_LOG_LEVEL = logging.DEBUG
@@ -12,7 +12,7 @@ LOG_FORMAT = '%(name)s %(levelname)s: %(message)s'
 # LOG_FORMAT = '%(levelname)s: %(message)s'
 
 
-def configure_logger(create_log_file=False, logger_blocklist=list):
+def configure_logger(create_log_file=False, logger_blocklist=list()):
     """Configure the file and console logging."""
     logger.setLevel(FILE_LOG_LEVEL)
     formatter = logging.Formatter(LOG_FORMAT)

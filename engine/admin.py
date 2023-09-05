@@ -8,6 +8,7 @@ from ois.objectinspace import Point
 from rep.visualize import Visualizer
 import ois.registry.builder as builder
 from rep.report import report_round_zero
+from rep.history import TICK_ZERO
 
 
 @dataclass
@@ -109,7 +110,7 @@ class GameSetup(object):
     def run(self, distance_from_center=500):
         distribute_factions(self.ships.values(), distance_from_center)
         for ship in self.ships.values():
-            ship.history.set_tick(0)
+            ship.history.set_tick(TICK_ZERO)
             ship.scan(self.ships)
             ship.history.update()
 

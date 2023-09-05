@@ -5,6 +5,7 @@ from comp.warhead import DamageType
 from .machineinspace import MachineInSpace, MachineType
 from .objectinspace import ObjectInSpace, Point, Vector
 from .event import ScanEvent, InternalEvent, HitEvent
+from rep.history import Tick, TICK_ZERO
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ shipType = NewType("ShipType", MachineType)
 
 class Ship(MachineInSpace):
     """A player-commanded space ship."""
-    def __init__(self, name: str, _type: shipType, vector: Vector, owner=None, tick=0):
+    def __init__(self, name: str, _type: shipType, vector: Vector, owner = None, tick: Tick = TICK_ZERO):
         assert isinstance(vector, Vector)
         super().__init__(name, _type, vector, owner=self, tick=tick)
         self.generators = _type.generators
@@ -165,10 +166,10 @@ class Ship(MachineInSpace):
 
     # ---------------------------------------------------------------------- TIMED HANDLERS
 
-    def tick(self, tick_nr: int):
-        logger.debug(f"{self.name} starting tick {tick_nr}")
+    def tick(self, tick: Tick):
+        logger.debug(f"{self.name} starting tick {tick}")
         for comp in self.all_components.values():
-            comp.tick(tick_nr)
+            comp.tick(tick)
 
     def use_energy(self):
         for comp in self.all_components.values():

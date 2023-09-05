@@ -17,7 +17,7 @@ from engine.gamedirectory import GameDirectory
 from rep.send import send_results_for_round, check_ok_to_send
 from rep.manual import generate_manual
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('starship-arena')
 
 
 def main():

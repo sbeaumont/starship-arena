@@ -1,6 +1,7 @@
 from abc import ABCMeta
 from .objectinspace import ObjectInSpace, Vector
 from comp.component import Component
+from rep.history import Tick, TICK_ZERO
 
 
 class MachineType(metaclass=ABCMeta):
@@ -8,7 +9,7 @@ class MachineType(metaclass=ABCMeta):
     max_hull = 0
     start_battery = 0
 
-    def create(self, name: str, vector: Vector, owner=None, tick: int = 0):
+    def create(self, name: str, vector: Vector, owner=None, tick: Tick = TICK_ZERO):
         assert self.base_type, f"{self.name} does not have a base_type defined"
         return self.base_type(name, self, vector, owner=owner, tick=tick)
 
@@ -31,7 +32,7 @@ class MachineType(metaclass=ABCMeta):
 
 class MachineInSpace(ObjectInSpace, metaclass=ABCMeta):
     """A machine in space."""
-    def __init__(self, name: str, _type: MachineType, vector: Vector, owner=None, tick=0):
+    def __init__(self, name: str, _type: MachineType, vector: Vector, owner=None, tick: Tick = TICK_ZERO):
         assert isinstance(_type, MachineType), f"{_type} is not an instance of MachineType"
         assert isinstance(vector, Vector)
         super().__init__(name, vector, tick=tick)

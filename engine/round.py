@@ -6,6 +6,7 @@ import sys
 from engine.command import Commandable, read_command_file, CommandSet
 from engine.gamedirectory import GameDirectory
 from rep.report import report_round
+from rep.history import Tick
 
 logger = logging.getLogger('starship-arena.round')
 
@@ -15,6 +16,7 @@ class GameRound(object):
         assert round_nr > 0, "GameRound is only intended for rounds 1 and up."
         self._dir = gd
         self.nr = round_nr
+        self.round_start = Tick(self.nr, 0)
         old_status_file_name = self._dir.status_file_for_round(round_nr - 1)
         if os.path.exists(old_status_file_name):
             with open(old_status_file_name, 'rb') as old_status_file:
@@ -40,7 +42,9 @@ class GameRound(object):
         for other_cmd in cs.post_move:
             other_cmd.execute(ship, self.ois, tick)
 
-    def do_tick(self, destroyed: dict, tick: int):
+    def do_tick(self, destroyed: dict, tick: Tick):
+        assert isinstance(tick, Tick)
+        tick_nr = tick.abs_tick - tick.round_start.abs_tick
         """Perform a single game tick."""
         logger.info(f"Processing tick {tick}")
         # Set up the reporting for the tick
@@ -52,15 +56,15 @@ class GameRound(object):
         for ois in self.ois.values():
             ois.generate()
             ois.use_energy()
-            if isinstance(ois, Commandable) and ois.commands and (tick in ois.commands):
-                self.pre_move_commands(ois, ois.commands[tick], tick)
+            if isinstance(ois, Commandable) and ois.commands and (tick_nr in ois.commands):
+                self.pre_move_commands(ois, ois.commands[tick_nr], tick_nr)
             ois.pre_move(self.objects_in_space)
             ois.move()
 
         # All ships perform their post move commands do post-move commands like firing weapons
         for ois in list(self.ois.values()):
-            if isinstance(ois, Commandable) and ois.commands and (tick in ois.commands):
-                self.post_move_commands(ois, ois.commands[tick], self.ois, tick)
+            if isinstance(ois, Commandable) and ois.commands and (tick_nr in ois.commands):
+                self.post_move_commands(ois, ois.commands[tick_nr], self.ois, tick_nr)
 
         # All ships scan, do post-move logic (like guided missiles intercepting their target)
         # and finally update the snapshot
@@ -99,11 +103,11 @@ class GameRound(object):
             command_file_name = self._dir.command_file(ship.name, self.nr)
             if os.path.exists(command_file_name):
                 ship.commands = read_command_file(command_file_name)
-                ship.scan(self.ois)
+                # ship.scan(self.ois)
 
         # Do 10 ticks, 1-10
-        for i in range(1, 11):
-            self.do_tick(destroyed, i)
+        for t in self.round_start.ticks_for_round:
+            self.do_tick(destroyed, t)
 
         # Report the round
         report_round(self.ois, self._dir.path, self.nr)

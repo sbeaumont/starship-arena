@@ -79,8 +79,8 @@
     </table>
     <h2>Events</h2>
 
-    {% for tick in range(1, 11) %}
-        <h3>Tick {{tick}} (Score {{ ship.history[tick].hit_score }})</h3>
+    {% for tick in start_tick.ticks_for_round %}
+        <h3>Tick {{tick.abs_tick - start_tick.abs_tick}} (Score {{ ship.history[tick].hit_score }})</h3>
         <p>
         {% for e in ship.history[tick].events %}
             {{e}}<br/>

@@ -1,9 +1,15 @@
+import logging
+
 from engine.gamedirectory import GameDirectory
 from engine.admin import GameSetup, group_by_faction
 from engine.round import GameRound
+from log import configure_logger
 
 
 def go():
+    logging.getLogger().setLevel(logging.ERROR)
+    configure_logger(logger_blocklist=('fonttools',))
+    logger = logging.getLogger('starship-arena')
     gd = GameDirectory('./test-games', 'test-game')
     gd.clean()
     setup = GameSetup(gd)
@@ -15,10 +21,11 @@ def go():
             print(ship.name, ship.faction, ship.pos, ship.type_name)
     setup.report()
     setup.save()
-    print("Current status:", gd.load_current_status())
+    logger.info("Current status: %s", gd.load_current_status())
 
-    # round_1 = GameRound(gd, 1)
-    # round_1.do_round()
+    for i in range(1, 4):
+        logger.info("Starting game round %s", i)
+        GameRound(gd, i).do_round()
 
 
 if __name__ == '__main__':

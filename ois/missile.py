@@ -4,13 +4,14 @@ from dataclasses import replace
 from .event import InternalEvent
 from .objectinspace import ObjectInSpace, Vector
 from .machineinspace import MachineInSpace, MachineType
+from rep.history import Tick, TICK_ZERO
 
 logger = logging.getLogger(__name__)
 
 
 class Missile(MachineInSpace):
     """Flying thing that explodes when near its target."""
-    def __init__(self, name: str, _type, vector: Vector, owner: ObjectInSpace, tick: int = 0):
+    def __init__(self, name: str, _type, vector: Vector, owner: ObjectInSpace, tick: Tick = TICK_ZERO):
         super().__init__(name, _type, vector, owner=owner, tick=tick)
         self.target = None
         self.energy_per_move = _type.energy_per_move
@@ -98,6 +99,6 @@ class MissileType(MachineType):
     energy_per_move: int = 5
     max_speed = 0
 
-    def create(self, name: str, vector: Vector, owner=None, tick: int = 0):
+    def create(self, name: str, vector: Vector, owner=None, tick: Tick = TICK_ZERO):
         vector = replace(vector, speed=self.max_speed)
         return super().create(name, vector, owner, tick)
