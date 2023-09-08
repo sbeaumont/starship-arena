@@ -5,6 +5,7 @@ from ois.registry.missiles import Rocket, Splinter
 from comp.defense import Shields
 from comp.launcher import Launcher
 from comp.laser import Laser
+from comp.scanner import Gravscan
 
 
 class SB2531(ShipType):
@@ -35,5 +36,6 @@ class SB2531(ShipType):
             Launcher('S1', Splinter(), 40),
             Launcher('S2', Splinter(), 40),
             Launcher('R1', Rocket(), 75),
-            Launcher('R2', Rocket(), 75)
+            Launcher('R2', Rocket(), 75),
+            Gravscan('G')
         ]

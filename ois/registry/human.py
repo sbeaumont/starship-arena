@@ -6,6 +6,7 @@ from comp.defense import Shields
 from comp.launcher import Launcher
 from comp.laser import Laser
 from comp.ecm import Cloak
+from comp.scanner import Gravscan
 
 
 class H2545(ShipType):
@@ -31,7 +32,8 @@ class H2545(ShipType):
             Launcher('R1', Rocket(), 10),
             Launcher('R2', Rocket(), 10),
             Launcher('M1', SplinterMine(), 10),
-            Launcher('E1', EMPMissile(), 5)
+            Launcher('E1', EMPMissile(), 5),
+            Gravscan('G')
         ]
 
 
@@ -50,7 +52,8 @@ class H2552(ShipType):
             Laser('L1', 180, (270, 90)),
             Launcher('S1', Splinter(), 10, (90, 270)),
             Launcher('R1', Rocket(), 15),
-            Launcher('N1', NanocyteMine(), 10)
+            Launcher('N1', NanocyteMine(), 10),
+            Gravscan('G')
         ]
 
     @property
@@ -83,7 +86,8 @@ class H2535(ShipType):
             Launcher('SP1', Splinter(), 10, (180, 0)),
             Launcher('SP2', Splinter(), 10, (180, 0)),
             Launcher('R1', Rocket(), 10),
-            Launcher('N1', NanoMissile(), 10, (315, 45))
+            Launcher('N1', NanoMissile(), 10, (315, 45)),
+            Gravscan('G')
         ]
 
     @property
@@ -115,6 +119,7 @@ class H2527(ShipType):
             Laser('L2', 180),
             Launcher('R1', Rocket(), 8),
             Launcher('R2', Rocket(), 8),
+            Gravscan('G')
         ]
 
     @property

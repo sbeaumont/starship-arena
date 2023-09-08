@@ -34,7 +34,7 @@
     {% if start_tick.round > 0 %}
         <h2>Events</h2>
         {% for tick in start_tick.ticks_for_round %}
-            <h3>Tick {{tick}} (Score {{ ship.history[tick].hit_score }})</h3>
+            <h3>Tick {{tick.tick}} (Score {{ ship.history[tick].hit_score }})</h3>
             <p>
             {% for e in ship.history[tick].non_scan_events %}
                 {{e}}<br/>

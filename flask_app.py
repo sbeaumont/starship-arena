@@ -1,12 +1,16 @@
 import logging
+import re
 from collections import defaultdict
 from flask import Flask, render_template, request, g, send_file, redirect, url_for
 from rep.history import Tick
 
-from webapp.appfacade import AppFacade
+from webapp.appfacade import AppFacade, NameValidator
 
 app = Flask('starship-arena', template_folder='.')
 app.logger.setLevel(logging.DEBUG)
+
+
+# ---------------------------------------------------------------------- HELPERS
 
 
 def facade():
@@ -20,6 +24,27 @@ def cleanup_command_form(contents):
     return [line.strip() for line in contents.splitlines() if line != '']
 
 
+# ---------------------------------------------------------------------- ROUTING
+
+
+@app.route('/admin', methods=['GET', 'POST'])
+def admin():
+    messages = list()
+    if request.method == 'POST':
+        if ('action' in request.form) and (request.form['action'] == 'New game'):
+            name_v = NameValidator(request.form['game_name'])
+            if name_v.is_valid:
+                if name_v.cleaned not in facade().all_games():
+                    facade().create_new_game(name_v.cleaned)
+                else:
+                    messages.append("Game name already exists.")
+            else:
+                messages = name_v.messages
+    return render_template('./templates/admin.html',
+                           games=facade().all_games(),
+                           messages=messages)
+
+
 @app.route('/')
 def overview():
     return render_template('./templates/index.html',
@@ -31,7 +56,6 @@ def game_overview(game: str):
     factions = defaultdict(list)
     for s in facade().ships_for_game(game):
         factions[s.faction].append(s)
-
     return render_template('./templates/game-overview.html',
                            factions=factions,
                            round_nr=facade().current_round_of_game(game),
@@ -105,7 +129,6 @@ def plan_round(game: str, ship_name: str):
             message = 'Wrong Action!'
     else:
         commands = facade().check_commands(facade().get_last_commands(game, ship_name), ship)
-
     return render_template('./templates/plan-round.html',
                            game=game,
                            ship=ship,

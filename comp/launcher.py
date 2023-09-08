@@ -26,7 +26,7 @@ class Launcher(Weapon):
         vector = Vector(pos=self.container.vector.pos, heading=heading, speed=self.container.speed)
         return self.payload_type.create(name, vector, owner=self.owner)
 
-    def fire(self, firing_angle: int, objects_in_space=None):
+    def fire(self, firing_angle: int, objects_in_space=None, extra_params=None):
         # assert direction.strip('-').isnumeric(), f"{direction} is not numeric"
         # firing_angle = int(direction)
         if self.ammo <= 0:

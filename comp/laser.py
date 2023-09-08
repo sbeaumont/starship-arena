@@ -33,7 +33,7 @@ class Laser(Weapon):
 
     # ---------------------------------------------------------------------- COMMANDS
 
-    def fire(self, target_name: str, objects_in_space=None):
+    def fire(self, target_name: str, objects_in_space=None, extra_params=None):
         target_ship = objects_in_space.get(target_name, None)
         if not target_ship:
             self.add_internal_event(f"Can't fire {self.name}. Unknown ship name: {target_name}")
@@ -41,7 +41,7 @@ class Laser(Weapon):
 
         firing_angle = self.owner.direction_to(target_ship.xy)
         if self.firing_arc and not self.in_firing_arc(firing_angle):
-            self.add_internal_event(f"{self.name} can not fire at angle {firing_angle}: {self.firing_arc}.")
+            self.add_internal_event(f"{self.name} can not fire at angle {round(firing_angle, 1)}: {self.firing_arc}.")
             return None
 
         if self.container.can_scan(target_ship) and not self.damage_to(target_ship):
@@ -73,11 +73,10 @@ class Laser(Weapon):
 
     @property
     def status(self):
-        return {
-            'Temperature': f"{self.temperature}/{self.max_temperature}",
-            'Strength': self.strength,
-            'Firing Arc': self.firing_arc if self.firing_arc else '360'
-        }
+        st = super().status
+        st['Temperature'] = f"{self.temperature}/{self.max_temperature}"
+        st['Strength'] = self.strength
+        return st
 
     @property
     def description(self):

@@ -25,6 +25,10 @@ class Ship:
         self.y += xy[1]
         return self
 
+    @property
+    def xy(self):
+        return self.x, self.y
+
     def __str__(self):
         return f"{self.name},{self.type},{self.faction},{self.player},{round(self.x)},{round(self.y)}"
 
@@ -41,6 +45,10 @@ def load_ship_file(file_name) -> list:
             faction=line[field_defs['Faction']],
             player=line[field_defs['Player']]
         )
+        if 'X' in field_defs and 'Y' in field_defs:
+            x = int(line[field_defs['X']])
+            y = int(line[field_defs['Y']])
+            ship.move((x, y))
         ships.append(ship)
     return ships
 
@@ -90,7 +98,9 @@ def distribute_factions(ships, distance):
         num_ships_in_faction = len(group)
         offsets = centers_for(num_ships_in_faction, 20, angle_tweak=(-30, 30), distance_tweak=(0, 30))
         for ship, offset in zip(group, offsets):
-            ship.vector.pos = Point(0, 0).move(center).move(offset)
+            # Only move ship if it has not already been set in the ships file
+            if ship.xy == (0, 0):
+                ship.vector.pos = Point(0, 0).move(center).move(offset)
 
 
 def ships_to_lines(ships) -> list[str]:
@@ -122,7 +132,7 @@ class GameSetup(object):
         objects_in_space = dict()
         for line in load_ship_file(self._dir.init_file):
             # position = (int(line.x), int(line.y))
-            position = (0, 0)
+            position = line.xy
             # Always for tick 0 in this case.
             ois = builder.create(line.name, line.type, position)
             ois.player = line.player

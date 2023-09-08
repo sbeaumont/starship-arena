@@ -1,2 +1,4 @@
 1: R30
+1: Scan G 0 180
 2: Fire L1 90
+2: Fire G 0 90

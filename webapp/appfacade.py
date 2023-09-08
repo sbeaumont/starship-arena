@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from pathlib import Path
 
 from engine.command import parse_commands
@@ -10,6 +11,36 @@ from ois.registry.builder import all_ship_types
 from cfg import MANUAL_FILENAME
 
 logger = logging.getLogger('starship-arena.facade')
+
+
+class NameValidator(object):
+    def __init__(self, name):
+        self.name = name
+        self.messages = list()
+
+        self._check_correct_characters()
+        self._check_not_empty()
+        self._check_first_character_is_letter()
+
+    @property
+    def is_valid(self):
+        return len(self.messages) == 0
+
+    def _check_correct_characters(self):
+        if not re.match(r'^[A-Za-z0-9\- ]+$', self.name):
+            self.messages.append('Only letters, numbers, dashes and spaces in name.')
+
+    def _check_first_character_is_letter(self):
+        if not re.match(r'^[A-Za-z]', self.name):
+            self.messages.append('First character must be a letter.')
+
+    def _check_not_empty(self):
+        if not self.name or len(self.name.strip()) == 0:
+            self.messages.append('Name can not be empty.')
+
+    @property
+    def cleaned(self) -> str:
+        return re.sub(r'\s', '_', self.name)
 
 
 class AppFacade(object):
@@ -111,3 +142,6 @@ class AppFacade(object):
             gr.do_round()
         else:
             logger.info(f"Not proceeding to process {game}: not all command files ok")
+
+    def create_new_game(self, name: str):
+        logger.info(f"Creating new game: {name}")

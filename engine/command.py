@@ -67,7 +67,7 @@ class Commandable(Protocol):
     def turn(self, angle: int):
         ...
 
-    def fire(self, weapon_name: str, target_or_direction, objects_in_space: dict) -> ObjectInSpace:
+    def fire(self, weapon_name: str, target_or_direction, objects_in_space: dict, extra_params: list) -> ObjectInSpace:
         ...
 
     def try_replenish(self, objects_in_space: dict):
@@ -93,7 +93,7 @@ class Command(object):
             case 'A':
                 # A30 -> Accelerate faster (+) or slow down/reverse (-)
                 return AccelerateCommand(command_line)
-            case 'F' | 'Fire':
+            case 'F' | 'Fire' | 'Scan':
                 # Fire <Weapon Name> <Direction or Target name>
                 return FireCommand(command_line)
             case 'Replenish':
@@ -102,7 +102,7 @@ class Command(object):
             case 'Boost':
                 # Boost shield quadrant
                 return BoostCommand(command_line)
-            case 'Activation':
+            case 'Activation' | 'Activate':
                 # Turn components on or off
                 return ActivationCommand(command_line)
             case _:
@@ -188,7 +188,7 @@ class AccelerateCommand(Command):
 
 class ActivationCommand(Command):
     def _check_params(self, params: list) -> bool:
-        if len(params) != 2:
+        if len(params) < 2:
             return False
         if params[1].lower() not in ['yes', 'no', 'true', 'false', 'on', 'off']:
             return False
@@ -197,6 +197,8 @@ class ActivationCommand(Command):
     def _fill_params(self, params: list):
         self.selector = params[0]
         self.value = params[1] in ['yes', 'true', 'on']
+        if len(params) > 2:
+            self.param['extra_params'] = params[2:]
 
     def _get_type_name(self) -> Cmd:
         return Cmd.Activation
@@ -231,7 +233,7 @@ class BoostCommand(Command):
 
 class FireCommand(Command):
     def _check_params(self, params: list) -> bool:
-        if len(params) != 2:
+        if len(params) < 2:
             return False
         if not params[0].isalnum():
             return False
@@ -240,13 +242,15 @@ class FireCommand(Command):
     def _fill_params(self, params: list):
         self.selector = params[0]
         self.value = int(params[1]) if is_valid_number(params[1]) else params[1]
+        if len(params) > 2:
+            self.param['extra_params'] = params[2:]
 
     def _get_type_name(self) -> Cmd:
         return Cmd.Fire
 
     def execute(self, target: Commandable, objects_in_space: dict, tick: int):
         super().execute(target, objects_in_space, tick)
-        fired_object = target.fire(self.selector, self.value, objects_in_space)
+        fired_object = target.fire(self.selector, self.value, objects_in_space, self.param.get('extra_params', None))
         if fired_object:
             objects_in_space[fired_object.name] = fired_object
 

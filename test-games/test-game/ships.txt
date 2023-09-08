@@ -1,4 +1,4 @@
-Name           Type   Faction   Player
-Blaster        H2545  One       Serge
-Shaper         H2552  Two       Piet
-Starbase-1     SB2531 One       Serge
+Name           Type   Faction   Player     X   Y
+Blaster        H2545  One       Serge   -400   0
+Shaper         H2552  Two       Piet     400   0
+Starbase-1     SB2531 One       Serge   -430   0

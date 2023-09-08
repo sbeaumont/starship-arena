@@ -1,9 +1,5 @@
 1: Boost E 150
 1: Boost N 150
-1: R30
-2: R30
-3: R30
+1: Scan G 0 30
 3: Fire S1 30
-4: R30
-5: R30
-# 5: Fire S1 0
+5: Fire S1 0

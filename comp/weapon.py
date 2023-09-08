@@ -12,7 +12,7 @@ class Weapon(Component, ABC):
             assert 0 <= firing_arc[1] <= 360
         self.firing_arc = firing_arc
 
-    def fire(self, direction_or_target: str, objects_in_space=None):
+    def fire(self, direction_or_target: str, objects_in_space=None, extra_params=None):
         raise NotImplementedError
 
     def in_firing_arc(self, angle):
@@ -29,4 +29,11 @@ class Weapon(Component, ABC):
         else:
             # Arc does not pass through 0, e.g. 90 -> 225
             return left <= angle <= right
+
+    @property
+    def status(self) -> dict:
+        return {
+            'Firing Arc': self.firing_arc if self.firing_arc else '360'
+        }
+
 

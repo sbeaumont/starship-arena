@@ -23,7 +23,7 @@ def go():
     setup.save()
     logger.info("Current status: %s", gd.load_current_status())
 
-    for i in range(1, 4):
+    for i in range(1, 2):
         logger.info("Starting game round %s", i)
         GameRound(gd, i).do_round()
 
