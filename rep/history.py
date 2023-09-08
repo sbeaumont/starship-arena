@@ -100,7 +100,9 @@ class TickHistory(object):
     def add_event(self, event):
         if isinstance(event, ScanEvent):
             scanned_names = [s.name for s in self.scans]
-            assert event.name not in scanned_names, f"Trying to add scan for {event} while name already is present in {scanned_names}."
+            if event.name in scanned_names:
+                return self
+            # assert event.name not in scanned_names, f"Trying to add scan for {event} while name already is present in {scanned_names}."
         if event not in self.events:
             self.events.append(event)
         return self
