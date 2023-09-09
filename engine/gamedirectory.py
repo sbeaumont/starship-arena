@@ -6,7 +6,7 @@ import logging
 import pickle
 from collections import namedtuple
 
-from cfg import INIT_FILE_NAME, COMMAND_FILE_TEMPLATE, \
+from cfg import INIT_FILE_NAME, COMMAND_FILE_TEMPLATE, COMMANDS_DIR,\
                  STATUS_FILE_TEMPLATE, EMAIL_CFG_NAME, PICTURE_TEMPLATE, PDF_TEMPLATE
 
 logger = logging.getLogger('starship-arena.gamedirectory')
@@ -40,12 +40,6 @@ class GameDirectory(object):
         if len(pickle_files) > 0:
             last_round = max([int(n) for s in pickle_files for n in re.split('[-_. ]+', s) if n.isdigit()])
         return last_round
-
-    # def info_of(self, ship_name):
-    #     for line in self.init_lines:
-    #         if line.name == ship_name:
-    #             return line
-    #     return None
 
     def get_turn_picture_name(self, round_nr, ship_name) -> str:
         relpath = os.path.join(self._dir, PICTURE_TEMPLATE.format(rnr=round_nr, name=ship_name))
@@ -104,6 +98,13 @@ class GameDirectory(object):
         # Remove round directories
         for rd_dir in fnmatch.filter(self.ls, 'round*'):
             shutil.rmtree(os.path.join(self._dir, rd_dir))
+
+    def setup_directories(self):
+        if not os.path.exists(self._dir):
+            os.mkdir(self._dir)
+        cmd_dir = os.path.join(self._dir, COMMANDS_DIR)
+        if not os.path.exists(cmd_dir):
+            os.mkdir(cmd_dir)
 
     def check_ok(self):
         # Check if all is okay

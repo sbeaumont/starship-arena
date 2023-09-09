@@ -20,63 +20,23 @@
     </table>
     <div>
         <form action="{{ request.path }}" method="POST">
-            <input type="text" name="game_name">
-            <input type="submit" name="action" value="New game">
-            {% if messages %}
-                <ul>
-                {% for message in messages %}
-                    <li>{{message}}</li>
-                {% endfor %}
-                </ul>
-            {% endif %}
+            <div>
+                <input type="text" name="game_name">
+                <input type="submit" name="action" value="New game">
+                {% if messages %}
+                    <ul>
+                    {% for message in messages %}
+                        <li>{{message}}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+            <div>
+                <textarea id="ship_init_file"></textarea>
+            </div>
         </form>
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Ship Type</th>
-                    <th>Faction</th>
-                    <th>Player</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="ships">
-                <tr>
-                    <td><input type="text" name="ship_name"></td>
-                    <td><input type="text" name="ship_type"></td>
-                    <td><input type="text" name="ship_faction"></td>
-                    <td><input type="text" name="ship_player"></td>
-                    <td><button onclick="myCreateFunction()">Add Ship</button></td>
-                </tr>
-                {% for ship in ships %}
-                <tr>
-                    <td><input type="text" name="ship.{{loop.index}}.name" value="{{ship.name}}"></td>
-                    <td><input type="text" name="ship.{{loop.index}}.type" value="{{ship.type}}"></td>
-                    <td><input type="text" name="ship.{{loop.index}}.faction" value="{{ship.faction}}"></td>
-                    <td><input type="text" name="ship.{{loop.index}}.player" value="{{ship.player}}"></td>
-                    <td><input type="submit" name="action.remove.{{loop.index}}" value="Remove"></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
     </div>
 </div>
-
-<script>
-function myCreateFunction() {
-  var table = document.getElementById("ships");
-  var row = table.insertRow();
-  var cell1 = row.insertCell(0);
-  var cell2 = row.insertCell(1);
-  cell1.innerHTML = (table.rows.length - 1).toString();
-  cell2.innerHTML = table.rows[1].cells.toString();
-}
-
-function myDeleteFunction() {
-  document.getElementById("ships").deleteRow(0);
-}
-</script>
-
 {% endblock %}
 
 </body>

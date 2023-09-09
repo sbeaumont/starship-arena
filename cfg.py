@@ -14,7 +14,8 @@ GAME_DATA_DIR = os.environ.get('GAME_DATA_DIR')
 print(f"cfg.py: Loading game data from {GAME_DATA_DIR}")
 
 STATUS_FILE_TEMPLATE = "status_round_{}.pickle"
-COMMAND_FILE_TEMPLATE = "commands/{}-commands-{}.txt"
+COMMANDS_DIR = 'commands/'
+COMMAND_FILE_TEMPLATE = COMMANDS_DIR + "{}-commands-{}.txt"
 PICTURE_TEMPLATE = "round-{rnr}/{name}-round-{rnr}.png"
 PDF_TEMPLATE = "round-{rnr}/{name}-round-{rnr}.pdf"
 
