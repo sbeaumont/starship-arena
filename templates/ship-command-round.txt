@@ -1,9 +1,0 @@
-# Examples:
-# 1: A30
-# 1: L35
-# 1: Fire S1 -45
-# 1: Fire L1 OtherShipName
-# 1: Replenish
-
-1:
-2:

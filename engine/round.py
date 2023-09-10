@@ -89,6 +89,10 @@ class GameRound(object):
                 missing_command_files.append(command_file_name)
         return missing_command_files
 
+    @property
+    def is_generated(self):
+        return os.path.exists(self._dir.status_file_for_round(self.nr))
+
     def do_round(self, exit_on_missing_command_file=True):
         # Execute the round
         destroyed = dict()

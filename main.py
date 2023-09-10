@@ -8,11 +8,13 @@ __author__ = 'Serge Beaumont'
 import argparse
 import logging
 import sys
+import os
 
-from cfg import *
+from cfg import GAME_DATA_DIR
 from log import configure_logger
 
-from engine.round import RoundZero, GameRound
+from engine.admin import setup_game
+from engine.round import GameRound
 from engine.gamedirectory import GameDirectory
 from rep.send import send_results_for_round, check_ok_to_send
 from rep.manual import generate_manual
@@ -20,97 +22,64 @@ from rep.manual import generate_manual
 logger = logging.getLogger('starship-arena')
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("gamedir",
+                        help="The name of the game you want to process.")
+    parser.add_argument("action",
+                        nargs="*",
+                        choices=['setup', 'generate', 'manual', 'send'],
+                        help="Action: clean, generate manual, rounds or send results")
+    parser.add_argument("-s", "--send",
+                        nargs="*",
+                        choices=['manual', 'zero', 'last'],
+                        help="Send the results via email to the players")
+    return parser.parse_args()
+
+
+def do_setup(game_dir: GameDirectory):
+    init_file = game_dir.init_file
+    if not os.path.exists(init_file):
+        sys.exit(f"Can not find initialization file '{init_file}'")
+    setup_game(game_dir)
+
+
+def generate(game_dir: GameDirectory):
+    round_nr = 1
+    gr = GameRound(game_dir, round_nr)
+    while not gr.missing_command_files:
+        if not gr.is_generated:
+            gr.do_round()
+        round_nr += 1
+        gr = GameRound(game_dir, round_nr)
+
+
+def do_send(game_dir: GameDirectory, what_to_send: list):
+    check_ok_to_send(game_dir)
+    send_manual = 'manual' in what_to_send
+    if 'zero' in what_to_send:
+        send_results_for_round(game_dir, 0, send_manual)
+    if 'last' in what_to_send:
+        send_results_for_round(game_dir, game_dir.last_round_number, send_manual)
+
+
 def main():
-    def create_parser():
-        parser = argparse.ArgumentParser()
-        parser.add_argument("-y", "--yolo", action="store_true", help="Don't ask safety questions.")
-        parser.add_argument("-i", "--ignore", action="store_true", help="Ignore missing command files.")
-        parser.add_argument("gamedir", help="The game directory you want to process.")
-        parser.add_argument("action", choices=['manual', 'generate', 'send'], help="Action: generate manual, rounds or send results")
-        parser.add_argument("-c", "--clean", action="store_true", help="Clean the output files of a game directory")
-        parser.add_argument("-z", "--zero", action="store_true", help="Regenerate the zero round.")
-        parser.add_argument("-a", "--all", action="store_true", help="Regenerate all rounds.")
-        parser.add_argument("-s", "--send", nargs="*", choices=['manual', 'zero', 'last'], help="Send the results via email to the players")
-        return parser
-
-    def do_zero():
-        init_file = game_dir.init_file
-        if not os.path.exists(init_file):
-            sys.exit(f"Can not find initialization file '{init_file}'")
-        RoundZero(game_dir).run()
-
-    def do_last(last_round):
-        # Deal with last round ending up -1 if there's nothing.
-        last_round = 1 if last_round == -1 else (last_round + 1)
-        ans = None
-        if not args.yolo:
-            ans = input(f"Type 'Y' if you're sure you want to process new round '{last_round}'.\n")
-        if args.yolo or (ans.upper() == 'Y'):
-            gr = GameRound(game_dir, last_round)
-            gr.do_round(not args.ignore)
-
-    def redo_all():
-        answer = None
-        if not args.yolo:
-            answer = input(f"Type 'Y' if you're sure you want to CLEAN AND REDO ALL.\n")
-        if args.yolo or (answer.upper() == 'Y'):
-            do_zero()
-            round_nr = 1
-            gr = GameRound(game_dir, round_nr)
-            while not gr.missing_command_files:
-                # This will never be done with ignore missing command files, otherwise never stops.
-                gr.do_round()
-                round_nr += 1
-                gr = GameRound(game_dir, round_nr)
-
-    def do_send(game_dir: GameDirectory, what_to_send: list, last_round):
-        check_ok_to_send(game_dir)
-        if not args.yolo:
-            answer = input(f"Type 'Y' to send out email.\n")
-        if args.yolo or (answer.upper() == 'Y'):
-            send_manual = 'manual' in what_to_send
-            if 'zero' in what_to_send:
-                send_results_for_round(game_dir, 0, send_manual)
-            if 'last' in what_to_send:
-                send_results_for_round(game_dir, last_round, send_manual)
-
     configure_logger(False, ["fontTools", "PIL"])
-    parser = create_parser()
-    args = parser.parse_args()
-
-    data_root = os.environ.get('GAME_DATA_DIR', '.')
-    game_dir = GameDirectory(data_root, args.gamedir)
-
+    args = parse_args()
+    game_dir = GameDirectory(GAME_DATA_DIR, args.gamedir)
     game_dir.check_ok()
 
-    last_round = game_dir.last_round_number
-
-    if args.clean or args.all:
-        answer = None
-        if not args.yolo:
-            answer = input(f"Type 'Y' if you're sure you want to clean directory '{game_directory_path}'.\n")
-        if args.yolo or (answer.upper() == 'Y'):
-            game_dir.clean()
-
-    match args.action:
-        case 'manual':
-            print("Generating manual...")
-            generate_manual()
-        case 'generate':
-            if args.zero:
-                print("Generating round zero...")
-                do_zero()
-            elif args.all:
-                print("Regenerating all rounds...")
-                redo_all()
-            else:
-                print("Regenerating last round...")
-                do_last(last_round)
-        case 'send':
-            print("Sending results...")
-            do_send(game_dir, args.send, last_round)
-        case _:
-            raise ValueError(f"Action {args.action} unknown. Try manual, generate or send")
+    if 'setup' in args.action:
+        print("Setting up fresh game...")
+        do_setup(game_dir)
+    if 'manual' in args.action:
+        print("Generating manual...")
+        generate_manual()
+    if 'generate' in args.action:
+        generate(game_dir)
+    if 'send' in args.action:
+        print("Sending results...")
+        do_send(game_dir, args.send)
 
 
 if __name__ == '__main__':

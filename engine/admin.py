@@ -149,13 +149,10 @@ class GameSetup(object):
         self._dir.save(self.ships, 0)
 
 
-def setup_game(game_name: str, data_root: str = None, ship_file: str = None):
+def setup_game(gd: GameDirectory):
     configure_logger()
     logger = logging.getLogger('starship-arena.admin')
-    if not data_root:
-        data_root = GAME_DATA_DIR
-    print("Setup", data_root, game_name)
-    gd = GameDirectory(data_root, game_name)
+    print("Setup", gd.path)
     gd.setup_directories()
     gd.clean()
     setup = GameSetup(gd)
