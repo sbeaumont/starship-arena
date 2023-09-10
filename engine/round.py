@@ -44,7 +44,7 @@ class GameRound(object):
 
     def do_tick(self, destroyed: dict, tick: Tick):
         assert isinstance(tick, Tick)
-        tick_nr = tick.abs_tick - tick.round_start.abs_tick
+        tick_nr = tick.abs_tick - tick.round_start.abs_tick + 1
         """Perform a single game tick."""
         logger.info(f"Processing tick {tick}")
         # Set up the reporting for the tick
