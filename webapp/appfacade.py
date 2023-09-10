@@ -99,13 +99,8 @@ class AppFacade(object):
         return all(self.command_file_status_of_game(game).values())
 
     def get_last_commands(self, game, ship):
-        gd = GameDirectory(str(self.data_root), game)
         round_nr = self.current_round_of_game(game)
-        if gd.command_file_exists(ship, round_nr):
-            with open(gd.command_file(ship, round_nr)) as f:
-                return [line.strip() for line in f.readlines()]
-        else:
-            return []
+        return self.commands_of_round(game, ship.name, round_nr)
 
     def get_ship(self, game: str, ship_name: str, round_nr=None):
         gd = GameDirectory(GAME_DATA_DIR, game)
@@ -117,6 +112,14 @@ class AppFacade(object):
                 return gd.load_status(round_nr)[ship_name]
         else:
             return gd.load_current_status()[ship_name]
+
+    def commands_of_round(self, game: str, name: str, round_nr: int):
+        gd = GameDirectory(str(self.data_root), game)
+        if gd.command_file_exists(name, round_nr):
+            with open(gd.command_file(name, round_nr)) as f:
+                return [line.strip() for line in f.readlines()]
+        else:
+            return []
 
     # ---------------------------------------------------------------------- COMMANDS
 

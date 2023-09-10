@@ -37,6 +37,12 @@
         {% endfor %}
     </table>
     {% if start_tick.round > 0 %}
+        <h2>Commands</h2>
+        <p>
+        {% for c in commands %}
+            {{c}}<br/>
+        {% endfor %}
+        </p>
         <h2>Events</h2>
         {% for tick in start_tick.ticks_for_round %}
             {% if ship.history.get(tick, None) %}
