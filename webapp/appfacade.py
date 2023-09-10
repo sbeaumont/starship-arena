@@ -110,7 +110,7 @@ class AppFacade(object):
     def get_ship(self, game: str, ship_name: str, round_nr=None):
         gd = GameDirectory(GAME_DATA_DIR, game)
         dead_ships = gd.load_graveyard()
-        if round_nr:
+        if round_nr > -1:
             if ship_name in dead_ships:
                 return dead_ships[ship_name]
             else:
