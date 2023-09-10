@@ -139,6 +139,14 @@ If you multiple commands to fire a specific weapon in the same tick, only the fi
         <td>Pre-move</td>
         <td>Currently the only component is a Cloak on the H2552 that reduces your visibility by 20% for 10 energy per tick.</td>
     </tr>
+    <tr>
+        <td>Scan</td>
+        <td>[Component] [Direction] [Scan Cone]</td>
+        <td class="code-style">Scan G 75 30</td>
+        <td>Long range scan, smaller cone means longer distance.</td>
+        <td>Post-move</td>
+        <td>The scan range is closest a scan cone of 360 degrees, furthest at 30 degrees. Smallest scan cone is 30 degrees.</td>
+    </tr>
 </table>
 
 <p>A command set for a round could look like below. Note that the order of the lines can be mixed: there is a fixed
@@ -319,6 +327,13 @@ not damage it, so this weapon will <b>only</b> work if it hits a ship through a 
 <p><b>EMP</b> missiles drain energy from shields and batteries. When they hit shields they do double damage, and
 any remaining strength when it hits the hull does not damage it, but drains the battery. EMP missiles score 1
 point for every two units of energy they drain, whether from shields or battery.</p>
+
+<h2>Scanners</h2>
+
+<h3>Gravscan</h3>
+
+<p>The Grav scanner is a component that you can use to find opponents at long range. Each ping costs 10 energy, but
+it allows you to scan at long distances, up to 6000 units at the smallest scan cone (30 degrees).</p>
 
 <h2>Defense</h2>
 
