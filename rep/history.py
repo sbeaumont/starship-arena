@@ -128,6 +128,9 @@ class History(object):
 
     # ---------------------------------------------------------------------- QUERIES
 
+    def get(self, key, default=None):
+        return self.ticks.get(key, default)
+
     def __getitem__(self, item):
         assert item in self.ticks, f"{item} not found in History of {self.owner.name}"
         return self.ticks[item]
