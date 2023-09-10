@@ -12,7 +12,7 @@ logger = logging.getLogger('starship-arena.command')
 
 
 def is_valid_number(value: str):
-    return re.match(r"-?\d+", value) is not None
+    return re.match(r"^-?\d+$", value) is not None
 
 
 class ParsingError(Exception):
