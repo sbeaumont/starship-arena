@@ -16,7 +16,7 @@ class GameRound(object):
         assert round_nr > 0, "GameRound is only intended for rounds 1 and up."
         self._dir = gd
         self.nr = round_nr
-        self.round_start = Tick(self.nr, 0)
+        self.round_start = Tick.for_start_of_round(self.nr)
         old_status_file_name = self._dir.status_file_for_round(round_nr - 1)
         if os.path.exists(old_status_file_name):
             with open(old_status_file_name, 'rb') as old_status_file:

@@ -62,7 +62,7 @@
             <th>Direction (Rel)</th>
             <th>Heading (Abs)</th>
         </tr>
-        {% for scan in ship.history[ship.history.first].scans %}
+        {% for scan in ship.history[ship.history.last].scans %}
         <tr>
             <td>{{scan.name}}</td>
             <td>{{scan.pos.as_tuple}}</td>

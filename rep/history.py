@@ -19,6 +19,10 @@ class Tick(object):
     def from_abs(cls, abs_tick: int):
         return Tick(abs_tick // 10, abs_tick % 10)
 
+    @classmethod
+    def for_start_of_round(cls, round_nr: int):
+        return Tick(round_nr, 1)
+
     @property
     def next(self):
         return Tick.from_abs(self.abs_tick + 1)
@@ -29,15 +33,17 @@ class Tick(object):
 
     @property
     def round_start(self):
-        return self.prev_round_end.next
+        return Tick.for_start_of_round(self.round)
 
     @property
     def round_end(self):
-        return Tick.from_abs(self.round_start.abs_tick + 10)
+        return Tick(self.round, 10)
 
     @property
     def ticks_for_round(self) -> list:
-        return [Tick.from_abs(t) for t in range(self.prev_round_end.abs_tick, self.round_end.abs_tick)]
+        range_start = self.round_start.abs_tick
+        range_end = self.round_end.abs_tick + 1
+        return [Tick.from_abs(t) for t in range(range_start, range_end)]
 
     @property
     def prev_round_end(self):
@@ -47,7 +53,7 @@ class Tick(object):
         return self.abs_tick
 
 
-TICK_ZERO = Tick(1, 0)
+TICK_ZERO = Tick(0, 10)
 
 
 class TickHistory(object):

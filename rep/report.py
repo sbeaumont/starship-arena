@@ -111,7 +111,7 @@ def draw_round(ship: Ship, vis: Visualizer, start_tick: Tick):
 
 def report_round(ships: dict, game_dir: str, round_nr: int):
     """Generate HTML and PDF reports with the results, status and history of each ship in the round."""
-    start_tick = Tick(round_nr, 0)
+    start_tick = Tick(round_nr, 1)
     env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
     template = env.get_template(ROUND_TEMPLATE)
 

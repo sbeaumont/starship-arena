@@ -88,7 +88,7 @@ def past_round(game: str, ship_name: str, round: int):
                            game=game,
                            round=round,
                            total_rounds=facade().current_round_of_game(game),
-                           start_tick=Tick(round, 0)
+                           start_tick=Tick.for_start_of_round(round)
                            )
 
 
