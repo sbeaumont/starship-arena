@@ -61,7 +61,8 @@ def game_overview(game: str):
                            round_nr=facade().current_round_of_game(game),
                            game=game,
                            command_file=facade().command_file_status_of_game(game),
-                           all_command_files_ok=facade().all_command_files_ok(game)
+                           all_command_files_ok=facade().all_command_files_ok(game),
+                           dead_ships=facade().dead_ships_for_game(game).values()
                            )
 
 

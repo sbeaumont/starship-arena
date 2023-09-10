@@ -1,4 +1,9 @@
-1: R30
-1: Scan G 0 180
-2: Fire L1 90
-2: Fire G 0 90
+1: A-25
+2: A-20
+2: R180
+3: A25
+4: A20
+5: Fire E1 -10
+5: Fire R1 -10
+5: Fire R2 0
+6: Fire E1 -10

@@ -3,6 +3,7 @@ import os
 import re
 from pathlib import Path
 
+from engine.admin import load_ship_file
 from engine.command import parse_commands
 from engine.gamedirectory import GameDirectory
 from engine.round import GameRound
@@ -77,6 +78,10 @@ class AppFacade(object):
         gd = GameDirectory(str(self.data_root), game)
         return [s for s in gd.load_current_status().values() if s.is_player_controlled]
 
+    def dead_ships_for_game(self, game) -> dict:
+        gd = GameDirectory(str(self.data_root), game)
+        return gd.load_graveyard()
+
     def current_round_of_game(self, game) -> int:
         gd = GameDirectory(str(self.data_root), game)
         return gd.last_round_number + 1
@@ -104,11 +109,14 @@ class AppFacade(object):
 
     def get_ship(self, game: str, ship_name: str, round_nr=None):
         gd = GameDirectory(GAME_DATA_DIR, game)
+        dead_ships = gd.load_graveyard()
         if round_nr:
-            status = gd.load_status(round_nr)
+            if ship_name in dead_ships:
+                return dead_ships[ship_name]
+            else:
+                return gd.load_status(round_nr)[ship_name]
         else:
-            status = gd.load_current_status()
-        return status[ship_name]
+            return gd.load_current_status()[ship_name]
 
     # ---------------------------------------------------------------------- COMMANDS
 

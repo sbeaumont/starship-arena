@@ -10,25 +10,51 @@
 <div>
     {% if all_command_files_ok %}<a href="{{ url_for('process_turn', game=game) }}">PROCESS TURN IF YOU DARE</a>{% endif %}
 </div>
-<table>
-    <tr>
-        <th>Name</th>
-        <th colspan="{{round_nr}}">Past rounds</th>
-        <th>Command file?</th>
-    </tr>
-    {% for faction, ships in factions.items() %}
-        <tr><td colspan="{{ round_nr + 2}}">{{faction}}</td></tr>
-        {% for ship in ships %}
+<div>
+    <table>
         <tr>
-            <td><a href="{{ url_for('plan_round', game=game, ship_name=ship.name) }}">{{ship.name}}</a></td>
-            {% for i in range(round_nr) %}
+            <th>Name</th>
+            <th>Player</th>
+            <th colspan="{{round_nr}}">Past rounds</th>
+            <th>Command file?</th>
+        </tr>
+        {% for faction, ships in factions.items() %}
+            <tr><td colspan="{{ round_nr + 3 }}">{{faction}}</td></tr>
+            {% for ship in ships %}
+            <tr>
+                <td><a href="{{ url_for('plan_round', game=game, ship_name=ship.name) }}">{{ ship.name }}</a></td>
+                <td>{{ ship.player }}</td>
+                {% for i in range(round_nr) %}
+                    <td><a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a></td>
+                {% endfor %}
+                <td {% if not command_file[ship.name] %}class="error">No{% else %}class="OK">Yes{% endif %}</td>
+            </tr>
+            {% endfor %}
+        {% endfor %}
+    </table>
+</div>
+{% if dead_ships %}
+<div>
+    <h1>Graveyard</h1>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Player</th>
+            <th colspan="{{round_nr}}">Past rounds</th>
+        </tr>
+        {% for ship in dead_ships %}
+        <tr>
+            <td>{{ ship.name }}</td>
+            <td>{{ ship.player }}</td>
+            {% for i in range(ship.history.last_round + 1) %}
                 <td><a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a></td>
             {% endfor %}
-            <td {% if not command_file[ship.name] %}class="error">No{% else %}class="OK">Yes{% endif %}</td>
+            <td colspan="{{ round_nr - ship.history.last_round }}"></td>
         </tr>
         {% endfor %}
-    {% endfor %}
-</table>
+    </table>
+</div>
+{% endif %}
 {% endblock content %}
 </body>
 </html>

@@ -6,8 +6,7 @@ import logging
 import pickle
 from collections import namedtuple
 
-from cfg import INIT_FILE_NAME, COMMAND_FILE_TEMPLATE, COMMANDS_DIR,\
-                 STATUS_FILE_TEMPLATE, EMAIL_CFG_NAME, PICTURE_TEMPLATE, PDF_TEMPLATE
+from cfg import *
 
 logger = logging.getLogger('starship-arena.gamedirectory')
 
@@ -79,12 +78,25 @@ class GameDirectory(object):
         with open(status_file_name, 'rb') as f:
             return pickle.load(f)
 
+    def load_graveyard(self) -> dict:
+        graveyard_file_name = os.path.join(self._dir, GRAVEYARD_TEMPLATE)
+        if os.path.exists(graveyard_file_name):
+            with open(graveyard_file_name, 'rb') as f:
+                return pickle.load(f)
+        else:
+            return dict()
+
     # ---------------------------------------------------------------------- COMMANDS
 
     def save(self, obj, nr):
         status_file_name = self.status_file_for_round(nr)
         with open(status_file_name, 'wb') as status_file:
             pickle.dump(obj, status_file)
+
+    def save_graveyard(self, obj: dict):
+        graveyard_file_name = os.path.join(self._dir, GRAVEYARD_TEMPLATE)
+        with open(graveyard_file_name, 'wb') as f:
+            pickle.dump(obj, f)
 
     def clean(self, keep_pickle_files=False):
         """Clean the game directory of all generated files."""

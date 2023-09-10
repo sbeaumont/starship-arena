@@ -16,6 +16,7 @@ if (not GAME_DATA_DIR) and ('GAME_DATA_DIR' in dir(secret)):
     GAME_DATA_DIR = secret.GAME_DATA_DIR
 print(f"cfg.py: Loading game data from {GAME_DATA_DIR}")
 
+GRAVEYARD_TEMPLATE = "graveyard.pickle"
 STATUS_FILE_TEMPLATE = "status_round_{}.pickle"
 COMMANDS_DIR = 'commands/'
 COMMAND_FILE_TEMPLATE = COMMANDS_DIR + "{}-commands-{}.txt"

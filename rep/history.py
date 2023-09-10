@@ -152,6 +152,10 @@ class History(object):
     def last(self):
         return sorted(self.ticks.keys())[-1]
 
+    @property
+    def last_round(self):
+        return self.last.round if self.last else 0
+
     # ---------------------------------------------------------------------- COMMANDS
 
     def add_event(self, event):

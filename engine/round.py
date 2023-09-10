@@ -116,7 +116,12 @@ class GameRound(object):
         # Report the round
         report_round(self.ois, self._dir.path, self.nr)
         # ...incl. the final report of any player ships destroyed this round.
-        report_round(destroyed, self._dir.path, self.nr)
+        if destroyed:
+            report_round(destroyed, self._dir.path, self.nr)
+            graveyard = self._dir.load_graveyard()
+            for dead_ship in [d for d in destroyed.values() if d.is_player_controlled]:
+                graveyard[dead_ship.name] = dead_ship
+            self._dir.save_graveyard(graveyard)
 
         self.save()
 

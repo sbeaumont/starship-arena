@@ -1,5 +1,4 @@
-1: Boost E 150
-1: Boost N 150
 1: Scan G 0 30
-3: Fire S1 30
+3: Fire S1 -10
+4: Fire S1 10
 5: Fire S1 0
