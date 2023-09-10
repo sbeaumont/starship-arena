@@ -75,31 +75,33 @@
 {% if start_tick.round > 0 %}
     <h2>Events</h2>
     {% for tick in start_tick.ticks_for_round %}
-        <h3>Tick {{tick.abs_tick - start_tick.abs_tick}} (Score {{ ship.history[tick].hit_score }})</h3>
-        <p>
-        {% for e in ship.history[tick].events %}
-            {{e}}<br/>
-        {% endfor %}
-        </p>
-        {% if ship.history[tick].scans %}
-            <table class="small-text">
-            <tr>
-                <th>Name</th>
-                <th>Position</th>
-                <th>Distance</th>
-                <th>Direction (Rel)</th>
-                <th>Heading (Abs)</th>
-            </tr>
-            {% for scan in ship.history[tick].scans %}
-                <tr>
-                    <td>{{scan.name}}</td>
-                    <td>{{scan.pos.as_tuple}}</td>
-                    <td>{{scan.distance}}</td>
-                    <td>{{scan.direction}}</td>
-                    <td>{{scan.heading}}</td>
-                </tr>
+        {% if ship.history.get(tick, None) %}
+            <h3>Tick {{tick.tick}} (Score {{ ship.history[tick].hit_score }})</h3>
+            <p>
+            {% for e in ship.history[tick].events %}
+                {{e}}<br/>
             {% endfor %}
-            </table>
+            </p>
+            {% if ship.history[tick].scans %}
+                <table class="small-text">
+                <tr>
+                    <th>Name</th>
+                    <th>Position</th>
+                    <th>Distance</th>
+                    <th>Direction (Rel)</th>
+                    <th>Heading (Abs)</th>
+                </tr>
+                {% for scan in ship.history[tick].scans %}
+                    <tr>
+                        <td>{{scan.name}}</td>
+                        <td>{{scan.pos.as_tuple}}</td>
+                        <td>{{scan.distance}}</td>
+                        <td>{{scan.direction}}</td>
+                        <td>{{scan.heading}}</td>
+                    </tr>
+                {% endfor %}
+                </table>
+            {% endif %}
         {% endif %}
     {% endfor %}
 {% endif %}
