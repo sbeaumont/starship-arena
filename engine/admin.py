@@ -1,11 +1,8 @@
-import os
 from collections import defaultdict
 from dataclasses import dataclass
 from math import cos, sin, radians
 from random import randint
 import logging
-from log import configure_logger
-import argparse
 
 from engine.gamedirectory import GameDirectory
 from ois.objectinspace import Point
@@ -13,7 +10,8 @@ from rep.visualize import Visualizer
 import ois.registry.builder as builder
 from rep.report import report_round_zero
 from rep.history import TICK_ZERO
-from secret import GAME_DATA_DIR
+
+logger = logging.getLogger('starship-arena.admin')
 
 
 @dataclass
@@ -150,26 +148,17 @@ class GameSetup(object):
 
 
 def setup_game(gd: GameDirectory):
-    configure_logger()
-    logger = logging.getLogger('starship-arena.admin')
-    print("Setup", gd.path)
+    logger.info(f"Setup {gd.path}")
     gd.setup_directories()
     gd.clean()
     setup = GameSetup(gd)
     setup.run()
 
     for faction, ships in group_by_faction(setup.ships.values()).items():
-        print("==", faction, "==")
+        logger.info(f"=={faction}==")
         for ship in ships:
-            print(ship.name, ship.faction, ship.pos, ship.type_name)
-    setup.report()
+            logger.info(f"Ship: {ship.name}, Faction: {ship.faction}, Pos: {ship.pos}, Type: {ship.type_name}")
     setup.save()
-    logger.info("Current status: %s", gd.load_current_status())
+    setup.report()
+    logger.info(f"Current status: {gd.load_current_status()}")
     return gd
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('game', help="The name of the game to initialize.")
-    args = parser.parse_args()
-    setup_game(args.game)

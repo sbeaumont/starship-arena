@@ -74,30 +74,39 @@ def find_boundaries(ship, start_tick: Tick, padding=50):
 
 def draw_round(ship: Ship, vis: Visualizer, start_tick: Tick):
     """Draw the paths of the ship and its scans"""
-    # Initial location of ship
-    vis.text(text_nudge(ship.history[start_tick.prev_round_end]['pos']), f"{ship.history[start_tick.prev_round_end]['pos'].as_tuple}")
+    if start_tick.round > 0:
+        initial_pos = ship.history[start_tick.prev_round_end]['pos']
+    else:
+        initial_pos = ship.history[start_tick]['pos']
+    last_pos = ship.history[ship.history.last]['pos']
+
+    if last_pos != initial_pos:
+        vis.text(text_nudge(initial_pos), f"{initial_pos.as_tuple}")
 
     for t in start_tick.ticks_for_round:
         if t in ship.history:
+            now_pos = ship.history[t]['pos']
             # Draw ship's path of this tick
-            vis.draw_line((ship.history[t.prev]['pos'], ship.history[t]['pos']), color=COLORS[0])
-            vis.draw_point(ship.history[t]['pos'], color=COLORS[0], size=2)
+            if t.prev in ship.history:
+                prev_pos = ship.history[t.prev]['pos']
+                vis.draw_line((prev_pos, now_pos), color=COLORS[0])
+            vis.draw_point(now_pos, color=COLORS[0], size=2)
 
             # Draw scans of this tick
             for scan in ship.history[t].scans:
                 vis.draw_point(scan.pos, size=2)
-                prev_scan = ship.history[t.prev].scan_by_name(scan.name)
-                if prev_scan:
-                    # Draw line if there was an earlier scan
-                    vis.draw_line((prev_scan.pos, scan.pos))
+                if t.prev in ship.history:
+                    prev_scan = ship.history[t.prev].scan_by_name(scan.name)
+                    if prev_scan:
+                        # Draw line if there was an earlier scan
+                        vis.draw_line((prev_scan.pos, scan.pos))
                 if (t == ship.history.last) or (t.next in ship.history) and (not ship.history[t.next].scan_by_name(scan.name)):
                     # Last scan of this ois, write name and position
                     # vis.text(text_nudge(scan.pos), f"{i}:{scan.name}\n{scan.pos}")
                     vis.text(text_nudge(scan.pos), f"{t.tick}:{scan.name}")
 
-    # Final location of ship
-    max_pos = ship.history[ship.history.last]['pos']
-    vis.text(text_nudge(max_pos), f"{ship.history.last.tick}:{ship.name}\n{max_pos.as_tuple}")
+    # Show text with final location of ship
+    vis.text(text_nudge(last_pos), f"{ship.history.last.tick}:{ship.name}\n{last_pos.as_tuple}")
 
 
 def report_round(ships: dict, game_dir: str, round_nr: int):

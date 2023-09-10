@@ -70,16 +70,20 @@ def main():
     game_dir.check_ok()
 
     if 'setup' in args.action:
-        print("Setting up fresh game...")
+        logger.info("Setting up fresh game...")
         do_setup(game_dir)
     if 'manual' in args.action:
-        print("Generating manual...")
+        logger.info("Generating manual...")
         generate_manual()
     if 'generate' in args.action:
+        logger.info("Generating unprocessed rounds...")
         generate(game_dir)
     if 'send' in args.action:
-        print("Sending results...")
-        do_send(game_dir, args.send)
+        if os.path.exists(game_dir.email_file):
+            logger.info("Sending results...")
+            do_send(game_dir, args.send)
+        else:
+            sys.exit(f"Can't send results: no {game_dir.email_file} file found.")
 
 
 if __name__ == '__main__':

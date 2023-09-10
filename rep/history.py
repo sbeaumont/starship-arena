@@ -11,6 +11,9 @@ class Tick(object):
 
     def __post_init__(self):
         object.__setattr__(self, 'abs_tick', (self.round * 10) + self.tick)
+        if self.abs_tick % 10 == 0 and self.tick == 0:
+            object.__setattr__(self, 'round', self.round - 1)
+            object.__setattr__(self, 'tick', 10)
 
     @classmethod
     def from_abs(cls, abs_tick: int):
@@ -34,7 +37,7 @@ class Tick(object):
 
     @property
     def ticks_for_round(self) -> list:
-        return [Tick.from_abs(t) for t in range(self.round_start.abs_tick, self.round_end.abs_tick)]
+        return [Tick.from_abs(t) for t in range(self.prev_round_end.abs_tick, self.round_end.abs_tick)]
 
     @property
     def prev_round_end(self):
@@ -195,16 +198,29 @@ class FakeOwner(object):
 
 
 if __name__ == '__main__':
-    t12 = Tick(1, 2)
-    t29 = Tick(2, 9)
-    t34 = Tick(3, 4)
-    print(t12, astuple(t12), t12.abs_tick, t12.round, t12.tick)
-    print(t29.next)
-    assert t29.next == Tick(3, 0)
+    # t12 = Tick(1, 2)
+    # print(t12, astuple(t12), t12.abs_tick, t12.round, t12.tick)
 
-    th = History(FakeOwner(), t12)
-    print(th.ticks)
+    # t29 = Tick(2, 9)
+    # print(t29.next)
 
-    print(sorted((t29, t34, t12)))
+    # t34 = Tick(3, 4)
 
-    print(t34.ticks_for_round)
+    t20 = Tick(2, 0)
+    print(t20, astuple(t20), t20.abs_tick, t20.round, t20.tick)
+    t20 = Tick.from_abs(20)
+    print(t20, astuple(t20), t20.abs_tick, t20.round, t20.tick)
+
+    t40 = Tick.from_abs(40)
+    print(t40, astuple(t40), t40.abs_tick, t40.round, t40.tick)
+    print(t40.prev)
+    print(t40.next)
+
+    # assert t29.next == Tick(3, 0)
+    #
+    # th = History(FakeOwner(), t12)
+    # print(th.ticks)
+    #
+    # print(sorted((t29, t34, t12)))
+    #
+    # print(t34.ticks_for_round)

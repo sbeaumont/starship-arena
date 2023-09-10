@@ -108,6 +108,6 @@ class GameDirectory(object):
 
     def check_ok(self):
         # Check if all is okay
-        missing = [d for d in (self._dir, self.init_file, self.email_file) if not os.path.exists(d)]
+        missing = [d for d in (self._dir, self.init_file) if not os.path.exists(d)]
         if missing:
             raise FileExistsError(f"{', '.join(missing)} not found.")
