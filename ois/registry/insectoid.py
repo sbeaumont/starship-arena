@@ -5,7 +5,7 @@ from ois.registry.mines import SplinterMine, NanocyteMine
 from comp.defense import Shields
 from comp.launcher import Launcher
 from comp.laser import Laser
-from comp.ecm import Cloak
+from comp.scanner import Gravscan
 
 
 class I2544(ShipType):
@@ -32,7 +32,8 @@ class I2544(ShipType):
             Launcher('SF2', Splinter(), 5, (270, 90)),
             Launcher('R1', Rocket(), 10),
             Launcher('N1', NanoMissile(), 5),
-            Launcher('M1', SplinterMine(), 10)
+            Launcher('M1', SplinterMine(), 10),
+            Gravscan('G')
         ]
 
 
@@ -61,7 +62,8 @@ class I2552(ShipType):
             Launcher('R1', Rocket(), 10),
             Launcher('RF1', Rocket(), 10, (315, 45)),
             Launcher('N1', NanoMissile(), 10, (315, 45)),
-            Launcher('M1', SplinterMine(), 10)
+            Launcher('M1', SplinterMine(), 10),
+            Gravscan('G')
         ]
 
 
@@ -90,5 +92,6 @@ class I2526(ShipType):
             Launcher('S4', Splinter(), 6, (315, 45)),
             Launcher('N1', NanoMissile(), 12, (315, 45)),
             Launcher('R1', Rocket(), 20),
-            Launcher('M1', SplinterMine(), 10)
+            Launcher('M1', SplinterMine(), 10),
+            Gravscan('G')
         ]

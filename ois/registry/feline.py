@@ -1,11 +1,12 @@
 from cfg import max_scan
 from ois.ship import ShipType
 from ois.registry.missiles import Rocket, Splinter, NanoMissile
-from ois.registry.mines import SplinterMine, NanocyteMine
+from ois.registry.mines import SplinterMine
 from comp.defense import Shields
 from comp.launcher import Launcher
 from comp.laser import Laser
 from comp.ecm import Cloak
+from comp.scanner import Gravscan
 
 
 class F2551(ShipType):
@@ -30,7 +31,8 @@ class F2551(ShipType):
             Laser('L2', 150),
             Launcher('R1', Rocket(), 10),
             Launcher('R2', Rocket(), 10),
-            Launcher('M1', SplinterMine(), 10)
+            Launcher('M1', SplinterMine(), 10),
+            Gravscan('G')
         ]
 
     @property
@@ -63,7 +65,8 @@ class F2547(ShipType):
             Launcher('N1', NanoMissile(), 3, (270, 90)),
             Launcher('R1', Rocket(), 10),
             Launcher('R2', Rocket(), 10),
-            Launcher('M1', SplinterMine(), 10)
+            Launcher('M1', SplinterMine(), 10),
+            Gravscan('G')
         ]
 
     @property
@@ -95,7 +98,8 @@ class F2534(ShipType):
             Launcher('S1', Splinter(), 5),
             Launcher('N1', NanoMissile(), 5),
             Launcher('R1', Rocket(), 20),
-            Launcher('M1', SplinterMine(), 10)
+            Launcher('M1', SplinterMine(), 10),
+            Gravscan('G')
         ]
 
     @property
@@ -128,7 +132,8 @@ class F2533(ShipType):
             Launcher('S2', Splinter(), 3, (315, 45)),
             Launcher('N1', NanoMissile(), 7, (315, 45)),
             Launcher('R1', Rocket(), 20),
-            Launcher('M1', SplinterMine(), 10)
+            Launcher('M1', SplinterMine(), 10),
+            Gravscan('G')
         ]
 
     @property

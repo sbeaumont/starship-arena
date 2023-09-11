@@ -6,6 +6,7 @@ from comp.defense import Shields
 from comp.launcher import Launcher
 from comp.laser import Laser
 from comp.ecm import Cloak
+from comp.scanner import Gravscan
 
 
 class R2545(ShipType):
@@ -31,7 +32,8 @@ class R2545(ShipType):
             Launcher('N1', NanoMissile(), 10),
             Launcher('R1', Rocket(), 8),
             Launcher('R2', Rocket(), 8),
-            Launcher('M1', SplinterMine(), 10)
+            Launcher('M1', SplinterMine(), 10),
+            Gravscan('G')
         ]
 
 
@@ -57,7 +59,8 @@ class R2525(ShipType):
             Launcher('S1', Splinter(), 5),
             Launcher('N1', NanoMissile(), 5),
             Launcher('R1', Rocket(), 10),
-            Launcher('M1', SplinterMine(), 10)
+            Launcher('M1', SplinterMine(), 10),
+            Gravscan('G')
         ]
 
     @property
@@ -90,7 +93,8 @@ class R2531(ShipType):
             Launcher('S3', Splinter(), 5),
             Launcher('N1', NanoMissile(), 10),
             Launcher('R1', Rocket(), 10),
-            Launcher('M1', SplinterMine(), 10)
+            Launcher('M1', SplinterMine(), 10),
+            Gravscan('G')
         ]
 
     @property
@@ -123,5 +127,6 @@ class R2551(ShipType):
             Launcher('S2', Splinter(), 4),
             Launcher('N1', NanoMissile(), 5),
             Launcher('R1', Rocket(), 10),
-            Launcher('M1', SplinterMine(), 10)
+            Launcher('M1', SplinterMine(), 10),
+            Gravscan('G')
         ]
