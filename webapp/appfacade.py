@@ -98,14 +98,14 @@ class AppFacade(object):
     def all_command_files_ok(self, game):
         return all(self.command_file_status_of_game(game).values())
 
-    def get_last_commands(self, game, ship):
+    def get_last_commands(self, game, ship_name):
         round_nr = self.current_round_of_game(game)
-        return self.commands_of_round(game, ship.name, round_nr)
+        return self.commands_of_round(game, ship_name, round_nr)
 
     def get_ship(self, game: str, ship_name: str, round_nr=None):
         gd = GameDirectory(GAME_DATA_DIR, game)
         dead_ships = gd.load_graveyard()
-        if round_nr > -1:
+        if round_nr and (round_nr > -1):
             if ship_name in dead_ships:
                 return dead_ships[ship_name]
             else:
