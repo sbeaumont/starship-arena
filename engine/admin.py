@@ -102,7 +102,7 @@ def distribute_factions(ships, distance):
         offsets = centers_for(num_ships_in_faction, 20, angle_tweak=(-30, 30), distance_tweak=(0, 30))
         for ship, offset in zip(group, offsets):
             # Only move ship if it has not already been set in the ships file
-            if ship.xy == (0, 0):
+            if ship.xy == Point(0, 0):
                 ship.vector.pos = Point(0, 0).move(center).move(offset)
 
 
