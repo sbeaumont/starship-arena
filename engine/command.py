@@ -86,23 +86,23 @@ class Commandable(Protocol):
 class Command(object):
     @classmethod
     def for_command_line(cls, command_line):
-        match command_line.name:
+        match command_line.name.upper():
             case 'L' | 'R':
                 # L90 -> Turn left
                 return TurnCommand(command_line)
             case 'A':
                 # A30 -> Accelerate faster (+) or slow down/reverse (-)
                 return AccelerateCommand(command_line)
-            case 'F' | 'Fire' | 'Scan':
+            case 'F' | 'FIRE' | 'SCAN':
                 # Fire <Weapon Name> <Direction or Target name>
                 return FireCommand(command_line)
-            case 'Replenish':
+            case 'REPLENISH':
                 # Replenish
                 return ReplenishCommand(command_line)
-            case 'Boost':
+            case 'BOOST':
                 # Boost shield quadrant
                 return BoostCommand(command_line)
-            case 'Activation' | 'Activate':
+            case 'ACTIVATION' | 'ACTIVATE':
                 # Turn components on or off
                 return ActivationCommand(command_line)
             case _:
@@ -196,7 +196,7 @@ class ActivationCommand(Command):
 
     def _fill_params(self, params: list):
         self.selector = params[0]
-        self.value = params[1] in ['yes', 'true', 'on']
+        self.value = params[1].lower() in ['yes', 'true', 'on']
         if len(params) > 2:
             self.param['extra_params'] = params[2:]
 
