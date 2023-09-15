@@ -1,10 +1,11 @@
-<!DOCTYPE html>
+{% extends './templates/base.html' %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Starships Arena Lore</title>
 </head>
 <body>
+{% block content %}
 <h1>Starships Arena Lore</h1>
 
 <p>
@@ -65,5 +66,6 @@ The ferocious Reptilia are a xenophobic race of highly trained weapons of war. T
     designed to ensure the guaranteed destruction of their foes with no mercy. Once you’re in a reptilian ships
     sights, escape is almost impossible.
 </p>
+{% endblock %}
 </body>
 </html>

@@ -77,7 +77,7 @@ class GuidedMissile(Missile):
 
     def scan(self, objects_in_space: dict):
         self.target = None
-        for ois in [o for o in objects_in_space.values() if (o != self) and (o.owner != self.owner)]:
+        for ois in [o for o in objects_in_space.values() if (o != self) and (o.owner.faction != self.owner.faction)]:
             if self.can_scan(ois) and self.in_scan_cone(ois):
                 if self.target:
                     if self.distance_to(ois.xy) < self.distance_to(self.target.xy):

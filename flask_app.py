@@ -111,6 +111,10 @@ def manual_pdf():
     filename = facade().get_manual_pdf()
     return send_file(filename, mimetype='application/pdf', as_attachment=False)
 
+@app.route('/lore')
+def lore():
+    return render_template('./templates/lore.html')
+
 
 @app.route('/plan_round/<game>/<ship_name>', methods=['GET', 'POST'])
 def plan_round(game: str, ship_name: str):
