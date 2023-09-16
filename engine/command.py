@@ -1,3 +1,4 @@
+from abc import ABC
 import re
 import logging
 from collections import defaultdict
@@ -30,7 +31,7 @@ class Cmd(Enum):
 
 
 class CommandLine(object):
-    COMMAND_PATTERN = r"^(\d+):\s*([A-Za-z]+)((\s*-?\w+)*)$"
+    COMMAND_PATTERN = r"^(\d+):\s*([A-Za-z]+)((\s*-?[-\w]+)*)$"
     TICK_NAME_PARAMS = r"^(\d+):\s*([A-Za-z]+)(.*)$"
 
     def __init__(self, text: str):
@@ -360,9 +361,25 @@ class CommandSet(object):
         return f"CommandSet({', '.join(all_str)})"
 
 
-class CommandValidator(object):
-    def __init__(self, command: str, ship_type: str):
-        pass
+class Parameter(ABC):
+    def __init__(self, value: str):
+        self._source = value
+
+    @property
+    def is_valid(self):
+        ...
+
+    @property
+    def value(self):
+        return self._source
+
+
+class ShipNameParameter(Parameter):
+    @property
+    def is_valid(self):
+        return False
+
+
 
 
 def read_command_file(command_file_name: str) -> dict:
