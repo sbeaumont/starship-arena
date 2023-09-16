@@ -7,3 +7,4 @@
 2: Replenish
 3: A100
 3: Scan G 0 90
+4: Fire S1 Blobby

@@ -162,7 +162,7 @@ class Ship(MachineInSpace):
                 score = 100
                 hit_event.score += 100
             hit_event.notify_owner(f"{hit_event.source.name} landed the killing blow on {self.name}: ({score} points)")
-            self.add_internal_event(f"You were destroyed. Killing blow by {self.name}.")
+            self.add_internal_event(f"You were destroyed. Killing blow by {hit_event.source.name}.")
 
     # ---------------------------------------------------------------------- TIMED HANDLERS
 

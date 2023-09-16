@@ -85,7 +85,7 @@ class Commandable(Protocol):
 
 class Command(object):
     @classmethod
-    def for_command_line(cls, command_line):
+    def for_command_line(cls, command_line: CommandLine):
         match command_line.name.upper():
             case 'L' | 'R':
                 # L90 -> Turn left
@@ -358,6 +358,11 @@ class CommandSet(object):
         unknown_str = 'Err ' + '|'.join([str(e) for e in self.errors]) if self.errors else None
         all_str = [str(e) for e in (self.acceleration, self.turning, wpn_str, pre_str, post_str, unknown_str) if e is not None]
         return f"CommandSet({', '.join(all_str)})"
+
+
+class CommandValidator(object):
+    def __init__(self, command: str, ship_type: str):
+        pass
 
 
 def read_command_file(command_file_name: str) -> dict:
