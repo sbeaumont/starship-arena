@@ -1,5 +1,6 @@
 from comp.weapon import Weapon
-from ois.event import InternalEvent, HitEvent, DrawType
+from ois.event import HitEvent, DrawType
+from comp.component import ObjectByNameParameter
 
 
 class Laser(Weapon):
@@ -31,10 +32,14 @@ class Laser(Weapon):
         damage = round(self.strength - self.container.distance_to(target.pos))
         return damage if damage >= 0 else 0
 
+    @property
+    def expected_parameters(self):
+        return [ObjectByNameParameter('target', self)]
+
     # ---------------------------------------------------------------------- COMMANDS
 
-    def fire(self, target_name: str, objects_in_space=None, extra_params=None):
-        target_ship = objects_in_space.get(target_name, None)
+    def fire(self, params: dict, objects_in_space: dict):
+        target_ship = params['target'].value
         if not target_ship:
             self.add_internal_event(f"Can't fire {self.name}. Unknown ship name: {target_name}")
             return None
@@ -56,7 +61,7 @@ class Laser(Weapon):
             temp_status = 'Overheated' if not self.temperature_ok else ''
             battery_status = 'Low Battery' if not self.energy_ok else ''
             target_status = 'Target not visible' if not self.owner.can_scan(target_ship) else ''
-            self.add_internal_event(f"Ship {self.owner.name} failed to laser {target_name}: {' '.join([temp_status, battery_status, target_status])}")
+            self.add_internal_event(f"Ship {self.owner.name} failed to laser {target_ship.name}: {' '.join([temp_status, battery_status, target_status])}")
         self.temperature += self.heat_per_shot
         self.container.battery -= self.energy_per_shot
 

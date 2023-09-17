@@ -118,13 +118,12 @@ def lore():
 
 @app.route('/plan_round/<game>/<ship_name>', methods=['GET', 'POST'])
 def plan_round(game: str, ship_name: str):
-    ship = facade().get_ship(game, ship_name)
     message = ''
     if request.method == 'POST':
         if request.form['action'] == 'Check':
-            commands = facade().check_commands(cleanup_command_form(request.form['commands']), ship)
+            commands = facade().check_commands(cleanup_command_form(request.form['commands']), game, ship_name)
         elif request.form['action'] == 'Save':
-            commands = facade().check_commands(cleanup_command_form(request.form['commands']), ship)
+            commands = facade().check_commands(cleanup_command_form(request.form['commands']), game, ship_name)
             if all([e[0] for e in commands]):
                 facade().save_last_commands(game, ship_name, cleanup_command_form(request.form['commands']))
                 message = 'Saved.'
@@ -134,10 +133,10 @@ def plan_round(game: str, ship_name: str):
             commands = [False, 'Wrong action']
             message = 'Wrong Action!'
     else:
-        commands = facade().check_commands(facade().get_last_commands(game, ship_name), ship)
+        commands = facade().check_commands(facade().get_last_commands(game, ship_name), game, ship_name)
     return render_template('./templates/plan-round.html',
                            game=game,
-                           ship=ship,
+                           ship=facade().get_ship(game, ship_name),
                            commands=commands,
                            message=message,
                            total_rounds=facade().current_round_of_game(game)

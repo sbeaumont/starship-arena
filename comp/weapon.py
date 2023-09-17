@@ -12,7 +12,7 @@ class Weapon(Component, ABC):
             assert 0 <= firing_arc[1] <= 360
         self.firing_arc = firing_arc
 
-    def fire(self, direction_or_target: str, objects_in_space=None, extra_params=None):
+    def fire(self, params: dict, objects_in_space: dict):
         raise NotImplementedError
 
     def in_firing_arc(self, angle):

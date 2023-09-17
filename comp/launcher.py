@@ -1,6 +1,7 @@
 from comp.weapon import Weapon
 from typing import Protocol, runtime_checkable
 from ois.objectinspace import Vector
+from comp.component import DirectionParameter
 
 
 @runtime_checkable
@@ -26,10 +27,12 @@ class Launcher(Weapon):
         vector = Vector(pos=self.container.vector.pos, heading=heading, speed=self.container.speed)
         return self.payload_type.create(name, vector, owner=self.owner)
 
-    def fire(self, firing_angle: int, objects_in_space=None, extra_params=None):
-        if isinstance(firing_angle, str) and not firing_angle.strip('-').isnumeric():
-            self.add_internal_event(f"{self.name} can not fire: {firing_angle} is not a legal angle")
-            return None
+    @property
+    def expected_parameters(self):
+        return [DirectionParameter('direction', self)]
+
+    def fire(self, params: dict, objects_in_space: dict):
+        firing_angle = params['direction'].value
 
         if self.ammo <= 0:
             self.add_internal_event(f"{self.name} could not fire: ammo empty.")

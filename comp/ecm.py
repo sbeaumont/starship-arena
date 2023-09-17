@@ -1,4 +1,4 @@
-from comp.component import Component
+from comp.component import Component, OnOffParameter
 
 
 class Cloak(Component):
@@ -8,6 +8,10 @@ class Cloak(Component):
         super().__init__(name)
         self.active = False
         self.strength = strength
+
+    @property
+    def expected_parameters(self):
+        return [OnOffParameter('on/off', self)]
 
     def activation(self, yes_no: bool):
         was_active = self.active

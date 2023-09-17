@@ -1,6 +1,7 @@
 from comp.weapon import Weapon
 from ois.event import ScanEvent
 from cfg import max_scan
+from comp.component import DirectionParameter, NumberInRangeParameter
 
 
 class Gravscan(Weapon):
@@ -14,14 +15,16 @@ class Gravscan(Weapon):
         self.min_scan_distance = max_scan(50)
         self.active = False
 
-    def fire(self, direction: str, objects_in_space=None, extra_params=None):
-        direction = int(direction)
-        scan_cone = self.default_scan_cone
+    @property
+    def expected_parameters(self):
+        return [DirectionParameter('direction', self),
+                NumberInRangeParameter('scan cone', self, (30, 360))]
+
+    def fire(self, params: dict, objects_in_space: dict):
+        direction = params['direction'].value
+        scan_cone = params['scan cone'].value
 
         if self.container.battery >= self.energy_per_pulse:
-            if extra_params:
-                scan_cone = int(extra_params[0])
-                scan_cone = 30 if scan_cone < 30 else scan_cone
             self.firing_arc = (direction - scan_cone // 2, direction + scan_cone // 2)
             coefficient = (self.max_scan_distance - self.min_scan_distance) / 330
             scan_distance = int(self.max_scan_distance - (coefficient * (scan_cone - 30)))

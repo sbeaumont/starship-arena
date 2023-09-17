@@ -3,12 +3,12 @@ import os
 import re
 from pathlib import Path
 
-from engine.admin import load_ship_file
 from engine.command import parse_commands
 from engine.gamedirectory import GameDirectory
 from engine.round import GameRound
 from secret import GAME_DATA_DIR
 from ois.registry.builder import all_ship_types
+from ois.ship import Ship
 from cfg import MANUAL_FILENAME
 
 logger = logging.getLogger('starship-arena.facade')
@@ -102,7 +102,7 @@ class AppFacade(object):
         round_nr = self.current_round_of_game(game)
         return self.commands_of_round(game, ship_name, round_nr)
 
-    def get_ship(self, game: str, ship_name: str, round_nr=None):
+    def get_ship(self, game: str, ship_name: str, round_nr=None) -> Ship:
         gd = GameDirectory(GAME_DATA_DIR, game)
         dead_ships = gd.load_graveyard()
         if round_nr and (round_nr > -1):
@@ -123,15 +123,18 @@ class AppFacade(object):
 
     # ---------------------------------------------------------------------- COMMANDS
 
-    def check_commands(self, commands: list[str], ship_type) -> list[(bool, str)]:
-        logger.debug(f"Commands to process: {commands}")
-        parse_result = parse_commands(commands)
+    def check_commands(self, commands: list[str], game: str, ship_name: str) -> list[(bool, str)]:
+        logger.debug(f"Checking commands for {game} {ship_name}: {commands}")
+        ship = self.get_ship(game, ship_name)
+        gd = GameDirectory(str(self.data_root), game)
+        ois = gd.load_current_status()
+        parse_result = parse_commands(commands, ship, ois)
         commands = list()
         if parse_result:
             for t in sorted(parse_result.keys()):
                 cs = parse_result[t]
                 for c in cs.all:
-                    commands.append([c.is_valid, c.command_line.text])
+                    commands.append([c.is_valid, c.command_line.text, c.feedback_results])
                 logger.debug(f"Tick {t}: {str(cs)}")
         return commands
 

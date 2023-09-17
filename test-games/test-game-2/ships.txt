@@ -1,4 +1,4 @@
 Name Type X Y Faction Player
-Blaster H2545 0 0 One Serge
+Blaster H2545 1 1 One Serge
 Dummy H2552 100 100 Two Serge
 Dummy2 H2552 -50 -20 Two Serge

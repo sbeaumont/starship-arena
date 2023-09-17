@@ -28,19 +28,19 @@ class GameRound(object):
     def ois(self):
         return self.objects_in_space
 
-    def pre_move_commands(self, ship: Commandable, cs: CommandSet, tick: int):
+    def pre_move_commands(self, cs: CommandSet, tick: int):
         if cs.acceleration:
-            cs.acceleration.execute(ship, self.ois, tick)
+            cs.acceleration.execute(tick)
         if cs.turning:
-            cs.turning.execute(ship, self.ois, tick)
+            cs.turning.execute(tick)
         for cmd in cs.pre_move:
-            cmd.execute(ship, self.ois, tick)
+            cmd.execute(tick)
 
-    def post_move_commands(self, ship: Commandable, cs: CommandSet, objects_in_space: dict, tick: int):
+    def post_move_commands(self, cs: CommandSet, tick: int):
         for wpn_cmd in cs.weapons.values():
-            wpn_cmd.execute(ship, self.ois, tick)
+            wpn_cmd.execute(tick)
         for other_cmd in cs.post_move:
-            other_cmd.execute(ship, self.ois, tick)
+            other_cmd.execute(tick)
 
     def do_tick(self, destroyed: dict, tick: Tick):
         assert isinstance(tick, Tick)
@@ -57,14 +57,14 @@ class GameRound(object):
             ois.generate()
             ois.use_energy()
             if isinstance(ois, Commandable) and ois.commands and (tick_nr in ois.commands):
-                self.pre_move_commands(ois, ois.commands[tick_nr], tick_nr)
+                self.pre_move_commands(ois.commands[tick_nr], tick_nr)
             ois.pre_move(self.objects_in_space)
             ois.move()
 
         # All ships perform their post move commands do post-move commands like firing weapons
         for ois in list(self.ois.values()):
             if isinstance(ois, Commandable) and ois.commands and (tick_nr in ois.commands):
-                self.post_move_commands(ois, ois.commands[tick_nr], self.ois, tick_nr)
+                self.post_move_commands(ois.commands[tick_nr], tick_nr)
 
         # All ships scan, do post-move logic (like guided missiles intercepting their target)
         # and finally update the snapshot
@@ -106,8 +106,7 @@ class GameRound(object):
         for ship in [s for s in self.ois.values() if isinstance(s, Commandable)]:
             command_file_name = self._dir.command_file(ship.name, self.nr)
             if os.path.exists(command_file_name):
-                ship.commands = read_command_file(command_file_name)
-                # ship.scan(self.ois)
+                ship.commands = read_command_file(command_file_name, ship, self.ois)
 
         # Do 10 ticks, 1-10
         for t in self.round_start.ticks_for_round:

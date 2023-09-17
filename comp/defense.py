@@ -1,12 +1,36 @@
-from collections import namedtuple
-from comp.component import Component
+from comp.component import Component, ComponentParameter
 from ois.objectinspace import Point
 from ois.machineinspace import MachineInSpace
 from ois.event import HitEvent
 from .warhead import DamageType
 
-Quadrants = namedtuple('Quadrants', 'north east south west')
-Section = namedtuple('Section', 'strength energy')
+
+class BoostQuadrantParameter(ComponentParameter):
+    @property
+    def number_of_inputs(self) -> int:
+        return 2
+
+    @property
+    def is_valid(self):
+        assert self._input is not None
+        assert isinstance(self._input, list)
+        self.feedback.clear()
+        if len(self._input) != 2:
+            self.feedback.append(f"Expected parameters (quadrant) (boost amount) but got {self._input}")
+            return False
+        quadrant, amount = self._input
+        assert isinstance(amount, str)
+        assert isinstance(quadrant, str)
+        if quadrant not in ['N', 'E', 'S', 'W']:
+            self.feedback.append(f"{quadrant} is not one of (N, E, S, W).")
+            return False
+        if not amount.isnumeric():
+            self.feedback.append(f"{amount} is not a number.")
+            return False
+        if int(amount) > (2 * self.component.max_strength[quadrant]):
+            self.feedback.append(f"Can not boost quadrant {quadrant} beyond twice its strength")
+            return False
+        return True
 
 
 class Shields(Component):
@@ -19,7 +43,6 @@ class Shields(Component):
         super().__init__(name, container)
         self.strengths = strengths.copy()
         self.max_strengths = strengths.copy()
-        # self.quadrant_status = {'N': 'On', 'E': 'On', 'S': 'On', 'W': 'On'}
 
     # ---------------------------------------------------------------------- QUERIES
 
@@ -41,6 +64,10 @@ class Shields(Component):
             elif angles[0] <= heading <= angles[1]:
                 return name
         assert False, f"No quadrant found {source_location.as_tuple}, {heading}"
+
+    @property
+    def expected_parameters(self):
+        return [BoostQuadrantParameter('boost', self)]
 
     # ---------------------------------------------------------------------- COMMANDS
 
@@ -109,4 +136,3 @@ class Shields(Component):
             if self.strengths[qdrt] > self.max_strengths[qdrt]:
                 self.add_internal_event(f"Shield {qdrt} boost dissipated: now at {self.strengths[qdrt]}.")
                 self.strengths[qdrt] = self.max_strengths[qdrt]
-

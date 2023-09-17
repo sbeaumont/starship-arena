@@ -1,7 +1,9 @@
+import re
 import logging
 from typing import Protocol, runtime_checkable, NewType
 
 from comp.warhead import DamageType
+from engine.parameter import Parameter
 from .machineinspace import MachineInSpace, MachineType
 from .objectinspace import ObjectInSpace, Point, Vector
 from .event import ScanEvent, InternalEvent, HitEvent
@@ -75,9 +77,9 @@ class Ship(MachineInSpace):
         if old_speed != self.speed:
             self.add_internal_event(f"Changed speed from {old_speed} to {self.speed}")
 
-    def fire(self, weapon_name: str, target_or_direction, objects_in_space=None, extra_params=None):
+    def fire(self, weapon_name: str, params, objects_in_space):
         if weapon_name in self.weapons:
-            return self.weapons[weapon_name].fire(target_or_direction, objects_in_space, extra_params=extra_params)
+            return self.weapons[weapon_name].fire(params, objects_in_space)
         else:
             self.add_event(InternalEvent(f"No weapon named {weapon_name} found"))
 
@@ -203,3 +205,49 @@ class ShipType(MachineType):
     max_battery = 500
 
     max_scan_distance = None
+
+
+class ShipParameter(Parameter):
+    def __init__(self, name, ship: Ship, value: str):
+        assert isinstance(ship, Ship)
+        super().__init__(name)
+        self.ship: Ship = ship
+        self.input(value)
+
+
+class AccelerationParameter(ShipParameter):
+    @property
+    def is_valid(self):
+        assert self._input is not None
+        self.feedback.clear()
+        if re.match(r"-?[0-9]+", self._input):
+            result = abs(self._input) <= self.ship._type.max_delta_v
+            if not result:
+                self.feedback.append(f"{self._input} is outside max acceleration.")
+        else:
+            self.feedback.append(f"{self._input} is not a valid number.")
+            result = False
+        return result
+
+    @property
+    def value(self):
+        return int(self._input)
+
+
+class TurnParameter(ShipParameter):
+    @property
+    def is_valid(self):
+        assert self._input is not None
+        self.feedback.clear()
+        if re.match(r"-?[0-9]+", self._input):
+            result = abs(self._input) <= self.ship._type.max_turn
+            if not result:
+                self.feedback.append(f"{self._input} is outside max turn.")
+        else:
+            self.feedback.append(f"{self._input} is not a valid number.")
+            result = False
+        return result
+
+    @property
+    def value(self):
+        return int(self._input)

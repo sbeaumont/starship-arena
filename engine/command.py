@@ -1,4 +1,3 @@
-from abc import ABC
 import re
 import logging
 from collections import defaultdict
@@ -6,7 +5,9 @@ from enum import Enum, auto
 from typing import Protocol, runtime_checkable
 
 from ois.objectinspace import ObjectInSpace
+from ois.ship import AccelerationParameter, TurnParameter
 from comp.defense import Shields
+from comp.component import ComponentSelectorParameter
 from ois.event import InternalEvent
 
 logger = logging.getLogger('starship-arena.command')
@@ -41,7 +42,7 @@ class CommandLine(object):
             match = re.match(CommandLine.TICK_NAME_PARAMS, self.text)
             self.tick = int(match.group(1))
             self.name = match.group(2)
-            self.params = match.group(3).split()
+            self.params = [m for m in match.group(3).split(' ') if m.strip() != '']
         else:
             self.tick = self.name = self.params = None
             self.errors.append("Missing basic '<tick number>:<command><parameter> <parameter>' structure")
@@ -68,7 +69,7 @@ class Commandable(Protocol):
     def turn(self, angle: int):
         ...
 
-    def fire(self, weapon_name: str, target_or_direction, objects_in_space: dict, extra_params: list) -> ObjectInSpace:
+    def fire(self, weapon_name: str, params: dict, objects_in_space: dict) -> ObjectInSpace:
         ...
 
     def try_replenish(self, objects_in_space: dict):
@@ -83,54 +84,52 @@ class Commandable(Protocol):
     def add_event(self, event):
         ...
 
+    def all_components(self):
+        ...
+
 
 class Command(object):
     @classmethod
-    def for_command_line(cls, command_line: CommandLine):
+    def for_command_line(cls, command_line: CommandLine, ship: Commandable, objects_in_space):
         match command_line.name.upper():
             case 'L' | 'R':
                 # L90 -> Turn left
-                return TurnCommand(command_line)
+                return TurnCommand(command_line, ship, objects_in_space)
             case 'A':
                 # A30 -> Accelerate faster (+) or slow down/reverse (-)
-                return AccelerateCommand(command_line)
+                return AccelerateCommand(command_line, ship, objects_in_space)
             case 'F' | 'FIRE' | 'SCAN':
                 # Fire <Weapon Name> <Direction or Target name>
-                return FireCommand(command_line)
+                return FireCommand(command_line, ship, objects_in_space)
             case 'REPLENISH':
                 # Replenish
-                return ReplenishCommand(command_line)
+                return ReplenishCommand(command_line, ship, objects_in_space)
             case 'BOOST':
                 # Boost shield quadrant
-                return BoostCommand(command_line)
+                return BoostCommand(command_line, ship, objects_in_space)
             case 'ACTIVATION' | 'ACTIVATE':
                 # Turn components on or off
-                return ActivationCommand(command_line)
+                return ActivationCommand(command_line, ship, objects_in_space)
             case _:
                 logger.warning(f"Unknown command {command_line}")
-                return UnknownCommand(command_line)
+                return UnknownCommand(command_line, None, None)
 
-    def __init__(self, command_line: CommandLine):
+    def __init__(self, command_line: CommandLine, target: Commandable, objects_in_space):
         self.command_line = command_line
-        self.param = dict()
-        if self._check_params(self.command_line.params):
-            self._fill_params(self.command_line.params)
+        self.ois = objects_in_space
+        self.params = dict()
+        self.feedback: list[str] = list()
+        self.target = target
+        params_valid = self._init_params(self.command_line.params)
+        for fr in self.feedback_results:
+            logger.info(f"{target.name} {fr}")
+        self.is_valid = self.command_line.is_valid and params_valid
 
-    def _check_name(self) -> bool:
-        ...
-
-    def _check_params(self, params: list) -> bool:
-        ...
-
-    def _fill_params(self, params: list):
+    def _init_params(self, params: list) -> bool:
         ...
 
     def _get_type_name(self) -> Cmd:
         ...
-
-    @property
-    def is_valid(self) -> bool:
-        return self.command_line.is_valid and self._check_params(self.command_line.params)
 
     @property
     def tick(self) -> int:
@@ -144,159 +143,171 @@ class Command(object):
     def text(self) -> str:
         return self.command_line.text
 
-    @property
-    def value(self):
-        return self.param.get('value')
-
-    @value.setter
-    def value(self, value):
-        self.param['value'] = value
+    def execute(self, tick: int):
+        logger.debug(f'{self.target.name} executing command "{self.command_line.text}"')
+        self.target.add_event(InternalEvent(f'Executing command "{self.command_line.text}"'))
 
     @property
-    def selector(self):
-        return self.param.get('selector')
-
-    @selector.setter
-    def selector(self, value):
-        self.param['selector'] = value
-
-    def execute(self, commandable: Commandable, objects_in_space: dict, tick: int):
-        commandable.add_event(InternalEvent(f'Executing command "{self.command_line.text}"'))
+    def feedback_results(self):
+        result = list()
+        result.extend(self.feedback)
+        for p in self.params.values():
+            result.extend(p.feedback)
+        return result
 
     def __repr__(self):
         return f"Command({self._get_type_name()}, {self.command_line})"
 
 
-class AccelerateCommand(Command):
-    def _check_params(self, params: list) -> bool:
-        return len(params) == 1 and is_valid_number(params[0])
+class ComponentCommand(Command):
+    def __init__(self, command_line: CommandLine, target: Commandable, objects_in_space):
+        self._selector = None
+        super().__init__(command_line, target, objects_in_space)
 
-    def _fill_params(self, params: list):
-        self.value = int(params[0])
+    @property
+    def feedback_results(self):
+        result = super().feedback_results
+        if self._selector:
+            result.extend(self._selector.feedback)
+        return result
+
+    def init_selector(self, params: list) -> bool:
+        if len(params) > 0:
+            self._selector = ComponentSelectorParameter('selector', self.target, params[0])
+            return self._selector.is_valid
+        else:
+            self.feedback.append(f"Expected parameters (component) (component parameters...)")
+            return False
+
+    @property
+    def selector(self):
+        assert self._selector is not None, f"{self} has no selector."
+        return self._selector
+
+    def _init_params(self, params: list) -> bool:
+        if not self.init_selector(params):
+            return False
+
+        expected_parms = self.selector.value.expected_parameters
+        nr_expected_parms = sum(p.number_of_inputs for p in expected_parms)
+        input_params = params[1:]
+
+        if len(input_params) != len(expected_parms):
+            self.feedback.append(f"Expected {nr_expected_parms} parameters, got {len(input_params)}")
+            return False
+
+        i = 0
+        for p in expected_parms:
+            if p.needs_ois:
+                p.set_ois(self.ois)
+            if p.number_of_inputs > 1:
+                p.input(input_params[i:i+p.number_of_inputs])
+            else:
+                p.input(input_params[i])
+            self.params[p.name] = p
+            i += p.number_of_inputs
+
+        return all([p.is_valid for p in self.params.values()])
+
+
+class AccelerateCommand(Command):
+    def _init_params(self, params: list) -> bool:
+        if len(params) == 1:
+            p = AccelerationParameter('amount', self.target, params[0])
+            self.params[p.name] = p
+        else:
+            self.feedback.append(f"Expected 1 parameter, got {len(params)}")
+            return False
+        return True
 
     def _get_type_name(self) -> Cmd:
         return Cmd.Accelerate
 
-    def merge(self, cmd):
-        if not isinstance(cmd, AccelerateCommand):
-            raise ValueError(f"Can not merge AccelerateCommand and {cmd.__class__}")
-        self.value += int(cmd.value)
-
-    def execute(self, target: Commandable, objects_in_space: dict, tick: int):
-        super().execute(target, objects_in_space, tick)
-        target.accelerate(self.value)
+    def execute(self, tick: int):
+        super().execute(tick)
+        self.target.accelerate(self.params['amount'].value)
 
 
-class ActivationCommand(Command):
-    def _check_params(self, params: list) -> bool:
-        if len(params) < 2:
-            return False
-        if params[1].lower() not in ['yes', 'no', 'true', 'false', 'on', 'off']:
-            return False
-        return params[0].isalnum()
-
-    def _fill_params(self, params: list):
-        self.selector = params[0]
-        self.value = params[1].lower() in ['yes', 'true', 'on']
-        if len(params) > 2:
-            self.param['extra_params'] = params[2:]
-
+class ActivationCommand(ComponentCommand):
     def _get_type_name(self) -> Cmd:
         return Cmd.Activation
 
-    def execute(self, target: Commandable, objects_in_space: dict, tick: int):
-        super().execute(target, objects_in_space, tick)
-        target.activation(self.selector, self.value)
+    def execute(self, tick: int):
+        super().execute(tick)
+        self.target.activation(self.selector, self.params['on/off'].value)
 
 
 class BoostCommand(Command):
-    def _check_params(self, params: list) -> bool:
-        if len(params) != 2:
-            return False
-        if params[0].upper() not in ('N', 'E', 'S', 'W'):
-            return False
-        return is_valid_number(params[1])
-
-    def _fill_params(self, params: list):
-        self.selector = params[0]
-        self.amount = int(params[1])
-
     def _get_type_name(self) -> Cmd:
         return Cmd.Boost
 
-    def execute(self, target: Commandable, objects_in_space: dict, tick: int):
-        super().execute(target, objects_in_space, tick)
-        for d in target.defense:
+    def _init_params(self, params: list) -> bool:
+        for d in self.target.defense:
             if isinstance(d, Shields):
-                d.boost(self.selector, self.amount)
+                self.component = d
+                p = d.expected_parameters[0]
+                p.input(params)
+                self.params['boost'] = p
                 break
-
-
-class FireCommand(Command):
-    def _check_params(self, params: list) -> bool:
-        if len(params) < 2:
+        if 'boost' not in self.params:
+            self.feedback.append(f"Can not find a Shield component.")
             return False
-        if not params[0].isalnum():
-            return False
-        return params[1].isalnum() or is_valid_number(params[1])
+        return True
 
-    def _fill_params(self, params: list):
-        self.selector = params[0]
-        self.value = int(params[1]) if is_valid_number(params[1]) else params[1]
-        if len(params) > 2:
-            self.param['extra_params'] = params[2:]
+    def execute(self, tick: int):
+        super().execute(tick)
+        quadrant, amount = self.params['boost'].value
+        self.component.boost(quadrant, int(amount))
 
+
+class FireCommand(ComponentCommand):
     def _get_type_name(self) -> Cmd:
         return Cmd.Fire
 
-    def execute(self, target: Commandable, objects_in_space: dict, tick: int):
-        super().execute(target, objects_in_space, tick)
-        fired_object = target.fire(self.selector, self.value, objects_in_space, self.param.get('extra_params', None))
+    def execute(self, tick: int):
+        super().execute(tick)
+        weapon = self.selector.value
+        fired_object = weapon.fire(self.params, self.ois)
         if fired_object:
-            objects_in_space[fired_object.name] = fired_object
+            self.ois[fired_object.name] = fired_object
 
 
 class ReplenishCommand(Command):
-    def _check_params(self, params: list) -> bool:
-        return len(params) == 0
-
-    def _fill_params(self, params: list):
-        pass
+    def _init_params(self, params: list) -> bool:
+        if len(params) > 0:
+            self.feedback.append("Replenish command takes no arguments.")
+            return False
+        return True
 
     def _get_type_name(self) -> Cmd:
         return Cmd.Replenish
 
-    def execute(self, target: Commandable, objects_in_space: dict, tick: int):
-        super().execute(target, objects_in_space, tick)
-        target.try_replenish(objects_in_space)
+    def execute(self, tick: int):
+        super().execute(tick)
+        self.target.try_replenish(self.ois)
 
 
 class TurnCommand(Command):
-    def _check_params(self, params: list) -> bool:
-        if len(params) != 1:
+    def _init_params(self, params: list) -> bool:
+        if len(params) == 1:
+            p = TurnParameter('amount', self.target, params[0])
+            self.params[p.name] = p
+        else:
+            self.feedback.append(f"Expected 1 parameter, got {len(params)}")
             return False
-        return is_valid_number(params[0])
-
-    def _fill_params(self, params: list):
-        self.value = int(params[0]) if self.command_line.name in ('R', 'H') else -int(params[0])
+        return True
 
     def _get_type_name(self) -> Cmd:
         return Cmd.Turn
 
-    def merge(self, cmd):
-        self.value += cmd.value
-
-    def execute(self, target: Commandable, objects_in_space: dict, tick: int):
-        super().execute(target, objects_in_space, tick)
-        target.turn(self.value)
+    def execute(self, tick: int):
+        super().execute(tick)
+        self.target.turn(self.params['amount'].value)
 
 
 class UnknownCommand(Command):
-    def _check_params(self, params: list) -> bool:
+    def _init_params(self, params: list) -> bool:
         return False
-
-    def _fill_params(self, params: list):
-        pass
 
     def _get_type_name(self) -> Cmd:
         return Cmd.Unknown
@@ -306,8 +317,8 @@ class UnknownCommand(Command):
         # This command is never valid.
         return False
 
-    def execute(self, target: Commandable, objects_in_space: dict, tick: int):
-        target.add_event(f"Can't execute unknown command {self.command_line.text}")
+    def execute(self, tick: int):
+        self.target.add_event(f"Can't execute unknown command {self.command_line.text}")
 
 
 class CommandSet(object):
@@ -327,22 +338,16 @@ class CommandSet(object):
 
     def add(self, cmd: Command):
         if not cmd.is_valid:
-            print(str(cmd), 'not valid')
+            logger.info(f"CommandSet: invalid command {str(cmd)}: {cmd.feedback_results}.")
             self.errors.append(cmd)
             return
         match cmd.name:
             case Cmd.Accelerate:
-                if self.acceleration:
-                    self.acceleration.merge(cmd)
-                else:
-                    self.acceleration = cmd
+                self.acceleration = cmd
             case Cmd.Turn:
-                if self.turning:
-                    self.turning.merge(cmd)
-                else:
-                    self.turning = cmd
+                self.turning = cmd
             case Cmd.Fire:
-                self.weapons[cmd.selector] = cmd
+                self.weapons[cmd.selector.value] = cmd
             case Cmd.Activation:
                 self.pre_move.append(cmd)
             case Cmd.Replenish | Cmd.Boost:
@@ -361,39 +366,18 @@ class CommandSet(object):
         return f"CommandSet({', '.join(all_str)})"
 
 
-class Parameter(ABC):
-    def __init__(self, value: str):
-        self._source = value
-
-    @property
-    def is_valid(self):
-        ...
-
-    @property
-    def value(self):
-        return self._source
-
-
-class ShipNameParameter(Parameter):
-    @property
-    def is_valid(self):
-        return False
-
-
-
-
-def read_command_file(command_file_name: str) -> dict:
+def read_command_file(command_file_name: str, ship, objects_in_space) -> dict:
     """Read a command file with the commands for a ship."""
     with open(command_file_name) as infile:
         logger.info(f"Reading {command_file_name}")
         lines = [line.strip() for line in infile.readlines() if not line.isspace()]
 
-    commands = parse_commands(lines)
+    commands = parse_commands(lines, ship, objects_in_space)
     logger.info(f"Parsed command file {command_file_name}")
     return commands
 
 
-def parse_commands(lines: list[str]):
+def parse_commands(lines: list[str], ship, objects_in_space):
     commands = defaultdict(CommandSet)
     for line_nr, line in enumerate(lines, start=1):
         try:
@@ -401,7 +385,7 @@ def parse_commands(lines: list[str]):
                 continue
             command_line = CommandLine(line)
             if command_line.is_valid:
-                commands[command_line.tick].add(Command.for_command_line(command_line))
+                commands[command_line.tick].add(Command.for_command_line(command_line, ship, objects_in_space))
         except Exception:
             logger.error(f"Error while trying to parse line {line} ({line_nr})")
             raise
