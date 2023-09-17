@@ -112,7 +112,7 @@ class Command(object):
                 return ActivationCommand(command_line, ship, objects_in_space)
             case _:
                 logger.warning(f"Unknown command {command_line}")
-                return UnknownCommand(command_line, None, None)
+                return UnknownCommand(command_line, ship, objects_in_space)
 
     def __init__(self, command_line: CommandLine, target: Commandable, objects_in_space):
         self.command_line = command_line
@@ -215,10 +215,10 @@ class AccelerateCommand(Command):
         if len(params) == 1:
             p = AccelerationParameter('amount', self.target, params[0])
             self.params[p.name] = p
+            return p.is_valid
         else:
             self.feedback.append(f"Expected 1 parameter, got {len(params)}")
             return False
-        return True
 
     def _get_type_name(self) -> Cmd:
         return Cmd.Accelerate
@@ -292,10 +292,10 @@ class TurnCommand(Command):
         if len(params) == 1:
             p = TurnParameter('amount', self.target, params[0])
             self.params[p.name] = p
+            return p.is_valid
         else:
             self.feedback.append(f"Expected 1 parameter, got {len(params)}")
             return False
-        return True
 
     def _get_type_name(self) -> Cmd:
         return Cmd.Turn
@@ -306,6 +306,10 @@ class TurnCommand(Command):
 
 
 class UnknownCommand(Command):
+    def __init__(self, command_line, target, objects_in_space):
+        super().__init__(command_line, target, objects_in_space)
+        self.feedback.append("Unknown command.")
+
     def _init_params(self, params: list) -> bool:
         return False
 
@@ -316,6 +320,10 @@ class UnknownCommand(Command):
     def is_valid(self) -> bool:
         # This command is never valid.
         return False
+
+    @is_valid.setter
+    def is_valid(self, value):
+        pass
 
     def execute(self, tick: int):
         self.target.add_event(f"Can't execute unknown command {self.command_line.text}")
