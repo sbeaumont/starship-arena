@@ -19,6 +19,10 @@ class H2545(ShipType):
     max_scan_distance = max_scan(30)
 
     @property
+    def class_name(self):
+        return "Cairo"
+
+    @property
     def defense(self):
         return [
             Shields('Shields', {'N': 150, 'E': 100, 'S': 130, 'W': 100}),
@@ -45,6 +49,10 @@ class H2552(ShipType):
     start_battery = 100
     generators = 7
     max_scan_distance = max_scan(35)
+
+    @property
+    def class_name(self):
+        return "Babylon"
 
     @property
     def weapons(self):
@@ -79,6 +87,10 @@ class H2535(ShipType):
     max_scan_distance = max_scan(50)
 
     @property
+    def class_name(self):
+        return "Rome"
+
+    @property
     def weapons(self):
         return [
             Launcher('SS1', Splinter(), 10, (0, 180)),
@@ -111,6 +123,10 @@ class H2527(ShipType):
     start_battery = 90
     generators = 8
     max_scan_distance = max_scan(35)
+
+    @property
+    def class_name(self):
+        return "Athens"
 
     @property
     def weapons(self):

@@ -19,6 +19,10 @@ class R2545(ShipType):
     max_scan_distance = max_scan(35)
 
     @property
+    def class_name(self):
+        return "Komodo"
+
+    @property
     def defense(self):
         return [
             Shields('Shields', {'N': 120, 'E': 100, 'S': 100, 'W': 100}),
@@ -45,6 +49,10 @@ class R2525(ShipType):
     start_battery = 90
     generators = 7
     max_scan_distance = max_scan(30)
+
+    @property
+    def class_name(self):
+        return "Viper"
 
     @property
     def defense(self):
@@ -80,6 +88,10 @@ class R2531(ShipType):
     max_scan_distance = max_scan(45)
 
     @property
+    def class_name(self):
+        return "Dragon"
+
+    @property
     def defense(self):
         return [
             Shields('Shields', {'N': 120, 'E': 120, 'S': 120, 'W': 120}),
@@ -112,6 +124,10 @@ class R2551(ShipType):
     start_battery = 90
     generators = 7
     max_scan_distance = max_scan(35)
+
+    @property
+    def class_name(self):
+        return "Cobra"
 
     @property
     def defense(self):

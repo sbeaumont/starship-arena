@@ -19,6 +19,10 @@ class A2527(ShipType):
     max_scan_distance = max_scan(35)
 
     @property
+    def class_name(self):
+        return "Alligator"
+
+    @property
     def defense(self):
         return [
             Shields('Shields', {'N': 100, 'E': 100, 'S': 100, 'W': 100}),
@@ -45,6 +49,10 @@ class A2539(ShipType):
     start_battery = 80
     generators = 7
     max_scan_distance = max_scan(30)
+
+    @property
+    def class_name(self):
+        return "Caiman"
 
     @property
     def defense(self):
@@ -83,6 +91,10 @@ class A2545(ShipType):
     max_scan_distance = max_scan(45)
 
     @property
+    def class_name(self):
+        return "Terrapin"
+
+    @property
     def defense(self):
         return [
             Shields('Shields', {'N': 110, 'E': 110, 'S': 110, 'W': 110}),
@@ -110,6 +122,10 @@ class A2553(ShipType):
     start_battery = 70
     generators = 6
     max_scan_distance = max_scan(40)
+
+    @property
+    def class_name(self):
+        return "Frog"
 
     @property
     def defense(self):

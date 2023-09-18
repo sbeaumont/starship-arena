@@ -14,8 +14,15 @@ class MachineType(metaclass=ABCMeta):
         return self.base_type(name, self, vector, owner=owner, tick=tick)
 
     @property
+    def class_name(self):
+        return None
+
+    @property
     def name(self) -> str:
-        return self.__class__.__name__
+        if self.class_name:
+            return f"{self.__class__.__name__} {self.class_name}"
+        else:
+            return self.__class__.__name__
 
     @property
     def weapons(self) -> list:

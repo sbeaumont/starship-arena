@@ -18,6 +18,10 @@ class I2544(ShipType):
     max_scan_distance = max_scan(45)
 
     @property
+    def class_name(self):
+        return "Hive"
+
+    @property
     def defense(self):
         return [
             Shields('Shields', {'N': 140, 'E': 140, 'S': 140, 'W': 140}),
@@ -45,6 +49,10 @@ class I2552(ShipType):
     start_battery = 80
     generators = 6
     max_scan_distance = max_scan(40)
+
+    @property
+    def class_name(self):
+        return "Swarm"
 
     @property
     def defense(self):
@@ -75,6 +83,10 @@ class I2526(ShipType):
     start_battery = 90
     generators = 6
     max_scan_distance = max_scan(45)
+
+    @property
+    def class_name(self):
+        return "Colony"
 
     @property
     def defense(self):

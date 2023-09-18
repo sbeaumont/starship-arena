@@ -19,6 +19,10 @@ class F2551(ShipType):
     max_scan_distance = max_scan(30)
 
     @property
+    def class_name(self):
+        return "Tiger"
+
+    @property
     def defense(self):
         return [
             Shields('Shields', {'N': 110, 'E': 100, 'S': 100, 'W': 100}),
@@ -50,6 +54,10 @@ class F2547(ShipType):
     start_battery = 90
     generators = 8
     max_scan_distance = max_scan(30)
+
+    @property
+    def class_name(self):
+        return "Panther"
 
     @property
     def defense(self):
@@ -86,6 +94,10 @@ class F2534(ShipType):
     max_scan_distance = max_scan(30)
 
     @property
+    def class_name(self):
+        return "Cheetah"
+
+    @property
     def defense(self):
         return [
             Shields('Shields', {'N': 100, 'E': 100, 'S': 100, 'W': 100}),
@@ -117,6 +129,10 @@ class F2533(ShipType):
     start_battery = 80
     generators = 6
     max_scan_distance = max_scan(45)
+
+    @property
+    def class_name(self):
+        return "Lion"
 
     @property
     def defense(self):
