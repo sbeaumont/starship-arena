@@ -240,9 +240,9 @@ class TurnParameter(ShipParameter):
         assert self._input is not None
         self.feedback.clear()
         if re.match(r"-?[0-9]+", self._input):
-            result = abs(self.value) <= self.ship._type.max_turn
-            if not result:
-                self.feedback.append(f"{self._input} is outside max turn.")
+            if abs(self.value) > self.ship._type.max_turn:
+                self.feedback.append(f"{self._input} is outside max turn, only possible at speed 0.")
+            result = True
         else:
             self.feedback.append(f"{self._input} is not a valid number.")
             result = False
