@@ -14,6 +14,7 @@
     <table>
         <tr>
             <th>Name</th>
+            <th>Score</th>
             <th>Player</th>
             <th colspan="{{round_nr}}">Past rounds</th>
             <th>Command file?</th>
@@ -23,6 +24,7 @@
             {% for ship in ships %}
             <tr>
                 <td><a href="{{ url_for('plan_round', game=game, ship_name=ship.name) }}">{{ ship.name }}</a></td>
+                <td>{{ ship.score }}</td>
                 <td>{{ ship.player }}</td>
                 {% for i in range(round_nr) %}
                     <td><a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a></td>
@@ -39,12 +41,14 @@
     <table>
         <tr>
             <th>Name</th>
+            <th>Score</th>
             <th>Player</th>
             <th colspan="{{round_nr}}">Past rounds</th>
         </tr>
         {% for ship in dead_ships %}
         <tr>
             <td>{{ ship.name }}</td>
+            <td>{{ ship.score }}</td>
             <td>{{ ship.player }}</td>
             {% for i in range(ship.history.last_round + 1) %}
                 <td><a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a></td>

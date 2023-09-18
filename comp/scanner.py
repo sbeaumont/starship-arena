@@ -10,10 +10,11 @@ class Gravscan(Weapon):
         super().__init__(name)
         self.strength = 100
         self.energy_per_pulse = 10
-        self.default_scan_cone = 90
+        self.default_scan_cone = 180
         self.max_scan_distance = max_scan(500)
         self.min_scan_distance = max_scan(50)
         self.active = False
+        self.default_firing_arc = self.firing_arc
 
     @property
     def expected_parameters(self):
@@ -40,7 +41,7 @@ class Gravscan(Weapon):
             self.add_internal_event(f"Gravscan got {pings} pings.")
         else:
             self.add_internal_event(f"Not enough energy to fire Gravscan.")
-        self.firing_arc = None
+        self.firing_arc = self.default_firing_arc
 
     @property
     def description(self):
