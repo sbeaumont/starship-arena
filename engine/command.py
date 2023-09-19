@@ -302,7 +302,9 @@ class TurnCommand(Command):
 
     def execute(self, tick: int):
         super().execute(tick)
-        self.target.turn(self.params['amount'].value)
+        angle = self.params['amount'].value
+        angle = angle if self.command_line.name.upper() == 'R' else -angle
+        self.target.turn(angle)
 
 
 class UnknownCommand(Command):
