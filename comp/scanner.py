@@ -41,7 +41,10 @@ class Gravscan(Weapon):
             self.add_internal_event(f"Gravscan got {pings} pings.")
         else:
             self.add_internal_event(f"Not enough energy to fire Gravscan.")
-        self.firing_arc = self.default_firing_arc
+        if hasattr(self, 'default_firing_arc'):
+            self.firing_arc = self.default_firing_arc
+        else:
+            self.firing_arc = None
 
     @property
     def description(self):
