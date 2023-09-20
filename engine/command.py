@@ -258,7 +258,7 @@ class BoostCommand(Command):
         super().execute(tick)
         if len(self.params['boost'].value) == 1:
             # hack to deal with old saves
-            amount = self.params['boost'].value
+            amount = self.params['boost'].value[0]
             quadrant = self.command_line.params[0]
         else:
             # this is the correct version
