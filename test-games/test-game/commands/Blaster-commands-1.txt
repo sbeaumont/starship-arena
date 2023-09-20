@@ -8,3 +8,4 @@
 3: A100
 3: Scan G 0 90
 4: Fire S1 Blobby
+4: Boost N 50

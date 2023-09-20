@@ -41,6 +41,7 @@ class Gravscan(Weapon):
             self.add_internal_event(f"Gravscan got {pings} pings.")
         else:
             self.add_internal_event(f"Not enough energy to fire Gravscan.")
+        # Workaround until all existing pickle files don't have this issue anymore.
         if hasattr(self, 'default_firing_arc'):
             self.firing_arc = self.default_firing_arc
         else:

@@ -256,7 +256,13 @@ class BoostCommand(Command):
 
     def execute(self, tick: int):
         super().execute(tick)
-        quadrant, amount = self.params['boost'].value
+        if len(self.params['boost'].value) == 1:
+            # hack to deal with old saves
+            amount = self.params['boost'].value
+            quadrant = self.command_line.params[0]
+        else:
+            # this is the correct version
+            quadrant, amount = self.params['boost'].value
         self.component.boost(quadrant, int(amount))
 
 
