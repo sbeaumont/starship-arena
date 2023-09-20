@@ -41,7 +41,7 @@ class Laser(Weapon):
     def fire(self, params: dict, objects_in_space: dict):
         target_ship = params['target'].value
         if not target_ship:
-            self.add_internal_event(f"Can't fire {self.name}. Unknown ship name: {target_name}")
+            self.add_internal_event(f"Can't fire {self.name}. Unknown (or dead?) ship name: {params['target'].value}")
             return None
 
         firing_angle = self.owner.direction_to(target_ship.xy)

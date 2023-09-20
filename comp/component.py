@@ -96,7 +96,7 @@ class ObjectByNameParameter(ComponentParameter):
 
     @property
     def value(self):
-        return self.ois[self._input]
+        return self.ois.get(self._input, None)
 
 
 class DirectionParameter(ComponentParameter):
