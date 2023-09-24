@@ -1,0 +1,12 @@
+1: R35
+1: Fire S1 150
+2: R35
+2: Fire S1 120
+3: R35
+3: Fire S1 80
+4: Fire R1 90
+5: Fire R1 70
+6: Fire R1 100
+7: Fire L1 Blaster
+8: Fire L1 Blaster
+9: Fire L1 Blaster

@@ -89,17 +89,18 @@ def draw_round(ship: Ship, vis: Visualizer, start_tick: Tick):
             # Draw ship's path of this tick
             if t.prev in ship.history:
                 prev_pos = ship.history[t.prev]['pos']
-                vis.draw_line((prev_pos, now_pos), color=COLORS[Colors.White])
-            vis.draw_point(now_pos, color=COLORS[Colors.White], size=2)
+                vis.draw_line((prev_pos, now_pos), color=COLORS[Colors.Yellow])
+            vis.draw_point(now_pos, color=COLORS[Colors.Yellow], size=2)
 
             # Draw scans of this tick
             for scan in ship.history[t].scans:
+                scan_color = COLORS[Colors.Green] if ship.faction == scan.source.faction else COLORS[Colors.White]
                 vis.draw_point(scan.pos, size=2)
                 if t.prev in ship.history:
                     prev_scan = ship.history[t.prev].scan_by_name(scan.name)
                     if prev_scan:
                         # Draw line if there was an earlier scan
-                        vis.draw_line((prev_scan.pos, scan.pos))
+                        vis.draw_line((prev_scan.pos, scan.pos), color=scan_color)
                 if (t == ship.history.last) or (t.next in ship.history) and (not ship.history[t.next].scan_by_name(scan.name)):
                     # Last scan of this ois, write name and position
                     # vis.text(text_nudge(scan.pos), f"{i}:{scan.name}\n{scan.pos}")

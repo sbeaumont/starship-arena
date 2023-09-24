@@ -76,6 +76,7 @@ class ObjectInSpace(ABC):
         self.name = name
         self.vector = vector
         self.owner = None
+        self.faction = None
         self.history = History(self, tick)
         self.visibility = visibility
 
