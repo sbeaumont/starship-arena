@@ -37,6 +37,9 @@ class Component(ABC):
     def round_reset(self):
         pass
 
+    def post_round_reset(self):
+        pass
+
     def tick(self, tick_nr):
         pass
 

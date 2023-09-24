@@ -112,6 +112,9 @@ class GameRound(object):
         for t in self.round_start.ticks_for_round:
             self.do_tick(destroyed, t)
 
+        for ois in self.ois.values():
+            ois.post_round_reset()
+
         # Report the round
         report_round(self.ois, self._dir.path, self.nr)
         # ...incl. the final report of any player ships destroyed this round.

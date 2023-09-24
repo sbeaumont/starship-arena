@@ -130,8 +130,8 @@ class Shields(Component):
 
     # ---------------------------------------------------------------------- ENGINE HANDLERS
 
-    def round_reset(self):
-        super().round_reset()
+    def post_round_reset(self):
+        super().post_round_reset()
         for qdrt in ['N', 'E', 'S', 'W']:
             if self.strengths[qdrt] > self.max_strengths[qdrt]:
                 self.add_internal_event(f"Shield {qdrt} boost dissipated: now at {self.strengths[qdrt]}.")

@@ -193,6 +193,11 @@ class Ship(MachineInSpace):
             d.round_reset()
         self.commands = None
 
+    def post_round_reset(self):
+        super().post_round_reset()
+        for d in self.defense:
+            d.post_round_reset()
+
 
 class ShipType(MachineType):
     base_type = Ship

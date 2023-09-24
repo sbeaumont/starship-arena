@@ -7,21 +7,31 @@ Serge Beaumont, december 2019
 from PIL import Image, ImageDraw
 from collections import namedtuple
 from ois.objectinspace import Point
+from enum import Enum, auto
 
 Color = namedtuple('Color', 'R G B')
 
-BACKGROUND_COLOR = Color(R=0, G=0, B=0)
-BLOCK = '\u2588'
 
-COLORS = (
-    Color(R=255, G=255, B=0),
-    Color(R=255, G=0, B=255),
-    Color(R=0, G=255, B=255),
-    Color(R=255, G=0, B=0),
-    Color(R=0, G=255, B=0),
-    Color(R=0, G=0, B=255),
-    Color(R=255, G=255, B=255)
-)
+class Colors(Enum):
+    Black  = auto()
+    Blue   = auto()
+    Green  = auto()
+    Red    = auto()
+    Yellow = auto()
+    White  = auto()
+
+
+COLORS = {
+    Colors.Black: Color(R=0, G=0, B=0),
+    Colors.Blue: Color(R=0, G=0, B=255),
+    Colors.Green: Color(R=0, G=255, B=0),
+    Colors.Red: Color(R=255, G=0, B=0),
+    Colors.Yellow: Color(R=255, G=255, B=0),
+    Colors.White: Color(R=255, G=255, B=255)
+}
+
+BACKGROUND_COLOR = Colors.Black
+BLOCK = '\u2588'
 
 
 class Visualizer(object):
@@ -48,7 +58,7 @@ class Visualizer(object):
         self.im = Image.new('RGB',
                             (abs(round(self.b_max.x - self.b_min.x)),
                              abs(round(self.b_max.y - self.b_min.y))),
-                            BACKGROUND_COLOR)
+                            BACKGROUND_COLOR.value)
         self.draw = ImageDraw.Draw(self.im)
 
     def _scale_point(self, p: Point) -> Point:
@@ -66,32 +76,32 @@ class Visualizer(object):
             p = Point(p.x, self.im.height - p.y)
         return p
 
-    def draw_point(self, point, color=COLORS[6], size=1):
+    def draw_point(self, point, color=COLORS[Colors.White], size=1):
         p = self._to_image_coords(point)
         self.draw.ellipse((p.x - size, p.y - size, p.x + size, p.y + size), fill=color)
 
-    def draw_square(self, point, color=COLORS[6], size=1):
+    def draw_square(self, point, color=COLORS[Colors.White], size=1):
         p = self._to_image_coords(point)
         self.draw.rectangle((p.x - size, p.y - size, p.x + size, p.y + size), fill=color)
 
-    def draw_circle(self, point, color=COLORS[6], size=5):
+    def draw_circle(self, point, color=COLORS[Colors.White], size=5):
         p = self._to_image_coords(point)
         self.draw.ellipse((p.x - size, p.y - size, p.x + size, p.y + size), fill=color)
 
-    def draw_points(self, points, color=COLORS[6], size=1):
+    def draw_points(self, points, color=COLORS[Colors.White], size=1):
         for point in points:
             self.draw_point(point, color, size)
 
-    def draw_line(self, line, color=COLORS[6], width=1):
+    def draw_line(self, line, color=COLORS[Colors.White], width=1):
         x1, y1 = self._to_image_coords(line[0]).as_tuple
         x2, y2 = self._to_image_coords(line[1]).as_tuple
         self.draw.line((x1, y1, x2, y2), color, width=width)
 
-    def draw_lines(self, lines, color=COLORS[6], width=1):
+    def draw_lines(self, lines, color=Colors.White.value, width=1):
         for line in lines:
             self.draw_line(line, color, width=width)
 
-    def draw_polyline(self, points, color=COLORS[6], width=1):
+    def draw_polyline(self, points, color=Colors.White.value, width=1):
         for i in range(1, len(points)):
             self.draw_line((points[i-1], points[i]), color, width)
 

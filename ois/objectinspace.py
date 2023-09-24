@@ -138,6 +138,9 @@ class ObjectInSpace(ABC):
         self.history.reset()
         logger.debug(f"{self.name} round reset.")
 
+    def post_round_reset(self):
+        logger.debug(f"{self.name} post-round reset.")
+
     @property
     def snapshot(self):
         return {

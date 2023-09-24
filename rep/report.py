@@ -6,7 +6,7 @@ from ois.event import ScanEvent, Event, DrawType, HitEvent
 from ois.starbase import Starbase
 from ois.ship import Ship
 from ois.objectinspace import Point
-from rep.visualize import Visualizer, COLORS
+from rep.visualize import Visualizer, Colors, COLORS
 from cfg import *
 from rep.history import Tick, TICK_ZERO
 
@@ -38,9 +38,9 @@ def report_events(ship: Ship, vis: Visualizer, start_tick: Tick):
                 if event.draw_type:
                     match event.draw_type:
                         case DrawType.Line:
-                            vis.draw_line(event.pos, color=COLORS[3])
+                            vis.draw_line(event.pos, color=COLORS[Colors.Red])
                         case DrawType.Circle:
-                            vis.draw_circle(event.pos, color=COLORS[3], size=event.radius)
+                            vis.draw_circle(event.pos, color=COLORS[Colors.Red], size=event.radius)
         current_tick = current_tick.next
     return events_per_tick, scans_per_tick, score_per_tick
 
@@ -89,8 +89,8 @@ def draw_round(ship: Ship, vis: Visualizer, start_tick: Tick):
             # Draw ship's path of this tick
             if t.prev in ship.history:
                 prev_pos = ship.history[t.prev]['pos']
-                vis.draw_line((prev_pos, now_pos), color=COLORS[0])
-            vis.draw_point(now_pos, color=COLORS[0], size=2)
+                vis.draw_line((prev_pos, now_pos), color=COLORS[Colors.White])
+            vis.draw_point(now_pos, color=COLORS[Colors.White], size=2)
 
             # Draw scans of this tick
             for scan in ship.history[t].scans:

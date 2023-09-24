@@ -11,20 +11,29 @@ This version has been developed with Python 3.10. You'll need to set up you envi
 - weasyprint
 - Jinja2
 - Pillow
+- Flask
 
-The entrypoint of this project is `./main.py`.
+The command-line entrypoint of this project is `./main.py`.
 
 `python main.py [setup, generate, manual, send]`
 
+This project can also be hosted as a Flask project with a Web UI.
+
+`flask --app flask_app run --debug`
+
+Watch out you don't use the debug flag in an unsafe environment.
+
 ## Todo
 
-- [x] A full energy system. Many things should cost energy, but now there are no implications for energy use.
-- [x] More weapon types, ship types
-- [x] Factions
+- [ ] A predictive graphic in the plan round screen
 - [ ] Utilities like repair droids
-- [x] Special scans
-- [x] Cloaking / Anti Detection Systems
-- [ ] Other objects like black holes and gas clouds
-- [x] Energy cost for current weapons, shields and movement.
-- [x] Shields, including boosting them
-- [x] Star bases, including replenishment
+- [ ] Objects like black holes and gas clouds, nebulae
+- [ ] Scenario mechanism
+- [ ] (NPC) Pilots and Gunners. Programmable / commandable?
+- [ ] Security system to allow unique player logins
+- [ ] Game master, player and admin roles
+- [ ] Message of the Day
+- [ ] Message of the round, possibly tied to scenario
+- [ ] Scanner that reveals internal details of ships like ammo and energy levels.
+- [ ] Damage to components
+- [ ] Point defense, possibly tied to an NPC gunner?
