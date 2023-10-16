@@ -192,6 +192,7 @@ class GameSetup(object):
         return objects_in_space
 
     def save(self):
+        """Save the round 0 pickle file and the ships file with coordinates (to ensure idempotency)."""
         self._dir.save(self.ships, 0)
 
         with open(self._dir.init_file, 'w') as f:

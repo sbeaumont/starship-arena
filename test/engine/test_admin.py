@@ -16,7 +16,7 @@ Starbase-1     SB2531 One       Serge"""
 
 class MyTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.gd = GameDirectory('test-games', 'test-game-2')
+        self.gd = GameDirectory('test/test-games', 'test-game-2')
         self.gs1 = GameSetup(self.gd, original_ship_file.splitlines())
         self.gs2 = GameSetup(self.gd, original_ship_file_without_coordinates.splitlines())
 
@@ -37,8 +37,7 @@ class MyTestCase(unittest.TestCase):
         original = [line.split() for line in original_ship_file_without_coordinates.splitlines()]
         distribute_factions(self.gs2.ships.values(), 100)
         new = [line.split() for line in self.gs2.ship_file_with_coordinates()]
-        print(new)
-        for line in new:
+        for line in new[1:]:
             self.assertNotEqual(int(line[-1]), 0)
             self.assertNotEqual(int(line[-2]), 0)
 

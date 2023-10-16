@@ -1,5 +1,8 @@
 import os
 import secret
+import logging
+
+logger = logging.getLogger('starship-arena.config')
 
 TEMPLATE_DIR = './templates'
 
@@ -14,7 +17,7 @@ MANUAL_TEMPLATE = 'manual.html'
 GAME_DATA_DIR = os.environ.get('GAME_DATA_DIR')
 if (not GAME_DATA_DIR) and ('GAME_DATA_DIR' in dir(secret)):
     GAME_DATA_DIR = secret.GAME_DATA_DIR
-print(f"cfg.py: Loading game data from {GAME_DATA_DIR}")
+logger.info(f"cfg.py: Loading game data from {GAME_DATA_DIR}")
 
 GRAVEYARD_TEMPLATE = "graveyard.pickle"
 STATUS_FILE_TEMPLATE = "status_round_{}.pickle"

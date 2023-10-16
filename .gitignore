@@ -1,7 +1,5 @@
 *.py[cod]
 .idea/
 **/__pycache__
-email.txt
-bggeeks-1
 .venv/
-/secret.py
+secret.py
