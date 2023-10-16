@@ -154,12 +154,12 @@ class GameSetup(object):
     def ship_file_with_coordinates(self):
         fields = ['name', 'type', 'faction', 'player', 'x', 'y']
         max_lengths = {
-            'name': max([len(s.name) for s in self.ships.values()]),
-            'type': max([len(s._type.__class__.__name__) for s in self.ships.values()]),
-            'faction': max([len(s.faction) for s in self.ships.values()]),
-            'player': max([len(s.player) for s in self.ships.values()]),
-            'x': max([len(str(s.pos.x)) for s in self.ships.values()]),
-            'y': max([len(str(s.pos.y)) for s in self.ships.values()])
+            'name': max(max([len(s.name) for s in self.ships.values()]), len('name')),
+            'type': max(max([len(s._type.__class__.__name__) for s in self.ships.values()]), len('type')),
+            'faction': max(max([len(s.faction) for s in self.ships.values()]), len('faction')),
+            'player': max(max([len(s.player) for s in self.ships.values()]), len('player')),
+            'x': max(max([len(str(s.pos.x)) for s in self.ships.values()]), len('x')),
+            'y': max(max([len(str(s.pos.y)) for s in self.ships.values()]), len('y'))
         }
 
         lines = list()
