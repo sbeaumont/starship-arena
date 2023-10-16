@@ -1,5 +1,11 @@
+"""
+Abstraction of a directory of a specific game of Space Arena.
+
+- Hides all the specific information about structure and file names.
+- Performs specific file operations on the directory.
+"""
+
 import fnmatch
-import os
 import re
 import shutil
 import logging
@@ -17,6 +23,10 @@ class GameDirectory(object):
     def __init__(self, data_root: str, game_name: str):
         self._dir = os.path.join(data_root, game_name)
         self.game_name = game_name
+
+    @property
+    def has_been_setup(self):
+        return self.last_round_number >= 0
 
     # ---------------------------------------------------------------------- QUERIES - Filenames
 
@@ -123,3 +133,9 @@ class GameDirectory(object):
         missing = [d for d in (self._dir, self.init_file) if not os.path.exists(d)]
         if missing:
             raise FileExistsError(f"{', '.join(missing)} not found.")
+
+
+if __name__ == '__main__':
+    gd = GameDirectory('test-games', 'test-game-2')
+    print(gd.load_graveyard())
+    print(gd.load_current_status())

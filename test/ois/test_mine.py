@@ -1,6 +1,6 @@
 from unittest import TestCase
 from .ois_fixtures import create_ship_fixture
-from ..registry.mines import SplinterMine
+from ois.registry.mines import SplinterMine
 from ois.objectinspace import Vector, Point
 
 

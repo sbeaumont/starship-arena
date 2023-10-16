@@ -1,4 +1,4 @@
-from comp.warhead import RocketWarhead, SplinterWarhead, NanocyteWarhead, PowerSplinterWarhead, EMPWarhead
+from ois.comp.warhead import RocketWarhead, SplinterWarhead, NanocyteWarhead, PowerSplinterWarhead, EMPWarhead
 from ois.missile import MissileType, Missile, GuidedMissile
 
 

@@ -1,3 +1,14 @@
+"""
+This is the main processing engine.
+
+GameRound processes a game turn.
+1) It loads the previous round's status,
+2) runs the round based on the players' command files,
+3) saves the round's result and generates the output reports
+
+Each tick has sub-phases where all objects get called in a specific ordering (see do_tick method).
+"""
+
 import os
 import pickle
 import logging
@@ -12,6 +23,7 @@ logger = logging.getLogger('starship-arena.round')
 
 
 class GameRound(object):
+    """The main processing engine of a game round."""
     def __init__(self, gd: GameDirectory, round_nr: int):
         assert round_nr > 0, "GameRound is only intended for rounds 1 and up."
         self._dir = gd
@@ -43,9 +55,11 @@ class GameRound(object):
             other_cmd.execute(tick)
 
     def do_tick(self, destroyed: dict, tick: Tick):
+        """Perform a single tick. This is where all hooks are called in the right order."""
+
         assert isinstance(tick, Tick)
         tick_nr = tick.abs_tick - tick.round_start.abs_tick + 1
-        """Perform a single game tick."""
+
         logger.info(f"Processing tick {tick}")
         # Set up the reporting for the tick
         for ois in self.ois.values():
@@ -94,7 +108,8 @@ class GameRound(object):
         return os.path.exists(self._dir.status_file_for_round(self.nr))
 
     def do_round(self, exit_on_missing_command_file=True):
-        # Execute the round
+        """The main execution of the round. Here is where it all happens."""
+
         destroyed = dict()
         # Load all commands into player ships and do initial scan for reporting.
         if exit_on_missing_command_file and self.missing_command_files:

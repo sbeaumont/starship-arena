@@ -1,3 +1,7 @@
+"""
+Generate the game manual, also using the code - like the ois.registry - to generate the correct ship stats.
+"""
+
 import datetime
 
 from jinja2 import Environment, FileSystemLoader

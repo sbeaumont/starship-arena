@@ -1,5 +1,8 @@
 """
-Utility library to easily create visualizations for code challenges (Advent Of Code!!!)
+Utility library to easily create visualizations, wrapping the Pillow library.
+
+Originally created for code challenges (Advent Of Code!!!), although there have been some changes since and this
+version is by now unique to the game.
 
 Serge Beaumont, december 2019
 """

@@ -1,8 +1,15 @@
+"""
+Facade that ensures that the flask_app file does not know too much about the internals like the database.
+
+The AppFacade class may be a bit inconsistent: I simply added a method whenever I wanted to know or do something.
+"""
+
 import logging
 import os
 import re
 from pathlib import Path
 
+from engine.admin import GameSetup
 from engine.command import parse_commands
 from engine.gamedirectory import GameDirectory
 from engine.round import GameRound
@@ -15,6 +22,8 @@ logger = logging.getLogger('starship-arena.facade')
 
 
 class NameValidator(object):
+    """Validation of ship names."""
+
     def __init__(self, name):
         self.name = name
         self.messages = list()
@@ -45,18 +54,26 @@ class NameValidator(object):
 
 
 class AppFacade(object):
+    """Object that hides specifics from the web interface."""
+
     def __init__(self):
         self.data_root = Path(GAME_DATA_DIR)
+
+    def gd(self, game: str) -> GameDirectory:
+        """To make the webapp more robust it initializes a game if it wasn't before returning."""
+        gd = GameDirectory(str(self.data_root), game)
+        if not gd.has_been_setup:
+            logger.info(f"Setting up game {game}, since this was not done yet.")
+            GameSetup(gd).execute()
+        return gd
 
     # ---------------------------------------------------------------------- QUERIES - Reference
 
     def get_turn_picture_name(self, game: str, ship_name: str, round: int) -> str:
-        gd = GameDirectory(str(self.data_root), game)
-        return gd.get_turn_picture_name(round, ship_name)
+        return self.gd(game).get_turn_picture_name(round, ship_name)
 
     def get_turn_pdf_name(self, game: str, ship_name: str, round: int) -> str:
-        gd = GameDirectory(str(self.data_root), game)
-        return gd.get_turn_pdf_name(round, ship_name)
+        return self.gd(game).get_turn_pdf_name(round, ship_name)
 
     def get_manual_pdf(self) -> str:
         return MANUAL_FILENAME
@@ -75,19 +92,17 @@ class AppFacade(object):
         return [os.path.basename(d) for d in self.data_root.iterdir() if d.is_dir()]
 
     def ships_for_game(self, game) -> list:
-        gd = GameDirectory(str(self.data_root), game)
+        gd = self.gd(game)
         return [s for s in gd.load_current_status().values() if s.is_player_controlled]
 
     def dead_ships_for_game(self, game) -> dict:
-        gd = GameDirectory(str(self.data_root), game)
-        return gd.load_graveyard()
+        return self.gd(game).load_graveyard()
 
     def current_round_of_game(self, game) -> int:
-        gd = GameDirectory(str(self.data_root), game)
-        return gd.last_round_number + 1
+        return self.gd(game).last_round_number + 1
 
     def command_file_status_of_game(self, game) -> dict:
-        gd = GameDirectory(str(self.data_root), game)
+        gd = self.gd(game)
         ship_names = [s.name for s in self.ships_for_game(game)]
         round_nr = self.current_round_of_game(game)
         result = dict()
@@ -103,7 +118,7 @@ class AppFacade(object):
         return self.commands_of_round(game, ship_name, round_nr)
 
     def get_ship(self, game: str, ship_name: str, round_nr=None) -> Ship:
-        gd = GameDirectory(GAME_DATA_DIR, game)
+        gd = self.gd(game)
         dead_ships = gd.load_graveyard()
         if round_nr and (round_nr > -1):
             if ship_name in dead_ships:
@@ -114,7 +129,7 @@ class AppFacade(object):
             return gd.load_current_status()[ship_name]
 
     def commands_of_round(self, game: str, name: str, round_nr: int):
-        gd = GameDirectory(str(self.data_root), game)
+        gd = self.gd(game)
         if gd.command_file_exists(name, round_nr):
             with open(gd.command_file(name, round_nr)) as f:
                 return [line.strip() for line in f.readlines()]
@@ -126,8 +141,7 @@ class AppFacade(object):
     def check_commands(self, commands: list[str], game: str, ship_name: str) -> list[(bool, str)]:
         logger.debug(f"Checking commands for {game} {ship_name}: {commands}")
         ship = self.get_ship(game, ship_name)
-        gd = GameDirectory(str(self.data_root), game)
-        ois = gd.load_current_status()
+        ois = self.gd(game).load_current_status()
         parse_result = parse_commands(commands, ship, ois)
         commands = list()
         if parse_result:
@@ -139,9 +153,8 @@ class AppFacade(object):
         return commands
 
     def save_last_commands(self, game, ship, commands):
-        gd = GameDirectory(str(self.data_root), game)
         round_nr = self.current_round_of_game(game)
-        file_name = gd.command_file(ship, round_nr)
+        file_name = self.gd(game).command_file(ship, round_nr)
         logger.info(f"Writing G:{game} S:{ship} R:{round_nr} to {file_name}")
         with open(file_name, 'w') as f:
             f.write('\n'.join(commands))
@@ -150,8 +163,7 @@ class AppFacade(object):
     def process_turn(self, game):
         if self.all_command_files_ok(game):
             current_round = self.current_round_of_game(game)
-            gd = GameDirectory(str(self.data_root), game)
-            gr = GameRound(gd, current_round)
+            gr = GameRound(self.gd(game), current_round)
             logger.info(f"Processing round {current_round} of game {game}")
             gr.do_round()
         else:

@@ -1,3 +1,9 @@
+"""
+Starbase based on Ship:
+- can not fly
+- but can Replenish.
+"""
+
 import logging
 
 from .ship import Ship

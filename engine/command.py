@@ -1,3 +1,25 @@
+"""
+The Command system allows players to control their ships (Command Pattern).
+
+- Knows how to parse a command file and which command objects to instantiate for it
+- All commands depend on the Commandable protocol which is implemented by ObjectInSpace
+- Commands can be validated before they're executed, useful for the web interface (parse_commands).
+
+Command objects:
+- know how to retrieve Parameter objects from relevant Components and populate them.
+- know how to specifically manipulate the object they're a command for.
+
+CommandSet objects:
+- holds all the commands of a player for one target ship for a specific tick.
+- triggers its commands in the correct order within the tick.
+
+The read_command_file function loads a command file and returns a dictionary (Tick, CommandSet). Wraps parse_commands.
+
+The parse_commands is called by:
+- the web interface (for validation)
+- and the read_command_file (during the actual execution of the game engine)
+"""
+
 import re
 import logging
 from collections import defaultdict
@@ -6,8 +28,8 @@ from typing import Protocol, runtime_checkable
 
 from ois.objectinspace import ObjectInSpace
 from ois.ship import AccelerationParameter, TurnParameter
-from comp.defense import Shields
-from comp.component import ComponentSelectorParameter
+from ois.comp.defense import Shields
+from ois.comp.component import ComponentSelectorParameter
 from ois.event import InternalEvent
 
 logger = logging.getLogger('starship-arena.command')
@@ -32,6 +54,8 @@ class Cmd(Enum):
 
 
 class CommandLine(object):
+    """A single line (command) in a player's command file."""
+
     COMMAND_PATTERN = r"^(\d+):\s*([A-Za-z]+)((\s*-?[-\w]+)*)$"
     TICK_NAME_PARAMS = r"^(\d+):\s*([A-Za-z]+)(.*)$"
 
@@ -256,13 +280,7 @@ class BoostCommand(Command):
 
     def execute(self, tick: int):
         super().execute(tick)
-        if len(self.params['boost'].value) == 1:
-            # hack to deal with old saves
-            amount = self.params['boost'].value[0]
-            quadrant = self.command_line.params[0]
-        else:
-            # this is the correct version
-            quadrant, amount = self.params['boost'].value
+        quadrant, amount = self.params['boost'].value
         self.component.boost(quadrant, int(amount))
 
 

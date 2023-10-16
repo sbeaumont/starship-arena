@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from comp.component import Component
+from ois.comp.component import Component
 from ois.event import ExplosionEvent, HitEvent
 
 

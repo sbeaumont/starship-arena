@@ -1,4 +1,9 @@
-import os
+"""
+Email all users of the game the results of the round.
+
+Since the webapp version came live this is not used anymore so it may not be up to date.
+"""
+
 import sys
 from collections import defaultdict
 import fnmatch

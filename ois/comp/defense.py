@@ -1,4 +1,4 @@
-from comp.component import Component, ComponentParameter
+from ois.comp.component import Component, ComponentParameter
 from ois.objectinspace import Point
 from ois.machineinspace import MachineInSpace
 from ois.event import HitEvent
@@ -6,6 +6,8 @@ from .warhead import DamageType
 
 
 class BoostQuadrantParameter(ComponentParameter):
+    """Represents the two boost parameters (quadrant and amount) in one because they're so strongly related."""
+
     @property
     def number_of_inputs(self) -> int:
         return 2
@@ -34,9 +36,10 @@ class BoostQuadrantParameter(ComponentParameter):
 
 
 class Shields(Component):
+    """Belongs in the defense components list, defends the ship from damage."""
+
     shield_break_score = 25
 
-    """An object that is attached to an owner (Ship) and can defend its owner."""
     quadrants = {(315, 45): 'N', (45, 135): 'E', (135, 225): 'S', (225, 315): 'W'}
 
     def __init__(self, name: str, strengths: dict, container: MachineInSpace=None):

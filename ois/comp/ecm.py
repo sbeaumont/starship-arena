@@ -1,4 +1,4 @@
-from comp.component import Component, OnOffParameter
+from ois.comp.component import Component, OnOffParameter
 
 
 class Cloak(Component):

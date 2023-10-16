@@ -1,3 +1,10 @@
+"""
+Missiles are not controlled by players and fly, track and explode based on their programming.
+
+Missiles just fly straight, GuidedMissiles add features to track targets.
+Further capabilities are defined by their warheads (and other components in future?).
+"""
+
 import logging
 from dataclasses import replace
 
@@ -11,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class Missile(MachineInSpace):
     """Flying thing that explodes when near its target."""
+
     def __init__(self, name: str, _type, vector: Vector, owner: ObjectInSpace, tick: Tick = TICK_ZERO):
         super().__init__(name, _type, vector, owner=owner, tick=tick)
         self.target = None

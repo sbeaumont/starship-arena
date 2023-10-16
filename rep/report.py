@@ -1,3 +1,13 @@
+"""
+Report the results of the round in HTML and PDF format.
+
+Note that the HTML generated here is used to generate the PDF, not for the web app. The requirements for both
+are different enough that they warrant a separate approach.
+
+(The templates for the web app are called from the flask_app and reside in the templates directory next to
+the templates used here.)
+"""
+
 import os
 from jinja2 import Environment, FileSystemLoader
 from collections import defaultdict

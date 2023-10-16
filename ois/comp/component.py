@@ -1,3 +1,16 @@
+"""
+This package holds the base of the component system.
+
+The Component class introduces:
+- referencing owner and container
+- default hooks that the engine calls that can be overridden
+- a parameter system to allow pre-checking of a player's command file.
+- a status method to report on the active state of the component, used by the history system and the reporting.
+
+The ComponentParameter classes allow a component to introduce validation of its inputs without leaking
+the internals of the component to other parts of the engine.
+"""
+
 import re
 from abc import ABC
 
@@ -61,6 +74,8 @@ class ComponentParameter(Parameter):
 
 
 class ComponentSelectorParameter(Parameter):
+    """Represents a specific named component, for instance which weapon in a Fire command."""
+
     def __init__(self, name: str, owner, component_name: str):
         super().__init__(name)
         self.owner = owner
@@ -83,6 +98,8 @@ class ComponentSelectorParameter(Parameter):
 
 
 class ObjectByNameParameter(ComponentParameter):
+    """Identifies a named object in space. Example is a laser that fires at a named object instead of a direction."""
+
     @property
     def needs_ois(self) -> bool:
         return True
@@ -103,6 +120,8 @@ class ObjectByNameParameter(ComponentParameter):
 
 
 class DirectionParameter(ComponentParameter):
+    """Represents a relative direction to the container of a component, like the direction in a Fire command."""
+
     @property
     def is_valid(self):
         assert self._input is not None
@@ -123,6 +142,8 @@ class DirectionParameter(ComponentParameter):
 
 
 class NumberInRangeParameter(ComponentParameter):
+    """Represents a number that must be in a specified range."""
+
     def __init__(self, name: str, component: Component, range: tuple):
         super().__init__(name, component)
         self.range = range
@@ -146,6 +167,8 @@ class NumberInRangeParameter(ComponentParameter):
 
 
 class OnOffParameter(ComponentParameter):
+    """Represents a binary on/off state. Example is the activation state of a cloak."""
+
     valid_inputs = ['yes', 'no', 'true', 'false', 'on', 'off', '1', '0']
     on_inputs = ['yes', 'true', 'on', '1']
 

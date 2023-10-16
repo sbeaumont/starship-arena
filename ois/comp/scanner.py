@@ -1,7 +1,7 @@
-from comp.weapon import Weapon
+from ois.comp.weapon import Weapon
 from ois.event import ScanEvent
 from cfg import max_scan
-from comp.component import DirectionParameter, NumberInRangeParameter
+from ois.comp.component import DirectionParameter, NumberInRangeParameter
 
 
 class Gravscan(Weapon):

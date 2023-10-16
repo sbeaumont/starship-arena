@@ -1,3 +1,9 @@
+"""
+Administrative features like setting up a new game.
+
+
+"""
+
 from collections import defaultdict
 from dataclasses import dataclass
 from math import cos, sin, radians
@@ -119,6 +125,11 @@ class GameSetup(object):
     def __init__(self, game_directory: GameDirectory):
         self._dir: GameDirectory = game_directory
         self.ships: dict = self._init_ships()
+
+    def execute(self):
+        self.run()
+        self.save()
+        self.report()
 
     def run(self, distance_from_center=500):
         distribute_factions(self.ships.values(), distance_from_center)

@@ -25,6 +25,7 @@ Watch out you don't use the debug flag in an unsafe environment.
 
 ## Todo
 
+- [x] Allied ship paths drawn in green 
 - [ ] A predictive graphic in the plan round screen
 - [ ] Utilities like repair droids
 - [ ] Objects like black holes and gas clouds, nebulae

@@ -1,12 +1,12 @@
 from cfg import max_scan
 from ois.ship import ShipType
 from ois.registry.missiles import Rocket, Splinter, NanoMissile
-from ois.registry.mines import SplinterMine, NanocyteMine
-from comp.defense import Shields
-from comp.launcher import Launcher
-from comp.laser import Laser
-from comp.ecm import Cloak
-from comp.scanner import Gravscan
+from ois.registry.mines import SplinterMine
+from ois.comp.defense import Shields
+from ois.comp.launcher import Launcher
+from ois.comp.laser import Laser
+from ois.comp.ecm import Cloak
+from ois.comp.scanner import Gravscan
 
 
 class R2545(ShipType):

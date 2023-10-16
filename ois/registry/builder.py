@@ -1,5 +1,7 @@
 """
-Configurations of types of weapons and ships
+Configurations of types of weapons and ships.
+
+The create function is how new objects in the registry are instantiated.
 """
 import importlib
 import pkgutil

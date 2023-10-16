@@ -1,6 +1,6 @@
 from unittest import TestCase
 from .ois_fixtures import create_ship_fixture
-from ..registry.missiles import Splinter
+from ois.registry.missiles import Splinter
 
 
 class TestMissile(TestCase):

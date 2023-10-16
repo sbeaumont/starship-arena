@@ -1,4 +1,4 @@
-from comp.warhead import SplinterWarhead, NanocyteWarhead
+from ois.comp.warhead import SplinterWarhead, NanocyteWarhead
 from ois.machineinspace import MachineType
 from ois.mine import Mine
 from ois.objectinspace import Vector

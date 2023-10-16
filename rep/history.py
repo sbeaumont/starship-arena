@@ -1,3 +1,12 @@
+"""
+The history system of the game engine.
+
+Each object in the game gets history attached to it with a copy of relevant information each tick.
+- Tick is the time unit of the engine. It has utility features related to round borders and absolute ticks.
+- History is the full history of an object, attached to that object. It holds a dictionary (Tick: TickHistory).
+- TickHistory is the object's history information of a single tick, like the object's stats at the time and any relevant events.
+"""
+
 from ois.event import ScanEvent, HitEvent
 from collections import defaultdict
 from dataclasses import dataclass, field, astuple

@@ -1,3 +1,7 @@
+"""
+Mines slow down and sit still in space. Go boom based on the warhead they have.
+"""
+
 import logging
 from .event import InternalEvent, HitEvent
 from .machineinspace import MachineInSpace

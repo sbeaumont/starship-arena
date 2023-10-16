@@ -1,3 +1,9 @@
+"""
+Event class hierarchy for the event system.
+
+Events get stored in the history of the relevant game objects to enable reporting.
+"""
+
 from enum import Enum
 from typing import Protocol, NewType
 

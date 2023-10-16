@@ -1,11 +1,20 @@
+"""
+The core game object, player controlled Ship!
+
+- Has all the features to act on a player's Commands
+- Stores a bunch of events in its history for reporting
+
+This file also has command parameters that are specific to a ship (not a component) like acceleration and turning.
+"""
+
 import re
 import logging
 from typing import Protocol, runtime_checkable, NewType
 
-from comp.warhead import DamageType
+from ois.comp.warhead import DamageType
 from engine.parameter import Parameter
 from .machineinspace import MachineInSpace, MachineType
-from .objectinspace import ObjectInSpace, Point, Vector
+from .objectinspace import ObjectInSpace, Vector
 from .event import ScanEvent, InternalEvent, HitEvent
 from rep.history import Tick, TICK_ZERO
 

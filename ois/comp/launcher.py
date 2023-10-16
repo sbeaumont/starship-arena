@@ -1,7 +1,7 @@
-from comp.weapon import Weapon
+from ois.comp.weapon import Weapon
 from typing import Protocol, runtime_checkable
 from ois.objectinspace import Vector
-from comp.component import DirectionParameter
+from ois.comp.component import DirectionParameter
 
 
 @runtime_checkable

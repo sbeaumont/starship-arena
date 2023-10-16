@@ -1,10 +1,35 @@
+"""
+Abstract base class for all "man-made" objects.
+
+It introduces a component system with:
+- hull, battery
+- offense, defense and ecm components
+
+MachineType is the type object of a MachineInSpace, with the MachineInSpace - MachineType relationship being
+similar to a object - class relationship. This was done to prevent an enormous class hierarchy and duplication.
+
+Whenever a MachineInSpace needs type information it will query its type object (MachineType)
+
+The variation lies in the components, and a MachineType simply defines a set of components. This could also
+have been done with configuration files, but I made the choice that it's easier to just write the configuration
+in Python and not have to parse and translate json files.
+
+
+
+It also introduces an "owner" which is ultimately a player (but could also be an NPC object).
+
+
+"""
+
 from abc import ABCMeta
 from .objectinspace import ObjectInSpace, Vector
-from comp.component import Component
+from ois.comp.component import Component
 from rep.history import Tick, TICK_ZERO
 
 
 class MachineType(metaclass=ABCMeta):
+    """Type Object for MachineInSpace objects."""
+
     base_type = None
     max_hull = 0
     start_battery = 0
@@ -38,7 +63,8 @@ class MachineType(metaclass=ABCMeta):
 
 
 class MachineInSpace(ObjectInSpace, metaclass=ABCMeta):
-    """A machine in space."""
+    """A machine in space. Base class for all active objects like ships, bases, mines and missiles."""
+
     def __init__(self, name: str, _type: MachineType, vector: Vector, owner=None, tick: Tick = TICK_ZERO):
         assert isinstance(_type, MachineType), f"{_type} is not an instance of MachineType"
         assert isinstance(vector, Vector)

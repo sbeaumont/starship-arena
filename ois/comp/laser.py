@@ -1,6 +1,6 @@
-from comp.weapon import Weapon
+from ois.comp.weapon import Weapon
 from ois.event import HitEvent, DrawType
-from comp.component import ObjectByNameParameter
+from ois.comp.component import ObjectByNameParameter
 
 
 class Laser(Weapon):

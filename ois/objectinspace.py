@@ -1,3 +1,12 @@
+"""
+Abstract base class for all space objects.
+
+It has support for:
+- vector math (moving, position),
+- the game engine's overridable hooks - which by default do nothing,
+- storing the object's history - which is used for reporting, drawing, etc.
+"""
+
 import logging
 from math import sin, cos, radians, sqrt, atan2, pi
 from abc import abstractmethod, ABC
@@ -120,10 +129,6 @@ class ObjectInSpace(ABC):
     def is_destroyed(self) -> bool:
         return False
 
-    @property
-    def is_player_controlled(self):
-        return False
-
     # ---------------------------------------------------------------------- HISTORY INTERFACE
 
     def add_event(self, event: Event):
@@ -173,10 +178,14 @@ class ObjectInSpace(ABC):
     def speed(self, amount):
         self.vector = replace(self.vector, speed=amount)
 
+    # ---------------------------------------------------------------------- ENGINE HOOKS
+
+    @property
+    def is_player_controlled(self):
+        return False
+
     def take_damage_from(self, hitevent):
         pass
-
-    # ---------------------------------------------------------------------- ENGINE HOOKS
 
     def tick(self, tick: Tick):
         pass

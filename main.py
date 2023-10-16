@@ -1,5 +1,7 @@
 """
 Recreation of a Play-By-Mail game of 1991.
+
+This is the command-line interface, not used by the web app.
 """
 
 __version__ = '0.1'

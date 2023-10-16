@@ -2,10 +2,10 @@ from ois.ship import ShipType
 from cfg import max_scan
 from ois.starbase import Starbase
 from ois.registry.missiles import Rocket, Splinter
-from comp.defense import Shields
-from comp.launcher import Launcher
-from comp.laser import Laser
-from comp.scanner import Gravscan
+from ois.comp.defense import Shields
+from ois.comp.launcher import Launcher
+from ois.comp.laser import Laser
+from ois.comp.scanner import Gravscan
 
 
 class SB2531(ShipType):

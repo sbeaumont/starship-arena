@@ -1,4 +1,4 @@
-from comp.component import Component
+from ois.comp.component import Component
 from abc import ABC
 
 

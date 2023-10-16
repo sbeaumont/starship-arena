@@ -1,5 +1,13 @@
+"""
+Main entry point for the web interface.
+
+Knows about routing and webpage specifics.
+
+Does not know anything about databases and model objects.
+Delegates the specifics to an AppFacade.
+"""
+
 import logging
-import re
 from collections import defaultdict
 from flask import Flask, render_template, request, g, send_file, redirect, url_for
 from rep.history import Tick
@@ -47,12 +55,14 @@ def admin():
 
 @app.route('/')
 def overview():
+    """Home page."""
     return render_template('./templates/index.html',
-                               games=facade().all_games())
+                           games=facade().all_games())
 
 
 @app.route('/game_overview/<game>')
 def game_overview(game: str):
+    """Overview of all known games."""
     factions = defaultdict(list)
     for s in facade().ships_for_game(game):
         factions[s.faction].append(s)
@@ -110,6 +120,7 @@ def turn_pdf(game: str, ship_name:str, round: int):
 def manual_pdf():
     filename = facade().get_manual_pdf()
     return send_file(filename, mimetype='application/pdf', as_attachment=False)
+
 
 @app.route('/lore')
 def lore():

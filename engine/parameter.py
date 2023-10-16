@@ -1,3 +1,7 @@
+"""
+Abstract base class for all Parameter objects. In a separate file to prevent circular dependencies.
+"""
+
 from abc import ABC
 
 
