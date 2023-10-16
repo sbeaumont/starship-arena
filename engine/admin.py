@@ -196,7 +196,8 @@ class GameSetup(object):
         self._dir.save(self.ships, 0)
 
         with open(self._dir.init_file, 'w') as f:
-            f.writelines(self.ship_file_with_coordinates())
+            file_contents = '\n'.join(self.ship_file_with_coordinates())
+            f.write(file_contents)
 
 
 def setup_game(gd: GameDirectory):
