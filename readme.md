@@ -23,6 +23,40 @@ This project can also be hosted as a Flask project with a Web UI.
 
 Watch out you don't use the debug flag in an unsafe environment.
 
+## Overall Architecture
+
+There are two entry points: the CLI in main.py, and the web app in flask_app.py.
+The main packages are:
+
+- engine: executes a round plus game directory and command features
+- ois: the game objects and their behavior
+- rep: generating the reports, mostly for the CLI, but also has the 
+important history and visualize packages also used in the webapp.
+
+Persistence is based on simple pickle files which turn our to be surprisingly useful
+and robust in this case. Each round leads to a generated pickle file with the status of
+all objects until that time. These pickle files are used both by the engine to intitialize
+itself at the start of the round, the PDF generator to generate results, but also by the 
+web interface to present all information.
+
+The web interface consists of flask_app, appfacade and specific templates (some templates
+are for the PDF generator).
+
+Some notable architectural choices:
+- Commands are implemented with a Command pattern.
+- Parameters to the commands are more complex than you may expect, but this is needed
+to allow the web interface to offer validation while the player is creating their commands
+for the next round.
+- The History and TickHistory objects are an object's "memory", allowing all the reporting
+capabilities in the game to generate the history, graphics, etc.
+- The main game objects are composed of component objects to allow flexible creation of new
+space ships, missiles, etc.
+- Game objects are implemented as object - type object pairs that configure a specific instance
+of a game object. The type object knows the specific components a game object should have. This
+is how it's very easy to come up with a new ship or missile design and add it to the registry.
+- AppFacade is intended to shield the web app (flask_app.py) from knowing how too much of the
+internals of the rest of the code base.
+
 ## Todo
 
 - [x] Allied ship paths drawn in green 
