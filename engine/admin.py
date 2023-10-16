@@ -45,6 +45,10 @@ class Ship:
 def load_ship_file(file_name) -> list:
     with open(file_name) as f:
         lines = [line.strip().split() for line in f.readlines()]
+    return ship_lines_to_objects(lines)
+
+
+def ship_lines_to_objects(lines: list):
     field_defs = {sl[1]: sl[0] for sl in enumerate(lines[0])}
     ships = list()
     for line in lines[1:]:
@@ -99,7 +103,8 @@ def visualise_points(list_of_points):
     vis.show()
 
 
-def distribute_factions(ships, distance):
+def distribute_factions(ships, distance) -> None:
+    """Distribute the factions evenly along a circle centered around (0, 0) and radius of distance"""
     factions = {s.faction for s in ships}
     faction_centers = centers_for(len(factions), distance, angle_tweak=(-10, 10), distance_tweak=(-30, 60))
     faction_groups = group_by_faction(ships)
@@ -122,9 +127,14 @@ def ships_to_lines(ships) -> list[str]:
 
 
 class GameSetup(object):
-    def __init__(self, game_directory: GameDirectory):
+    def __init__(self, game_directory: GameDirectory, ship_file_lines: list = None):
         self._dir: GameDirectory = game_directory
-        self.ships: dict = self._init_ships()
+        if not ship_file_lines:
+            ships = load_ship_file(self._dir.init_file)
+        else:
+            lines = [line.split() for line in ship_file_lines]
+            ships = ship_lines_to_objects(lines)
+        self.ships: dict = self._init_ships(ships)
 
     def execute(self):
         self.run()
@@ -141,10 +151,37 @@ class GameSetup(object):
     def report(self):
         report_round_zero(self._dir.path, self.ships.values())
 
-    def _init_ships(self) -> dict:
+    def ship_file_with_coordinates(self):
+        fields = ['name', 'type', 'faction', 'player', 'x', 'y']
+        max_lengths = {
+            'name': max([len(s.name) for s in self.ships.values()]),
+            'type': max([len(s._type.__class__.__name__) for s in self.ships.values()]),
+            'faction': max([len(s.faction) for s in self.ships.values()]),
+            'player': max([len(s.player) for s in self.ships.values()]),
+            'x': max([len(str(s.pos.x)) for s in self.ships.values()]),
+            'y': max([len(str(s.pos.y)) for s in self.ships.values()])
+        }
+
+        lines = list()
+        header_line = ' '.join([fieldname.capitalize().rjust(max_lengths[fieldname]) for fieldname in fields])
+        lines.append(header_line)
+        for ship in self.ships.values():
+            line_values = {
+                'name': ship.name,
+                'type': ship._type.__class__.__name__,
+                'faction': ship.faction,
+                'player': ship.player,
+                'x': ship.pos.x,
+                'y': ship.pos.y
+            }
+            ship_line = ' '.join([str(line_values[fieldname]).rjust(max_lengths[fieldname]) for fieldname in fields])
+            lines.append(ship_line)
+        return lines
+
+    def _init_ships(self, ship_file: list) -> dict:
         """Load and initialize all the ships to their status at the start of a round."""
         objects_in_space = dict()
-        for line in load_ship_file(self._dir.init_file):
+        for line in ship_file:
             # position = (int(line.x), int(line.y))
             position = line.xy
             # Always for tick 0 in this case.
@@ -156,6 +193,9 @@ class GameSetup(object):
 
     def save(self):
         self._dir.save(self.ships, 0)
+
+        with open(self._dir.init_file, 'w') as f:
+            f.writelines(self.ship_file_with_coordinates())
 
 
 def setup_game(gd: GameDirectory):
