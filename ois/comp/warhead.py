@@ -34,7 +34,7 @@ class Warhead(Component):
         """Explode if there is an object in range that is not itself or owned by the same owner"""
         for ois_name, ois in objects_in_space.items():
             ois_in_range = (self.container.distance_to(ois.xy) <= self.range)
-            if (ois.owner.faction != self.owner.faction) and ois_in_range:
+            if not ois.owner.faction or (ois.owner.faction != self.owner.faction) and ois_in_range:
                 return True
         return False
 
