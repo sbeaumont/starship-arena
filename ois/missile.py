@@ -53,11 +53,12 @@ class Missile(MachineInSpace):
 
     # ---------------------------------------------------------------------- ENGINE HOOKS
 
-    def post_move(self, objects_in_space):
-        self.warhead.post_move(objects_in_space)
+    def decide(self, objects_in_space: dict):
+        self.warhead.decide(objects_in_space)
         if not self.is_destroyed:
             self._intercept()
 
+    def post_move(self, objects_in_space):
         # Die when battery is dead.
         self.battery -= self.energy_per_move
         if self.is_destroyed and (self.battery <= 0):
@@ -98,7 +99,7 @@ class GuidedMissile(Missile):
             intercept_pos = self.target.vector.translate(self.target.heading, self.target.speed).pos
             intercept_distance = self.distance_to(intercept_pos)
             if intercept_distance < self.speed:
-                self.vector.speed = round(intercept_distance, 0)
+                self.vector.speed = round(intercept_distance - 1, 0)
             self.vector.heading = self.heading_to(intercept_pos)
 
 

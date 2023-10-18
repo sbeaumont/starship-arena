@@ -131,8 +131,7 @@ class AppFacade(object):
     def commands_of_round(self, game: str, name: str, round_nr: int):
         gd = self.gd(game)
         if gd.command_file_exists(name, round_nr):
-            with open(gd.command_file(name, round_nr)) as f:
-                return [line.strip() for line in f.readlines()]
+            return gd.read_command_file(name, round_nr)
         else:
             return []
 

@@ -92,6 +92,10 @@ class Shields(Component):
         old_strength = self.strengths[shield_quadrant]
         damage_amount = hit_event.amount
 
+        if old_strength == 0:
+            # Shield is down, just pass through the damage.
+            return damage_amount
+
         # Nanocytes can not penetrate shields, but if there's no shield there, everything gets passed through... uh oh.
         if hit_event._type == DamageType.Nanocyte:
             if old_strength > 0:

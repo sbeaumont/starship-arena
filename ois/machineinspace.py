@@ -14,11 +14,7 @@ The variation lies in the components, and a MachineType simply defines a set of 
 have been done with configuration files, but I made the choice that it's easier to just write the configuration
 in Python and not have to parse and translate json files.
 
-
-
 It also introduces an "owner" which is ultimately a player (but could also be an NPC object).
-
-
 """
 
 from abc import ABCMeta

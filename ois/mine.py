@@ -40,6 +40,10 @@ class Mine(MachineInSpace):
 
     # ---------------------------------------------------------------------- ENGINE HOOKS
 
+    def decide(self, objects_in_space: dict):
+        for wh in self.weapons.values():
+            wh.decide(objects_in_space)
+
     def post_move(self, objects_in_space):
         for wh in self.weapons.values():
             wh.post_move(objects_in_space)

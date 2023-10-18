@@ -146,23 +146,24 @@ class Ship(MachineInSpace):
         if amount > 0:
             if hit_event._type == DamageType.Nanocyte:
                 amount = 2 * amount
+                score = min(amount, self.hull)
                 self.hull -= amount
                 self.add_internal_event(f"Nanocytes burned your hull for {amount} to {self.hull}")
-                score = amount * 2
             elif hit_event._type == DamageType.EMP:
                 battery_drain = amount if amount <= self.battery else self.battery
+                score = min(amount, self.battery) // 2
                 self.battery -= battery_drain
                 self.add_internal_event(f"EMP blast drained out battery by {battery_drain}: {self.battery} left.")
-                score = amount // 2
             else:
+                score = min(amount, self.hull)
                 self.hull -= amount
                 self.add_internal_event(f"Hull decreased by {amount} to {self.hull}")
-                score = amount
-            # Score double points for hits on the hull
+
             if hit_event.can_score:
                 hit_event.score += score
             else:
                 score = 0
+
             what_was_hit = 'battery' if hit_event._type == DamageType.EMP else 'hull'
             hit_event.notify_owner(f"{hit_event.source.name} hit {self.name}'s {what_was_hit} for {amount}: ({score} points)")
 

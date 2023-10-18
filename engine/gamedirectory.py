@@ -68,6 +68,14 @@ class GameDirectory(object):
     def command_file_exists(self, name, round_nr) -> bool:
         return os.path.exists(self.command_file(name, round_nr))
 
+    def read_command_file(self, name, round_nr) -> list[str]:
+        """Read a command file with the commands for a ship."""
+        command_file_name = self.command_file(name, round_nr)
+        with open(command_file_name) as infile:
+            logger.info(f"Reading {command_file_name}")
+            lines = [line.strip() for line in infile.readlines() if not line.isspace()]
+        return lines
+
     def status_file_for_round(self, nr) -> str:
         return os.path.join(self._dir, STATUS_FILE_TEMPLATE.format(nr))
 

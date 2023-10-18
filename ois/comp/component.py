@@ -56,6 +56,9 @@ class Component(ABC):
     def tick(self, tick_nr):
         pass
 
+    def post_move(self, objects_in_space: dict):
+        pass
+
     def use_energy(self):
         pass
 

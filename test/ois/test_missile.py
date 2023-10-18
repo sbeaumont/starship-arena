@@ -10,9 +10,9 @@ class TestMissile(TestCase):
         self.ois = create_ship_fixture()
         self.missile = Splinter().create('TestSplinter', Vector(Point(0, 9), 0, 0), self.ois['OwnerShip'])
 
-    def test_post_move(self):
+    def test_decide(self):
         tg = self.ois['TargetShip']
-        self.missile.post_move(self.ois)
+        self.missile.decide(self.ois)
         self.assertTrue(self.missile.is_destroyed)
         events = tg.history[TICK_ZERO].events
         self.assertEqual(len(events), 3)

@@ -10,11 +10,10 @@ Each tick has sub-phases where all objects get called in a specific ordering (se
 """
 
 import os
-import pickle
 import logging
 import sys
 
-from engine.command import Commandable, read_command_file, CommandSet
+from engine.command import Commandable, parse_commands, CommandSet
 from engine.gamedirectory import GameDirectory
 from rep.report import report_round
 from rep.history import Tick
@@ -29,12 +28,7 @@ class GameRound(object):
         self._dir = gd
         self.nr = round_nr
         self.round_start = Tick.for_start_of_round(self.nr)
-        old_status_file_name = self._dir.status_file_for_round(round_nr - 1)
-        if os.path.exists(old_status_file_name):
-            with open(old_status_file_name, 'rb') as old_status_file:
-                self.objects_in_space = pickle.load(old_status_file)
-        else:
-            raise Exception(f"Can't find status file {old_status_file_name}")
+        self.objects_in_space = self._dir.load_status(round_nr - 1)
 
     @property
     def ois(self):
@@ -80,10 +74,14 @@ class GameRound(object):
             if isinstance(ois, Commandable) and ois.commands and (tick_nr in ois.commands):
                 self.post_move_commands(ois.commands[tick_nr], tick_nr)
 
-        # All ships scan, do post-move logic (like guided missiles intercepting their target)
-        # and finally update the snapshot
+        # All ships scan, "intelligent" objects make decisions (like guided missiles intercepting their target)
         for ois in list(self.ois.values()):
             ois.scan(self.ois)
+            ois.decide(self.ois)
+
+        # Perform post move steps like commands that perform at post move.
+        # and finally update the snapshot
+        for ois in list(self.ois.values()):
             ois.post_move(self.ois)
             ois.history.update()
 
@@ -98,9 +96,8 @@ class GameRound(object):
     def missing_command_files(self):
         missing_command_files = list()
         for ship in [s for s in self.ois.values() if isinstance(s, Commandable)]:
-            command_file_name = self._dir.command_file(ship.name, self.nr)
-            if not os.path.exists(command_file_name):
-                missing_command_files.append(command_file_name)
+            if not self._dir.command_file_exists(ship.name, self.nr):
+                missing_command_files.append(self._dir.command_file(ship.name, self.nr))
         return missing_command_files
 
     @property
@@ -119,9 +116,7 @@ class GameRound(object):
             ois.round_reset()
 
         for ship in [s for s in self.ois.values() if isinstance(s, Commandable)]:
-            command_file_name = self._dir.command_file(ship.name, self.nr)
-            if os.path.exists(command_file_name):
-                ship.commands = read_command_file(command_file_name, ship, self.ois)
+            ship.commands = parse_commands(self._dir.read_command_file(ship.name, self.nr), ship, self.ois)
 
         # Do 10 ticks, 1-10
         for t in self.round_start.ticks_for_round:

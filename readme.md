@@ -72,3 +72,15 @@ internals of the rest of the code base.
 - [ ] Scanner that reveals internal details of ships like ammo and energy levels.
 - [ ] Damage to components
 - [ ] Point defense, possibly tied to an NPC gunner?
+- [ ] Fix the crash in a malformed Boost command
+- [ ] Allow in-game spawning. Maybe an admin command file? Probably related to scenarios.
+Respawning after death could also be a thing.
+- [ ] Race condition problem when launching missiles: Weapons fire in post move, which leads 
+to the common occurrence that all 
+fired rockets blow up when the ship gets hit in the same tick (they're in space but didn't move yet). 
+Move weapon firing to pre_move? Or weapons fire after existing objects explode. Another problem that
+there is now an ordering problem. It depends on if a ship executed its fire command before or after a
+missile does its post move step. If the ship was before, the fired missiles are placed in space and will 
+explode. If the ship was after the missile in the list the fired missiles are not in space yet and will
+not explode. The game is built on the premise that the order of processing each object must never matter
+so this needs to be fixed.

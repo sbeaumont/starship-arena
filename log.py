@@ -10,10 +10,16 @@ CONSOLE_LOG_LEVEL = logging.DEBUG
 LOG_FORMAT = '%(name)s %(levelname)s: %(message)s'
 
 
+def deactivate_logger_blocklist(logger_blocklist=list()):
+    logger_blocklist.append('fontTools')
+    # Silence library logging
+    for module in logger_blocklist:
+        logging.getLogger(module).setLevel(logging.ERROR)
+
+
 def configure_logger(create_log_file=False, logger_blocklist=list()):
     """Configure the file and console logging."""
     logging.getLogger().setLevel(logging.ERROR)
-    logger_blocklist.append('fonttools')
 
     logger.setLevel(FILE_LOG_LEVEL)
     formatter = logging.Formatter(LOG_FORMAT)
@@ -31,6 +37,4 @@ def configure_logger(create_log_file=False, logger_blocklist=list()):
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
-    # Silence library logging
-    for module in logger_blocklist:
-        logging.getLogger(module).setLevel(logging.ERROR)
+    deactivate_logger_blocklist(logger_blocklist)

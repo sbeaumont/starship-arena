@@ -9,6 +9,6 @@ class TestMine(TestCase):
         self.ois = create_ship_fixture()
         self.mine = SplinterMine().create("TestMine", Vector(Point(0, 9), 0, 0), owner=self.ois['OwnerShip'], tick=1)
 
-    def test_post_move(self):
-        self.mine.post_move(self.ois)
+    def test_decide(self):
+        self.mine.decide(self.ois)
         self.assertTrue(self.mine.is_destroyed)

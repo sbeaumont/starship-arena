@@ -1,7 +1,6 @@
 """
-Administrative features like setting up a new game.
-
-
+Administrative features
+- setting up a new game.
 """
 
 from collections import defaultdict
@@ -20,50 +19,93 @@ from rep.history import TICK_ZERO
 logger = logging.getLogger('starship-arena.admin')
 
 
-@dataclass
-class Ship:
-    name: str
-    type: str
-    faction: str
-    player: str = ''
-    x: float = 0
-    y: float = 0
+class ShipFile(object):
+    @dataclass
+    class ShipFileLine:
+        name: str
+        type: str
+        faction: str
+        player: str = ''
+        x: float = 0
+        y: float = 0
 
-    def move(self, xy: tuple):
-        self.x += xy[0]
-        self.y += xy[1]
-        return self
+        def move(self, xy: tuple):
+            self.x += xy[0]
+            self.y += xy[1]
+            return self
 
-    @property
-    def xy(self):
-        return self.x, self.y
+        @property
+        def xy(self):
+            return self.x, self.y
 
-    def __str__(self):
-        return f"{self.name},{self.type},{self.faction},{self.player},{round(self.x)},{round(self.y)}"
+        def __str__(self):
+            return f"{self.name},{self.type},{self.faction},{self.player},{round(self.x)},{round(self.y)}"
 
+    def __init__(self, gd: GameDirectory, premade_lines: str = None):
+        self.gd = gd
+        text_lines = [line.strip().split() for line in premade_lines.splitlines()] if premade_lines else self.load()
+        self.ship_lines = self.ship_lines_to_objects(text_lines)
 
-def load_ship_file(file_name) -> list:
-    with open(file_name) as f:
-        lines = [line.strip().split() for line in f.readlines()]
-    return ship_lines_to_objects(lines)
+    def load(self) -> list:
+        with open(self.gd.init_file) as f:
+            return [line.strip().split() for line in f.readlines()]
 
+    def save(self, ships: list):
+        with open(self.gd.init_file, 'w') as f:
+            file_contents = '\n'.join(self.ship_file_with_coordinates(ships))
+            f.write(file_contents)
 
-def ship_lines_to_objects(lines: list):
-    field_defs = {sl[1]: sl[0] for sl in enumerate(lines[0])}
-    ships = list()
-    for line in lines[1:]:
-        ship = Ship(
-            name=line[field_defs['Name']],
-            type=line[field_defs['Type']],
-            faction=line[field_defs['Faction']],
-            player=line[field_defs['Player']]
-        )
-        if 'X' in field_defs and 'Y' in field_defs:
-            x = int(line[field_defs['X']])
-            y = int(line[field_defs['Y']])
-            ship.move((x, y))
-        ships.append(ship)
-    return ships
+    def ship_lines_to_objects(self, lines: list):
+        field_defs = {sl[1]: sl[0] for sl in enumerate(lines[0])}
+        ships = list()
+        for line in lines[1:]:
+            try:
+                if line[0].strip().startswith('#'):
+                    # Ignore lines that start with #
+                    continue
+                ship = ShipFile.ShipFileLine(
+                    name=line[field_defs['Name']],
+                    type=line[field_defs['Type']],
+                    faction=line[field_defs['Faction']],
+                    player=line[field_defs['Player']]
+                )
+                if 'X' in field_defs and 'Y' in field_defs:
+                    x = int(line[field_defs['X']])
+                    y = int(line[field_defs['Y']])
+                    ship.move((x, y))
+                ships.append(ship)
+            except (KeyError, ValueError):
+                logger.error(f"Failed to process <{line}>")
+                print(line)
+                raise
+        return ships
+
+    def ship_file_with_coordinates(self, ships: list):
+        fields = ['name', 'type', 'faction', 'player', 'x', 'y']
+        max_lengths = {
+            'name': max(max([len(s.name) for s in ships]), len('name')),
+            'type': max(max([len(s._type.__class__.__name__) for s in ships]), len('type')),
+            'faction': max(max([len(s.faction) for s in ships]), len('faction')),
+            'player': max(max([len(s.player) for s in ships]), len('player')),
+            'x': max(max([len(str(s.pos.x)) for s in ships]), len('x')),
+            'y': max(max([len(str(s.pos.y)) for s in ships]), len('y'))
+        }
+
+        lines = list()
+        header_line = ' '.join([fieldname.capitalize().rjust(max_lengths[fieldname]) for fieldname in fields])
+        lines.append(header_line)
+        for ship in ships:
+            line_values = {
+                'name': ship.name,
+                'type': ship._type.__class__.__name__,
+                'faction': ship.faction,
+                'player': ship.player,
+                'x': ship.pos.x,
+                'y': ship.pos.y
+            }
+            ship_line = ' '.join([str(line_values[fieldname]).rjust(max_lengths[fieldname]) for fieldname in fields])
+            lines.append(ship_line)
+        return lines
 
 
 def polar_to_cartesian(r, theta) -> (int, int):
@@ -127,14 +169,10 @@ def ships_to_lines(ships) -> list[str]:
 
 
 class GameSetup(object):
-    def __init__(self, game_directory: GameDirectory, ship_file_lines: list = None):
+    def __init__(self, game_directory: GameDirectory, shipfile: ShipFile = None):
         self._dir: GameDirectory = game_directory
-        if not ship_file_lines:
-            ships = load_ship_file(self._dir.init_file)
-        else:
-            lines = [line.split() for line in ship_file_lines]
-            ships = ship_lines_to_objects(lines)
-        self.ships: dict = self._init_ships(ships)
+        self.shipfile = shipfile if shipfile else ShipFile(self._dir)
+        self.ships: dict = self._init_ships(self.shipfile.ship_lines)
 
     def execute(self):
         self.run()
@@ -150,33 +188,6 @@ class GameSetup(object):
 
     def report(self):
         report_round_zero(self._dir.path, self.ships.values())
-
-    def ship_file_with_coordinates(self):
-        fields = ['name', 'type', 'faction', 'player', 'x', 'y']
-        max_lengths = {
-            'name': max(max([len(s.name) for s in self.ships.values()]), len('name')),
-            'type': max(max([len(s._type.__class__.__name__) for s in self.ships.values()]), len('type')),
-            'faction': max(max([len(s.faction) for s in self.ships.values()]), len('faction')),
-            'player': max(max([len(s.player) for s in self.ships.values()]), len('player')),
-            'x': max(max([len(str(s.pos.x)) for s in self.ships.values()]), len('x')),
-            'y': max(max([len(str(s.pos.y)) for s in self.ships.values()]), len('y'))
-        }
-
-        lines = list()
-        header_line = ' '.join([fieldname.capitalize().rjust(max_lengths[fieldname]) for fieldname in fields])
-        lines.append(header_line)
-        for ship in self.ships.values():
-            line_values = {
-                'name': ship.name,
-                'type': ship._type.__class__.__name__,
-                'faction': ship.faction,
-                'player': ship.player,
-                'x': ship.pos.x,
-                'y': ship.pos.y
-            }
-            ship_line = ' '.join([str(line_values[fieldname]).rjust(max_lengths[fieldname]) for fieldname in fields])
-            lines.append(ship_line)
-        return lines
 
     def _init_ships(self, ship_file: list) -> dict:
         """Load and initialize all the ships to their status at the start of a round."""
@@ -194,17 +205,14 @@ class GameSetup(object):
     def save(self):
         """Save the round 0 pickle file and the ships file with coordinates (to ensure idempotency)."""
         self._dir.save(self.ships, 0)
-
-        with open(self._dir.init_file, 'w') as f:
-            file_contents = '\n'.join(self.ship_file_with_coordinates())
-            f.write(file_contents)
+        self.shipfile.save(self.ships.values())
 
 
-def setup_game(gd: GameDirectory):
+def setup_game(gd: GameDirectory, shipfile: ShipFile = None) -> None:
     logger.info(f"Setup {gd.path}")
     gd.setup_directories()
     gd.clean()
-    setup = GameSetup(gd)
+    setup = GameSetup(gd, shipfile)
     setup.run()
 
     for faction, ships in group_by_faction(setup.ships.values()).items():
@@ -214,4 +222,3 @@ def setup_game(gd: GameDirectory):
     setup.save()
     setup.report()
     logger.info(f"Current status: {gd.load_current_status()}")
-    return gd

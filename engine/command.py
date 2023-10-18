@@ -25,6 +25,7 @@ import logging
 from collections import defaultdict
 from enum import Enum, auto
 from typing import Protocol, runtime_checkable
+from abc import ABC, abstractmethod
 
 from ois.objectinspace import ObjectInSpace
 from ois.ship import AccelerationParameter, TurnParameter
@@ -86,6 +87,7 @@ class CommandLine(object):
 class Commandable(Protocol):
     commands: list
     defense: list
+    name: str
 
     def accelerate(self, delta_v: int):
         ...
@@ -112,7 +114,7 @@ class Commandable(Protocol):
         ...
 
 
-class Command(object):
+class Command(ABC):
     @classmethod
     def for_command_line(cls, command_line: CommandLine, ship: Commandable, objects_in_space):
         match command_line.name.upper():
@@ -149,9 +151,11 @@ class Command(object):
             logger.info(f"{target.name} {fr}")
         self.is_valid = self.command_line.is_valid and params_valid
 
+    @abstractmethod
     def _init_params(self, params: list) -> bool:
         ...
 
+    @abstractmethod
     def _get_type_name(self) -> Cmd:
         ...
 

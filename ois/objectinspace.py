@@ -202,5 +202,8 @@ class ObjectInSpace(ABC):
     def pre_move(self, objects_in_space: dict):
         pass
 
+    def decide(self, objects_in_space: dict):
+        pass
+
     def post_move(self, objects_in_space: dict):
         pass

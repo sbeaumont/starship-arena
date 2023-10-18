@@ -26,7 +26,7 @@ class Warhead(Component):
             'Payload': self.name
         }
 
-    def post_move(self, objects_in_space):
+    def decide(self, objects_in_space):
         if self.can_explode(objects_in_space):
             self.explode(objects_in_space)
 
