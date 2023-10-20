@@ -1,8 +1,8 @@
 import unittest
 
 from engine.round import GameRound
-from engine.admin import setup_game, ShipFile
-from engine.gamedirectory import GameDirectory
+from engine.admin import setup_game
+from engine.gamedirectory import GameDirectory, ShipFile
 from log import deactivate_logger_blocklist
 
 
@@ -10,7 +10,7 @@ original_ship_file = """Name Type Faction Player X Y
 Blaster-1        H2545  One       Serge   1   0
 Shaper-1         H2552  Two       Piet    122 0"""
 
-command_blaster_1_1 = """1: Fire S1 90
+command_blaster_1_1 = """1: Fire S1 45
 1: Fire R1 90
 1: Fire R1 90
 2: Fire S1 90
@@ -25,11 +25,24 @@ commands = {
 
 
 class MockGameDirectory(object):
+    class MockRoundDir(object):
+        def __init__(self, round_nr: int):
+            self.files = dict()
+            self.round_nr = round_nr
+
+        def save(self, name, contents, binary=False):
+            self.files[name] = contents
+
+        @property
+        def full_name(self):
+            return f'mock-round-{self.round_nr}'
+
     def __init__(self):
         self.path = ''
         self.ships = None
         self.round_number = 0
         self.graveyard = dict()
+        self.round_dirs = dict()
 
     def setup_directories(self):
         pass
@@ -65,6 +78,15 @@ class MockGameDirectory(object):
     @property
     def last_round_number(self):
         return self.round_number
+
+    def round_dir(self, round_nr: int):
+        if round_nr in self.round_dirs:
+            return self.round_dirs[round_nr]
+        else:
+            rd = MockGameDirectory.MockRoundDir(round_nr)
+            self.round_dirs[round_nr] = rd
+            return rd
+
 
 
 class MockShipFile(object):

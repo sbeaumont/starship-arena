@@ -1,3 +1,4 @@
+import os.path
 import unittest
 
 from engine.round import GameRound
@@ -10,9 +11,9 @@ class TestGames(unittest.TestCase):
     def setUp(self):
         deactivate_logger_blocklist()
 
-    @staticmethod
-    def _setup_game(game_name: str) -> GameDirectory:
-        gd = GameDirectory('./test/test-games', game_name)
+    def _setup_game(self, game_name: str) -> GameDirectory:
+        self.test_dir = './test/test-games'
+        gd = GameDirectory(self.test_dir, game_name)
         setup_game(gd)
         return gd
 
@@ -42,5 +43,7 @@ class TestGames(unittest.TestCase):
         self.assertEqual(gd.last_round_number, number_of_rounds)
         ships_1 = gd.load_current_status()
         self.assertEqual(ships_1['Blaster-1'].score, total_score)
+        self.assertTrue(os.path.exists(os.path.join(self.test_dir, 'test-game', 'round-0')))
+        self.assertTrue(os.path.exists(os.path.join(self.test_dir, 'test-game', 'round-1')))
 
 

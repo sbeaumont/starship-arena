@@ -7,7 +7,7 @@ are different enough that they warrant a separate approach.
 (The templates for the web app are called from the flask_app and reside in the templates directory next to
 the templates used here.)
 """
-
+import io
 import os
 from jinja2 import Environment, FileSystemLoader
 from collections import defaultdict
@@ -19,6 +19,7 @@ from ois.objectinspace import Point
 from rep.visualize import Visualizer, Colors, COLORS
 from cfg import *
 from rep.history import Tick, TICK_ZERO
+from engine.gamedirectory import GameDirectory
 
 
 def text_nudge(pos: Point) -> Point:
@@ -120,7 +121,7 @@ def draw_round(ship: Ship, vis: Visualizer, start_tick: Tick):
     vis.text(text_nudge(last_pos), f"{ship.history.last.tick}:{ship.name}\n{last_pos.as_tuple}")
 
 
-def report_round(ships: dict, game_dir: str, round_nr: int):
+def report_round(ships: dict, game_dir: GameDirectory, round_nr: int):
     """Generate HTML and PDF reports with the results, status and history of each ship in the round."""
     start_tick = Tick(round_nr, 1)
     env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
@@ -128,9 +129,7 @@ def report_round(ships: dict, game_dir: str, round_nr: int):
 
     # Set up round directory
     round_name = f"round-{round_nr}"
-    round_dir = os.path.join(game_dir, round_name)
-    if not os.path.exists(round_dir):
-        os.mkdir(round_dir)
+    round_dir = game_dir.round_dir(round_nr)
 
     for ship in [s for s in ships.values() if isinstance(s, Ship) or isinstance(s, Starbase)]:
         boundaries = find_boundaries(ship, start_tick, padding=50)
@@ -138,7 +137,10 @@ def report_round(ships: dict, game_dir: str, round_nr: int):
         events_per_tick, scans_per_tick, scores_per_tick = report_events(ship, vis, start_tick)
         draw_round(ship, vis, start_tick)
         image_file_name = f'{ship.name}-{round_name}.png'
-        vis.save(os.path.join(round_dir, image_file_name))
+        # vis.save(os.path.join(round_dir.full_name, image_file_name))
+        with io.BytesIO() as bytes_io:
+            vis.to_bytes(bytes_io)
+            round_dir.save(image_file_name, bytes_io.getvalue(), binary=True)
 
         template_data = {
             "image_file_name": image_file_name,
@@ -152,30 +154,32 @@ def report_round(ships: dict, game_dir: str, round_nr: int):
         }
 
         html_out = template.render(template_data)
-        report_file_name = f'{round_dir}/{ship.name}-{round_name}'
-        with open(f'{report_file_name}.html', 'w') as fj:
-            fj.write(html_out)
+        report_file_name = f'{ship.name}-{round_name}'
+        round_dir.save(f'{report_file_name}.html', html_out)
 
         print_html = HTML(string=html_out, base_url=f'{game_dir}/{round_name}')
-        print_html.write_pdf(f'{report_file_name}.pdf')
+        # print_html.write_pdf(os.path.join(round_dir.full_name, f'{report_file_name}.pdf'))
+        with io.BytesIO() as bytes_io:
+            print_html.write_pdf(target=bytes_io)
+            round_dir.save(f'{report_file_name}.pdf', bytes_io.getvalue(), binary=True)
 
 
-def report_round_zero(game_dir: str, ships: list):
+
+def report_round_zero(game_dir: GameDirectory, ships: list):
     start_tick = TICK_ZERO
     env = Environment(loader=FileSystemLoader('./templates'))
     template = env.get_template(ROUND_ZERO_TEMPLATE)
 
     # Set up round directory
-    round_dir = os.path.join(game_dir, ROUND_ZERO_NAME)
-    if not os.path.exists(round_dir):
-        os.mkdir(round_dir)
-
+    round_dir = game_dir.round_dir(0)
     for ship in ships:
         boundaries = find_boundaries(ship, start_tick, padding=50)
         vis = Visualizer(boundaries, scale=2)
         draw_round(ship, vis, start_tick)
         image_file_name = f'{ship.name}-{ROUND_ZERO_NAME}.png'
-        vis.save(os.path.join(round_dir, image_file_name))
+        with io.BytesIO() as bytes_io:
+            vis.to_bytes(bytes_io)
+            round_dir.save(image_file_name, bytes_io.getvalue(), binary=True)
 
         template_data = {
             "image_file_name": image_file_name,
@@ -185,9 +189,10 @@ def report_round_zero(game_dir: str, ships: list):
         }
 
         html_out = template.render(template_data)
-        report_file_name = os.path.join(round_dir, f'{ship.name}-{ROUND_ZERO_NAME}')
-        with open(f'{report_file_name}.html', 'w') as fj:
-            fj.write(html_out)
+        report_file_name = f'{ship.name}-{ROUND_ZERO_NAME}'
+        round_dir.save(f'{ship.name}-{ROUND_ZERO_NAME}.html', html_out)
 
         print_html = HTML(string=html_out, base_url=f'{game_dir}/{ROUND_ZERO_NAME}')
-        print_html.write_pdf(f'{report_file_name}.pdf')
+        with io.BytesIO() as bytes_io:
+            print_html.write_pdf(target=bytes_io)
+            round_dir.save(f'{report_file_name}.pdf', bytes_io.getvalue(), binary=True)

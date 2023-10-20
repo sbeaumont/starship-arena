@@ -11,6 +11,7 @@ from PIL import Image, ImageDraw
 from collections import namedtuple
 from ois.objectinspace import Point
 from enum import Enum, auto
+import io
 
 Color = namedtuple('Color', 'R G B')
 
@@ -116,3 +117,6 @@ class Visualizer(object):
 
     def save(self, file_name):
         self.im.save(file_name, 'png')
+
+    def to_bytes(self, bytes_io: io.BytesIO):
+        self.im.save(bytes_io, format='png')

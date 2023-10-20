@@ -23,6 +23,7 @@ GRAVEYARD_TEMPLATE = "graveyard.pickle"
 STATUS_FILE_TEMPLATE = "status_round_{}.pickle"
 COMMANDS_DIR = 'commands/'
 COMMAND_FILE_TEMPLATE = COMMANDS_DIR + "{}-commands-{}.txt"
+ROUND_DIR_TEMPLATE = "round-{rnr}"
 PICTURE_TEMPLATE = "round-{rnr}/{name}-round-{rnr}.png"
 PDF_TEMPLATE = "round-{rnr}/{name}-round-{rnr}.pdf"
 

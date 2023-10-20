@@ -1,6 +1,6 @@
 import unittest
-from engine.admin import GameSetup, ShipFile, distribute_factions
-from engine.gamedirectory import GameDirectory
+from engine.admin import GameSetup, distribute_factions
+from engine.gamedirectory import GameDirectory, ShipFile
 
 original_ship_file = """Name           Type   Faction   Player     X   Y
 Blaster        H2545  One       Serge   -400   0
