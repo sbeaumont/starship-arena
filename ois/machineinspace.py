@@ -35,15 +35,19 @@ class MachineType(metaclass=ABCMeta):
         return self.base_type(name, self, vector, owner=owner, tick=tick)
 
     @property
+    def type_name(self):
+        return self.__class__.__name__
+
+    @property
     def class_name(self):
         return None
 
     @property
     def name(self) -> str:
         if self.class_name:
-            return f"{self.__class__.__name__} {self.class_name}"
+            return f"{self.type_name} {self.class_name}"
         else:
-            return self.__class__.__name__
+            return self.type_name
 
     @property
     def weapons(self) -> list:
@@ -86,6 +90,10 @@ class MachineInSpace(ObjectInSpace, metaclass=ABCMeta):
             comp.attach(self)
 
     @property
-    def type_name(self):
+    def class_name(self):
         return self._type.name
+
+    @property
+    def type_name(self):
+        return self._type.type_name
 

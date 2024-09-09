@@ -52,7 +52,7 @@ class MockGameDirectory(object):
 
     @property
     def init_file(self) -> str:
-        return ''
+        return 'mock_init_file_name'
 
     def save(self, obj, nr):
         self.round_number = nr
@@ -86,7 +86,6 @@ class MockGameDirectory(object):
             rd = MockGameDirectory.MockRoundDir(round_nr)
             self.round_dirs[round_nr] = rd
             return rd
-
 
 
 class MockShipFile(object):
@@ -139,5 +138,9 @@ class TestGames2(unittest.TestCase):
         self.assertEqual(gd.last_round_number, number_of_rounds)
         ships_1 = gd.load_current_status()
         self.assertEqual(total_score, ships_1['Blaster-1'].score)
+        self.assertIn('Shaper-1', gd.load_graveyard())
+        round_files = gd.round_dir(1).files
+        self.assertEqual(6, len(round_files))
+
 
 

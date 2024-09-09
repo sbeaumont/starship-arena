@@ -128,7 +128,7 @@ def setup_game(gd: GameDirectory, shipfile: ShipFile = None) -> None:
     for faction, ships in group_by_faction(setup.ships.values()).items():
         logger.info(f"=={faction}==")
         for ship in ships:
-            logger.info(f"Ship: {ship.name}, Faction: {ship.faction}, Pos: {ship.pos}, Type: {ship.type_name}")
+            logger.info(f"Ship: {ship.name}, Faction: {ship.faction}, Pos: {ship.pos}, Type: {ship.class_name}")
     setup.save()
     setup.report()
     logger.info(f"Current status: {gd.load_current_status()}")

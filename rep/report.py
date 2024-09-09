@@ -8,7 +8,6 @@ are different enough that they warrant a separate approach.
 the templates used here.)
 """
 import io
-import os
 from jinja2 import Environment, FileSystemLoader
 from collections import defaultdict
 from weasyprint import HTML
@@ -162,7 +161,6 @@ def report_round(ships: dict, game_dir: GameDirectory, round_nr: int):
         with io.BytesIO() as bytes_io:
             print_html.write_pdf(target=bytes_io)
             round_dir.save(f'{report_file_name}.pdf', bytes_io.getvalue(), binary=True)
-
 
 
 def report_round_zero(game_dir: GameDirectory, ships: list):

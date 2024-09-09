@@ -10,6 +10,8 @@
 <h1>Welcome to Space Arena</h1>
 <p><i>Generated on {{ date }}</i></p>
 
+<p><img src="static/gfx/example-turn.png"><em>A typical round of mayhem...</em></p>
+
 <p>This game is a recreation of an old Play-By-Mail game from 1991. In this game teams of space ships battle
 each other in a 2D arena. The game is a simulation where players all send in their orders before a round is
 processed. A round consists of 10 clock <i>ticks</i> and the results of the players' commands gets processed
@@ -56,9 +58,15 @@ ship's player and the cycle continues until the end conditions are reached.</p>
 
 <h2>Commands</h2>
 
-<p>You send commands in a .txt file. Enter one command per line, with the format <span class="code-style">(tick number): (command)</span>.
+<p><img src="static/gfx/command-interface.png"></p>
+
+<p>You can access your command interface by clicking on your ship's name, or when you're in a ship's turn by pressing "Current round" at the top of the page.
+    Enter one command per line, with the format <span class="code-style">(tick number): (command)</span>.
 <b>You can write multiple commands per tick</b>, but they each should be on their own line. Whitespace in the commands does not matter: you can write R 90 or R90,
 whatever is your preference.</p>
+
+<p>You can use the "Check" button for some (basic) checking, and the "Save" button to save your turn for processing.
+    Note that as long as the turn is not processed you can save as many times as you want.</p>
 
 <p>The following commands let the ship accelerate by 25 and turn 90 degrees left on tick 1,
 and fire a rocket from the launcher called 'L1' 90 degrees from its current heading on tick 2. Note that the A25 line
@@ -78,9 +86,9 @@ is after the L90 line: the acceleration will always be processed before the turn
     in a specific order. Empty lines and lines starting with '#' are ignored. You can use this for instance to group your
     movement and weapon commands together.</p>
 
-<p> You can fire each weapon once per tick, and they might have
-    temperature or ammo to take into account.
-If you multiple commands to fire a specific weapon in the same tick, only the first command is executed. In this case line order does matter.</p>
+<p> You can fire each weapon once per tick, and they might have temperature or ammo to take into account.
+If you enter multiple commands to fire a specific weapon in the same tick, only the first command is executed.
+    In this case line order <em>does</em> matter.</p>
 
 <table class="small-text">
     <tr>
