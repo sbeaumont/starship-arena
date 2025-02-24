@@ -1,10 +1,10 @@
 import os.path
 import unittest
 
-from arena_engine.engine import GameRound
-from arena_engine.engine import setup_game
-from arena_engine.engine import GameDirectory
-from log import deactivate_logger_blocklist
+from arena.engine import GameRound
+from arena.engine import setup_game
+from arena.engine import GameDirectory
+from arena.log import deactivate_logger_blocklist
 
 
 class TestGames(unittest.TestCase):

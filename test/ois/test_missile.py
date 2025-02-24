@@ -1,8 +1,8 @@
 from unittest import TestCase
 from .ois_fixtures import create_ship_fixture
-from arena_engine.ois import Vector, Point
-from arena_engine.rep import TICK_ZERO
-from arena_engine.ois.registry.missiles import Splinter
+from arena.engine import Vector, Point
+from arena.engine import TICK_ZERO
+from arena.engine.objects.registry import Splinter
 
 
 class TestMissile(TestCase):

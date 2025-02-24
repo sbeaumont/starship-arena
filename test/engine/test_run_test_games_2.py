@@ -1,9 +1,9 @@
 import unittest
 
-from arena_engine.engine import GameRound
-from arena_engine.engine import setup_game
-from arena_engine.engine import GameDirectory, ShipFile
-from log import deactivate_logger_blocklist
+from arena.engine import GameRound
+from arena.engine import setup_game
+from arena.engine import GameDirectory, ShipFile
+from arena.log import deactivate_logger_blocklist
 
 
 original_ship_file = """Name Type Faction Player X Y
