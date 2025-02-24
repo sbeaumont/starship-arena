@@ -1,5 +1,5 @@
 from unittest import TestCase
-from ois.registry import builder
+from arena_engine.ois import builder
 
 
 class TestH2545(TestCase):

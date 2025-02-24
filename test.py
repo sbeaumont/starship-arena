@@ -1,8 +1,8 @@
 import logging
 
-from engine.round import GameRound
-from engine.admin import setup_game
-from engine.gamedirectory import GameDirectory
+from arena_engine.round import GameRound
+from arena_engine.admin import setup_game
+from arena_engine.gamedirectory import GameDirectory
 
 
 def go():

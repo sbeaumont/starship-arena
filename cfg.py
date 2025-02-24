@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger('starship-arena.config')
 
-TEMPLATE_DIR = './templates'
+TEMPLATE_DIR = 'arena_web/templates'
 
 ROUND_ZERO_NAME = 'round-0'
 

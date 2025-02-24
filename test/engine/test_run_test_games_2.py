@@ -1,8 +1,8 @@
 import unittest
 
-from engine.round import GameRound
-from engine.admin import setup_game
-from engine.gamedirectory import GameDirectory, ShipFile
+from arena_engine.engine import GameRound
+from arena_engine.engine import setup_game
+from arena_engine.engine import GameDirectory, ShipFile
 from log import deactivate_logger_blocklist
 
 
