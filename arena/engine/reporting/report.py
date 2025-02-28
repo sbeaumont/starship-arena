@@ -17,7 +17,7 @@ from arena.engine.objects.event import ScanEvent, Event, DrawType, HitEvent
 from arena.engine.objects.starbase import Starbase
 from arena.engine.objects.ship import Ship
 from arena.engine.objects.objectinspace import Point
-from arena.engine import Visualizer, Colors, COLORS
+from arena.engine.reporting.visualize import Visualizer, Colors, COLORS
 from arena.engine.history import Tick, TICK_ZERO
 from arena.engine.gamedirectory import GameDirectory
 
@@ -168,7 +168,7 @@ def report_round(ships: dict, game_dir: GameDirectory, round_nr: int):
 
 def report_round_zero(game_dir: GameDirectory, ships: list):
     start_tick = TICK_ZERO
-    env = Environment(loader=FileSystemLoader('./arena_web/templates'))
+    env = Environment(loader=FileSystemLoader('./arena/web/templates'))
     template = env.get_template(ROUND_ZERO_TEMPLATE)
 
     # Set up round directory

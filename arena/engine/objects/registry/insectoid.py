@@ -2,10 +2,10 @@ from arena.cfg import max_scan
 from arena.engine.objects.ship import ShipType
 from arena.engine.objects.registry.missiles import Rocket, Splinter, NanoMissile
 from arena.engine.objects.registry.mines import SplinterMine
-from arena.engine import Shields
+from arena.engine.objects.components.defense import Shields
 from arena.engine.objects.components.launcher import Launcher
-from arena.engine import Laser
-from arena.engine import Gravscan
+from arena.engine.objects.components.laser import Laser
+from arena.engine.objects.components.scanner import Gravscan
 
 
 class I2544(ShipType):

@@ -2,7 +2,7 @@ from typing import Protocol, runtime_checkable
 
 from arena.engine.objects.components.weapon import Weapon
 from arena.engine.objects.objectinspace import Vector
-from arena.engine import DirectionParameter
+from arena.engine.objects.component import DirectionParameter
 
 
 @runtime_checkable

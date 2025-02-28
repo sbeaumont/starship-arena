@@ -1,4 +1,4 @@
-from arena.engine import builder
+from arena.engine.objects.registry import builder
 
 
 def create_ship_fixture():

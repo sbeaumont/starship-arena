@@ -1,6 +1,6 @@
 from abc import ABC
 
-from arena.engine import Component
+from arena.engine.objects.component import Component
 
 
 class Weapon(Component, ABC):

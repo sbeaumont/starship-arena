@@ -29,8 +29,8 @@ from abc import ABC, abstractmethod
 
 from arena.engine.objects.objectinspace import ObjectInSpace
 from arena.engine.objects.ship import AccelerationParameter, TurnParameter
-from arena.engine import Shields
-from arena.engine import ComponentSelectorParameter
+from arena.engine.objects.components.defense import Shields
+from arena.engine.objects.component import ComponentSelectorParameter
 from arena.engine.objects.event import InternalEvent
 
 logger = logging.getLogger('starship-arena.command')

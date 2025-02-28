@@ -1,6 +1,6 @@
 from arena.engine.objects.components.weapon import Weapon
 from arena.engine.objects.event import HitEvent, DrawType
-from arena.engine import ObjectByNameParameter
+from arena.engine.objects.component import ObjectByNameParameter
 
 
 class Laser(Weapon):

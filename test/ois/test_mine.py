@@ -1,7 +1,7 @@
 from unittest import TestCase
 from .ois_fixtures import create_ship_fixture
 from arena.engine.objects.registry.mines import SplinterMine
-from arena.engine import Vector, Point
+from arena.engine.objects.objectinspace import Vector, Point
 
 
 class TestMine(TestCase):

@@ -2,7 +2,7 @@ import logging
 from arena.log import deactivate_logger_blocklist
 
 from arena.engine.round import GameRound
-from arena.engine import setup_game
+from arena.cli.admin import setup_game
 from arena.engine.gamedirectory import GameDirectory
 
 

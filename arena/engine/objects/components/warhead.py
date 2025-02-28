@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from arena.engine import Component
+from arena.engine.objects.component import Component
 from arena.engine.objects.event import ExplosionEvent, HitEvent
 
 

@@ -1,4 +1,4 @@
-from arena.engine import Component, OnOffParameter
+from arena.engine.objects.component import Component, OnOffParameter
 
 
 class Cloak(Component):

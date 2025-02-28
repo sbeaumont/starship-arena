@@ -1,6 +1,6 @@
 from arena.engine.objects.components.weapon import Weapon
 from arena.engine.objects.event import ScanEvent
-from arena.engine import DirectionParameter, NumberInRangeParameter
+from arena.engine.objects.component import DirectionParameter, NumberInRangeParameter
 
 from arena.cfg import max_scan
 

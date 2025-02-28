@@ -9,9 +9,9 @@ from arena.engine.objects.objectinspace import Point, Vector
 from arena.engine.objects.ship import ShipType
 
 # Force loading of every package under ois.registry so its subclasses can be found for the manual.
-for (module_loader, name, ispkg) in pkgutil.iter_modules(['arena_engine/ois/registry', ]):
+for (module_loader, name, ispkg) in pkgutil.iter_modules(['arena/engine/objects/registry', ]):
     if name != 'builder':
-        importlib.import_module(f'arena_engine.ois.registry.{name}')
+        importlib.import_module(f'arena.engine.objects.registry.{name}')
 
 
 def _subclasses_recursive(cls):

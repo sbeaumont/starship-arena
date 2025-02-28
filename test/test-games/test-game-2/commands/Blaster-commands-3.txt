@@ -1,0 +1,4 @@
+1: A10
+1: Fire L1 Dummy2
+2: R350
+2: Replenish

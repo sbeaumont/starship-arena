@@ -19,7 +19,7 @@ It also introduces an "owner" which is ultimately a player (but could also be an
 
 from abc import ABCMeta
 from .objectinspace import ObjectInSpace, Vector
-from arena.engine import Component
+from arena.engine.objects.component import Component
 from arena.engine.history import Tick, TICK_ZERO
 
 

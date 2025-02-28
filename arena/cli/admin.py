@@ -8,10 +8,10 @@ from math import cos, sin, radians
 from random import randint
 import logging
 
+import arena.engine.objects.registry.builder as builder
 from arena.engine.gamedirectory import GameDirectory, ShipFile
 from arena.engine.objects.objectinspace import Point
-from arena.engine import Visualizer
-import arena.engine.ois.registry.builder as builder
+from arena.engine.reporting.visualize import Visualizer
 from arena.engine.reporting.report import report_round_zero
 from arena.engine.history import TICK_ZERO
 
