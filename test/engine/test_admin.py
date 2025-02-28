@@ -1,6 +1,6 @@
 import unittest
-from arena.engine import GameSetup, distribute_factions
-from arena.engine import GameDirectory, ShipFile
+from arena.engine.admin import GameSetup, distribute_factions
+from arena.engine.gamedirectory import GameDirectory, ShipFile
 
 original_ship_file = """Name           Type   Faction   Player     X   Y
 Blaster        H2545  One       Serge   -400   0
@@ -34,7 +34,6 @@ class MyTestCase(unittest.TestCase):
             self.assertEqual(len(pair[1]), 6)
 
     def test_distribute_ships(self):
-        original = [line.split() for line in original_ship_file_without_coordinates.splitlines()]
         distribute_factions(self.gs2.ships.values(), 100)
         new = [line.split() for line in self.gs2.shipfile.ship_file_with_coordinates(self.gs2.ships.values())]
         for line in new[1:]:

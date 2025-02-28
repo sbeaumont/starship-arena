@@ -15,8 +15,8 @@ import os
 from arena.cfg import GAME_DATA_DIR
 from arena.log import configure_logger
 
-from arena.cli.admin import setup_game
-from arena.engine.round import GameRound
+from arena.engine.admin import setup_game
+from arena.engine.game import Game
 from arena.engine.gamedirectory import GameDirectory
 from arena.cli.send import send_results_for_round, check_ok_to_send
 from arena.engine.reporting.manual import generate_manual
@@ -46,14 +46,11 @@ def do_setup(game_dir: GameDirectory):
     setup_game(game_dir)
 
 
-def generate(game_dir: GameDirectory):
-    round_nr = 1
-    gr = GameRound(game_dir, round_nr)
-    while not gr.missing_command_files:
-        if not gr.is_generated:
-            gr.do_round()
-        round_nr += 1
-        gr = GameRound(game_dir, round_nr)
+def generate(game_dir: GameDirectory, round_nr=1):
+    game = Game(game_dir, round_nr)
+    while game.round_ready:
+        game.do_round()
+        game.init_next_round()
 
 
 def do_send(game_dir: GameDirectory, what_to_send: list):

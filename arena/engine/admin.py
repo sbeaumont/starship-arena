@@ -10,6 +10,7 @@ import logging
 
 import arena.engine.objects.registry.builder as builder
 from arena.engine.gamedirectory import GameDirectory, ShipFile
+from arena.engine.game import Game
 from arena.engine.objects.objectinspace import Point
 from arena.engine.reporting.visualize import Visualizer
 from arena.engine.reporting.report import report_round_zero
@@ -79,17 +80,23 @@ def ships_to_lines(ships) -> list[str]:
 
 
 class GameSetup(object):
-    def __init__(self, game_directory: GameDirectory, shipfile: ShipFile = None):
+    def __init__(self, game_directory: GameDirectory, ship_file: ShipFile=None):
         self._dir: GameDirectory = game_directory
-        self.shipfile = shipfile if shipfile else ShipFile(self._dir)
+        self.shipfile = ship_file if ship_file else ShipFile(self._dir)
         self.ships: dict = self._init_ships(self.shipfile.ship_lines)
 
     def execute(self):
-        self.run()
+        self._dir.setup_directories()
+        self._dir.clean()
+        self.run_tick_zero()
+        for faction, ships in group_by_faction(self.ships.values()).items():
+            logger.info(f"=={faction}==")
+            for ship in ships:
+                logger.info(f"Ship: {ship.name}, Faction: {ship.faction}, Pos: {ship.pos}, Type: {ship.class_name}")
         self.save()
         self.report()
 
-    def run(self, distance_from_center=500):
+    def run_tick_zero(self, distance_from_center=500):
         distribute_factions(self.ships.values(), distance_from_center)
         for ship in self.ships.values():
             ship.history.set_tick(TICK_ZERO)
@@ -118,17 +125,9 @@ class GameSetup(object):
         self.shipfile.save(self.ships.values())
 
 
-def setup_game(gd: GameDirectory, shipfile: ShipFile = None) -> None:
-    logger.info(f"Setup {gd.path}")
-    gd.setup_directories()
-    gd.clean()
-    setup = GameSetup(gd, shipfile)
-    setup.run()
-
-    for faction, ships in group_by_faction(setup.ships.values()).items():
-        logger.info(f"=={faction}==")
-        for ship in ships:
-            logger.info(f"Ship: {ship.name}, Faction: {ship.faction}, Pos: {ship.pos}, Type: {ship.class_name}")
-    setup.save()
-    setup.report()
+def setup_game(gd: GameDirectory, ship_file: ShipFile=None) -> Game:
+    setup = GameSetup(gd, ship_file)
+    logger.info(f"Setup {gd.path} for ship file: {setup.shipfile}")
+    setup.execute()
     logger.info(f"Current status: {gd.load_current_status()}")
+    return Game(gd)

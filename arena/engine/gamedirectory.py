@@ -74,6 +74,9 @@ class GameDirectory(object):
         """Read a command file with the commands for a ship."""
         return CommandFile(self, name, round_nr).load()
 
+    def status_file_for_round_exists(self, nr) -> bool:
+        return StatusFile(self, nr).exists
+
     def status_file_for_round(self, nr) -> str:
         return StatusFile(self, nr).full_name
 

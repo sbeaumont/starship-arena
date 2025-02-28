@@ -1,9 +1,10 @@
 import os.path
 import unittest
 
-from arena.engine import GameRound
-from arena.engine import setup_game
-from arena.engine import GameDirectory
+from arena.engine.round import GameRound
+from arena.engine.game import Game
+from arena.engine.admin import setup_game
+from arena.engine.gamedirectory import GameDirectory
 from arena.log import deactivate_logger_blocklist
 
 
@@ -11,20 +12,20 @@ class TestGames(unittest.TestCase):
     def setUp(self):
         deactivate_logger_blocklist()
 
-    def _setup_game(self, game_name: str) -> GameDirectory:
+    def _setup_game(self, game_name: str) -> Game:
         self.test_dir = './test/test-games'
         gd = GameDirectory(self.test_dir, game_name)
-        setup_game(gd)
-        return gd
+        return setup_game(gd)
 
-    @staticmethod
-    def _run(gd: GameDirectory, nr_of_rounds: int):
+    def _run(self, game: Game, nr_of_rounds: int):
         for i in range(1, nr_of_rounds + 1):
-            GameRound(gd, i).do_round()
+            game.init_round(i)
+            self.assertTrue(game.round_ready)
+            game.do_round()
 
     def test_game_1(self):
-        gd = self._setup_game('test-game')
-        ships_0 = gd.load_current_status()
+        game = self._setup_game('test-game')
+        ships_0 = game._dir.load_current_status()
         ship = ships_0['Shaper-1']
         total_score = 0
         shield = ship.defense[0]
@@ -38,10 +39,10 @@ class TestGames(unittest.TestCase):
         total_score += 100
 
         number_of_rounds = 1
-        self._run(gd, number_of_rounds)
+        self._run(game, number_of_rounds)
 
-        self.assertEqual(gd.last_round_number, number_of_rounds)
-        ships_1 = gd.load_current_status()
+        self.assertEqual(game._dir.last_round_number, number_of_rounds)
+        ships_1 = game._dir.load_current_status()
         self.assertEqual(ships_1['Blaster-1'].score, total_score)
         self.assertTrue(os.path.exists(os.path.join(self.test_dir, 'test-game', 'round-0')))
         self.assertTrue(os.path.exists(os.path.join(self.test_dir, 'test-game', 'round-1')))

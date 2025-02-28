@@ -11,7 +11,6 @@ Each tick has sub-phases where all objects get called in a specific ordering (se
 
 import os
 import logging
-import sys
 
 from arena.engine.command import Commandable, parse_commands, CommandSet
 from arena.engine.gamedirectory import GameDirectory
@@ -22,19 +21,39 @@ from .round import GameRound
 logger = logging.getLogger('starship-arena.round')
 
 
+class FilesMissing(Exception):
+    """Raised when one or more files are missing."""
+
+
 class Game(object):
     """The main processing engine of a game round."""
-    def __init__(self, gd: GameDirectory, round_nr: int):
+    def __init__(self, gd: GameDirectory):
+        self._dir = gd
+        self.round_nr = 1 if self._dir.last_round_number == 0 else self._dir.last_round_number
+        self.init_round(self.round_nr)
+
+    def init_round(self, round_nr):
+        """Initialize for the given round number."""
         if round_nr < 1:
             raise ValueError("GameRound is only intended for rounds 1 and up.")
-        self._dir = gd
         self.round_nr = round_nr
         self.round_start = Tick.for_start_of_round(self.round_nr)
-        self.objects_in_space = self._dir.load_status(round_nr - 1)
+        self.ois = self._dir.load_status(round_nr - 1)
+
+    def init_next_round(self):
+        """Initialize for the next round."""
+        self.init_round(self.round_nr + 1)
+
+    # -------------------------------------------------------------------------------- Queries
 
     @property
-    def ois(self):
-        return self.objects_in_space
+    def round_ready(self):
+        """Return True if the current round is ready to run."""
+        return not self.is_generated and not self.missing_command_files
+
+    @property
+    def is_generated(self):
+        return self._dir.status_file_for_round_exists(self.round_nr)
 
     @property
     def missing_command_files(self):
@@ -44,28 +63,14 @@ class Game(object):
                 missing_command_files.append(self._dir.command_file(ship.name, self.round_nr))
         return missing_command_files
 
-    @property
-    def is_generated(self):
-        return os.path.exists(self._dir.status_file_for_round(self.round_nr))
+    # -------------------------------------------------------------------------------- Commands
 
-    def load_commands(self):
-        ship_commands = dict()
-        for ship in [s for s in self.ois.values() if isinstance(s, Commandable)]:
-            ship_commands[ship.name] = parse_commands(self._dir.read_command_file(ship.name, self.round_nr), ship, self.ois)
-        return ship_commands
-
-    def update_graveyard(self, destroyed: list):
-        graveyard = self._dir.load_graveyard()
-        for dead_ship in [d for d in destroyed if d.is_player_controlled]:
-            graveyard[dead_ship.name] = dead_ship
-        self._dir.save_graveyard(graveyard)
-
-    def do_round(self, exit_on_missing_command_file=True):
+    def do_round(self):
         """The main execution of the round. Here is where it all happens."""
 
         # Load all commands into player ships and do initial scan for reporting.
-        if exit_on_missing_command_file and self.missing_command_files:
-            sys.exit(f"Missing command files {self.missing_command_files}")
+        if self.missing_command_files:
+            raise FilesMissing(f"Missing command files {self.missing_command_files}")
 
         game_round = GameRound(self.ois)
         game_round.do_round(self.load_commands(), self.round_nr)
@@ -79,5 +84,20 @@ class Game(object):
 
         self.save()
 
+    def load_commands(self):
+        """Load the commands for the current round."""
+        ship_commands = dict()
+        for ship in [s for s in self.ois.values() if isinstance(s, Commandable)]:
+            ship_commands[ship.name] = parse_commands(self._dir.read_command_file(ship.name, self.round_nr), ship, self.ois)
+        return ship_commands
+
+    def update_graveyard(self, destroyed: list):
+        """Update the graveyard with the ships passed as arguments."""
+        graveyard = self._dir.load_graveyard()
+        for dead_ship in [d for d in destroyed if d.is_player_controlled]:
+            graveyard[dead_ship.name] = dead_ship
+        self._dir.save_graveyard(graveyard)
+
     def save(self):
+        """Save the state of the current round."""
         self._dir.save(self.ois, self.round_nr)

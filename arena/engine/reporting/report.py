@@ -159,7 +159,7 @@ def report_round(ships: dict, game_dir: GameDirectory, round_nr: int):
         report_file_name = f'{ship.name}-{round_name}'
         round_dir.save(f'{report_file_name}.html', html_out)
 
-        print_html = HTML(string=html_out, base_url=f'{game_dir}/{round_name}')
+        print_html = HTML(string=html_out, base_url=f'{game_dir.path}/{round_name}')
         # print_html.write_pdf(os.path.join(round_dir.full_name, f'{report_file_name}.pdf'))
         with io.BytesIO() as bytes_io:
             print_html.write_pdf(target=bytes_io)
@@ -193,7 +193,7 @@ def report_round_zero(game_dir: GameDirectory, ships: list):
         report_file_name = f'{ship.name}-{ROUND_ZERO_NAME}'
         round_dir.save(f'{ship.name}-{ROUND_ZERO_NAME}.html', html_out)
 
-        print_html = HTML(string=html_out, base_url=f'{game_dir}/{ROUND_ZERO_NAME}')
+        print_html = HTML(string=html_out, base_url=f'{game_dir.path}/{ROUND_ZERO_NAME}')
         with io.BytesIO() as bytes_io:
             print_html.write_pdf(target=bytes_io)
             round_dir.save(f'{report_file_name}.pdf', bytes_io.getvalue(), binary=True)

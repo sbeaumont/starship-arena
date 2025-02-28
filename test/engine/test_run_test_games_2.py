@@ -1,8 +1,9 @@
 import unittest
 
-from arena.engine import GameRound
-from arena.engine import setup_game
-from arena.engine import GameDirectory, ShipFile
+from arena.engine.round import GameRound
+from arena.engine.admin import setup_game
+from arena.engine.game import Game
+from arena.engine.gamedirectory import GameDirectory, ShipFile
 from arena.log import deactivate_logger_blocklist
 
 
@@ -75,6 +76,9 @@ class MockGameDirectory(object):
     def read_command_file(self, ship_name, round_nr):
         return commands[(ship_name, round_nr)].splitlines()
 
+    def status_file_for_round_exists(self, round_nr):
+        return False
+
     @property
     def last_round_number(self):
         return self.round_number
@@ -107,19 +111,19 @@ class TestGames2(unittest.TestCase):
         deactivate_logger_blocklist()
 
     @staticmethod
-    def _setup_game() -> GameDirectory:
+    def _setup_game() -> Game:
         gd = MockGameDirectory()
-        setup_game(gd, MockShipFile(gd))
-        return gd
+        return setup_game(gd, MockShipFile(gd))
 
-    @staticmethod
-    def _run(gd: GameDirectory, nr_of_rounds: int):
+    def _run(self, game: Game, nr_of_rounds: int):
         for i in range(1, nr_of_rounds + 1):
-            GameRound(gd, i).do_round()
+            game.init_round(i)
+            self.assertTrue(game.round_ready)
+            game.do_round()
 
     def test_game_2(self):
-        gd = self._setup_game()
-        ships_0 = gd.load_current_status()
+        game = self._setup_game()
+        ships_0 = game._dir.load_current_status()
         ship = ships_0['Shaper-1']
         total_score = 0
         shield = ship.defense[0]
@@ -133,13 +137,13 @@ class TestGames2(unittest.TestCase):
         total_score += 100
 
         number_of_rounds = 1
-        self._run(gd, number_of_rounds)
+        self._run(game, number_of_rounds)
 
-        self.assertEqual(gd.last_round_number, number_of_rounds)
-        ships_1 = gd.load_current_status()
+        self.assertEqual(game._dir.last_round_number, number_of_rounds)
+        ships_1 = game._dir.load_current_status()
         self.assertEqual(total_score, ships_1['Blaster-1'].score)
-        self.assertIn('Shaper-1', gd.load_graveyard())
-        round_files = gd.round_dir(1).files
+        self.assertIn('Shaper-1', game._dir.load_graveyard())
+        round_files = game._dir.round_dir(1).files
         self.assertEqual(6, len(round_files))
 
 
