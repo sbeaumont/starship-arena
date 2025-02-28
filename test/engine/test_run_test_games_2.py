@@ -1,27 +1,30 @@
 import unittest
 
-from arena.engine.round import GameRound
 from arena.engine.admin import setup_game
 from arena.engine.game import Game
-from arena.engine.gamedirectory import GameDirectory, ShipFile
+from arena.engine.gamedirectory import ShipFile
 from arena.log import deactivate_logger_blocklist
 
+ship_1_name = "Poodle"
+ship_2_name = "PoodleII"
 
-original_ship_file = """Name Type Faction Player X Y
-Blaster-1        H2545  One       Serge   1   0
-Shaper-1         H2552  Two       Piet    122 0"""
 
-command_blaster_1_1 = """1: Fire S1 45
-1: Fire R1 90
-1: Fire R1 90
-2: Fire S1 90
-2: Fire R1 90
-2: Fire R1 90
+original_ship_file = f"""Name Type Faction Player X Y
+{ship_1_name}        H2545  One       Serge   1   0
+{ship_2_name}        H2552  Two       Piet    122 0"""
+
+command_ship_1_1 = """
+    1: Fire S1 45
+    1: Fire R1 90
+    1: Fire R1 90
+    2: Fire S1 90
+    2: Fire R1 90
+    2: Fire R1 90
 """
 
 commands = {
-    ('Blaster-1', 1): command_blaster_1_1,
-    ('Shaper-1', 1): ''
+    (ship_1_name, 1): command_ship_1_1,
+    (ship_2_name, 1): ''
 }
 
 
@@ -124,7 +127,7 @@ class TestGames2(unittest.TestCase):
     def test_game_2(self):
         game = self._setup_game()
         ships_0 = game._dir.load_current_status()
-        ship = ships_0['Shaper-1']
+        ship = ships_0[ship_2_name]
         total_score = 0
         shield = ship.defense[0]
         # Half point per hit on shield
@@ -141,8 +144,8 @@ class TestGames2(unittest.TestCase):
 
         self.assertEqual(game._dir.last_round_number, number_of_rounds)
         ships_1 = game._dir.load_current_status()
-        self.assertEqual(total_score, ships_1['Blaster-1'].score)
-        self.assertIn('Shaper-1', game._dir.load_graveyard())
+        self.assertEqual(total_score, ships_1[ship_1_name].score)
+        self.assertIn(ship_2_name, game._dir.load_graveyard())
         round_files = game._dir.round_dir(1).files
         self.assertEqual(6, len(round_files))
 

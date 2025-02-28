@@ -1,7 +1,6 @@
 import os.path
 import unittest
 
-from arena.engine.round import GameRound
 from arena.engine.game import Game
 from arena.engine.admin import setup_game
 from arena.engine.gamedirectory import GameDirectory

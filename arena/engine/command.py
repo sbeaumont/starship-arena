@@ -419,7 +419,8 @@ def parse_commands(lines: list[str], ship, objects_in_space):
     commands = defaultdict(CommandSet)
     for line_nr, line in enumerate(lines, start=1):
         try:
-            if line.startswith('#') or (line.strip() == ''):
+            line = line.strip()
+            if line.startswith('#') or (line == ''):
                 continue
             command_line = CommandLine(line)
             if command_line.is_valid:
