@@ -1,4 +1,4 @@
-{% extends './templates/base.html' %}
+{% extends 'base.html' %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -10,7 +10,7 @@
     <table>
     {% for game in games %}
         <tr>
-            <td><a href="{{ url_for('game_overview', game=game) }}">{{game}}</a></td>
+            <td><a href="{{ url_for('game_overview', game_name=game) }}">{{game}}</a></td>
         </tr>
     {% endfor %}
     </table>

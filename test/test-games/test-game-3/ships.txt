@@ -1,25 +1,25 @@
-Name           Type   Faction   Player Email
-Amphibian-SB   SB2531 Amphibian Amp    a@a.com
-Amphibian-2527  A2527 Amphibian Amp    a@a.com
-Amphibian-2539  A2539 Amphibian Amp    a@a.com
-Amphibian-2545  A2545 Amphibian Amp    a@a.com
-Amphibian-2553  A2553 Amphibian Amp    a@a.com
-Feline-SB      SB2531 Feline    Fel    a@a.com
-Feline-F2551    F2551 Feline    Fel    a@a.com
-Feline-F2547    F2547 Feline    Fel    a@a.com
-Feline-F2534    F2534 Feline    Fel    a@a.com
-Feline-F2533    F2533 Feline    Fel    a@a.com
-Human-SB       SB2531 Human     Hum    a@a.com
-Human-2545      H2545 Human     Hum    a@a.com
-Human-2552      H2552 Human     Hum    a@a.com
-Human-2535      H2535 Human     Hum    a@a.com
-Human-2527      H2527 Human     Hum    a@a.com
-Insectoid-SB   SB2531 Insectoid Ins    a@a.com
-Insectoid-2544  I2544 Insectoid Ins    a@a.com
-Insectoid-2552  I2552 Insectoid Ins    a@a.com
-Insectoid-2526  I2526 Insectoid Ins    a@a.com
-Reptilian-SB   SB2531 Reptilian Rep    a@a.com
-Reptilian-2545  R2545 Reptilian Rep    a@a.com
-Reptilian-2525  R2525 Reptilian Rep    a@a.com
-Reptilian-2531  R2531 Reptilian Rep    a@a.com
-Reptilian-2551  R2551 Reptilian Rep    a@a.com
+          Name   Type   Faction Player    X    Y
+  Amphibian-SB SB2531 Amphibian    Amp  562  143
+Amphibian-2527  A2527 Amphibian    Amp  526  162
+Amphibian-2539  A2539 Amphibian    Amp  497  113
+Amphibian-2545  A2545 Amphibian    Amp  525  100
+Amphibian-2553  A2553 Amphibian    Amp  560  122
+     Feline-SB SB2531    Feline    Fel  -77  504
+  Feline-F2551  F2551    Feline    Fel -107  538
+  Feline-F2547  F2547    Feline    Fel -117  507
+  Feline-F2534  F2534    Feline    Fel -118  480
+  Feline-F2533  F2533    Feline    Fel  -76  471
+      Human-SB SB2531     Human    Hum -468  124
+    Human-2545  H2545     Human    Hum -510  145
+    Human-2552  H2552     Human    Hum -549  110
+    Human-2535  H2535     Human    Hum -522   83
+    Human-2527  H2527     Human    Hum -491   76
+  Insectoid-SB SB2531 Insectoid    Ins -231 -485
+Insectoid-2544  I2544 Insectoid    Ins -282 -460
+Insectoid-2552  I2552 Insectoid    Ins -276 -520
+Insectoid-2526  I2526 Insectoid    Ins -246 -522
+  Reptilian-SB SB2531 Reptilian    Rep  317 -469
+Reptilian-2545  R2545 Reptilian    Rep  282 -423
+Reptilian-2525  R2525 Reptilian    Rep  258 -426
+Reptilian-2531  R2531 Reptilian    Rep  253 -489
+Reptilian-2551  R2551 Reptilian    Rep  312 -498

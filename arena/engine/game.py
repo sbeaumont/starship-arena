@@ -44,6 +44,12 @@ class Game(object):
         """Initialize for the next round."""
         self.init_round(self.round_nr + 1)
 
+    def next_round(self) -> 'Game':
+        """Get a Game object for the next round."""
+        result = Game(self._dir)
+        result.init_next_round()
+        return result
+
     # -------------------------------------------------------------------------------- Queries
 
     @property
@@ -52,16 +58,48 @@ class Game(object):
         return not self.is_generated and not self.missing_command_files
 
     @property
+    def next_round_ready(self):
+        """Return True if the next round is ready to run."""
+        next_round_game = Game(self._dir)
+        next_round_game.init_next_round()
+        return self.next_round().round_ready
+
+    @property
     def is_generated(self):
         return self._dir.status_file_for_round_exists(self.round_nr)
 
     @property
-    def missing_command_files(self):
-        missing_command_files = list()
-        for ship in [s for s in self.ois.values() if isinstance(s, Commandable)]:
+    def missing_command_files(self) -> dict:
+        missing = dict()
+        for ship in self.player_ships:
             if not self._dir.command_file_exists(ship.name, self.round_nr):
-                missing_command_files.append(self._dir.command_file(ship.name, self.round_nr))
-        return missing_command_files
+                missing[ship.name] = self._dir.command_file(ship.name, self.round_nr)
+        return missing
+
+    @property
+    def command_file_status(self) -> dict[str, bool]:
+        return {ship.name: self._dir.command_file_exists(ship.name, self.round_nr) for ship in self.player_ships}
+
+    @property
+    def player_ships(self):
+        """Return a list of all player controlled ships."""
+        return [s for s in self.ois.values() if s.is_player_controlled]
+
+    @property
+    def factions(self):
+        return {s.faction for s in self.player_ships}
+
+    @property
+    def players(self):
+        return {s.player for s in self.player_ships}
+
+    @property
+    def name(self) -> str:
+        return self._dir.game_name
+
+    @property
+    def graveyard(self):
+        return self._dir.load_graveyard()
 
     # -------------------------------------------------------------------------------- Commands
 
@@ -93,11 +131,12 @@ class Game(object):
 
     def update_graveyard(self, destroyed: list):
         """Update the graveyard with the ships passed as arguments."""
-        graveyard = self._dir.load_graveyard()
+        graveyard = self.graveyard
         for dead_ship in [d for d in destroyed if d.is_player_controlled]:
             graveyard[dead_ship.name] = dead_ship
         self._dir.save_graveyard(graveyard)
 
     def save(self):
         """Save the state of the current round."""
+        logger.debug(f"Saving game {self._dir.game_name} round {self.round_nr}")
         self._dir.save(self.ois, self.round_nr)

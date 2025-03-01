@@ -1,4 +1,4 @@
-{% extends './templates/base.html' %}
+{% extends 'base.html' %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 
 {% block content %}
 <div>
-    {% include './templates/round-nav-block.html' %}
+    {% include 'round-nav-block.html' %}
 </div>
 <div>
     <h1>{{ ship.name }}: plan next round</h1>
@@ -58,7 +58,7 @@ x: Boost (N/S/E/W) (amount)
     </table>
 </div>
 <div>
-    {% include './templates/ship-status-block.html' %}
+    {% include 'ship-status-block.html' %}
 </div>
 {% endblock %}
 

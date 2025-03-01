@@ -11,10 +11,11 @@ import logging
 from collections import defaultdict
 from flask import Flask, render_template, request, g, send_file, redirect, url_for
 
+from arena.cfg import WEB_ROOT
 from arena.engine.history import Tick
 from arena.web.appfacade import AppFacade, NameValidator
 
-app = Flask('starship-arena', template_folder='./arena_web/templates', static_folder='./arena_web/static')
+app = Flask('starship-arena', template_folder=f'{WEB_ROOT}/templates', static_folder=f'{WEB_ROOT}/static')
 app.logger.setLevel(logging.DEBUG)
 
 
@@ -48,7 +49,7 @@ def admin():
                     messages.append("Game name already exists.")
             else:
                 messages = name_v.messages
-    return render_template('./templates/admin.html',
+    return render_template('admin.html',
                            games=facade().all_games(),
                            messages=messages)
 
@@ -56,35 +57,36 @@ def admin():
 @app.route('/')
 def overview():
     """Home page."""
-    return render_template('./templates/index.html',
+    return render_template('index.html',
                            games=facade().all_games())
 
 
-@app.route('/game_overview/<game>')
-def game_overview(game: str):
+@app.route('/game_overview/<game_name>')
+def game_overview(game_name: str):
     """Overview of all known games."""
     factions = defaultdict(list)
-    for s in facade().ships_for_game(game):
+    game = facade().game(game_name)
+    for s in game.player_ships:
         factions[s.faction].append(s)
-    return render_template('./templates/game-overview.html',
+    return render_template('game-overview.html',
                            factions=factions,
-                           round_nr=facade().current_round_of_game(game),
-                           game=game,
-                           command_file=facade().command_file_status_of_game(game),
-                           all_command_files_ok=facade().all_command_files_ok(game),
-                           dead_ships=facade().dead_ships_for_game(game).values()
+                           round_nr=game.round_nr,
+                           game=game.name,
+                           command_file=game.next_round().command_file_status,
+                           all_command_files_ok=game.next_round_ready,
+                           dead_ships=game.graveyard.values()
                            )
 
 
 @app.route('/process_turn/<game>')
 def process_turn(game: str):
     facade().process_turn(game)
-    return redirect(url_for('game_overview', game=game))
+    return redirect(url_for('game_overview', game_name=game))
 
 
 @app.route('/ship_overview')
 def ship_overview():
-    return render_template('./templates/ship-overview.html',
+    return render_template('ship-overview.html',
                            ship_types=facade().all_ship_types.values(),
                            starbase_types=facade().all_starbase_types.values()
                            )
@@ -94,7 +96,7 @@ def ship_overview():
 def past_round(game: str, ship_name: str, round: int):
     round = int(round)
     ship = facade().get_ship(game, ship_name, round)
-    return render_template('./templates/past-round.html',
+    return render_template('past-round.html',
                            ship=ship,
                            game=game,
                            round=round,
@@ -124,7 +126,7 @@ def manual_pdf():
 
 @app.route('/lore')
 def lore():
-    return render_template('./templates/lore.html')
+    return render_template('lore.html')
 
 
 @app.route('/plan_round/<game>/<ship_name>', methods=['GET', 'POST'])
@@ -145,7 +147,7 @@ def plan_round(game: str, ship_name: str):
             message = 'Wrong Action!'
     else:
         commands = facade().check_commands(facade().get_last_commands(game, ship_name), game, ship_name)
-    return render_template('./templates/plan-round.html',
+    return render_template('plan-round.html',
                            game=game,
                            ship=facade().get_ship(game, ship_name),
                            commands=commands,

@@ -9,13 +9,14 @@ import os
 import re
 from pathlib import Path
 
-from arena.engine import GameSetup
+from arena.engine.admin import GameSetup
 from arena.engine.command import parse_commands
 from arena.engine.gamedirectory import GameDirectory
 from arena.engine.round import GameRound
+from arena.engine.game import Game
 from secret import GAME_DATA_DIR
-from arena.engine.objects.registry import all_ship_types
-from arena.engine import Ship
+from arena.engine.objects.registry.builder import all_ship_types
+from arena.engine.objects.ship import Ship
 from arena.cfg import MANUAL_FILENAME
 
 logger = logging.getLogger('starship-arena.facade')
@@ -67,13 +68,16 @@ class AppFacade(object):
             GameSetup(gd).execute()
         return gd
 
+    def game(self, game_name: str) -> Game:
+        return Game(self.gd(game_name))
+
     # ---------------------------------------------------------------------- QUERIES - Reference
 
-    def get_turn_picture_name(self, game: str, ship_name: str, round: int) -> str:
-        return self.gd(game).get_turn_picture_name(round, ship_name)
+    def get_turn_picture_name(self, game: str, ship_name: str, round_nr: int) -> str:
+        return self.gd(game).get_turn_picture_name(round_nr, ship_name)
 
-    def get_turn_pdf_name(self, game: str, ship_name: str, round: int) -> str:
-        return self.gd(game).get_turn_pdf_name(round, ship_name)
+    def get_turn_pdf_name(self, game: str, ship_name: str, round_nr: int) -> str:
+        return self.gd(game).get_turn_pdf_name(round_nr, ship_name)
 
     def get_manual_pdf(self) -> str:
         return MANUAL_FILENAME
@@ -92,23 +96,13 @@ class AppFacade(object):
         return [os.path.basename(d) for d in self.data_root.iterdir() if d.is_dir()]
 
     def ships_for_game(self, game) -> list:
-        gd = self.gd(game)
-        return [s for s in gd.load_current_status().values() if s.is_player_controlled]
+        return self.game(game).player_ships
 
     def dead_ships_for_game(self, game) -> dict:
         return self.gd(game).load_graveyard()
 
     def current_round_of_game(self, game) -> int:
         return self.gd(game).last_round_number + 1
-
-    def command_file_status_of_game(self, game) -> dict:
-        gd = self.gd(game)
-        ship_names = [s.name for s in self.ships_for_game(game)]
-        round_nr = self.current_round_of_game(game)
-        result = dict()
-        for name in ship_names:
-            result[name] = gd.command_file_exists(name, round_nr)
-        return result
 
     def all_command_files_ok(self, game):
         return all(self.command_file_status_of_game(game).values())
@@ -120,7 +114,7 @@ class AppFacade(object):
     def get_ship(self, game: str, ship_name: str, round_nr=None) -> Ship:
         gd = self.gd(game)
         dead_ships = gd.load_graveyard()
-        if round_nr and (round_nr > -1):
+        if round_nr is not None and (round_nr > -1):
             if ship_name in dead_ships:
                 return dead_ships[ship_name]
             else:
@@ -160,11 +154,11 @@ class AppFacade(object):
             logger.debug(f"{commands} written to {file_name}")
 
     def process_turn(self, game):
-        if self.all_command_files_ok(game):
-            current_round = self.current_round_of_game(game)
-            gr = GameRound(self.gd(game), current_round)
-            logger.info(f"Processing round {current_round} of game {game}")
-            gr.do_round()
+        game = Game(self.gd(game))
+        game.init_next_round()
+        if not game.missing_command_files:
+            logger.info(f"Processing round {game.round_nr} of game {game}")
+            game.do_round()
         else:
             logger.info(f"Not proceeding to process {game}: not all command files ok")
 

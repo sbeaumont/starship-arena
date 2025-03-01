@@ -4,6 +4,7 @@ import logging
 
 logger = logging.getLogger('starship-arena.config')
 
+WEB_ROOT = './arena/web'
 TEMPLATE_DIR = 'arena/web/templates'
 
 ROUND_ZERO_NAME = 'round-0'
@@ -12,6 +13,7 @@ ROUND_ZERO_TEMPLATE = 'round-zero.html'
 ROUND_TEMPLATE = 'round-template.html'
 ROUND_EMAIL_TEMPLATE = 'round-email-body.html'
 SHIP_COMMAND_TEMPLATE = 'ship-command-round.txt'
+MANUAL_TEMPLATE_DIR = f'{WEB_ROOT}/templates'
 MANUAL_TEMPLATE = 'manual.html'
 
 GAME_DATA_DIR = os.environ.get('GAME_DATA_DIR')

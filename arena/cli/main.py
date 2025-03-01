@@ -26,12 +26,12 @@ logger = logging.getLogger('starship-arena')
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("gamedir",
-                        help="The name of the game you want to process.")
     parser.add_argument("action",
                         nargs="*",
                         choices=['setup', 'generate', 'manual', 'send'],
                         help="Action: clean, generate manual, rounds or send results")
+    parser.add_argument("gamedir",
+                        help="The name of the game you want to process.")
     parser.add_argument("-s", "--send",
                         nargs="*",
                         choices=['manual', 'zero', 'last'],
@@ -65,25 +65,27 @@ def do_send(game_dir: GameDirectory, what_to_send: list):
 def main():
     configure_logger(False, ["fontTools", "PIL"])
     args = parse_args()
-    game_dir = GameDirectory(GAME_DATA_DIR, args.gamedir)
-    game_dir.check_ok()
-
-    if 'setup' in args.action:
-        logger.info("Setting up fresh game...")
-        do_setup(game_dir)
     if 'manual' in args.action:
         logger.info("Generating manual...")
         generate_manual()
-    if 'generate' in args.action:
-        logger.info("Generating unprocessed rounds...")
-        generate(game_dir)
-    if 'send' in args.action:
-        if os.path.exists(game_dir.email_file):
-            logger.info("Sending results...")
-            do_send(game_dir, args.send)
-        else:
-            sys.exit(f"Can't send results: no {game_dir.email_file} file found.")
+    else:
+        game_dir = GameDirectory(GAME_DATA_DIR, args.gamedir)
+        game_dir.check_ok()
+
+        if 'setup' in args.action:
+            logger.info("Setting up fresh game...")
+            do_setup(game_dir)
+        if 'generate' in args.action:
+            logger.info("Generating unprocessed rounds...")
+            generate(game_dir)
+        if 'send' in args.action:
+            if os.path.exists(game_dir.email_file):
+                logger.info("Sending results...")
+                do_send(game_dir, args.send)
+            else:
+                sys.exit(f"Can't send results: no {game_dir.email_file} file found.")
 
 
 if __name__ == '__main__':
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
     main()

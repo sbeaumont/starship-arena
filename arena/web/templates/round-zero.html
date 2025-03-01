@@ -10,11 +10,11 @@
 <h1>Welcome to Space Arena</h1>
 
 <p>This game is a recreation of an old Play-By-Mail game from 1991. In this game teams of space ships battle
-each other in a 2D arena. The game is a simulation where players all send in their orders before a round is
-processed. A round consists of 10 clock <i>ticks</i> and the results of the players' commands gets processed
-into a result output (HTML & PDF). Each ship receives their own result based on what they observed. This
-information is used to plan the next round and send in new orders, and the cycle continues until there is a
-winner.</p>
+    each other in a 2D arena. The game is a simulation where players all send in their orders before a round is
+    processed. A round consists of 10 clock <i>ticks</i> and the results of the players' commands gets processed
+    into a result output (HTML & PDF). Each ship receives their own result based on what they observed. This
+    information is used to plan the next round and send in new orders, and the cycle continues until there is a
+    winner.</p>
 
 <h1>Your opponents</h1>
 <table>
@@ -38,21 +38,29 @@ winner.</p>
 <h2>Status</h2>
 <table>
     <tr>
-        <td><b>Position</b></td><td>{{ ship.pos }}</td>
-        <td><b>Heading</b></td><td>{{ ship.heading }}</td>
-        <td><b>Speed</b></td><td>{{ ship.speed }}/{{ ship._type.max_speed }}</td>
+        <td><b>Position</b></td>
+        <td>{{ ship.pos }}</td>
+        <td><b>Heading</b></td>
+        <td>{{ ship.heading }}</td>
+        <td><b>Speed</b></td>
+        <td>{{ ship.speed }}/{{ ship._type.max_speed }}</td>
     </tr>
     <tr>
-        <td><b>Battery</b></td><td colspan="5">{{ ship.battery }}/{{ ship._type.max_battery }}</td>
+        <td><b>Battery</b></td>
+        <td colspan="5">{{ ship.battery }}/{{ ship._type.max_battery }}</td>
     </tr>
     <tr>
-        <td><b>Hull</b></td><td>{{ ship.hull }}/{{ ship._type.max_hull }}</td>
-        <td><b>Shields</b></td><td colspan="3">{{ ship.defense[0].strengths }}</td>
+        <td><b>Hull</b></td>
+        <td>{{ ship.hull }}/{{ ship._type.max_hull }}</td>
+        <td><b>Shields</b></td>
+        <td colspan="3">{{ ship.defense[0].strengths }}</td>
     </tr>
     {% for weapon in ship.weapons.values() %}
     <tr>
         <td><b>{{ weapon.name }}</b></td>
-        <td colspan="5">{% for stat_name, stat_value in weapon.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</td>
+        <td colspan="5">{% for stat_name, stat_value in weapon.status.items() %}{{ stat_name }} ({{ stat_value }}) {%
+            endfor %}
+        </td>
     </tr>
     {% endfor %}
 </table>
@@ -79,7 +87,5 @@ winner.</p>
     </tr>
     {% endfor %}
 </table>
-
-
 </body>
 </html>
