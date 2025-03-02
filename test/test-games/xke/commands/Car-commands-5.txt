@@ -1,0 +1,17 @@
+1: L43
+2: L135
+2: Fire S1 0
+3: Fire S1 0
+4: Fire S1 0
+5: Fire S1 0
+6: Fire S1 0
+10: Scan G 0 180
+10: Replenish
+2: Fire R1 0
+2: Fire RF1 10
+3: Fire R1 20
+3: Fire RF1 -10
+4: Fire R1 30
+5: Fire RF1 -20
+5: Fire R1 40
+5: Fire RF1 -30

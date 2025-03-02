@@ -1,0 +1,16 @@
+1: R8
+1: Fire S1 -135
+1: Fire N1 -130
+2: Fire N1 -130
+3: Fire N1 -180
+4: Fire N1 -170
+5: Fire N1 -160
+9: A-20
+9: Replenish
+1: Fire M1 -135
+2: Fire M1 -150
+3: Fire M1 -160
+4: Fire M1 -170
+5: Fire M1 180
+6: Fire M1 170
+7: Fire M1 160

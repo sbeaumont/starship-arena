@@ -1,0 +1,14 @@
+1: L30
+1: Fire L1 TheGalaxy
+1: Fire S1 -45
+1: Fire S2 -45
+1: Fire S3 -45
+1: Fire S4 -45
+2: A5
+2: R30
+5: Fire S1 25
+5: Fire S2 30
+5: Fire S3 35
+5: Fire S4 40
+10: Fire L1 XXX
+10: Scan G 35 180

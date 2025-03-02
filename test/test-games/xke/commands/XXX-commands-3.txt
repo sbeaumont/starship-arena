@@ -1,0 +1,11 @@
+1: Fire S1 -90
+2: Fire R1 -30
+2: Fire R2 -110
+3: A -25
+4: A -25
+5: L 84
+6: A 25
+7: Fire R1 0
+7: Fire R2 30
+8: Fire R1 15
+8: Fire R2 45

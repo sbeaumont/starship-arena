@@ -1,0 +1,11 @@
+1: R35
+1: Fire RF1 30
+2: R35
+2: Fire M1 -45
+3: R35
+3: Fire M1 -45
+4: R20
+4: Fire M1 -45
+5: Fire SF1 0
+7: Fire SF1 0
+10: Scan G 0 200

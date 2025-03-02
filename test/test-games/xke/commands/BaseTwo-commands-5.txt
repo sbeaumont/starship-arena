@@ -1,0 +1,12 @@
+1:Scan G 45 180
+2:Fire S1 120
+3:Fire S2 100
+4:Fire S1 125
+5:Fire S2 135
+5:Scan G 45 100
+5:Fire S1 120
+6:Fire S2 100
+7:Fire S1 125
+8:Fire S2 130
+9:Fire S2 135
+10:Scan G 45 100

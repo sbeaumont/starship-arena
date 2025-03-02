@@ -1,0 +1,23 @@
+1: A 25
+1: Scan G 0 30
+1: Fire S1 0
+2: A 25
+2: L 10
+2: Scan G 0 30
+3: L 10
+3: Scan G 0 30
+4: L 10
+4: Scan G 0 30
+5: L 10
+5: Scan G 0 30
+6: L 10
+6: Scan G 0 30
+6: Fire R2 0
+7: L 10
+7: Scan G 0 30
+8: L 10
+8: Scan G 0 30
+9: L 10
+9: Scan G 0 30
+10: L 10
+10: Scan G 0 30

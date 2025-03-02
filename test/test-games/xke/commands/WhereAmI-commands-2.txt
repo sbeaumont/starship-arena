@@ -1,0 +1,10 @@
+1:Fire SF1 20
+2:Fire S1 20
+3:Fire N1 15
+4:Fire RF1 0
+5:Fire R1 5
+6:A10
+7:R35
+8:Scan G 0 180
+9:L15
+10:A-5

@@ -1,0 +1,12 @@
+1: A5
+1: L25
+1: Fire SF1 -60
+1: Fire SF2 -70
+2: L25
+3: L25
+4: Scan G 0 90
+9: Fire SF1 270
+9: Fire SF2 280
+9: Fire SA1 180
+9: Fire L1 TheGalaxy
+10: Scan G 0 180

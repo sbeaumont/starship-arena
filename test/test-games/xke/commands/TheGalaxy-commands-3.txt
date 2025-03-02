@@ -1,0 +1,12 @@
+1: R20
+1: Fire L1 McAve
+1: Fire S1 90
+1: Boost E 30
+2: R20
+2: Fire L1 McAve
+2: Fire S1 90
+3: R20
+3: Fire S1 90
+4: Fire S1 90
+4: Fire R1 -90
+10: Scan G 0 360

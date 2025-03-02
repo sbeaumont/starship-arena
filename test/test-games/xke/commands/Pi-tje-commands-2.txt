@@ -1,0 +1,17 @@
+1: L5
+2: L5
+3: L15
+4: L15
+4: Fire R2 -90
+5: L5
+5: Fire M1 -40
+5: Boost W 50
+6: L5
+7: L15
+7: Fire L2 Kartoffel
+8: L15
+8: Scan G 90 120
+8: Fire L2 Kartoffel
+9: L5
+10: L5
+10: Scan G 90 120

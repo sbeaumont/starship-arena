@@ -1,0 +1,9 @@
+1: R180
+2: A25
+3: A25
+4: Fire RF1 45
+5: Scan G 0 140
+6: Fire N1 0
+9: Fire S1 0
+10: A-25
+10: Scan G 0 140

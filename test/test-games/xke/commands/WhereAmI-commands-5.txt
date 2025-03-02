@@ -1,0 +1,10 @@
+1:A-10
+2:A-10
+3:L45
+4:Fire SF1 345
+5:Fire SF2 330
+6:Fire SF1 350
+7:Fire SF2 325
+8:Fire R1 310
+9:Fire RF1 340
+10: Scan G 90 180

@@ -1,0 +1,14 @@
+1:Fire S1 135
+1:Fire S2 140
+3:Fire S1 145
+3:Fire S2 150
+5:Fire S1 135
+5:Fire S2 140
+7:Fire S1 145
+7:Fire S2 150
+8: Scan G 135 90
+9:Fire S1 135
+9:Fire S2 140
+10:Fire S1 145
+10:Fire S2 150
+10: Scan G 135 90

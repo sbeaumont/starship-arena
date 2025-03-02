@@ -1,0 +1,4 @@
+1: Fire R1 90
+3: Fire R1 60
+5: Fire R1 100
+7: Fire R1 90

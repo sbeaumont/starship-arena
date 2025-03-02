@@ -1,0 +1,10 @@
+1:A10
+2:R15
+3:Boost W 25
+4:Fire R1 120
+5:Scan G 0 180
+6:Fire S1 115
+7:Fire SF1 0
+8:Fire M1 100
+9:Fire M1 115
+10:Fire M1 120

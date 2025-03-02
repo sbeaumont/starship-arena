@@ -1,0 +1,10 @@
+1:L35
+2:Fire N1 335
+3:Fire N1 30
+4:Fire N1 25
+5:A5
+6:L5
+7:Fire R1 15
+8:Fire RF1 35
+9:Fire R1 25
+10:Scan G 45 180

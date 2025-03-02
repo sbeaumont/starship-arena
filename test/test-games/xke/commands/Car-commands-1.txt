@@ -1,0 +1,10 @@
+1: L170
+2: A25
+3: A20
+8: Scan G 0 45
+9: Scan G 0 140
+9: Fire RF1 10
+10: A-25
+10: R20
+10: Fire SF1 0
+10: Fire RF1 10

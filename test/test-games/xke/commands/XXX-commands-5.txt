@@ -1,0 +1,14 @@
+1: L 45
+1: Fire N1 -10
+1: Fire R1 10
+1: Fire R2 225
+1: scan G -180 30
+2: L 45
+3: L 45
+4: L 45
+5: L 45
+6: Activation Cloak on
+7: Boost W 50
+8: Fire R1 -90
+10: Fire R1 -30
+10: Fire R2 60

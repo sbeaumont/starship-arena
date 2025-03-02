@@ -1,0 +1,15 @@
+1: Fire SF1 -45
+1: Scan G 180 180
+2: L 45
+2: Fire SF1 -45
+3: L 45
+3: Fire SF1 -45
+4: L 45
+4: Fire SF1 -45
+5: L 45
+5: Fire SF1 -45
+5: Scan G 0 180
+6: Fire L1 Kartoffel
+6: Fire R1 180
+6: Fire N1 180
+10: Scan G 0 180

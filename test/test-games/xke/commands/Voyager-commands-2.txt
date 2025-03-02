@@ -1,0 +1,7 @@
+1: Fire RF1 34
+1: Fire M1 35
+2: R 90
+5: Scan G 0 180
+6: Fire N1 15
+7: Fire R1 30
+10: Scan G 0 180

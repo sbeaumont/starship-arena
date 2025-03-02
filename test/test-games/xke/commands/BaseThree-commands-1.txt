@@ -1,0 +1,4 @@
+1: Fire S1 0
+2: Fire S1 0
+4: Fire S2 20
+4: Fire S1 -20

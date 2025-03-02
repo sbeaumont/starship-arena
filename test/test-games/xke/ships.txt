@@ -1,0 +1,13 @@
+     Name   Type Faction    Player    X    Y
+  BaseOne SB2531     One   TeamOne  548  116
+  Voyager  A2527     One       Rik  479  121
+TheGalaxy  A2539     One     Ellen  474   56
+      Car  A2539     One     Simon  525   45
+  BaseTwo SB2531     Two   TeamTwo -372  399
+   PewPew  I2544     Two    Dennis -414  369
+ WhereAmI  I2552     Two   Martijn -392  328
+Kartoffel  I2526     Two     Arjan -356  356
+BaseThree SB2531   Three TeamThree  -26 -508
+   Pi-tje  F2551   Three    Pieter   -6 -467
+      XXX  F2547   Three     Peter  -37 -535
+    McAve  F2547   Three     Menno   -5 -563
