@@ -19,9 +19,10 @@ logger = logging.getLogger('starship-arena.round')
 
 class GameRound(object):
     """Takes the correct steps to process a game round."""
-    def __init__(self, objects_in_space: dict):
+    def __init__(self, objects_in_space: dict, round_nr: int):
         self.ois = objects_in_space
         self.destroyed = dict()
+        self.round_nr = round_nr
 
     def pre_move_commands(self, cs: CommandSet, tick: int):
         logger.debug(f"Pre-Move Commands @ tick {tick} for {cs}")
@@ -85,7 +86,7 @@ class GameRound(object):
                 self.destroyed[ois_name] = self.ois[ois_name]
                 del self.ois[ois_name]
 
-    def do_round(self, ship_commands: dict, round_number: int):
+    def do_round(self, ship_commands: dict):
         """The main execution of the round. Here is where it all happens."""
         for ois in self.ois.values():
             ois.round_reset()
@@ -94,7 +95,7 @@ class GameRound(object):
             ship.commands = ship_commands[ship.name]
 
         # Do 10 ticks, 1-10
-        round_start = Tick.for_start_of_round(round_number)
+        round_start = Tick.for_start_of_round(self.round_nr)
         for t in round_start.ticks_for_round:
             self.do_tick(t)
 

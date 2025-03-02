@@ -58,6 +58,10 @@ class MockGameDirectory(object):
     def init_file(self) -> str:
         return 'mock_init_file_name'
 
+    @property
+    def game_name(self) -> str:
+        return 'mock_game_name'
+
     def save(self, obj, nr):
         self.round_number = nr
 
@@ -121,8 +125,8 @@ class TestGames2(unittest.TestCase):
     def _run(self, game: Game, nr_of_rounds: int):
         for i in range(1, nr_of_rounds + 1):
             game.init_round(i)
-            self.assertTrue(game.round_ready)
-            game.do_round()
+            self.assertTrue(game.current_round_ready)
+            game.process_current_round()
 
     def test_game_2(self):
         game = self._setup_game()

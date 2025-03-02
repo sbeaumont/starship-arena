@@ -153,14 +153,13 @@ class AppFacade(object):
             f.write('\n'.join(commands))
             logger.debug(f"{commands} written to {file_name}")
 
-    def process_turn(self, game):
-        game = Game(self.gd(game))
-        game.init_next_round()
-        if not game.missing_command_files:
-            logger.info(f"Processing round {game.round_nr} of game {game}")
-            game.do_round()
+    def process_turn(self, game_name: str):
+        game = Game(self.gd(game_name))
+        if game.current_round_ready:
+            logger.info(f"Processing round {game.current_round_nr} of game {game_name}")
+            game.process_current_round()
         else:
-            logger.info(f"Not proceeding to process {game}: not all command files ok")
+            logger.info(f"Not proceeding to process {game_name}: not all command files ok")
 
     def create_new_game(self, name: str):
         logger.info(f"Creating new game: {name}")

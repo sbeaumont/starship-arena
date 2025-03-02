@@ -54,7 +54,7 @@ class TestGameOne(unittest.TestCase):
     def setUp(self):
         self.stub = GameDirectoryStub()
         self.objects = self.stub.ships
-        self.game_round = GameRound(self.objects)
+        self.game_round = GameRound(self.objects, 1)
         commands = [line.strip() for line in self.stub.commands().splitlines()]
         self.commands = {
             'Blaster': parse_commands(commands, self.objects['Blaster'], self.objects),
@@ -62,7 +62,7 @@ class TestGameOne(unittest.TestCase):
         }
 
     def test_round(self):
-        self.game_round.do_round(self.commands, 1)
+        self.game_round.do_round(self.commands)
         self.assertEqual(Point(1, 90), self.objects['Blaster'].pos)
 
 

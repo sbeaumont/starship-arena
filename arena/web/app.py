@@ -70,10 +70,10 @@ def game_overview(game_name: str):
         factions[s.faction].append(s)
     return render_template('game-overview.html',
                            factions=factions,
-                           round_nr=game.round_nr,
+                           round_nr=game.current_round_nr - 1,
                            game=game.name,
-                           command_file=game.next_round().command_file_status,
-                           all_command_files_ok=game.next_round_ready,
+                           command_file=game.command_file_status,
+                           all_command_files_ok=game.current_round_ready,
                            dead_ships=game.graveyard.values()
                            )
 

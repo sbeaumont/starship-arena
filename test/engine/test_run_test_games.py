@@ -18,9 +18,8 @@ class TestGames(unittest.TestCase):
 
     def _run(self, game: Game, nr_of_rounds: int):
         for i in range(1, nr_of_rounds + 1):
-            game.init_round(i)
-            self.assertTrue(game.round_ready)
-            game.do_round()
+            self.assertTrue(game.current_round_ready)
+            game.process_current_round()
 
     def test_game_1(self):
         game = self._setup_game('test-game')
@@ -40,7 +39,7 @@ class TestGames(unittest.TestCase):
         number_of_rounds = 1
         self._run(game, number_of_rounds)
 
-        self.assertEqual(game._dir.last_round_number, number_of_rounds)
+        self.assertEqual(number_of_rounds, game._dir.last_round_number)
         ships_1 = game._dir.load_current_status()
         self.assertEqual(ships_1['Blaster-1'].score, total_score)
         self.assertTrue(os.path.exists(os.path.join(self.test_dir, 'test-game', 'round-0')))

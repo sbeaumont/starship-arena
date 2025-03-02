@@ -13,13 +13,11 @@ def go():
     game = setup_game(gd)
 
     for i in range(3):
-        logger.info("Starting game round %s", game.round_nr)
-        if game.round_ready:
-            game.do_round()
+        logger.info("Starting game round %s", game.current_round_nr)
+        if game.current_round_ready:
+            game.process_current_round()
         else:
             break
-        game.init_next_round()
-
 
 if __name__ == '__main__':
     go()
