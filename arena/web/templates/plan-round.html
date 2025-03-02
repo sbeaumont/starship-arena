@@ -12,7 +12,29 @@
 </div>
 <div>
     <h1>{{ ship.name }}: plan next round</h1>
-    <img style="display: block; margin: auto" src="{{ url_for('turn_picture', game=game, ship_name=ship.name, round=ship.history.last_round) }}" max-width="100%"/>
+    <img src="{{ url_for('turn_picture', game=game, ship_name=ship.name, round=ship.history.last_round) }}" max-width="100%"/>
+    <h2>Last Scans</h2>
+    {% if ship.history[ship.history.last].scans %}
+        <table class="small-text">
+        <tr>
+            <th>Name</th>
+            <th>Position</th>
+            <th>Distance</th>
+            <th>Direction (Rel)</th>
+            <th>Heading (Abs)</th>
+        </tr>
+        {% for scan in ship.history[ship.history.last].scans %}
+            <tr>
+                <td>{{scan.name}}</td>
+                <td>{{scan.pos.as_tuple}}</td>
+                <td>{{scan.distance}}</td>
+                <td>{{scan.direction}}</td>
+                <td>{{scan.heading}}</td>
+            </tr>
+        {% endfor %}
+        </table>
+    {% endif %}
+    <h2>Plan</h2>
     <table>
         <tr>
             <td style="vertical-align: top;font-family: monospace">

@@ -1,0 +1,3 @@
+       Name  Type Faction Player    X Y
+    Blaster H2545     One  Serge  300 0
+Firestarter H2552     Two   Ilya -300 0
