@@ -1,20 +1,19 @@
 {% extends 'base.html' %}
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{% block title %}Starship Arena{% endblock %}</title>
-</head>
-<body>
+
+{% block title %}Starship Arena{% endblock %}
+
 {% block content %}
-<div>
-    <table>
-    {% for game in games %}
-        <tr>
-            <td><a href="{{ url_for('game_overview', game_name=game) }}">{{game}}</a></td>
-        </tr>
-    {% endfor %}
-    </table>
-</div>
+<section>
+    <h1>Running Games</h1>
+    <div id="game_overview">
+        <span class="gamelink">Game Name</span>
+        <span class="round_number">Round</span>
+        <span class="ready_to_process">Ready</span>
+        {% for game in games %}
+        <a class="gamelink" href="{{ url_for('game_overview', game_name=game.name) }}">{{game.name}}</a>
+        <span class="round_number">Round {{game.current_round_nr}}</span>
+        <span class="ready_to_process">{{"Yes" if game.current_round_ready else "No"}}</span>
+        {% endfor %}
+    </div>
+</section>
 {% endblock content %}
-</body>
-</html>

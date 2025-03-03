@@ -92,8 +92,11 @@ class AppFacade(object):
 
     # ---------------------------------------------------------------------- QUERIES - Game
 
-    def all_games(self) -> list:
+    def all_game_names(self) -> list:
         return [os.path.basename(d) for d in self.data_root.iterdir() if d.is_dir()]
+
+    def all_game_objs(self) -> list:
+        return [self.game(name) for name in self.all_game_names()]
 
     def ships_for_game(self, game) -> list:
         return self.game(game).player_ships

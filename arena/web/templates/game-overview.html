@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{% block title %}Game Overview: {{game}}{% endblock %}</title>
-</head>
-<body>
+
+{% block title %}Game Overview: {{game}}{% endblock %}
+
 {% block content %}
-<h1>Overview of game {{game}} Round {{round_nr}}</h1>
-<div>
-    {% if all_command_files_ok %}<a href="{{ url_for('process_turn', game=game) }}">PROCESS TURN IF YOU DARE</a>{% endif %}
+<h1>Overview</h1>
+<h2>Game: {{game}} Round: {{round_nr}}</h2>
+{% if all_command_files_ok %}
+<div style="padding: 10px; background-color: darkgoldenrod; color: yellow;">
+    Turn can be processed!
 </div>
+{% endif %}
 <div>
     <table>
         <tr>
@@ -74,5 +74,3 @@
     </table>
 </div>
 {% endblock content %}
-</body>
-</html>

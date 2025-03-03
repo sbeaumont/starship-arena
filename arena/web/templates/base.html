@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
     {% block head %}
-        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.bundle.css') }}"/>
-        <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+    <title>{% block title %}{% endblock %}</title>
     {% endblock %}
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,14 +15,22 @@
 </head>
 <body>
     <nav>
-        <ul>
-            <li><a href="/">Home</a></li>
-            <li><a href="{{ url_for('ship_overview') }}">Ship Overview</a></li>
-            <li><a href="{{ url_for('manual_pdf') }}">Manual</a></li>
-            <li><a href="{{ url_for('lore') }}">Lore</a></li>
-        </ul>
+        <div id="game_name">
+            Starship Arena
+        </div>
+        <div>
+            <a href="/">Games</a></li>
+        </div>
+        <div>
+            <a href="{{ url_for('ship_overview') }}">Ship Overview</a>
+            <a href="{{ url_for('manual_pdf') }}">Manual</a>
+            <a href="{{ url_for('lore') }}">Lore</a>
+        </div>
+        <div>
+            <a href="{{ url_for('admin') }}">Admin</a>
+        </div>
     </nav>
-    <div id="content" class="container">{% block content %}{% endblock %}</div>
+    <div id="content" class="main">{% block content %}{% endblock %}</div>
     <div id="footer">{% block footer %}{% endblock %}</div>
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.js') }}"/>
 </body>

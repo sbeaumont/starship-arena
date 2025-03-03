@@ -1,34 +1,31 @@
 {% extends 'base.html' %}
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{% block title %}Admin{% endblock %}</title>
-</head>
-<body>
+
+{% block title %}Admin{% endblock %}
 
 {% block content %}
-<div>
-    <table>
-        <tr>
-            <th>Game</th>
-        </tr>
-    {% for game in games %}
-        <tr>
-            <td><a href="{{ url_for('game_overview', game=game) }}">{{game}}</a></td>
-        </tr>
-    {% endfor %}
-    </table>
+<section>
+    <h1>Admin</h1>
+    <div id="admin_overview">
+        <span class="gamelink">Game Name</span>
+        <span class="round_number">Round</span>
+        <span class="ready_to_process">Ready</span>
+        {% for game in games %}
+        <a class="gamelink" href="{{ url_for('game_overview', game_name=game.name) }}">{{game.name}}</a>
+        <span class="round_number">Round {{game.current_round_nr}}</span>
+        <span class="ready_to_process">{% if game.current_round_ready %}<a href="{{ url_for('process_turn', game=game.name) }}">Process</a>{% endif %}</span>
+        {% endfor %}
+    </div>
     <div>
         <form action="{{ request.path }}" method="POST">
             <div>
                 <input type="text" name="game_name">
                 <input type="submit" name="action" value="New game">
                 {% if messages %}
-                    <ul>
+                <ul>
                     {% for message in messages %}
-                        <li>{{message}}</li>
+                    <li>{{message}}</li>
                     {% endfor %}
-                    </ul>
+                </ul>
                 {% endif %}
             </div>
             <div>
@@ -36,8 +33,5 @@
             </div>
         </form>
     </div>
-</div>
+</section>
 {% endblock %}
-
-</body>
-</html>

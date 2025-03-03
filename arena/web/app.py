@@ -43,14 +43,14 @@ def admin():
         if ('action' in request.form) and (request.form['action'] == 'New game'):
             name_v = NameValidator(request.form['game_name'])
             if name_v.is_valid:
-                if name_v.cleaned not in facade().all_games():
+                if name_v.cleaned not in facade().all_game_names():
                     facade().create_new_game(name_v.cleaned)
                 else:
                     messages.append("Game name already exists.")
             else:
                 messages = name_v.messages
     return render_template('admin.html',
-                           games=facade().all_games(),
+                           games=facade().all_game_objs(),
                            messages=messages)
 
 
@@ -58,7 +58,7 @@ def admin():
 def overview():
     """Home page."""
     return render_template('index.html',
-                           games=facade().all_games())
+                           games=facade().all_game_objs())
 
 
 @app.route('/game_overview/<game_name>')
@@ -154,4 +154,3 @@ def plan_round(game: str, ship_name: str):
                            message=message,
                            total_rounds=facade().current_round_of_game(game)
                            )
-

@@ -33,9 +33,9 @@ class SB2531(ShipType):
         return [
             Laser('L1', 300),
             Laser('L2', 300),
-            Launcher('S1', Splinter(), 40),
-            Launcher('S2', Splinter(), 40),
-            Launcher('R1', Rocket(), 75),
-            Launcher('R2', Rocket(), 75),
+            Launcher('S1', Splinter(), 5),
+            Launcher('S2', Splinter(), 5),
+            Launcher('R1', Rocket(), 5),
+            Launcher('R2', Rocket(), 5),
             Gravscan('G')
         ]
