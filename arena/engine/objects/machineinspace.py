@@ -97,3 +97,11 @@ class MachineInSpace(ObjectInSpace, metaclass=ABCMeta):
     def type_name(self):
         return self._type.type_name
 
+    @property
+    def simple_snapshot(self):
+        snap = super().simple_snapshot
+        snap['hull'] = self.hull
+        snap['battery'] = self.battery
+        snap['class'] = self.class_name
+        return snap
+

@@ -12,7 +12,6 @@ from pathlib import Path
 from arena.engine.admin import GameSetup
 from arena.engine.command import parse_commands
 from arena.engine.gamedirectory import GameDirectory
-from arena.engine.round import GameRound
 from arena.engine.game import Game
 from secret import GAME_DATA_DIR
 from arena.engine.objects.registry.builder import all_ship_types
@@ -114,8 +113,8 @@ class AppFacade(object):
         round_nr = self.current_round_of_game(game)
         return self.commands_of_round(game, ship_name, round_nr)
 
-    def get_ship(self, game: str, ship_name: str, round_nr=None) -> Ship:
-        gd = self.gd(game)
+    def get_ship(self, game_name: str, ship_name: str, round_nr=None) -> Ship:
+        gd = self.gd(game_name)
         dead_ships = gd.load_graveyard()
         if round_nr is not None and (round_nr > -1):
             if ship_name in dead_ships:
@@ -134,10 +133,10 @@ class AppFacade(object):
 
     # ---------------------------------------------------------------------- COMMANDS
 
-    def check_commands(self, commands: list[str], game: str, ship_name: str) -> list[(bool, str)]:
-        logger.debug(f"Checking commands for {game} {ship_name}: {commands}")
-        ship = self.get_ship(game, ship_name)
-        ois = self.gd(game).load_current_status()
+    def check_commands(self, game_name: str, ship_name: str, commands: list[str]) -> list[(bool, str)]:
+        logger.debug(f"Checking commands for {game_name} {ship_name}: {commands}")
+        ship = self.get_ship(game_name, ship_name)
+        ois = self.gd(game_name).load_current_status()
         parse_result = parse_commands(commands, ship, ois)
         commands = list()
         if parse_result:

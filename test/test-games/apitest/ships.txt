@@ -1,0 +1,3 @@
+   Name  Type Faction Player   X Y
+Blaster H2545     One  Serge   1 0
+ Shaper H2552     Two  Serge 122 0

@@ -1,0 +1,40 @@
+/* The sidebar menu */
+
+#game_name {
+    color: white;
+    font-weight: bolder;
+    padding: 6px 20px 20px 20px;
+}
+
+nav {
+    height: 100%; /* Full-height: remove this if you want "auto" height */
+    width: 160px; /* Set the width of the sidebar */
+    position: fixed; /* Fixed Sidebar (stay in place on scroll) */
+    z-index: 1; /* Stay on top */
+    top: 0; /* Stay at the top */
+    left: 0;
+    background-color: #111; /* Black */
+    overflow-x: hidden; /* Disable horizontal scroll */
+    padding-top: 20px;
+}
+
+/* The navigation menu links */
+nav a {
+    padding: 6px 8px 6px 16px;
+    text-decoration: none;
+    color: #818181;
+    display: block;
+}
+
+/* When you mouse over the navigation links, change their color */
+nav a:hover {
+    color: #f1f1f1;
+}
+
+nav div {
+    margin: auto;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    border-bottom: #f1f1f1 solid 1px;
+    width: 90%;
+}

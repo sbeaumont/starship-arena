@@ -1,12 +1,8 @@
 {% block ship %}
 <div id="ship">
     <h1>{{ ship.name }}: Round {{ round }}</h1>
-    <table>
-        <tr>
-            <td><b>Score</b></td><td>{{ ship.score }}</td>
-            <td><b>Ship Type</b></td><td>{{ ship._type.name }}</td>
-        </tr>
-    </table>
+    <div><b>Score</b>&nbsp;{{ ship.score }}</div>
+    <div><b>Ship Type</b>&nbsp;{{ ship._type.name }}</div>
     <br/>
     <img src="{{ url_for('turn_picture', game=game, ship_name=ship.name, round=round) }}" max-width="100%"/>
 

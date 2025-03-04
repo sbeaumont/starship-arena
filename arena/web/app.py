@@ -134,9 +134,9 @@ def plan_round(game: str, ship_name: str):
     message = ''
     if request.method == 'POST':
         if request.form['action'] == 'Check':
-            commands = facade().check_commands(cleanup_command_form(request.form['commands']), game, ship_name)
+            commands = facade().check_commands(game, ship_name, cleanup_command_form(request.form['commands']))
         elif request.form['action'] == 'Save':
-            commands = facade().check_commands(cleanup_command_form(request.form['commands']), game, ship_name)
+            commands = facade().check_commands(game, ship_name, cleanup_command_form(request.form['commands']))
             if all([e[0] for e in commands]):
                 facade().save_last_commands(game, ship_name, cleanup_command_form(request.form['commands']))
                 message = 'Saved.'
@@ -146,7 +146,7 @@ def plan_round(game: str, ship_name: str):
             commands = [False, 'Wrong action']
             message = 'Wrong Action!'
     else:
-        commands = facade().check_commands(facade().get_last_commands(game, ship_name), game, ship_name)
+        commands = facade().check_commands(game, ship_name, facade().get_last_commands(game, ship_name))
     return render_template('plan-round.html',
                            game=game,
                            ship=facade().get_ship(game, ship_name),

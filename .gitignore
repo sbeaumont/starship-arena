@@ -3,3 +3,4 @@
 **/__pycache__
 .venv/
 secret.py
+/test/test-games/xke/commands.tar.gz

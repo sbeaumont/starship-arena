@@ -149,13 +149,18 @@ class ObjectInSpace(ABC):
 
     @property
     def snapshot(self):
+        snap = self.simple_snapshot
+        snap['xy'] = self.vector.pos
+        snap['owner'] = self.owner
+        return snap
+
+    @property
+    def simple_snapshot(self):
         return {
             'name': self.name,
-            'xy': self.vector.pos,
             'pos': self.pos,
             'heading': self.heading,
             'speed': self.speed,
-            'owner': self.owner,
         }
 
     # ---------------------------------------------------------------------- COMMANDS

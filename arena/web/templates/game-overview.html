@@ -10,31 +10,27 @@
     Turn can be processed!
 </div>
 {% endif %}
-<div>
-    <table>
-        <tr>
-            <th>Name</th>
-            <th>Score</th>
-            <th>Player</th>
-            <th colspan="{{round_nr + 1}}">Past rounds</th>
-            <th>Command file?</th>
-        </tr>
-        {% for faction, ships in factions.items() %}
-            <tr><td colspan="{{ round_nr + 4 }}">{{faction}}</td></tr>
-            {% for ship in ships %}
-            <tr>
-                <td><a href="{{ url_for('plan_round', game=game, ship_name=ship.name) }}">{{ ship.name }}</a></td>
-                <td>{{ ship.score }}</td>
-                <td>{{ ship.player }}</td>
-                {% for i in range(round_nr + 1) %}
-                    <td><a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a></td>
-                {% endfor %}
-                <td {% if not command_file[ship.name] %}class="error">No{% else %}class="OK">Yes{% endif %}</td>
-            </tr>
-            {% endfor %}
-        {% endfor %}
-    </table>
+{% for faction, ships in factions.items() %}
+<div id="game_overview">
+    <div class="name"><em>Faction {{faction}}</em></div>
+    <span class="name header">Name</span>
+    <span class="score header">Score</span>
+    <span class="player header">Player</span>
+    <span class="past-rounds header">Past Rounds</span>
+    <span class="command_file_ready">Command File?</span>
+    {% for ship in ships %}
+    <span class="name"><a href="{{ url_for('plan_round', game=game, ship_name=ship.name) }}">{{ ship.name }}</a></span>
+    <span class="score">{{ ship.score }}</span>
+    <span class="player">{{ ship.player }}</span>
+    <span class="past-rounds">
+    {% for i in range(round_nr + 1) %}
+        <a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a>
+    {% endfor %}
+    </span>
+    <span class="command_file_ready {% if not command_file[ship.name] %}error">No{% else %}ok">Yes{% endif %}</span>
+    {% endfor %}
 </div>
+{% endfor %}
 {% if dead_ships %}
 <div>
     <h1>Graveyard</h1>
