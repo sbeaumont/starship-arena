@@ -19,54 +19,45 @@
     <span class="past-rounds header">Past Rounds</span>
     <span class="command_file_ready">Command File?</span>
     {% for ship in ships %}
-    <span class="name"><a href="{{ url_for('plan_round', game=game, ship_name=ship.name) }}">{{ ship.name }}</a></span>
-    <span class="score">{{ ship.score }}</span>
-    <span class="player">{{ ship.player }}</span>
-    <span class="past-rounds">
-    {% for i in range(round_nr + 1) %}
-        <a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a>
-    {% endfor %}
-    </span>
-    <span class="command_file_ready {% if not command_file[ship.name] %}error">No{% else %}ok">Yes{% endif %}</span>
+        <span class="name"><a href="{{ url_for('plan_round', game=game, ship_name=ship.name) }}">{{ ship.name }}</a></span>
+        <span class="score">{{ ship.score }}</span>
+        <span class="player">{{ ship.player }}</span>
+        <span class="past-rounds">
+        {% for i in range(round_nr + 1) %}
+            <a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a>
+        {% endfor %}
+        </span>
+        <span class="command_file_ready {% if not command_file[ship.name] %}error">No{% else %}ok">Yes{% endif %}</span>
     {% endfor %}
 </div>
 {% endfor %}
 {% if dead_ships %}
-<div>
-    <h1>Graveyard</h1>
-    <table>
-        <tr>
-            <th>Name</th>
-            <th>Score</th>
-            <th>Player</th>
-            <th colspan="{{round_nr}}">Past rounds</th>
-        </tr>
-        {% for ship in dead_ships %}
-        <tr>
-            <td>{{ ship.name }}</td>
-            <td>{{ ship.score }}</td>
-            <td>{{ ship.player }}</td>
-            {% for i in range(ship.history.last_round + 1) %}
-                <td><a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a></td>
-            {% endfor %}
-            <td colspan="{{ round_nr - ship.history.last_round + 1 }}"></td>
-        </tr>
+<h1>Graveyard</h1>
+<div id="graveyard">
+    <span class="name header">Name</span>
+    <span class="score header">Score</span>
+    <span class="player header">Player</span>
+    <span class="past-rounds header">Past rounds</span>
+    {% for ship in dead_ships %}
+        <span class="name">{{ ship.name }}</span>
+        <span class="score">{{ ship.score }}</span>
+        <span class="player">{{ ship.player }}</span>
+        <span class="past-rounds">
+        {% for i in range(ship.history.last_round + 1) %}
+            <a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a>
         {% endfor %}
-    </table>
+        </span>
+    {% endfor %}
 </div>
 {% endif %}
 <div>
     <h1>Honor system</h1>
-    <table>
-        <tr><td colspan="{{ round_nr + 3 }}">There is NO protection built in to prevent players to look at each other's results.<br/>
-            We're working on an honor system: please make sure you only look at your own ships.<br/>
-            When the round ends by all means browse around!</td>
-        </tr>
-        <tr><td colspan="{{ round_nr + 3 }}">It's fine to look at the output of your teammates,<br/>
-            otherwise we'd be copy-pasting stuff anyway. Also if you are completely out of the game <br/>
-            because all your ships are blown up, by all means have a look around, making<br/>
-        sure not to give anything away to those still in the game.</td>
-        </tr>
-    </table>
+    <p>There is NO protection built in to prevent players to look at each other's results.
+        We're working on an honor system: please make sure you only look at your own ships.
+            When the round ends by all means browse around!</p>
+        <p>It's fine to look at the output of your Faction mates,
+            otherwise we'd be copy-pasting stuff anyway. Also if you are completely out of the game
+            because all your ships are blown up, by all means have a look around, making
+        sure not to give anything away to those still in the game.</p>
 </div>
 {% endblock content %}
