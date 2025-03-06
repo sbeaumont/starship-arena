@@ -11,7 +11,7 @@ from pathlib import Path
 
 from arena.engine.admin import GameSetup
 from arena.engine.command import parse_commands
-from arena.engine.gamedirectory import GameDirectory
+from arena.engine.gamedirectory import GameDirectory, ShipFile
 from arena.engine.game import Game
 from secret import GAME_DATA_DIR
 from arena.engine.objects.registry.builder import all_ship_types
@@ -163,5 +163,11 @@ class AppFacade(object):
         else:
             logger.info(f"Not proceeding to process {game_name}: not all command files ok")
 
-    def create_new_game(self, name: str):
+    def create_new_game(self, name: str, ship_init_file: str):
         logger.info(f"Creating new game: {name}")
+
+        gd = GameDirectory(str(self.data_root), name)
+        if not gd.exists or not gd.has_been_setup:
+            logger.info(f"Setting up game {name}, since this was not done yet.")
+            ship_file = ShipFile(gd, ship_init_file)
+            GameSetup(gd, ship_file).execute()

@@ -29,6 +29,10 @@ class GameDirectory(object):
 
     # ---------------------------------------------------------------------- QUERIES - Filenames
 
+    @property
+    def exists(self) -> bool:
+        return os.path.exists(self._dir)
+
     def file_exists(self, name) -> bool:
         return os.path.exists(os.path.join(self._dir, name))
 

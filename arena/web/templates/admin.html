@@ -15,23 +15,22 @@
         <span class="ready_to_process">{% if game.current_round_ready %}<a href="{{ url_for('process_turn', game=game.name) }}">Process</a>{% endif %}</span>
         {% endfor %}
     </div>
-    <div>
+    <div id="admin-new-game">
+        <h2>Create New Game</h2>
         <form action="{{ request.path }}" method="POST">
-            <div>
-                <input type="text" name="game_name">
-                <input type="submit" name="action" value="New game">
-                {% if messages %}
-                <ul>
-                    {% for message in messages %}
-                    <li>{{message}}</li>
-                    {% endfor %}
-                </ul>
-                {% endif %}
-            </div>
-            <div>
-                <textarea id="ship_init_file"></textarea>
-            </div>
+            <label for="game_name">Game Name</label>
+            <input type="text" id="game_name" name="game_name">
+            <label for="ship_init_file">Ships</label>
+            <textarea id="ship_init_file" name="ship_init_file">Name Type Faction Player</textarea>
+            <input type="submit" class="block" name="action" value="New game">
         </form>
+        {% if messages %}
+        <ul>
+            {% for message in messages %}
+            <li>{{message}}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

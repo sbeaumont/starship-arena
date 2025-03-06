@@ -43,6 +43,24 @@ a {
     }
 }
 
+#admin-new-game {
+    label {
+        display: block;
+        margin-top: 10px;
+        margin-bottom: 5px;
+    }
+
+    textarea {
+        margin-top: 5px;
+        width: 300px;
+        height: 100px;
+    }
+
+    .block {
+        display: block;
+    }
+}
+
 #game_overview {
     display: grid;
     width: auto;

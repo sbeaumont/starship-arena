@@ -44,7 +44,7 @@ def admin():
             name_v = NameValidator(request.form['game_name'])
             if name_v.is_valid:
                 if name_v.cleaned not in facade().all_game_names():
-                    facade().create_new_game(name_v.cleaned)
+                    facade().create_new_game(name_v.cleaned, request.form['ship_init_file'])
                 else:
                     messages.append("Game name already exists.")
             else:
