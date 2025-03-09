@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 
+{% block title %}Ship Overview{% endblock %}
+
 {% block content %}
 <h2>Ships</h2>
 
@@ -7,6 +9,42 @@
 
 {% for st in ship_types %}
 <h3>{{ st.name }}</h3>
+
+<div class="ship_status">
+    <div id="speed">
+        <label>Max Speed</label>
+        <span class="speed">{{ st.max_speed }}</span>
+    </div>
+    <div id="hull">
+        <label>Hull</label>
+        <span class="hull">{{ ship.hull }}/{{ ship._type.max_hull }}</span>
+    </div>
+    <div id="battery">
+        <label>Battery</label>
+        <span class="battery">{{ ship.battery }}/{{ ship._type.max_battery }}</span>
+    </div>
+    {% for component in ship.defense %}
+    <div id="defense">
+        <label>{{ component.name }}</label>
+        <span class="defense">{% for stat_name, stat_value in component.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</span>
+    </div>
+    {% endfor %}
+</div>
+<div id="ship_components" class="info_grid">
+    {% for component in ship.weapons.values() %}
+    <label>{{ component.name }}</label>
+    <div class="component_stats">
+        {% for stat_name, stat_value in component.status.items() %}
+        <span class="component_stat">
+            <label>{{ stat_name }}</label>
+            <span class="stat_value">({{ stat_value }})</span>
+        </span>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+
+
 <table>
     <tr>
         <td>Speed</td>

@@ -23,13 +23,16 @@ a {
     width: calc(100% - 180px);
 }
 
-#running_games_overview, #admin_overview {
+.info_grid {
     display: grid;
     width: auto;
-    grid-template-columns: max-content max-content auto;
     row-gap: 15px;
     column-gap: 15px;
     background-color: #000;
+}
+
+#running_games_overview, #admin_overview {
+    grid-template-columns: max-content max-content auto;
     padding: 10px;
 
     .gamelink {
@@ -62,13 +65,7 @@ a {
 }
 
 #game_overview {
-    display: grid;
-    width: auto;
-    /* Name Score Player Past-Rounds Command-File-Ok */
     grid-template-columns: max-content max-content max-content max-content max-content;
-    row-gap: 15px;
-    column-gap: 15px;
-    background-color: #000;
     padding: 20px 20px 30px 10px;
     border-bottom: #f1f1f1 solid 1px;
 
@@ -96,13 +93,7 @@ a {
 }
 
 #graveyard {
-    display: grid;
-    width: auto;
-    /* Name Score Player Past-Rounds Command-File-Ok */
     grid-template-columns: max-content max-content max-content max-content;
-    row-gap: 15px;
-    column-gap: 15px;
-    background-color: #000;
     padding: 20px 20px 30px 10px;
     border-bottom: #f1f1f1 solid 1px;
 
@@ -126,13 +117,7 @@ a {
 }
 
 #ship_status {
-    display: grid;
-    width: auto;
-    /* Name Score Player Past-Rounds Command-File-Ok */
     grid-template-columns: repeat(3, max-content);
-    row-gap: 15px;
-    column-gap: 15px;
-    background-color: #000;
 
     label {
         font-weight: bold;
@@ -160,21 +145,16 @@ a {
 }
 
 #ship_components {
-    display: grid;
-    width: auto;
-    grid-template-columns: repeat(3, max-content max-content);
+    grid-template-columns: repeat(4, max-content max-content);
     grid-auto-flow: row;
     margin-top: 20px;
     row-gap: 10px;
-    column-gap: 15px;
-    background-color: #000;
 
+    .component_stat {
+        display: block;
+    }
     label {
         font-weight: bold;
-        /*grid-column: 1;*/
-    }
-    .component_values {
-        /*grid-column: 2;*/
     }
     .component_stat {
         display: block;
@@ -182,13 +162,8 @@ a {
 }
 
 .scans {
-    display: grid;
-    width: auto;
-    /* Name Score Player Past-Rounds Command-File-Ok */
     grid-template-columns: max-content max-content max-content max-content max-content;
     row-gap: 5px;
-    column-gap: 15px;
-    background-color: #000;
     padding: 20px 20px 30px 10px;
     border-bottom: #f1f1f1 solid 1px;
 

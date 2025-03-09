@@ -11,61 +11,59 @@
     <h2>Scans</h2>
     {% if not ship.history[ship.history.last].scans %}
         <p>No scans on last tick.</p>
+    {% else %}
+        <div class="scans info_grid">
+            <span class="name header">Name</span>
+            <span class="position header">Position</span>
+            <span class="distance header">Distance</span>
+            <span class="direction_rel header">Direction (Rel)</span>
+            <span class="heading_abs header">Heading (Abs)</span>
+            {% for scan in ship.history[ship.history.last].scans_sorted_by('distance') %}
+                <span class="name">{{scan.name}}</span>
+                <span class="position">{{scan.pos.as_tuple}}</span>
+                <span class="distance">{{scan.distance}}</span>
+                <span class="direction_rel">{{scan.direction}}</span>
+                <span class="direction_abs">{{scan.heading}}</span>
+            {% endfor %}
+        </div>
     {% endif %}
 
-    <div class="scans">
-        <span class="name header">Name</span>
-        <span class="position header">Position</span>
-        <span class="distance header">Distance</span>
-        <span class="direction_rel header">Direction (Rel)</span>
-        <span class="heading_abs header">Heading (Abs)</span>
-        {% for scan in ship.history[ship.history.last].scans %}
-            <span class="name">{{scan.name}}</span>
-            <span class="position">{{scan.pos.as_tuple}}</span>
-            <span class="distance">{{scan.distance}}</span>
-            <span class="direction_rel">{{scan.direction}}</span>
-            <span class="direction_abs">{{scan.heading}}</span>
-        {% endfor %}
-    </div>
-
     {% if start_tick.round > 0 %}
+        <h2>Commands</h2>
+        <p>
+        {% for c in commands %}
+            {{c}}<br/>
+        {% endfor %}
+        </p>
 
-    <h2>Commands</h2>
-    <p>
-    {% for c in commands %}
-        {{c}}<br/>
-    {% endfor %}
-    </p>
-
-    <h2>Events</h2>
-    {% for tick in start_tick.ticks_for_round %}
-        {% if ship.history.get(tick, None) %}
-            <h3>Tick {{tick.tick}} (Score {{ ship.history[tick].hit_score }})</h3>
-            <p>
-            {% for e in ship.history[tick].non_scan_events %}
-                {{e}}<br/>
-            {% endfor %}
-            </p>
-            {% if ship.history[tick].scans %}
-                <em class="collapsible">Scans</em>
-                <div class="scans collapsed-content">
-                    <span class="name header">Name</span>
-                    <span class="position header">Position</span>
-                    <span class="distance header">Distance</span>
-                    <span class="direction_rel header">Direction (Rel)</span>
-                    <span class="heading_abs header">Heading (Abs)</span>
-                    {% for scan in ship.history[tick].scans %}
-                        <span class="name">{{scan.name}}</span>
-                        <span class="position">{{scan.pos.as_tuple}}</span>
-                        <span class="distance">{{scan.distance}}</span>
-                        <span class="direction_rel">{{scan.direction}}</span>
-                        <span class="direction_abs">{{scan.heading}}</span>
-                    {% endfor %}
-                </div>
+        <h2>Events</h2>
+        {% for tick in start_tick.ticks_for_round %}
+            {% if ship.history.get(tick, None) %}
+                <h3>Tick {{tick.tick}} (Score {{ ship.history[tick].hit_score }})</h3>
+                <p>
+                {% for e in ship.history[tick].non_scan_events %}
+                    {{e}}<br/>
+                {% endfor %}
+                </p>
+                {% if ship.history[tick].scans %}
+                    <em class="collapsible">Scans</em>
+                    <div class="scans collapsed-content info_grid">
+                        <span class="name header">Name</span>
+                        <span class="position header">Position</span>
+                        <span class="distance header">Distance</span>
+                        <span class="direction_rel header">Direction (Rel)</span>
+                        <span class="heading_abs header">Heading (Abs)</span>
+                        {% for scan in ship.history[tick].scans_sorted_by('distance') %}
+                            <span class="name">{{scan.name}}</span>
+                            <span class="position">{{scan.pos.as_tuple}}</span>
+                            <span class="distance">{{scan.distance}}</span>
+                            <span class="direction_rel">{{scan.direction}}</span>
+                            <span class="direction_abs">{{scan.heading}}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             {% endif %}
-        {% endif %}
-    {% endfor %}
-
+        {% endfor %}
     {% endif %}
 </div>
 
@@ -85,6 +83,5 @@ for (i = 0; i < coll.length; i++) {
   });
 }
 </script>
-
 
 {% endblock ship %}

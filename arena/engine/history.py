@@ -91,6 +91,9 @@ class TickHistory(object):
     def scans(self):
         return [e for e in self.events if isinstance(e, ScanEvent)]
 
+    def scans_sorted_by(self, attribute_name):
+        return sorted(self.scans, key=lambda e: getattr(e, attribute_name))
+
     @property
     def hits(self):
         return [e for e in self.events if isinstance(e, HitEvent)]

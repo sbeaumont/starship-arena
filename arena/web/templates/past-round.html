@@ -1,10 +1,7 @@
 {% extends 'base.html' %}
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{% block title %}Game {{game}} {{ship.name}} round {{round}}{% endblock %}}</title>
-</head>
-<body>
+
+{% block title %}Game {{game}} {{ship.name}} round {{round}}{% endblock %}}
+
 {% block content %}
 <div>
     {% include 'round-nav-block.html' %}
@@ -16,5 +13,3 @@
     {% include 'ship-block.html' %}
 </div>
 {% endblock content %}
-</body>
-</html>

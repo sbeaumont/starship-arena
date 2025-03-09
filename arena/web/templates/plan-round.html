@@ -1,10 +1,6 @@
 {% extends 'base.html' %}
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{% block title %}Plan Round{% endblock %}</title>
-</head>
-<body>
+
+{% block title %}Plan Round{% endblock %}
 
 {% block content %}
 <div>
@@ -84,6 +80,3 @@ x: Boost (N/S/E/W) (amount)
     {% include 'ship-status-block.html' %}
 </div>
 {% endblock %}
-
-</body>
-</html>

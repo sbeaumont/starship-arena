@@ -5,7 +5,7 @@
 {% block content %}
 <section>
     <h1>Admin</h1>
-    <div id="admin_overview">
+    <div id="admin_overview" class="info_grid">
         <span class="gamelink">Game Name</span>
         <span class="round_number">Round</span>
         <span class="ready_to_process">Ready</span>
@@ -15,7 +15,7 @@
         <span class="ready_to_process">{% if game.current_round_ready %}<a href="{{ url_for('process_turn', game=game.name) }}">Process</a>{% endif %}</span>
         {% endfor %}
     </div>
-    <div id="admin-new-game">
+    <div id="admin-new-game" class="info_grid">
         <h2>Create New Game</h2>
         <form action="{{ request.path }}" method="POST">
             <label for="game_name">Game Name</label>

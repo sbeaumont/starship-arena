@@ -1,6 +1,6 @@
 {% block ship_status %}
 <h2>Status</h2>
-<div id="ship_status">
+<div id="ship_status" class="info_grid">
     <div id="position">
         <label>Position</label>
         <span class="position">{{ ship.pos.as_tuple }}</span>
@@ -28,7 +28,7 @@
     </div>
     {% endfor %}
 </div>
-<div id="ship_components">
+<div id="ship_components" class="info_grid">
     {% for component in ship.weapons.values() %}
     <label>{{ component.name }}</label>
     <div class="component_stats">

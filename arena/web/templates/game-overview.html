@@ -11,7 +11,7 @@
 </div>
 {% endif %}
 {% for faction, ships in factions.items() %}
-<div id="game_overview">
+<div id="game_overview" class="info_grid">
     <div class="name"><em>Faction {{faction}}</em></div>
     <span class="name header">Name</span>
     <span class="score header">Score</span>
@@ -33,7 +33,7 @@
 {% endfor %}
 {% if dead_ships %}
 <h1>Graveyard</h1>
-<div id="graveyard">
+<div id="graveyard" class="info_grid">
     <span class="name header">Name</span>
     <span class="score header">Score</span>
     <span class="player header">Player</span>
