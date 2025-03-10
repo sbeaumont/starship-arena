@@ -10,89 +10,58 @@
 {% for st in ship_types %}
 <h3>{{ st.name }}</h3>
 
-<div class="ship_status">
-    <div id="speed">
-        <label>Max Speed</label>
-        <span class="speed">{{ st.max_speed }}</span>
+<div class="info_grid ship_overview">
+    <div class="ship_attribute">
+        <label>Speed</label>
+        <span class="attribute_value">{{st.max_speed}}</span>
     </div>
-    <div id="hull">
+    <div class="ship_attribute">
+        <label>Turn</label>
+        <span class="attribute_value">{{st.max_turn}}</span>
+    </div>
+    <div class="ship_attribute">
+        <label>Acceleration</label>
+        <span class="attribute_value">{{st.max_delta_v}}</span>
+    </div>
+    <div class="ship_attribute">
         <label>Hull</label>
-        <span class="hull">{{ ship.hull }}/{{ ship._type.max_hull }}</span>
+        <span class="attribute_value">{{st.max_hull}}</span>
     </div>
-    <div id="battery">
+    <div class="ship_attribute">
         <label>Battery</label>
-        <span class="battery">{{ ship.battery }}/{{ ship._type.max_battery }}</span>
+        <span class="attribute_value">{{st.start_battery}}/{{st.max_battery}}</span>
     </div>
-    {% for component in ship.defense %}
-    <div id="defense">
-        <label>{{ component.name }}</label>
-        <span class="defense">{% for stat_name, stat_value in component.status.items() %}{{ stat_name }} ({{ stat_value }}) {% endfor %}</span>
+    <div class="ship_attribute">
+        <label>Generators</label>
+        <span class="attribute_value">{{st.generators}}</span>
     </div>
+    <div class="ship_attribute">
+        <label>Scan Distance</label>
+        <span class="attribute_value">{{st.max_scan_distance}}</span>
+    </div>
+</div>
+<div class="info_grid component_overview">
+    <label>Defense</label>
+    {% for d in st.defense %}
+        <span class="defense_description">{{d.description}}</span>
     {% endfor %}
 </div>
-<div id="ship_components" class="info_grid">
-    {% for component in ship.weapons.values() %}
-    <label>{{ component.name }}</label>
-    <div class="component_stats">
-        {% for stat_name, stat_value in component.status.items() %}
-        <span class="component_stat">
-            <label>{{ stat_name }}</label>
-            <span class="stat_value">({{ stat_value }})</span>
-        </span>
-        {% endfor %}
-    </div>
-    {% endfor %}
-</div>
-
-
-<table>
-    <tr>
-        <td>Speed</td>
-        <td>Turn</td>
-        <td>Acceleration</td>
-        <td>Hull</td>
-        <td>Battery</td>
-        <td>Generators</td>
-        <td>Scan Distance</td>
-    </tr>
-    <tr>
-        <td>{{st.max_speed}}</td>
-        <td>{{st.max_turn}}</td>
-        <td>{{st.max_delta_v}}</td>
-        <td>{{st.max_hull}}</td>
-        <td>{{st.start_battery}}/{{st.max_battery}}</td>
-        <td>{{st.generators}}</td>
-        <td>{{st.max_scan_distance}}</td>
-    </tr>
-    <tr>
-        <td colspan="4"><b>Weapons</b></td>
-        <td colspan="3"><b>Defense</b></td>
-    </tr>
-    <tr>
-        <td colspan="4">
-            {% for w in st.weapons %}
-            {{w.name}}: {{w.description}}<br/>
-            {% endfor %}
-        </td>
-        <td colspan="3">
-            {% for d in st.defense %}
-            {{d.description}}<br/>
-            {% endfor %}
-        </td>
-    </tr>
-    {% if st.ecm %}
-    <tr>
-        <td colspan="7"><b>ECM</b></td>
-    </tr>
-    <tr>
-        <td colspan="7">
+{% if st.ecm %}
+    <div class="info_grid component_overview">
+        <label>ECM</label>
         {% for e in st.ecm %}
-            {{e.name}}: {{e.description}}<br/>
+            <span class="component_name">{{e.name}}</span>
+            <span class="component_description">{{e.description}}</span>
         {% endfor %}
-        </td>
-    </tr>
-    {% endif %}
-</table>
+    </div>
+{% endif %}
+<div class="info_grid component_overview">
+    <label>Weapons</label>
+    {% for w in st.weapons %}
+    <span class="component_name">{{w.name}}</span>
+    <span class="component_description">{{w.description}}</span>
+    {% endfor %}
+</div>
 {% endfor %}
 
 <h2>Starbases</h2>
@@ -151,5 +120,3 @@
 {% endfor %}
 
 {% endblock content %}
-</body>
-</html>

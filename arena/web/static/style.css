@@ -150,14 +150,54 @@ a {
     margin-top: 20px;
     row-gap: 10px;
 
-    .component_stat {
-        display: block;
-    }
     label {
         font-weight: bold;
     }
     .component_stat {
         display: block;
+    }
+}
+
+.ship_overview {
+    grid-template-columns: repeat(7, max-content);
+    grid-auto-flow: row;
+    margin-top: 20px;
+    row-gap: 10px;
+
+    .ship_attribute {
+        display: block;
+    }
+    label {
+        display: block;
+        font-weight: bold;
+    }
+    .attribute_value {
+        margin-top: 5px;
+        display: block;
+    }
+}
+
+.component_overview {
+    grid-template-columns: repeat(1, max-content max-content);
+    grid-auto-flow: row;
+    margin-top: 10px;
+    row-gap: 5px;
+    column-gap: 4px;
+
+    label {
+        font-weight: bold;
+        grid-column-start: span 2;
+        margin-bottom: 4px;
+    }
+    .component_name {
+        font-weight: bold;
+        grid-column: 1;
+    }
+    .component_description {
+        grid-column: 2;
+    }
+    .defense_description {
+        grid-column: 1;
     }
 }
 
