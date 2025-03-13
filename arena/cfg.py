@@ -31,7 +31,7 @@ PDF_TEMPLATE = "round-{rnr}/{name}-round-{rnr}.pdf"
 
 INIT_FILE_NAME = "ships.txt"
 EMAIL_CFG_NAME = "email.txt"
-MANUAL_FILENAME = "../starship-arena-manual.pdf"
+MANUAL_FILENAME = "starship-arena-manual.pdf"
 
 # ============================================= SHIP CORE METRICS
 
