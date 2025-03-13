@@ -256,7 +256,7 @@ class TurnParameter(ShipParameter):
         self.feedback.clear()
         if re.match(r"-?[0-9]+", self._input):
             if abs(self.value) > self.ship._type.max_turn:
-                self.feedback.append(f"{self._input} is outside max turn, only possible at speed 0.")
+                self.feedback.append(f"{self._input} is outside max turn, but possible at speed 0.")
             result = True
         else:
             self.feedback.append(f"{self._input} is not a valid number.")

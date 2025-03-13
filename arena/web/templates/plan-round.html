@@ -6,8 +6,52 @@
 <div>
     {% include 'round-nav-block.html' %}
 </div>
+<h1>{{ ship.name }}: plan next round</h1>
+<h2>Plan</h2>
+<div id="planning">
+    <div id="feedback">
+        {% for command in commands %}
+            <div class="feedback_item {% if command[0] %}ok">{% else %}error">{% endif %}
+                {{ command[1] }}
+                {% for feedback in command[2] %}
+                    <br/>- {{feedback}}
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+    <div id="planning_form">
+        <form action="{{ request.path }}" method="POST" autocomplete="off">
+            <!-- have to put the textarea on one line to prevent crap in the box -->
+            <textarea id="commands" name="commands" rows="10" cols="80">{% for command in commands -%}{{ command[1] }}{{ "\n" }}{%- endfor %}</textarea>
+            <div id="buttons">
+                <input type="submit" name="action" value="Check"/>
+                <input type="submit" name="action" value="Save"/>
+                {{ message }}
+            </div>
+        </form>
+    </div>
+    <div id="explanation">
+        <pre>
+(x = tick number)
+x: A-{{ ship._type.max_delta_v }}..A{{ ship._type.max_delta_v }} (Accelerate)
+---
+x: R-{{ ship._type.max_turn }}..R{{ ship._type.max_turn }} (Turn Right)
+x: L-{{ ship._type.max_turn }}..L{{ ship._type.max_turn }} (Turn Left)
+x: Activation (component) (on/off)
+--- Ship Moves
+x: Fire (missile launcher) (direction)
+x: Fire (laser) (target)
+x: Scan (scanner) (direction) (scan cone)
+x: Replenish
+x: Boost (N/S/E/W) (amount)
+        </pre>
+    </div>
+</div>
 <div>
-    <h1>{{ ship.name }}: plan next round</h1>
+    {% include 'ship-status-block.html' %}
+</div>
+<div>
+    <h2>Previous Turn</h2>
     <img src="{{ url_for('turn_picture', game=game, ship_name=ship.name, round=ship.history.last_round) }}" max-width="100%"/>
     <h2>Last Scans</h2>
     {% if ship.history[ship.history.last].scans %}
@@ -30,53 +74,5 @@
         {% endfor %}
         </table>
     {% endif %}
-    <h2>Plan</h2>
-    <table>
-        <tr>
-            <td style="vertical-align: top;font-family: monospace">
-                <table>
-                    {% for command in commands %}
-                        <tr>
-                            <td {% if command[0] %}class="ok"{% else %}class="error"{% endif %}>
-                            {{ command[1] }}
-                            {% for feedback in command[2] %}
-                                <br/>- {{feedback}}
-                            {% endfor %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </table>
-            </td>
-            <td>
-                <form action="{{ request.path }}" method="POST">
-                    <!-- have to put the textarea on one line to prevent crap in the box -->
-                    <textarea id="commands" name="commands" rows="10" cols="80">{% for command in commands -%}{{ command[1] }}{{ "\n" }}{%- endfor %}</textarea>
-                    <div>
-                        <input type="submit" name="action" value="Check"/>
-                        <input type="submit" name="action" value="Save"/>
-                        {{ message }}
-                    </div>
-                </form>
-            </td>
-            <td>
-                <pre>
-x: A(amount)
----
-x: R(degrees)
-x: L(degrees)
-x: Activation (component) (on/off)
---- Ship Moves
-x: Fire (missile launcher) (direction)
-x: Fire (laser) (target)
-x: Scan (scanner) (direction) (scan cone)
-x: Replenish
-x: Boost (N/S/E/W) (amount)
-                </pre>
-            </td>
-        </tr>
-    </table>
-</div>
-<div>
-    {% include 'ship-status-block.html' %}
 </div>
 {% endblock %}

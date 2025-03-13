@@ -201,6 +201,39 @@ a {
     }
 }
 
+#planning {
+    display: flex;
+    width: auto;
+
+    #feedback {
+        flex: auto;
+    }
+
+    .feedback_item {
+        margin-bottom: 4px;
+        padding: 1px 2px;
+    }
+
+    #planning_form {
+        flex: auto;
+        margin-left: 10px;
+        margin-right: 10px;
+
+        textarea {
+            width: 99%;
+            margin-bottom: 5px;
+        }
+        #buttons input {
+            background-color: #d1d1d1;
+            color: black;
+            margin-right: 10px;
+        }
+    }
+    #explanation {
+        flex: auto;
+    }
+}
+
 .scans {
     grid-template-columns: max-content max-content max-content max-content max-content;
     row-gap: 5px;
