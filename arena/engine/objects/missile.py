@@ -100,13 +100,19 @@ class GuidedMissile(Missile):
             intercept_distance = self.distance_to(intercept_pos)
             if intercept_distance < self.speed:
                 self.vector.speed = round(intercept_distance - 1, 0)
-            self.vector.heading = self.heading_to(intercept_pos)
+            target_dir = self.direction_to(intercept_pos)
+            if target_dir < -self._type.max_turn:
+                target_dir = -self._type.max_turn
+            elif target_dir > self._type.max_turn:
+                target_dir = self._type.max_turn
+            self.vector.turn(target_dir)
 
 
 class MissileType(MachineType):
     base_type = Missile
     energy_per_move: int = 5
     max_speed = 0
+    max_turn = 45
 
     def create(self, name: str, vector: Vector, owner=None, tick: Tick = TICK_ZERO):
         vector = replace(vector, speed=self.max_speed)

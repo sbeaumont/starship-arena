@@ -42,7 +42,7 @@ class F2551(ShipType):
     @property
     def ecm(self):
         return [
-            Cloak('Cloak', 0.25),
+            Cloak('Cloak', 0.25, 4),
         ]
 
 

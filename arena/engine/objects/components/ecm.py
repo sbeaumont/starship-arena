@@ -2,12 +2,11 @@ from arena.engine.objects.component import Component, OnOffParameter
 
 
 class Cloak(Component):
-    energy_per_tick = 10
-
-    def __init__(self, name, strength: float):
+    def __init__(self, name, strength: float, energy_per_tick: float = 5):
         super().__init__(name)
         self.active = False
         self.strength = strength
+        self.energy_per_tick = energy_per_tick
 
     @property
     def expected_parameters(self):
