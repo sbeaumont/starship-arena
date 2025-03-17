@@ -14,12 +14,13 @@ the internals of the component to other parts of the engine.
 import re
 from abc import ABC
 
+from arena.engine.history import Tick
 from arena.engine.objects.event import InternalEvent
 from arena.engine.parameter import Parameter
 
 
 class Component(ABC):
-    """An object that is attached to an owner (Ship) and can damage other objects in space."""
+    """An object that is attached to an owner (Ship) and can do stuff."""
     def __init__(self, name: str, container=None):
         assert name, "name may not be None"
         self.name = name
@@ -57,6 +58,9 @@ class Component(ABC):
         pass
 
     def post_move(self, objects_in_space: dict):
+        pass
+
+    def decide(self, objects_in_space: dict, tick: Tick):
         pass
 
     def use_energy(self):
@@ -120,6 +124,10 @@ class ObjectByNameParameter(ComponentParameter):
     @property
     def value(self):
         return self.ois.get(self._input, None)
+
+    @property
+    def object_name(self):
+        return self._input
 
 
 class DirectionParameter(ComponentParameter):

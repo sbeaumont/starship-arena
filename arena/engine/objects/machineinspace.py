@@ -17,15 +17,14 @@ in Python and not have to parse and translate json files.
 It also introduces an "owner" which is ultimately a player (but could also be an NPC object).
 """
 
-from abc import ABCMeta
+from abc import ABC
 from .objectinspace import ObjectInSpace, Vector
 from arena.engine.objects.component import Component
 from arena.engine.history import Tick, TICK_ZERO
 
 
-class MachineType(metaclass=ABCMeta):
+class MachineType(object):
     """Type Object for MachineInSpace objects."""
-
     base_type = None
     max_hull = 0
     start_battery = 0
@@ -44,6 +43,7 @@ class MachineType(metaclass=ABCMeta):
 
     @property
     def name(self) -> str:
+        """The type's game name."""
         if self.class_name:
             return f"{self.type_name} {self.class_name}"
         else:
@@ -51,43 +51,57 @@ class MachineType(metaclass=ABCMeta):
 
     @property
     def weapons(self) -> list:
+        """All weapon components of the machine type."""
         return list()
 
     @property
     def defense(self) -> list:
+        """All defense components of the machine type."""
         return list()
 
     @property
     def ecm(self) -> list:
+        """All ecm components of the machine type."""
+        return list()
+
+    @property
+    def control(self) -> list:
+        """All control components of the machine type."""
         return list()
 
 
-class MachineInSpace(ObjectInSpace, metaclass=ABCMeta):
+class MachineInSpace(ObjectInSpace, ABC):
+# class MachineInSpace(ObjectInSpace):
     """A machine in space. Base class for all active objects like ships, bases, mines and missiles."""
 
     def __init__(self, name: str, _type: MachineType, vector: Vector, owner=None, tick: Tick = TICK_ZERO):
         assert isinstance(_type, MachineType), f"{_type} is not an instance of MachineType"
         assert isinstance(vector, Vector)
         super().__init__(name, vector, tick=tick)
-        self._type: MachineType = _type
-        self.hull: int = self._type.max_hull
-        self.battery: int = self._type.start_battery
         self.owner = owner
+        self._type: MachineType = _type
 
         # Initialize components
         self.all_components: dict = dict()
-        self.defense: list = self._type.defense
+        self.hull: int = self._type.max_hull
+        self.battery: int = self._type.start_battery
+
+        # Initialize components
+        self.defense: list = _type.defense
         self._attach_components(self.defense)
         self.weapons: dict = {comp.name: comp for comp in self._type.weapons}
         self._attach_components(self.weapons.values())
-        self.ecm: dict = {comp.name: comp for comp in self._type.ecm}
+        self.ecm = {comp.name: comp for comp in self._type.ecm}
         self._attach_components(self.ecm.values())
+        self.control = {comp.name: comp for comp in self._type.control}
+        self._attach_components(self.control.values())
 
     def _attach_components(self, comps):
         for comp in comps:
-            assert isinstance(comp, Component), f"{comp} is not a Component for {self._type}"
+            assert isinstance(comp, Component), f"{comp} is a {type(comp)}, not a Component for {self._type}"
             self.all_components[comp.name] = comp
             comp.attach(self)
+
 
     @property
     def class_name(self):

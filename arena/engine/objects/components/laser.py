@@ -25,7 +25,10 @@ class Laser(Weapon):
         return self.container.battery >= self.energy_per_shot
 
     def can_fire_at(self, ois):
-        return self.temperature_ok and self.energy_ok and self.container.can_scan(ois) and self.damage_to(ois)
+        return (self.temperature_ok
+                and self.energy_ok
+                and self.container.can_scan(ois)
+                and self.damage_to(ois))
 
     def damage_to(self, target):
         """Damage reduces by 1 per distance."""
@@ -41,7 +44,7 @@ class Laser(Weapon):
     def fire(self, params: dict, objects_in_space: dict):
         target_ship = params['target'].value
         if not target_ship:
-            self.add_internal_event(f"Can't fire {self.name}. Unknown (or dead?) ship name: {params['target'].value}")
+            self.add_internal_event(f"Can't fire {self.name}. Unknown (or dead?) ship name: {params['target'].object_name}")
             return None
 
         firing_angle = self.owner.direction_to(target_ship.xy)

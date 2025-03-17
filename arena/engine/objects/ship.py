@@ -9,6 +9,7 @@ This file also has command parameters that are specific to a ship (not a compone
 
 import re
 import logging
+from abc import ABC
 from typing import Protocol, runtime_checkable, NewType
 
 from arena.engine.objects.components.warhead import DamageType
@@ -57,6 +58,9 @@ class Ship(MachineInSpace):
     def scans(self):
         return self.history.current.scans
 
+    def scans_sorted_by(self, attribute_name):
+        return self.history.current.scans_sorted_by(attribute_name)
+
     @property
     def snapshot(self):
         sn = super().snapshot
@@ -68,6 +72,12 @@ class Ship(MachineInSpace):
     def can_scan(self, ois: ObjectInSpace):
         scan_distance = ois.modify_scan_range(self._type.max_scan_distance)
         return (ois != self) and self.distance_to(ois.xy) < scan_distance
+
+    def modify_scan_range(self, scan_range: float) -> float:
+        """Change a scanning object's scan range based on this ship's ECM."""
+        for e in self.ecm.values():
+            scan_range = e.modify_scan_range(scan_range)
+        return round(scan_range, 1)
 
     # ---------------------------------------------------------------------- COMMANDS
 
@@ -98,12 +108,6 @@ class Ship(MachineInSpace):
         else:
             self.add_internal_event(f"Can not activate/deactivate unknown component: {name}")
 
-    def generate(self):
-        self.battery += self.generators
-        if self.battery > self._type.max_battery:
-            self.battery = self._type.max_battery
-        self.add_internal_event(f"Generated {self.generators} energy: battery at {self.battery}/{self._type.max_battery}")
-
     def try_replenish(self, objects_in_space: dict):
         for replenisher in [ois for ois in objects_in_space.values() if isinstance(ois, Replenisher)]:
             replenisher.replenish(self)
@@ -118,15 +122,17 @@ class Ship(MachineInSpace):
         if angle != 0:
             self.add_internal_event(f"Turned {angle} degrees to {self.heading}")
 
+    # ---------------------------------------------------------------------- ENGINE HOOKS
+
+    def generate(self):
+        self.battery += self.generators
+        if self.battery > self._type.max_battery:
+            self.battery = self._type.max_battery
+        self.add_internal_event(f"Generated {self.generators} energy: battery at {self.battery}/{self._type.max_battery}")
+
     def scan(self, objects_in_space: dict):
         for ois in [ob for ob in objects_in_space.values() if self.can_scan(ob)]:
             self.add_event(ScanEvent.create_scan(self, ois))
-
-    def modify_scan_range(self, scan_range: float) -> float:
-        """Change a scanning object's scan range based on this ship's ECM."""
-        for e in self.ecm.values():
-            scan_range = e.modify_scan_range(scan_range)
-        return round(scan_range, 1)
 
     def take_damage_from(self, hit_event: HitEvent):
         """First pass the damage to the defense components, any remaining damage goes to the hull.
@@ -176,8 +182,6 @@ class Ship(MachineInSpace):
             hit_event.notify_owner(f"{hit_event.source.name} landed the killing blow on {self.name}: ({score} points)")
             self.add_internal_event(f"You were destroyed. Killing blow by {hit_event.source.name}.")
 
-    # ---------------------------------------------------------------------- TIMED HANDLERS
-
     def tick(self, tick: Tick):
         logger.debug(f"{self.name} starting tick {tick}")
         for comp in self.all_components.values():
@@ -196,6 +200,12 @@ class Ship(MachineInSpace):
         movement_energy = self.speed // 10
         self.battery -= movement_energy
         self.add_internal_event(f"Used {movement_energy} energy for movement.")
+
+    def decide(self, objects_in_space: dict, tick: Tick):
+        for comp in self.control.values():
+            comp.decide(objects_in_space, tick)
+
+    # ---------------------------------------------------------------------- HISTORY INTERFACE
 
     def round_reset(self):
         super().round_reset()
@@ -222,7 +232,7 @@ class ShipType(MachineType):
     max_scan_distance = None
 
 
-class ShipParameter(Parameter):
+class ShipParameter(Parameter, ABC):
     def __init__(self, name, ship: Ship, value: str):
         assert isinstance(ship, Ship)
         super().__init__(name)

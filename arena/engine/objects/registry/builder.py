@@ -22,12 +22,12 @@ def _subclasses_recursive(cls):
     return direct + indirect
 
 
-all_ship_types = {st.__name__: st for st in _subclasses_recursive(ShipType)}
+all_ship_types = {st.__name__: st() for st in _subclasses_recursive(ShipType)}
 
 
 def create(name: str, type_name: str, position: tuple, **kwargs):
     """Return an instance of a ship type object by its class name."""
-    type_instance = all_ship_types[type_name]()
+    type_instance = all_ship_types[type_name]
     pos = Vector(Point(position[0], position[1]), heading=0, speed=0)
     return type_instance.base_type(name, type_instance, pos, **kwargs)
 

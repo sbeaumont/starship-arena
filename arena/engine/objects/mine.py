@@ -5,6 +5,7 @@ Mines slow down and sit still in space. Go boom based on the warhead they have.
 import logging
 from .event import InternalEvent, HitEvent
 from .machineinspace import MachineInSpace
+from ..history import Tick
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +41,9 @@ class Mine(MachineInSpace):
 
     # ---------------------------------------------------------------------- ENGINE HOOKS
 
-    def decide(self, objects_in_space: dict):
+    def decide(self, objects_in_space: dict, tick: Tick):
         for wh in self.weapons.values():
-            wh.decide(objects_in_space)
+            wh.decide(objects_in_space, tick)
 
     def post_move(self, objects_in_space):
         for wh in self.weapons.values():

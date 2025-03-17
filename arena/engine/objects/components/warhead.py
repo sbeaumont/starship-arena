@@ -1,4 +1,6 @@
 from enum import Enum, auto
+
+from arena.engine.history import Tick
 from arena.engine.objects.component import Component
 from arena.engine.objects.event import ExplosionEvent, HitEvent
 
@@ -26,7 +28,7 @@ class Warhead(Component):
             'Payload': self.name
         }
 
-    def decide(self, objects_in_space):
+    def decide(self, objects_in_space: dict, tick: Tick):
         if self.can_explode(objects_in_space):
             self.explode(objects_in_space)
 

@@ -71,7 +71,7 @@ class GameRound(object):
         # All ships scan, "intelligent" objects make decisions (like guided missiles intercepting their target)
         for ois in list(self.ois.values()):
             ois.scan(self.ois)
-            ois.decide(self.ois)
+            ois.decide(self.ois, tick)
 
         # Perform post move steps like commands that perform at post move.
         # and finally update the snapshot

@@ -18,11 +18,13 @@ None
 """
 
 import unittest
+from collections import defaultdict
 
-from arena.engine.command import parse_commands
+from arena.engine.command import parse_commands, CommandSet
 from arena.engine.objects.objectinspace import Point
 from arena.engine.objects.registry.builder import create
 from arena.engine.round import GameRound
+from arena.engine.objects.components.control import Pilot, Gunner, TargetingMode
 
 
 class GameDirectoryStub(object):
@@ -35,6 +37,7 @@ class GameDirectoryStub(object):
         ship.faction = faction
         ship.player = player
         self.ships[name] = ship
+        ship.speed = 10
 
     def init(self):
         self._create_ship("Blaster", "H2545", (1, 0), "One", "Blaster's Player")
@@ -64,6 +67,23 @@ class TestGameOne(unittest.TestCase):
     def test_round(self):
         self.game_round.do_round(self.commands)
         self.assertEqual(Point(1, 90), self.objects['Blaster'].pos)
+
+    def test_control(self):
+        pilot = Pilot()
+        gunner = Gunner()
+        control_components = [pilot, gunner]
+        blaster = self.objects['Blaster']
+        blaster.control = {comp.name: comp for comp in control_components}
+        blaster._attach_components(control_components)
+        pilot.set_current_target('Shaper')
+        gunner.set_targeting_mode(TargetingMode.Offensive)
+
+        self.game_round.do_round(self.commands)
+        for t, events in blaster.history.events_per_tick.items():
+            for event in events:
+                print(t.tick, str(event))
+
+
 
 
 if __name__ == '__main__':

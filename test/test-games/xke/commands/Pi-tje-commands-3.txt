@@ -1,0 +1,20 @@
+1: A-30
+1: R10
+1: Fire L1 BaseTwo
+1: Fire L2 BaseTwo
+1: Fire R1 81
+1: Fire R2 81
+2: A-10
+2: R30
+2: Fire L1 BaseTwo
+2: Fire L2 BaseTwo
+2: Fire R1 60
+2: Fire R2 60
+3: R30
+4: R30
+5: R30
+6: R30
+7: R30
+8: R30
+9: R30
+10: R30

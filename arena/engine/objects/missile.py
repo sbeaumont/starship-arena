@@ -53,8 +53,8 @@ class Missile(MachineInSpace):
 
     # ---------------------------------------------------------------------- ENGINE HOOKS
 
-    def decide(self, objects_in_space: dict):
-        self.warhead.decide(objects_in_space)
+    def decide(self, objects_in_space: dict, tick: Tick):
+        self.warhead.decide(objects_in_space, tick)
         if not self.is_destroyed:
             self._intercept()
 
@@ -84,7 +84,16 @@ class GuidedMissile(Missile):
 
     # ---------------------------------------------------------------------- COMMANDS
 
+    def turn(self, amount: float):
+        """Turn the missile, limited by its max_turn."""
+        if amount < -self._type.max_turn:
+            amount = -self._type.max_turn
+        elif amount > self._type.max_turn:
+            amount = self._type.max_turn
+        self.vector.turn(amount)
+
     def scan(self, objects_in_space: dict):
+        """Find the nearest enemy object in the scan cone"""
         self.target = None
         for ois in [o for o in objects_in_space.values() if (o != self) and (o.owner.faction != self.owner.faction)]:
             if self.can_scan(ois) and self.in_scan_cone(ois):
@@ -95,17 +104,13 @@ class GuidedMissile(Missile):
                     self.target = ois
 
     def _intercept(self):
+        """Try to turn towards an intercept course."""
         if self.target:
             intercept_pos = self.target.vector.translate(self.target.heading, self.target.speed).pos
             intercept_distance = self.distance_to(intercept_pos)
             if intercept_distance < self.speed:
                 self.vector.speed = round(intercept_distance - 1, 0)
-            target_dir = self.direction_to(intercept_pos)
-            if target_dir < -self._type.max_turn:
-                target_dir = -self._type.max_turn
-            elif target_dir > self._type.max_turn:
-                target_dir = self._type.max_turn
-            self.vector.turn(target_dir)
+            self.turn(self.direction_to(intercept_pos))
 
 
 class MissileType(MachineType):

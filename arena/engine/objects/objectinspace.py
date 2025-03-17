@@ -118,7 +118,12 @@ class ObjectInSpace(ABC):
         return round((atan2(point.x - self.vector.x, point.y - self.vector.y) / pi * 180) % 360, 1)
 
     def direction_to(self, point: Point) -> float:
-        return self.heading_to(point) - self.heading
+        d = self.heading_to(point) - self.heading
+        if d > 180:
+            d -= 360
+        elif d <= -180:
+            d += 360
+        return round(d, 1)
 
     def modify_scan_range(self, scan_range: float) -> float:
         """Change a scanning object's scan range based on this object's visibility."""
@@ -207,7 +212,7 @@ class ObjectInSpace(ABC):
     def pre_move(self, objects_in_space: dict):
         pass
 
-    def decide(self, objects_in_space: dict):
+    def decide(self, objects_in_space: dict, tick: Tick):
         pass
 
     def post_move(self, objects_in_space: dict):
