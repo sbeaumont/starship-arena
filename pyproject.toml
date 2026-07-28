@@ -1,0 +1,27 @@
+[project]
+name = "starship-arena"
+version = "0.1.0"
+description = "A recreation of a 1991 Play-By-Mail space combat game."
+requires-python = ">=3.14"
+dependencies = [
+    "flask>=3.1",
+    "jinja2>=3.1",
+    "weasyprint>=63",
+    "pillow>=11.1",
+    "wtforms>=3.2",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "pydantic>=2.10",
+]
+
+# Test-only dependencies. httpx2 backs FastAPI's TestClient.
+# Install/run with the group, e.g.:  uv sync --group test  /  uv run --group test ...
+[dependency-groups]
+test = [
+    "httpx2",
+]
+
+# The project is run from the repository root (flat layout, no src dir), not installed
+# as a wheel, so uv only manages the environment and dependencies.
+[tool.uv]
+package = false

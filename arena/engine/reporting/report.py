@@ -18,6 +18,7 @@ from arena.engine.objects.starbase import Starbase
 from arena.engine.objects.ship import Ship
 from arena.engine.objects.objectinspace import Point
 from arena.engine.reporting.visualize import Visualizer, Colors, COLORS
+from arena.engine.reporting.svgvisualizer import SVGVisualizer
 from arena.engine.history import Tick, TICK_ZERO
 from arena.engine.gamedirectory import GameDirectory
 
@@ -85,6 +86,25 @@ def find_boundaries(ship, start_tick: Tick, padding=50):
     return min_x-padding, min_y-padding, max_x+padding, max_y+padding
 
 
+def find_ship_path_boundaries(ship, start_tick: Tick, padding=20):
+    """Find boundaries for just the ship's movement path."""
+    if start_tick.round == 0:
+        return None
+        
+    min_x = max_x = round(ship.history[start_tick]['pos'].x)
+    min_y = max_y = round(ship.history[start_tick]['pos'].y)
+
+    for t in start_tick.ticks_for_round:
+        if t in ship.history:
+            pos = ship.history[t]['pos']
+            min_x = min(min_x, pos.x)
+            max_x = max(max_x, pos.x)
+            min_y = min(min_y, pos.y)
+            max_y = max(max_y, pos.y)
+
+    return min_x-padding, min_y-padding, max_x+padding, max_y+padding
+
+
 def draw_round(ship: Ship, vis: Visualizer, start_tick: Tick):
     """Draw the paths of the ship and its scans"""
     if start_tick.round > 0:
@@ -144,6 +164,14 @@ def report_round(ships: dict, game_dir: GameDirectory, round_nr: int):
             vis.to_bytes(bytes_io)
             round_dir.save(image_file_name, bytes_io.getvalue(), binary=True)
 
+        # Also generate SVG version with initial viewport focused on ship path
+        ship_path_boundaries = find_ship_path_boundaries(ship, start_tick)
+        svg_vis = SVGVisualizer(boundaries, scale=2, initial_viewport=ship_path_boundaries)
+        report_events(ship, svg_vis, start_tick)
+        draw_round(ship, svg_vis, start_tick)
+        svg_file_name = f'{ship.name}-{round_name}.svg'
+        round_dir.save(svg_file_name, svg_vis.to_svg())
+
         template_data = {
             "image_file_name": image_file_name,
             "ship": ship,
@@ -168,7 +196,7 @@ def report_round(ships: dict, game_dir: GameDirectory, round_nr: int):
 
 def report_round_zero(game_dir: GameDirectory, ships: list):
     start_tick = TICK_ZERO
-    env = Environment(loader=FileSystemLoader('./arena/web/templates'))
+    env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
     template = env.get_template(ROUND_ZERO_TEMPLATE)
 
     # Set up round directory

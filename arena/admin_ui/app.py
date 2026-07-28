@@ -11,9 +11,9 @@ import logging
 from collections import defaultdict
 from flask import Flask, render_template, request, g, send_file, redirect, url_for
 
-from arena.cfg import WEB_ROOT
+from arena.cfg import WEB_ROOT, GAME_UI_URL
 from arena.engine.history import Tick
-from arena.web.appfacade import AppFacade, NameValidator
+from arena.admin_ui.appfacade import AppFacade, NameValidator
 
 app = Flask('starship-arena', template_folder=f'{WEB_ROOT}/templates', static_folder=f'{WEB_ROOT}/static')
 app.logger.setLevel(logging.DEBUG)
@@ -74,7 +74,8 @@ def game_overview(game_name: str):
                            game=game.name,
                            command_file=game.command_file_status,
                            all_command_files_ok=game.current_round_ready,
-                           dead_ships=game.graveyard.values()
+                           dead_ships=game.graveyard.values(),
+                           game_ui_url=GAME_UI_URL
                            )
 
 
@@ -109,7 +110,24 @@ def past_round(game: str, ship_name: str, round: int):
 @app.route('/turn_picture/<game>/<ship_name>/<round>')
 def turn_picture(game: str, ship_name:str, round: int):
     filename = facade().get_turn_picture_name(game, ship_name, round)
-    return send_file(filename, mimetype='image/png')
+    return send_file(filename, mimetype='image/svg+xml')
+
+
+@app.route('/turn_viewport/<game>/<ship_name>/<round>')
+def turn_viewport(game: str, ship_name:str, round: int):
+    from arena.admin_ui.svgviewport import SVGViewport
+    filename = facade().get_turn_picture_name(game, ship_name, round)
+    
+    # Read the SVG content
+    with open(filename, 'r') as f:
+        svg_content = f.read()
+    
+    # Wrap it in the viewport
+    viewport = SVGViewport(svg_content)
+    container_id = f"turn-{ship_name}-{round}".replace(' ', '-')
+    html_content = viewport.to_html(container_id)
+    
+    return html_content, 200, {'Content-Type': 'text/html'}
 
 
 @app.route('/turn_pdf/<game>/<ship_name>/<round>')

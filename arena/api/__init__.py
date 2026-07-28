@@ -1,0 +1,1 @@
+"""FastAPI JSON API for Starship Arena (game and admin surfaces)."""

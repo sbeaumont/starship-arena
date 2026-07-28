@@ -1,0 +1,31 @@
+/* Global tokens + reset. Deliberately single dark "tactical console" theme. */
+:root {
+  --bg:       #0a0e17;   /* deep space, slight blue bias */
+  --panel:    #111726;
+  --edge:     #1b2440;
+  --grid:     #172038;
+  --ring:     #223056;
+  --ink:      #c2ccdf;
+  --ink-dim:  #7b86a4;
+  --ink-faint:#41496a;
+  --amber:    #ffb454;   /* the planned vector — the one bold hue */
+  --cyan:     #57d8ff;   /* handles */
+  --ghost:    #33405f;   /* original, un-edited path */
+  --warn:     #ff5d6c;   /* a command pinned to its limit */
+  --hull:     #eef2fb;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #app { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--mono);
+  -webkit-font-smoothing: antialiased;
+}

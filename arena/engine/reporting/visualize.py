@@ -13,7 +13,9 @@ from arena.engine.objects.objectinspace import Point
 from enum import Enum, auto
 import io
 
-Color = namedtuple('Color', 'R G B')
+class Color(namedtuple('Color', 'R G B')):
+    def as_svg_color(self):
+        return f"rgb({self.R},{self.G},{self.B})"
 
 
 class Colors(Enum):

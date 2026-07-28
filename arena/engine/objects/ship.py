@@ -43,6 +43,10 @@ class Ship(MachineInSpace):
     # ---------------------------------------------------------------------- QUERIES
 
     @property
+    def category_name(self) -> str:
+        return 'Ship'
+
+    @property
     def is_player_controlled(self):
         return True
 
@@ -242,6 +246,10 @@ class ShipParameter(Parameter, ABC):
 
 class AccelerationParameter(ShipParameter):
     @property
+    def kind(self) -> str:
+        return 'number'
+
+    @property
     def is_valid(self):
         assert self._input is not None
         self.feedback.clear()
@@ -260,6 +268,10 @@ class AccelerationParameter(ShipParameter):
 
 
 class TurnParameter(ShipParameter):
+    @property
+    def kind(self) -> str:
+        return 'number'
+
     @property
     def is_valid(self):
         assert self._input is not None

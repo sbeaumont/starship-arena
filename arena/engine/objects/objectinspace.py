@@ -131,6 +131,26 @@ class ObjectInSpace(ABC):
 
     @property
     @abstractmethod
+    def type_name(self) -> str:
+        """The name of this object's type, e.g. 'H2545', 'Rocket', 'SplinterMine'.
+
+        Machines delegate to their type object; anything else added later - a black hole,
+        an asteroid - names its own type.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def category_name(self) -> str:
+        """The kind of thing this is, e.g. 'Ship', 'Missile', 'Mine'.
+
+        Where type_name is the model ('A2539'), this is the family it belongs to. Used to
+        present objects meaningfully without having to recognise individual type names.
+        """
+        ...
+
+    @property
+    @abstractmethod
     def is_destroyed(self) -> bool:
         return False
 

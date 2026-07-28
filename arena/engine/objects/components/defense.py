@@ -9,6 +9,10 @@ class BoostQuadrantParameter(ComponentParameter):
     """Represents the two boost parameters (quadrant and amount) in one because they're so strongly related."""
 
     @property
+    def kind(self) -> str:
+        return 'shield_boost'
+
+    @property
     def number_of_inputs(self) -> int:
         return 2
 
@@ -59,7 +63,12 @@ class Shields(Component):
         return f"Shield ({'/'.join(ms)})"
 
     def quadrant_of(self, source_location: Point) -> str:
-        heading = self.container.heading_to(source_location)
+        """Which shield quadrant an attack lands on.
+
+        Quadrants are relative to the ship: N is the front 90 degrees (+/-45), so the
+        absolute bearing of the attack has to be turned into a bearing relative to where
+        the ship is pointing. Turning to present a stronger shield therefore works."""
+        heading = (self.container.heading_to(source_location) - self.container.heading) % 360
         for angles, name in self.quadrants.items():
             if (angles[0] > angles[1]) and (heading >= angles[0]) or (heading <= angles[1]):
                 # North

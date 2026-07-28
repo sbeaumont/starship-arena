@@ -13,6 +13,11 @@ logger = logging.getLogger(__name__)
 
 class Starbase(Ship):
     """Motionless space station that can still shoot, replenish and take a beating."""
+
+    @property
+    def category_name(self) -> str:
+        return 'Starbase'
+
     def turn(self, angle):
         """Starbases don't turn. Nice try."""
         pass

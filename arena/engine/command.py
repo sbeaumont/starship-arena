@@ -23,7 +23,6 @@ The parse_commands is called by:
 import re
 import logging
 from collections import defaultdict
-from enum import Enum, auto
 from typing import Protocol, runtime_checkable
 from abc import ABC, abstractmethod
 
@@ -42,16 +41,6 @@ def is_valid_number(value: str):
 
 class ParsingError(Exception):
     pass
-
-
-class Cmd(Enum):
-    Turn = auto()
-    Accelerate = auto()
-    Fire = auto()
-    Replenish = auto()
-    Boost = auto()
-    Activation = auto()
-    Unknown = auto()
 
 
 class CommandLine(object):
@@ -115,30 +104,19 @@ class Commandable(Protocol):
 
 
 class Command(ABC):
+    # How this command is known internally. Which words a player types to trigger it is not
+    # the command's business: that lives in COMMAND_WORDS, so wording can change or gain
+    # aliases without touching any command. Commands without a key are not registered.
+    key = None
+
     @classmethod
     def for_command_line(cls, command_line: CommandLine, ship: Commandable, objects_in_space):
-        match command_line.name.upper():
-            case 'L' | 'R':
-                # L90 -> Turn left
-                return TurnCommand(command_line, ship, objects_in_space)
-            case 'A':
-                # A30 -> Accelerate faster (+) or slow down/reverse (-)
-                return AccelerateCommand(command_line, ship, objects_in_space)
-            case 'F' | 'FIRE' | 'SCAN':
-                # Fire <Weapon Name> <Direction or Target name>
-                return FireCommand(command_line, ship, objects_in_space)
-            case 'REPLENISH':
-                # Replenish
-                return ReplenishCommand(command_line, ship, objects_in_space)
-            case 'BOOST':
-                # Boost shield quadrant
-                return BoostCommand(command_line, ship, objects_in_space)
-            case 'ACTIVATION' | 'ACTIVATE':
-                # Turn components on or off
-                return ActivationCommand(command_line, ship, objects_in_space)
-            case _:
-                logger.warning(f"Unknown command {command_line}")
-                return UnknownCommand(command_line, ship, objects_in_space)
+        word = command_line.name.upper()
+        if word not in COMMAND_WORDS:
+            logger.warning(f"Unknown command {command_line}")
+            return UnknownCommand(command_line, ship, objects_in_space)
+        key, options = COMMAND_WORDS[word]
+        return all_command_types[key](command_line, ship, objects_in_space, **options)
 
     def __init__(self, command_line: CommandLine, target: Commandable, objects_in_space):
         self.command_line = command_line
@@ -155,17 +133,9 @@ class Command(ABC):
     def _init_params(self, params: list) -> bool:
         ...
 
-    @abstractmethod
-    def _get_type_name(self) -> Cmd:
-        ...
-
     @property
     def tick(self) -> int:
         return self.command_line.tick
-
-    @property
-    def name(self) -> Cmd:
-        return self._get_type_name()
 
     @property
     def text(self) -> str:
@@ -184,7 +154,7 @@ class Command(ABC):
         return result
 
     def __repr__(self):
-        return f"Command({self._get_type_name()}, {self.command_line})"
+        return f"Command({self.key}, {self.command_line})"
 
 
 class ComponentCommand(Command):
@@ -239,6 +209,8 @@ class ComponentCommand(Command):
 
 
 class AccelerateCommand(Command):
+    key = 'accelerate'
+
     def _init_params(self, params: list) -> bool:
         if len(params) == 1:
             p = AccelerationParameter('amount', self.target, params[0])
@@ -248,17 +220,13 @@ class AccelerateCommand(Command):
             self.feedback.append(f"Expected 1 parameter, got {len(params)}")
             return False
 
-    def _get_type_name(self) -> Cmd:
-        return Cmd.Accelerate
-
     def execute(self, tick: int):
         super().execute(tick)
         self.target.accelerate(self.params['amount'].value)
 
 
 class ActivationCommand(ComponentCommand):
-    def _get_type_name(self) -> Cmd:
-        return Cmd.Activation
+    key = 'activation'
 
     def execute(self, tick: int):
         super().execute(tick)
@@ -266,8 +234,7 @@ class ActivationCommand(ComponentCommand):
 
 
 class BoostCommand(Command):
-    def _get_type_name(self) -> Cmd:
-        return Cmd.Boost
+    key = 'boost'
 
     def _init_params(self, params: list) -> bool:
         for d in self.target.defense:
@@ -289,8 +256,7 @@ class BoostCommand(Command):
 
 
 class FireCommand(ComponentCommand):
-    def _get_type_name(self) -> Cmd:
-        return Cmd.Fire
+    key = 'fire'
 
     def execute(self, tick: int):
         super().execute(tick)
@@ -301,14 +267,13 @@ class FireCommand(ComponentCommand):
 
 
 class ReplenishCommand(Command):
+    key = 'replenish'
+
     def _init_params(self, params: list) -> bool:
         if len(params) > 0:
             self.feedback.append("Replenish command takes no arguments.")
             return False
         return True
-
-    def _get_type_name(self) -> Cmd:
-        return Cmd.Replenish
 
     def execute(self, tick: int):
         super().execute(tick)
@@ -316,6 +281,15 @@ class ReplenishCommand(Command):
 
 
 class TurnCommand(Command):
+    key = 'turn'
+
+    def __init__(self, command_line: CommandLine, target: Commandable, objects_in_space, sign: int = 1):
+        # Turning to port is a negative turn, which composes with the angle's own sign:
+        # L-90 therefore turns the same way as R90. The word that set this sign is the
+        # parser's business, so it is passed in rather than read back out of the text.
+        self.sign = sign
+        super().__init__(command_line, target, objects_in_space)
+
     def _init_params(self, params: list) -> bool:
         if len(params) == 1:
             p = TurnParameter('amount', self.target, params[0])
@@ -325,14 +299,9 @@ class TurnCommand(Command):
             self.feedback.append(f"Expected 1 parameter, got {len(params)}")
             return False
 
-    def _get_type_name(self) -> Cmd:
-        return Cmd.Turn
-
     def execute(self, tick: int):
         super().execute(tick)
-        angle = self.params['amount'].value
-        angle = angle if self.command_line.name.upper() == 'R' else -angle
-        self.target.turn(angle)
+        self.target.turn(self.params['amount'].value * self.sign)
 
 
 class UnknownCommand(Command):
@@ -342,9 +311,6 @@ class UnknownCommand(Command):
 
     def _init_params(self, params: list) -> bool:
         return False
-
-    def _get_type_name(self) -> Cmd:
-        return Cmd.Unknown
 
     @property
     def is_valid(self) -> bool:
@@ -357,6 +323,37 @@ class UnknownCommand(Command):
 
     def execute(self, tick: int):
         self.target.add_event(f"Can't execute unknown command {self.command_line.text}")
+
+
+def _subclasses_recursive(cls) -> list:
+    direct = cls.__subclasses__()
+    return direct + [c for sub in direct for c in _subclasses_recursive(sub)]
+
+
+# The words a player may type and the command each one triggers: a short code and the whole
+# word. Wording and aliases can be changed here without any command knowing about it. The
+# options are handed to the command: turning to port is the turn command with a negative sign.
+COMMAND_WORDS = {
+    'A': ('accelerate', {}),
+    'ACCELERATE': ('accelerate', {}),
+    'L': ('turn', {'sign': -1}),
+    'LEFT': ('turn', {'sign': -1}),
+    'R': ('turn', {'sign': 1}),
+    'RIGHT': ('turn', {'sign': 1}),
+    'F': ('fire', {}),
+    'FIRE': ('fire', {}),
+    'SCAN': ('fire', {}),
+    'REP': ('replenish', {}),
+    'REPLENISH': ('replenish', {}),
+    'B': ('boost', {}),
+    'BOOST': ('boost', {}),
+    'ACT': ('activation', {}),
+    'ACTIVATE': ('activation', {}),
+    'ACTIVATION': ('activation', {}),
+}
+
+# Every command that names itself, for anything that needs to look one up or list them all.
+all_command_types = {c.key: c for c in _subclasses_recursive(Command) if c.key}
 
 
 class CommandSet(object):
@@ -377,23 +374,29 @@ class CommandSet(object):
     def add(self, cmd: Command):
         if not cmd.is_valid:
             logger.info(f"CommandSet: invalid command {str(cmd)}: {cmd.feedback_results}.")
+            # A command that is refused is something the player needs to hear about, so it
+            # goes in the ship's history and turns up in the round report rather than
+            # silently doing nothing.
+            cmd.target.add_event(InternalEvent(
+                f'Could not execute "{cmd.text}": {"; ".join(cmd.feedback_results)}'))
             self.errors.append(cmd)
             return
-        match cmd.name:
-            case Cmd.Accelerate:
+        # Which commands run before or after the move, and which ones there can only be one
+        # of per tick. A new command that isn't given a place here fails loudly rather than
+        # being silently dropped.
+        match cmd.key:
+            case 'accelerate':
                 self.acceleration = cmd
-            case Cmd.Turn:
+            case 'turn':
                 self.turning = cmd
-            case Cmd.Fire:
+            case 'fire':
                 self.weapons[cmd.selector.value] = cmd
-            case Cmd.Activation:
+            case 'activation':
                 self.pre_move.append(cmd)
-            case Cmd.Replenish | Cmd.Boost:
+            case 'replenish' | 'boost':
                 self.post_move.append(cmd)
-            case Cmd.Unknown:
-                self.errors.append(cmd)
             case _:
-                assert False, f"Unknown command: {cmd}"
+                assert False, f"Command {cmd.key} has no place in the tick: {cmd}"
 
     def __str__(self):
         wpn_str = 'W ' + '|'.join(f"{k}: {v}" for k, v in self.weapons.items()) if self.weapons else None

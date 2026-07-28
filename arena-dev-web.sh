@@ -1,2 +1,2 @@
-./.venv/bin/activate
-flask --app arena.web.app:app --debug run
+#!/usr/bin/env bash
+uv run flask --app arena.admin_ui.app:app --debug run

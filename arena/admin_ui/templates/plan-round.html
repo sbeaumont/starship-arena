@@ -52,7 +52,7 @@ x: Boost (N/S/E/W) (amount)
 </div>
 <div>
     <h2>Previous Turn</h2>
-    <img src="{{ url_for('turn_picture', game=game, ship_name=ship.name, round=ship.history.last_round) }}" max-width="100%"/>
+    <iframe src="{{ url_for('turn_viewport', game=game, ship_name=ship.name, round=ship.history.last_round) }}" width="100%" height="600" style="border: none; display: block;"></iframe>
     <h2>Last Scans</h2>
     {% if ship.history[ship.history.last].scans %}
         <table class="small-text">

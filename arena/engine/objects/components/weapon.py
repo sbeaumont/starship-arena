@@ -5,6 +5,14 @@ from arena.engine.objects.component import Component
 
 class Weapon(Component, ABC):
     """An object that is attached to an owner (Ship) and can damage other objects in space."""
+
+    # Weapons that consume ammunition shadow this with a count of what is left. Ammo is
+    # spent for the rest of the game unless the ship replenishes.
+    ammo = None
+
+    # Weapons that put something into space shadow this with the type they launch.
+    payload_type = None
+
     def __init__(self, name: str, firing_arc: tuple = None):
         super().__init__(name)
         if firing_arc:

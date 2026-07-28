@@ -1,20 +1,23 @@
 """
-     Name  Type Faction Player   X Y
-Blaster-1 H2545     One  Serge   1 0
- Shaper-1 H2552     Two  Serge 122 0
+   Name  Type Faction Player   X Y
+Blaster H2545     One  Serge   1 0
+ Shaper H2552     Two  Serge 122 0
 
-Blaster-1 Round 1 Commands:
+Blaster starts at (1, 0) with speed 10, heading 0 (straight +y).
+
+Blaster Round 1 Commands:
 
 1: Fire S1 90
 1: Fire R1 90
-1: Fire R1 90
+2: A10
 2: Fire S1 90
 2: Fire R1 90
-2: Fire R1 90
 
-Shaper-1 Round 1 Commands:
+Shaper Round 1 Commands:
 
 None
+
+With the A10 on tick 2 (speed 10 -> 20), Blaster ends the round at (1, 190).
 """
 
 import unittest
@@ -66,7 +69,7 @@ class TestGameOne(unittest.TestCase):
 
     def test_round(self):
         self.game_round.do_round(self.commands)
-        self.assertEqual(Point(1, 90), self.objects['Blaster'].pos)
+        self.assertEqual(Point(1, 190), self.objects['Blaster'].pos)
 
     def test_control(self):
         pilot = Pilot()

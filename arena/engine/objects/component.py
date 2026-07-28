@@ -89,6 +89,10 @@ class ComponentSelectorParameter(Parameter):
         self.input(component_name)
 
     @property
+    def kind(self) -> str:
+        return 'component'
+
+    @property
     def is_valid(self):
         assert self._input is not None
         self.feedback.clear()
@@ -108,6 +112,10 @@ class ObjectByNameParameter(ComponentParameter):
     """Identifies a named object in space. Example is a laser that fires at a named object instead of a direction."""
 
     @property
+    def kind(self) -> str:
+        return 'object_name'
+
+    @property
     def needs_ois(self) -> bool:
         return True
 
@@ -116,10 +124,13 @@ class ObjectByNameParameter(ComponentParameter):
         assert self._input is not None
         assert self.ois is not None
         self.feedback.clear()
-        object_exists = self._input in self.ois
-        if not object_exists:
-            self.feedback.append(f"{self._input} does not exist.")
-        return object_exists
+        # Membership in whatever world was handed in. Validation is given a wider set than
+        # what is currently in space (see GameService._known_names), so an order aimed at
+        # something already destroyed is accepted and only fails when fired.
+        is_known = self._input in self.ois
+        if not is_known:
+            self.feedback.append(f"{self._input} is not a known object name.")
+        return is_known
 
     @property
     def value(self):
@@ -132,6 +143,10 @@ class ObjectByNameParameter(ComponentParameter):
 
 class DirectionParameter(ComponentParameter):
     """Represents a relative direction to the container of a component, like the direction in a Fire command."""
+    @property
+    def kind(self) -> str:
+        return 'direction'
+
     @property
     def is_valid(self):
         assert self._input is not None
@@ -158,6 +173,10 @@ class NumberInRangeParameter(ComponentParameter):
         self.range = range
 
     @property
+    def kind(self) -> str:
+        return 'number_in_range'
+
+    @property
     def is_valid(self):
         assert self._input is not None
         self.feedback.clear()
@@ -180,6 +199,10 @@ class OnOffParameter(ComponentParameter):
 
     valid_inputs = ['yes', 'no', 'true', 'false', 'on', 'off', '1', '0']
     on_inputs = ['yes', 'true', 'on', '1']
+
+    @property
+    def kind(self) -> str:
+        return 'on_off'
 
     @property
     def is_valid(self):

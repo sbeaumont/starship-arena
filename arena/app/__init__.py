@@ -1,0 +1,1 @@
+"""Application-services layer: UI-agnostic operations over the engine, hiding storage."""

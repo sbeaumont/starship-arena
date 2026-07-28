@@ -21,7 +21,12 @@
     {% for ship in ships %}
         <span class="name"><a href="{{ url_for('plan_round', game=game, ship_name=ship.name) }}">{{ ship.name }}</a></span>
         <span class="score">{{ ship.score }}</span>
-        <span class="player">{{ ship.player }}</span>
+        <span class="player">{{ ship.player }}
+            {%- if ship.player %}
+            <a href="{{ game_ui_url }}/?game={{ game|urlencode }}&amp;player={{ ship.player|urlencode }}"
+               target="_blank" rel="noopener" title="Open this player's interactive map">map</a>
+            {%- endif %}
+        </span>
         <span class="past-rounds">
         {% for i in range(round_nr + 1) %}
             <a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a>

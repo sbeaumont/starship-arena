@@ -4,8 +4,8 @@ import logging
 
 logger = logging.getLogger('starship-arena.config')
 
-WEB_ROOT = './arena/web'
-TEMPLATE_DIR = 'arena/web/templates'
+WEB_ROOT = './arena/admin_ui'
+TEMPLATE_DIR = 'arena/admin_ui/templates'
 
 ROUND_ZERO_NAME = 'round-0'
 
@@ -15,6 +15,10 @@ ROUND_EMAIL_TEMPLATE = 'round-email-body.html'
 SHIP_COMMAND_TEMPLATE = 'ship-command-round.txt'
 MANUAL_TEMPLATE_DIR = f'{WEB_ROOT}/templates'
 MANUAL_TEMPLATE = 'manual.html'
+
+# Where the interactive game UI is served, so the admin pages can link a player straight to
+# their map. In development that is the Vite dev server.
+GAME_UI_URL = os.environ.get('GAME_UI_URL', 'http://localhost:5173')
 
 GAME_DATA_DIR = os.environ.get('GAME_DATA_DIR')
 if (not GAME_DATA_DIR) and ('GAME_DATA_DIR' in dir(secret)):
@@ -26,7 +30,7 @@ STATUS_FILE_TEMPLATE = "status_round_{}.pickle"
 COMMANDS_DIR = 'commands/'
 COMMAND_FILE_TEMPLATE = COMMANDS_DIR + "{}-commands-{}.txt"
 ROUND_DIR_TEMPLATE = "round-{rnr}"
-PICTURE_TEMPLATE = "round-{rnr}/{name}-round-{rnr}.png"
+PICTURE_TEMPLATE = "round-{rnr}/{name}-round-{rnr}.svg"
 PDF_TEMPLATE = "round-{rnr}/{name}-round-{rnr}.pdf"
 
 INIT_FILE_NAME = "ships.txt"

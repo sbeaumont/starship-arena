@@ -28,6 +28,17 @@ class Parameter(ABC):
 
     @property
     @abstractmethod
+    def kind(self) -> str:
+        """What sort of input this takes, e.g. 'direction' or 'object_name'.
+
+        Interfaces use this to offer the right control - an angle to drag, a target to
+        click, a slider - instead of asking the player to type. It says nothing about
+        whether a given input is acceptable: is_valid remains the authority on that.
+        """
+        ...
+
+    @property
+    @abstractmethod
     def is_valid(self):
         ...
 

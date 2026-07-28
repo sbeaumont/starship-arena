@@ -1,0 +1,156 @@
+"""
+Data Transfer Objects for the application-services layer (arena/app).
+
+Plain dataclasses, deliberately free of any UI/framework dependency (no FastAPI,
+no pydantic) so this layer stays UI-agnostic. They carry domain data only and never
+storage details such as GameDirectory or file paths.
+"""
+
+from dataclasses import dataclass, field
+
+
+@dataclass
+class GameSummary:
+    name: str
+    current_round: int
+
+
+@dataclass
+class PlayerInfo:
+    name: str
+    faction: str
+    ships: list[str]
+
+
+@dataclass
+class ShipLimits:
+    """Per-tick movement limits from the ship's type -- what a planner may not exceed."""
+    max_turn: float
+    max_delta_v: float
+    max_speed: float
+
+
+@dataclass
+class ScanInfo:
+    name: str
+    x: float
+    y: float
+    distance: float
+    direction: float  # relative bearing from the scanning ship
+    heading: float    # absolute heading to the scanned object
+    friendly: bool
+
+
+@dataclass
+class TickState:
+    """The scanning ship's own state at the end of one tick, plus what it saw."""
+    tick: int
+    x: float
+    y: float
+    heading: float
+    speed: float
+    events: list[str] = field(default_factory=list)
+    scans: list[ScanInfo] = field(default_factory=list)
+
+
+@dataclass
+class ShipRound:
+    game: str
+    ship: str
+    ship_type: str
+    round: int
+    start: TickState | None  # state at the end of the previous round (the path's origin)
+    ticks: list[TickState]
+    limits: ShipLimits
+
+
+@dataclass
+class CommandCheck:
+    line: str
+    ok: bool
+    feedback: list[str]
+
+
+@dataclass
+class TrackPoint:
+    tick: int
+    x: float
+    y: float
+
+
+@dataclass
+class Contact:
+    """A detected object as a chronological track of sightings (fog of war).
+
+    One point = a single blip; the last element is the most recent known position.
+    Scans record where a contact was, not its own heading, so movement is read from
+    the track itself and there is no projection.
+    """
+    name: str
+    type_name: str      # the object's model: 'H2545', 'Rocket', 'SplinterMine', ...
+    category_name: str  # the family it belongs to: 'Ship', 'Starbase', 'Missile', 'Mine'
+    friendly: bool      # owner's faction == the planning faction
+    track: list[TrackPoint]
+
+
+@dataclass
+class WeaponInput:
+    """One input a weapon needs before it can be given an order. `kind` tells an interface
+    which control to offer; min/max are filled in when the input is a bounded number."""
+    name: str
+    kind: str
+    min: float | None = None
+    max: float | None = None
+
+
+@dataclass
+class WeaponInfo:
+    name: str
+    description: str
+    firing_arc: tuple[float, float] | None   # relative to the ship's heading; None = all round
+    ammo: int | None                         # None = does not use ammunition
+    payload: str | None                      # what it launches, e.g. 'Rocket'; None if nothing
+    # The speed the payload carries of its own, so a shot can be drawn the distance it really
+    # covers in a tick. None when the payload has no speed of its own: a mine leaves at the
+    # ship's speed and slows to a stop, which is not a single figure worth drawing to scale.
+    payload_speed: float | None
+    inputs: list[WeaponInput]
+
+
+@dataclass
+class ShipPlan:
+    name: str
+    ship_type: str
+    category_name: str   # 'Ship' or 'Starbase' — a starbase is drawn (and flies) differently
+    x: float
+    y: float
+    heading: float
+    speed: float
+    owned: bool          # True = this player's ship (editable); False = faction ally (context)
+    limits: ShipLimits
+    weapons: list[WeaponInfo]
+    commands: list[str]  # any plan already saved for the upcoming round
+
+
+@dataclass
+class Explosion:
+    """An explosion one of the faction's ships witnessed. The radius is a real world
+    distance, set by the warhead of the ordnance that went off."""
+    tick: int
+    x: float
+    y: float
+    radius: float
+    damage_type: str   # 'Explosion', 'Nanocyte' or 'EMP'
+
+
+@dataclass
+class PlayerPlan:
+    game: str
+    player: str
+    faction: str
+    round: int           # the round this picture is drawn from
+    last_round: int      # the newest round there is. Orders can only be changed while
+                         # looking at it, since that is what the current round plans from.
+    ships: list[ShipPlan]
+    contacts: list[Contact]
+    explosions: list[Explosion]

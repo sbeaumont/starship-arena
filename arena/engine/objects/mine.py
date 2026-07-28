@@ -20,6 +20,10 @@ class Mine(MachineInSpace):
         return (self.hull <= 0) or (self.battery <= 0)
 
     @property
+    def category_name(self) -> str:
+        return 'Mine'
+
+    @property
     def warhead(self):
         return self.weapons['warhead']
 
