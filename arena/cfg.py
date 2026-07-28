@@ -17,8 +17,13 @@ MANUAL_TEMPLATE_DIR = f'{WEB_ROOT}/templates'
 MANUAL_TEMPLATE = 'manual.html'
 
 # Where the interactive game UI is served, so the admin pages can link a player straight to
-# their map. In development that is the Vite dev server.
+# their map. In development that is the Vite dev server; when everything is served from one
+# process (see arena/serve.py) it is just '/play'.
 GAME_UI_URL = os.environ.get('GAME_UI_URL', 'http://localhost:5173')
+
+# The built game UI. `npm run build --prefix game-ui` writes it here; it is plain static files,
+# so no Node is involved in serving it.
+GAME_UI_DIST = os.environ.get('GAME_UI_DIST', os.path.abspath('game-ui/dist'))
 
 GAME_DATA_DIR = os.environ.get('GAME_DATA_DIR')
 if (not GAME_DATA_DIR) and ('GAME_DATA_DIR' in dir(secret)):

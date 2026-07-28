@@ -8,7 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+# dist IS tracked: it is what the WSGI app serves at /play/ in production, and the host has no
+# build step. Rebuild with `npm run build --prefix game-ui` and commit the result.
 dist-ssr
 *.local
 

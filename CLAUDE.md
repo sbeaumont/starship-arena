@@ -47,6 +47,10 @@ bash arena-api.sh           # -> http://localhost:8000
 # Svelte game UI dev server (hot module reload; proxies /api to the API above)
 bash arena-game-ui.sh       # -> http://localhost:5173
 
+# Everything from one WSGI app, the way a single-app host runs it (needs a UI build first)
+npm run build --prefix game-ui
+bash arena-serve.sh         # admin at /, game UI at /play/, API at /api/
+
 # Alternative web runners
 bash arena-web.sh           # Flask
 bash arena-dev-web.sh       # Development Flask
@@ -115,6 +119,19 @@ semantic facade on top of that layer:
   game API.
 
 Do not expose storage details (e.g. `GameDirectory`, pickle paths) above the services layer.
+
+## Deployment
+
+In development the three parts run separately, which is what gives hot reloading. In production
+they are one WSGI application, `arena.serve:application`:
+
+- `/api/...` the FastAPI app, run inside WSGI through `a2wsgi`
+- `/play/...` the built game UI: static files from `game-ui/dist`, **no Node at runtime**
+- everything else, the Flask admin pages
+
+One origin, so the UI's relative `/api/...` calls need no configuration and no CORS. Set
+`GAME_UI_URL=/play` so the admin pages link to the bundled UI, and `GAME_UI_DIST` if the build
+lives elsewhere. A WSGI host's entry point should be `from arena.serve import application`.
 
 ## Code Style Philosophy
 

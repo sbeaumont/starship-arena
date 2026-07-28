@@ -7,6 +7,10 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 // view, so there's no CORS to deal with, and the app code needs no hardcoded host.
 export default defineConfig({
   plugins: [svelte()],
+  // Reference assets relatively, so the built app works wherever it is mounted - at the root
+  // in development and under /play/ when one WSGI app serves everything. With an absolute base
+  // the browser would ask for /assets/... and miss the mount point entirely.
+  base: './',
   server: {
     proxy: {
       '/api': 'http://localhost:8000',
