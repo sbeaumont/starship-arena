@@ -162,6 +162,7 @@
     if (!plan || !boxW || !boxH) return;
     const pts = [];
     for (const s of plan.ships) pts.push(w2v(s.x, s.y));
+    for (const s of plan.ships) for (const t of s.track) pts.push(w2v(t.x, t.y));
     for (const c of plan.contacts) for (const t of c.track) pts.push(w2v(t.x, t.y));
     // Where your ships are going matters as much as where they are, so the planned courses
     // are framed too rather than leaving you to zoom out and find them.
@@ -536,6 +537,26 @@
     })
   );
 
+  // Which tick is which node. A ship that comes to a stop parks every remaining tick on the
+  // same spot, and a stack of joints otherwise reads as a single one, so a run of ticks
+  // sharing a position is labelled as a range.
+  const jointLabels = $derived.by(() => {
+    if (!showPaths || !selectedChain || !selectedShip || !canMove(selectedShip)) return [];
+    const groups = [];
+    for (const n of selectedChain.slice(1)) {
+      const v = w2v(n.x, n.y);
+      const last = groups[groups.length - 1];
+      if (last && last.vx === v.vx && last.vy === v.vy) last.ticks.push(n.t);
+      else groups.push({ vx: v.vx, vy: v.vy, ticks: [n.t] });
+    }
+    return groups.map((g) => ({
+      key: `${g.ticks[0]}`,
+      x: sx(g.vx) + 9,
+      y: sy(g.vy) - 9,
+      text: g.ticks.length === 1 ? `${g.ticks[0]}` : `${g.ticks[0]}–${g.ticks.at(-1)}`,
+    }));
+  });
+
   // Which handle is which weapon: name every planned shot, at its tip.
   const shotLabels = $derived.by(() => {
     if (!showFire) return [];
@@ -710,7 +731,7 @@
     <h1>Starship Arena</h1>
     <span class="sub">
       {#if plan}
-        {plan.player} · faction {plan.faction} ·
+        {plan.player} · faction {plan.factions.join(", ")} ·
         {#if editable}planning round {plan.round + 1}{:else}after round {plan.round}{/if}
       {:else}loading…{/if}
     </span>
@@ -781,6 +802,21 @@
                       onpointerdown={(e) => { e.stopPropagation(); pickTarget(c.name); }} />
             {/if}
           {/each}
+
+          <!-- Where the faction's ships actually went during the round. Dashed, to read as
+               past rather than plan, and joining the ship where the planned course starts. -->
+          {#if showTracks && plan}
+            {#each plan.ships.filter((s) => s.track.some((t) => t.x !== s.track[0].x || t.y !== s.track[0].y)) as s (s.name)}
+              <polyline class="wake" class:sel={s.name === selected} class:ally={!s.owned}
+                        points={s.track.map((t) => { const v = w2v(t.x, t.y); return `${v.vx},${v.vy}`; }).join(" ")}
+                        stroke-width={1.4 * cam.upp} />
+              {#each s.track.slice(0, -1) as t (t.tick)}
+                {@const v = w2v(t.x, t.y)}
+                <circle class="wake-dot" class:sel={s.name === selected} class:ally={!s.owned}
+                        cx={v.vx} cy={v.vy} r={1.8 * cam.upp} />
+              {/each}
+            {/each}
+          {/if}
 
           {#if showPaths}
             {#each ownShips.filter(canMove) as s (s.name)}
@@ -917,6 +953,9 @@
             <line class="leader" x1={l.x} y1={l.y} x2={l.lx - 2} y2={l.ly - 4} />
           {/if}
           <text class="label {l.cls}" x={l.lx} y={l.ly} font-size={LABEL_PX}>{l.text}</text>
+        {/each}
+        {#each jointLabels as j (j.key)}
+          <text class="tick-label" x={j.x} y={j.y} font-size={GLYPH_PX}>{j.text}</text>
         {/each}
         {#each shotLabels as s (s.key)}
           <text class="shot-label" class:cur={s.cur} class:other={!s.mine} x={s.x} y={s.y}
@@ -1167,6 +1206,14 @@
   .course { fill: none; stroke: #57d98a; opacity: 0.6; stroke-linejoin: round; }
   .course.sel { stroke: var(--amber); opacity: 1; }
   .course-dot { fill: #57d98a; opacity: 0.75; }
+  /* The route already flown: same colour family as the plan, but thinner and quieter so past
+     reads as past without breaking the line up. */
+  .wake { fill: none; stroke: #57d98a; opacity: 0.4; }
+  .wake.sel { stroke: var(--amber); opacity: 0.6; }
+  .wake.ally { stroke: var(--cyan); opacity: 0.3; }
+  .wake-dot { fill: #57d98a; opacity: 0.5; }
+  .wake-dot.sel { fill: var(--amber); opacity: 0.75; }
+  .wake-dot.ally { fill: var(--cyan); opacity: 0.4; }
   .grab { fill: transparent; cursor: grab; }
   .grab:active { cursor: grabbing; }
   .joint { fill: #0a0e17; stroke: var(--cyan); pointer-events: none; }
@@ -1202,6 +1249,8 @@
   .leader { stroke: var(--ink-faint); stroke-width: 1; }
   .glyph { font-family: var(--mono); fill: var(--cyan); opacity: 0.8; pointer-events: auto; }
   .glyph.enemy { fill: var(--warn); }
+  .tick-label { font-family: var(--mono); fill: var(--cyan); opacity: 0.65;
+                dominant-baseline: middle; }
   .grid-label { font-family: var(--mono); fill: var(--ink-faint); }
   .scalebar { stroke: var(--ink-faint); stroke-width: 1; }
   .cursor-label { font-family: var(--mono); fill: var(--ink-dim); font-variant-numeric: tabular-nums; }

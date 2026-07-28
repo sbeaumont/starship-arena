@@ -16,10 +16,28 @@ class GameSummary:
 
 
 @dataclass
-class PlayerInfo:
+class ShipSummary:
     name: str
-    faction: str
-    ships: list[str]
+    ship_type: str
+    player: str | None   # None for a ship no one commands
+    score: int
+    alive: bool
+    orders_in: bool      # whether orders for the current round have been handed in
+
+
+@dataclass
+class FactionSummary:
+    name: str
+    score: int           # what its ships have scored between them
+    ships: list[ShipSummary]
+
+
+@dataclass
+class GameOverview:
+    """Who is playing a game and how they are doing, enough to pick whose view to open."""
+    name: str
+    last_round: int
+    factions: list[FactionSummary]
 
 
 @dataclass
@@ -129,6 +147,8 @@ class ShipPlan:
     owned: bool          # True = this player's ship (editable); False = faction ally (context)
     limits: ShipLimits
     weapons: list[WeaponInfo]
+    track: list[TrackPoint]   # where it actually went during the round: your own ships are
+                              # ground truth, not fog of war
     commands: list[str]  # any plan already saved for the upcoming round
 
 
@@ -147,7 +167,7 @@ class Explosion:
 class PlayerPlan:
     game: str
     player: str
-    faction: str
+    factions: list[str]  # normally one; a player commanding ships in several gets all of them
     round: int           # the round this picture is drawn from
     last_round: int      # the newest round there is. Orders can only be changed while
                          # looking at it, since that is what the current round plans from.

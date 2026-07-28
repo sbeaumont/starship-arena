@@ -20,7 +20,8 @@ from arena.engine.history import Tick
 from arena.engine.objects.event import ExplosionEvent
 from arena.app.dto import (
     GameSummary, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
-    TrackPoint, Contact, ShipPlan, PlayerPlan, Explosion, WeaponInfo, WeaponInput, PlayerInfo,
+    TrackPoint, Contact, ShipPlan, PlayerPlan, Explosion, WeaponInfo, WeaponInput,
+    ShipSummary, FactionSummary, GameOverview,
 )
 
 
@@ -48,22 +49,34 @@ class GameService(_EngineAccess):
     def list_ships(self, game: str) -> list[str]:
         return [s.name for s in Game(self._gd(game)).player_ships]
 
-    def list_players(self, game: str) -> list[PlayerInfo]:
-        """Everyone who has commanded a ship in this game, including players who have lost
-        all of theirs - they can still look back over their own history."""
+    def game_overview(self, game: str) -> GameOverview:
+        """Every faction with its ships, who commands them and how they are scoring.
+
+        Destroyed ships are included from the graveyard and marked, both because a score
+        earned still counts and because their player can still review their history."""
         gd = self._gd(game)
         ois = gd.load_current_status()
         if ois is None:
-            return []
-        by_player: dict[str, dict] = {}
-        for pool in (ois, gd.load_graveyard()):
+            raise FileNotFoundError(f"{game} has no completed rounds yet")
+
+        current_round = gd.last_round_number + 1
+        by_faction: dict[str, list[ShipSummary]] = {}
+        for pool, alive in ((ois, True), (gd.load_graveyard(), False)):
             for s in pool.values():
-                player = getattr(s, 'player', None)   # an NPC ship has no player
-                if getattr(s, 'is_player_controlled', False) and player:
-                    by_player.setdefault(player, {})[s.name] = s
-        return [PlayerInfo(name=p, faction=next(iter(ships.values())).faction,
-                           ships=sorted(ships))
-                for p, ships in sorted(by_player.items())]
+                if not getattr(s, 'is_player_controlled', False):
+                    continue
+                by_faction.setdefault(s.faction, []).append(ShipSummary(
+                    name=s.name, ship_type=s._type.name,
+                    player=getattr(s, 'player', None),   # an NPC ship has no player
+                    score=s.score, alive=alive,
+                    orders_in=gd.command_file_exists(s.name, current_round)))
+
+        factions = [FactionSummary(name=f, score=sum(x.score for x in ships),
+                                   ships=sorted(ships, key=lambda x: x.name))
+                    for f, ships in by_faction.items()]
+        # Best first, so the overview doubles as the scoreboard.
+        factions.sort(key=lambda f: (-f.score, f.name))
+        return GameOverview(name=game, last_round=gd.last_round_number, factions=factions)
 
     def get_ship_round(self, game: str, ship_name: str, round_nr: int) -> ShipRound:
         gd = self._gd(game)
@@ -121,15 +134,20 @@ class GameService(_EngineAccess):
         if not 0 <= round_nr <= last_round:
             raise KeyError(f"{game} has no round {round_nr}")
         ois = gd.load_status(round_nr)
-        # The graveyard is consulted too, so a player who has lost every ship still has a
-        # faction and can look back over earlier rounds.
-        faction = self._faction_of(player, ois, gd.load_graveyard())
-        if faction is None:
+        # Every ship a player commands is theirs to plan, even in the unusual case of ships in
+        # more than one faction. The graveyard is consulted too, so a player who has lost every
+        # ship still has a faction and can look back over earlier rounds.
+        factions = {s.faction for s in ois.values() if getattr(s, 'player', None) == player}
+        if not factions:
+            factions = {s.faction for s in gd.load_graveyard().values()
+                        if getattr(s, 'player', None) == player}
+        if not factions:
             raise KeyError(f"No ships for player '{player}' in {game}")
 
         faction_ships = [s for s in ois.values()
-                         if getattr(s, 'is_player_controlled', False) and s.faction == faction]
+                         if getattr(s, 'is_player_controlled', False) and s.faction in factions]
         own_names = {s.name for s in faction_ships}
+        round_ticks = Tick.for_start_of_round(round_nr).ticks_for_round
 
         ships = []
         for s in faction_ships:
@@ -140,12 +158,13 @@ class GameService(_EngineAccess):
                 owned=(getattr(s, 'player', None) == player),
                 limits=ShipLimits(st.max_turn, st.max_delta_v, st.max_speed),
                 weapons=[self._weapon_info(w) for w in s.weapons.values()],
+                track=[TrackPoint(tick=t.tick, x=s.history[t]['pos'].x, y=s.history[t]['pos'].y)
+                       for t in round_ticks if t in s.history],
                 # Orders are planned from the end of a round, so they belong to the one after
                 # it. For the last round that is the current round, still open for changes.
                 commands=self.get_commands(game, s.name, round_nr + 1),
             ))
 
-        round_ticks = Tick.for_start_of_round(round_nr).ticks_for_round
         seen: dict[str, dict] = {}
         for s in faction_ships:
             for t in round_ticks:
@@ -159,7 +178,7 @@ class GameService(_EngineAccess):
                             acc = seen[scan.name] = {
                                 'type_name': src.type_name,
                                 'category_name': src.category_name,
-                                'friendly': src.owner.faction == faction,
+                                'friendly': src.owner.faction in factions,
                                 'pts': {},
                             }
                         acc['pts'].setdefault(t.tick, TrackPoint(tick=t.tick, x=scan.pos.x, y=scan.pos.y))
@@ -180,19 +199,11 @@ class GameService(_EngineAccess):
                             blasts.setdefault(key, Explosion(tick=t.tick, x=e.pos.x, y=e.pos.y,
                                                              radius=e.radius, damage_type=str(e._type)))
 
-        return PlayerPlan(game=game, player=player, faction=faction, round=round_nr,
+        return PlayerPlan(game=game, player=player, factions=sorted(factions), round=round_nr,
                           last_round=last_round, ships=ships, contacts=contacts,
                           explosions=list(blasts.values()))
 
     # ---------------------------------------------------------------- internals
-
-    @staticmethod
-    def _faction_of(player: str, *pools: dict) -> str | None:
-        for pool in pools:
-            for s in pool.values():
-                if getattr(s, 'player', None) == player:
-                    return s.faction
-        return None
 
     @staticmethod
     def _known_names(gd: GameDirectory, ois: dict, ship) -> dict:

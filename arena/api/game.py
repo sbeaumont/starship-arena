@@ -8,7 +8,7 @@ Backed by the UI-agnostic GameService; returns its DTOs directly (FastAPI serial
 from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel
 
-from arena.app.dto import GameSummary, ShipRound, PlayerPlan, PlayerInfo
+from arena.app.dto import GameSummary, ShipRound, PlayerPlan, GameOverview
 from arena.app.services import GameService
 
 router = APIRouter(prefix="/api/game", tags=["game"])
@@ -37,9 +37,12 @@ def ship_round(game: str, ship: str, round_nr: int) -> ShipRound:
         raise HTTPException(status_code=404, detail=f"No data for {ship} in {game} round {round_nr}: {e}")
 
 
-@router.get("/{game}/players")
-def list_players(game: str) -> list[PlayerInfo]:
-    return service.list_players(game)
+@router.get("/{game}/overview")
+def game_overview(game: str) -> GameOverview:
+    try:
+        return service.game_overview(game)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/{game}/players/{player}/plan")
