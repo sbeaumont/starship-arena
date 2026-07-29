@@ -674,17 +674,21 @@
     try { svgEl.releasePointerCapture(e.pointerId); } catch (_) {}
   }
 
+  // The wheel zooms, whatever produced it: a mouse notch, a trackpad's two-finger scroll, or a
+  // pinch (which browsers report as a wheel event with ctrlKey set). Panning is done by
+  // dragging the map, so the wheel does not need to do two jobs.
+  const WHEEL_ZOOM = 1.06; // per mouse notch
+  const NOTCH_PX = 100;    // what a notch reports in pixel mode; Firefox reports 3 lines
+
   function onWheel(e) {
     e.preventDefault();
-    const pinch = e.ctrlKey || e.metaKey;
-    if (!pinch) {
-      cam = { ...cam, cx: cam.cx + e.deltaX * cam.upp, cy: cam.cy + e.deltaY * cam.upp };
-      return;
-    }
+    // Normalised to pixels and capped at one notch, so a mouse (which reports a whole notch at
+    // once) and a trackpad (many small deltas) both zoom at a rate that can be felt.
+    const px = clamp(e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY, -NOTCH_PX, NOTCH_PX);
     const rect = svgEl.getBoundingClientRect();
     const cxPx = e.clientX - rect.left, cyPx = e.clientY - rect.top;
     const vxAt = vb.x + cxPx * cam.upp, vyAt = vb.y + cyPx * cam.upp;
-    const upp = clamp(cam.upp * Math.exp(e.deltaY * 0.008), 0.05, 400);
+    const upp = clamp(cam.upp * Math.exp((px * Math.log(WHEEL_ZOOM)) / NOTCH_PX), 0.05, 400);
     cam = { upp, cx: vxAt - cxPx * upp + (boxW * upp) / 2,
                  cy: vyAt - cyPx * upp + (boxH * upp) / 2 };
   }
