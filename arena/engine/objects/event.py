@@ -53,11 +53,23 @@ class Event(object):
     def is_drawable(self):
         return self.draw_type is not None
 
+    @property
+    def kind(self) -> str:
+        """What sort of event this is, for a UI to read.
+
+        Each subclass answers for itself, the way ObjectInSpace.category_name does, so a reader
+        never has to match on the wording of __str__ or know the Python class names."""
+        raise NotImplementedError
+
 
 class InternalEvent(Event):
     def __init__(self, message):
         super().__init__(None, 'Message', None)
         self.message = message
+
+    @property
+    def kind(self) -> str:
+        return 'internal'
 
     def __str__(self):
         return self.message
@@ -71,6 +83,10 @@ class ScanEvent(Event):
         self.distance = distance
         self.direction = direction
         self.heading = heading
+
+    @property
+    def kind(self) -> str:
+        return 'scan'
 
     @classmethod
     def create_scan(cls, source, scanned):
@@ -90,6 +106,10 @@ class HitEvent(Event):
         self.amount = int(round(amount, 0))
         self.message = message
         self.score = 0
+
+    @property
+    def kind(self) -> str:
+        return 'hit'
 
     @property
     def can_score(self):
@@ -113,6 +133,10 @@ class ExplosionEvent(Event):
     def __init__(self, location, explosion_type, source, radius):
         super().__init__(location, explosion_type, source, DrawType.Circle)
         self.radius = radius
+
+    @property
+    def kind(self) -> str:
+        return 'explosion'
 
     def __str__(self):
         return f"{self.source.name} exploded at {self.pos.as_tuple}"

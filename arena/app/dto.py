@@ -97,6 +97,18 @@ class TrackPoint:
 
 
 @dataclass
+class TickEvent:
+    """Something that happened to a ship on a tick, in the words the round report uses.
+
+    Scans are left out: they are the fog-of-war picture, which the map draws, and they would
+    bury the handful of lines that say what actually happened."""
+    tick: int
+    text: str
+    kind: str   # 'internal' | 'hit' | 'explosion' — the event's own answer, so the UI can pick
+                # out what matters without matching on wording
+
+
+@dataclass
 class Contact:
     """A detected object as a chronological track of sightings (fog of war).
 
@@ -149,6 +161,7 @@ class ShipPlan:
     weapons: list[WeaponInfo]
     track: list[TrackPoint]   # where it actually went during the round: your own ships are
                               # ground truth, not fog of war
+    events: list[TickEvent]   # what happened to it during the round, tick by tick
     commands: list[str]  # any plan already saved for the upcoming round
 
 

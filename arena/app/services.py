@@ -20,7 +20,7 @@ from arena.engine.history import Tick
 from arena.engine.objects.event import ExplosionEvent
 from arena.app.dto import (
     GameSummary, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
-    TrackPoint, Contact, ShipPlan, PlayerPlan, Explosion, WeaponInfo, WeaponInput,
+    TrackPoint, TickEvent, Contact, ShipPlan, PlayerPlan, Explosion, WeaponInfo, WeaponInput,
     ShipSummary, FactionSummary, GameOverview,
 )
 
@@ -160,6 +160,9 @@ class GameService(_EngineAccess):
                 weapons=[self._weapon_info(w) for w in s.weapons.values()],
                 track=[TrackPoint(tick=t.tick, x=s.history[t]['pos'].x, y=s.history[t]['pos'].y)
                        for t in round_ticks if t in s.history],
+                events=[TickEvent(tick=t.tick, text=str(e), kind=e.kind)
+                        for t in round_ticks if t in s.history
+                        for e in s.history[t].non_scan_events],
                 # Orders are planned from the end of a round, so they belong to the one after
                 # it. For the last round that is the current round, still open for changes.
                 commands=self.get_commands(game, s.name, round_nr + 1),

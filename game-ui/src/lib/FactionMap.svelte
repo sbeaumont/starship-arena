@@ -21,6 +21,11 @@
   let showGrid = $state(true);
   let cursor = $state(null);   // world position under the pointer, for orientation
 
+  // The log of what happened. Collapsed by default: it is for reading after the fact, while
+  // the map is what you want in front of you when planning.
+  let showLog = $state(false);
+  let logAllShips = $state(false);
+
   // Orders per own ship: the movement the player draws, the weapon orders per tick, and
   // anything else already on file (activations, boosts) which travels through untouched.
   let orders = $state({});
@@ -157,6 +162,22 @@
   // does not move - but it carries weapons and is one of the heavier platforms in the game.
   const ownShips = $derived(plan ? plan.ships.filter((s) => s.owned) : []);
   const canMove = (s) => s.category_name === "Ship";
+
+  // The log follows the ship you have selected, the way the paper round report was always one
+  // ship's story. "All ships" widens it to the whole faction, which is several hundred lines a
+  // round and worth asking for rather than getting by default.
+  const logByTick = $derived.by(() => {
+    if (!plan) return [];
+    const ships = logAllShips ? plan.ships : plan.ships.filter((s) => s.name === selected);
+    const byTick = new Map();
+    for (const s of ships) {
+      for (const e of s.events) {
+        if (!byTick.has(e.tick)) byTick.set(e.tick, []);
+        byTick.get(e.tick).push({ ship: s.name, ...e });
+      }
+    }
+    return [...byTick.entries()].sort((a, b) => a[0] - b[0]);
+  });
 
   function fit() {
     if (!plan || !boxW || !boxH) return;
@@ -754,6 +775,31 @@
   </header>
 
   <main>
+    <aside class="log" class:open={showLog}>
+      <button type="button" class="tab" onclick={() => (showLog = !showLog)}
+              title={showLog ? "Hide the log" : "What happened this round"}>Log</button>
+      {#if showLog && plan}
+        <div class="logbody">
+          <h2>Round {plan.round} · {logAllShips ? "faction" : (selected ?? "no ship")}</h2>
+          <label class="all"><input type="checkbox" bind:checked={logAllShips} /> all ships</label>
+          {#if !logByTick.length}
+            <p class="note">{selected ? "Nothing recorded." : "Pick a ship to read its log."}</p>
+          {:else}
+            {#each logByTick as [tick, entries] (tick)}
+              <h3>Tick {tick}</h3>
+              <ul>
+                {#each entries as e, i (i)}
+                  <li class={e.kind}>
+                    {#if logAllShips}<span class="who">{e.ship}</span>{/if}{e.text}
+                  </li>
+                {/each}
+              </ul>
+            {/each}
+          {/if}
+        </div>
+      {/if}
+    </aside>
+
     <div class="plot" bind:clientWidth={boxW} bind:clientHeight={boxH}>
       {#if loading}
         <p class="overlay-msg">Loading {player}'s tactical picture…</p>
@@ -1173,6 +1219,32 @@
   .rbtn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
 
   main { flex: 1; display: flex; min-height: 0; }
+
+  /* The log, on the left, collapsed to a strip you can always see but never have to look at. */
+  .log { display: flex; flex-shrink: 0; border-right: 1px solid var(--edge); background: var(--panel); }
+  .log .tab {
+    writing-mode: vertical-rl; text-orientation: mixed;
+    padding: 14px 7px; border: none; background: transparent; cursor: pointer;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  .log .tab:hover { color: var(--cyan); }
+  .log.open .tab { color: var(--amber); }
+  .log .tab:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }
+
+  .logbody { width: 310px; overflow-y: auto; padding: 14px 16px 28px;
+             border-left: 1px solid var(--edge); }
+  .logbody h2 { margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.16em;
+                text-transform: uppercase; color: var(--ink-dim); }
+  .logbody h3 { margin: 16px 0 5px; font-size: 10px; font-weight: 600; letter-spacing: 0.14em;
+                text-transform: uppercase; color: var(--ink-faint); }
+  .logbody ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+  .logbody li { font-size: 11.5px; line-height: 1.45; color: var(--ink-dim); }
+  /* Kinds come from the event itself, so hits and blasts stand out without matching on words. */
+  .logbody li.hit { color: var(--warn); }
+  .logbody li.explosion { color: var(--amber); }
+  .logbody .who { color: var(--cyan); margin-right: 6px; }
+  .logbody .all { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-dim); }
 
   .plot { position: relative; flex: 1; min-width: 0; overflow: hidden;
           background: radial-gradient(120% 90% at 50% 50%, #0e1526 0%, #080b12 72%); }
