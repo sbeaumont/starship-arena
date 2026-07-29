@@ -21,7 +21,8 @@ VENV_NAME="${VENV_NAME:-starship-arena}"
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$HOME/.virtualenvs/$VENV_NAME"
-PYTHON="/usr/bin/python$PYTHON_VERSION"
+# PythonAnywhere keeps its interpreters here; PYTHON can be set outright if a host differs.
+PYTHON="${PYTHON:-/usr/bin/python$PYTHON_VERSION}"
 
 if [ ! -x "$PYTHON" ]; then
     echo "There is no $PYTHON here." >&2

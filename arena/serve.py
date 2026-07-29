@@ -40,7 +40,19 @@ _static = SharedDataMiddleware(_dispatch, {'/play': GAME_UI_DIST})
 
 def application(environ, start_response):
     """The entry point a WSGI host should be pointed at."""
-    if environ.get('PATH_INFO', '') in ('/play', '/play/'):
+    path = environ.get('PATH_INFO', '')
+    if path == '/play':
+        # The page links its assets relatively. Without the trailing slash a browser resolves
+        # those against the site root and asks for /assets/..., which is nothing, so the page
+        # comes up blank - redirect instead of serving it from here.
+        target = environ.get('SCRIPT_NAME', '') + '/play/'
+        query = environ.get('QUERY_STRING', '')
+        if query:
+            target = f'{target}?{query}'
+        start_response('301 Moved Permanently',
+                       [('Location', target), ('Content-Length', '0')])
+        return [b'']
+    if path == '/play/':
         # Static file serving has no notion of a directory index, so name the page.
         environ['PATH_INFO'] = '/play/index.html'
     return _static(environ, start_response)
