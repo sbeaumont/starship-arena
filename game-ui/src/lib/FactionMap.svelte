@@ -307,10 +307,8 @@
   const nodeAt = (tick) => (selectedChain ? selectedChain[tick] : null);
 
   function defaultDirection(weapon) {
-    if (!weapon.firing_arc) return 0;
-    const [lo, hi] = weapon.firing_arc;
-    const span = ((hi - lo) % 360 + 360) % 360;
-    return Math.round(normDelta(lo + span / 2));
+    const [lo, hi] = arcRange(weapon);
+    return Math.round((lo + hi) / 2);
   }
 
   // The arc as a straight low..high range of relative angles, for a slider. An arc that
@@ -321,19 +319,13 @@
     return lo > hi ? [lo - 360, hi] : [lo, hi];
   }
 
-  function inArc(weapon, angle) {
-    if (!weapon.firing_arc) return true;
-    const a = ((angle % 360) + 360) % 360;
-    const [lo, hi] = weapon.firing_arc;
-    return lo > hi ? a >= lo || a <= hi : a >= lo && a <= hi;
-  }
-
+  // Angles arrive as -180..180, while an arc that does not pass through dead ahead runs 90..270.
+  // Move the angle to the turn of the circle nearest the arc, then hold it between the edges.
   function clampToArc(weapon, angle) {
-    if (inArc(weapon, angle)) return Math.round(angle);
-    const [lo, hi] = weapon.firing_arc;
-    // snap to whichever edge of the arc is nearer
-    const dLo = Math.abs(normDelta(angle - lo)), dHi = Math.abs(normDelta(angle - hi));
-    return Math.round(normDelta(dLo <= dHi ? lo : hi));
+    const [lo, hi] = arcRange(weapon);
+    const mid = (lo + hi) / 2;
+    const a = angle - 360 * Math.round((angle - mid) / 360);
+    return Math.round(Math.min(hi, Math.max(lo, a)));
   }
 
   function arm(weapon) {
