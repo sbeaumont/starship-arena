@@ -77,11 +77,29 @@ scripts in this repo instead.
       from arena.serve import application  # noqa
       ```
 
+- [ ] **Set up a virtualenv on the host for the new dependencies.** The venv's Python must match
+      the web app's — [PythonAnywhere docs](https://help.pythonanywhere.com/pages/VirtualEnvForWebsites) —
+      and they offer 3.10, which the code now supports (`requires-python = ">=3.10"`; the one
+      3.11-only thing, `StrEnum`, has been rewritten). In a Bash console there:
+
+      ```
+      mkvirtualenv starship-arena --python=/usr/bin/python3.10
+      pip install flask jinja2 weasyprint pillow wtforms fastapi pydantic a2wsgi
+      ```
+
+      Then put `starship-arena` in the Virtualenv field on the Web tab and reload. `uvicorn` is
+      not needed — it only runs the dev API server.
+- [ ] **Watch WeasyPrint.** The floor was raised to `>=63` (69 installs today) and it depends on
+      system Pango/Cairo. If PDF generation breaks on the host, pin it back to whatever version
+      works there rather than chasing the latest.
 - [ ] **Rebuild and commit `game-ui/dist` whenever the UI changes** — it is tracked now, because
       the host has no build step. `npm run build --prefix game-ui`.
 - [ ] Check the host's `secret.py` sets `GAME_DATA_DIR` to a real path there (it is gitignored,
       so the deployed copy is its own). A relative value is now read as relative to the
       repository, which is the safer way to write it.
+- [ ] Local development stays on the latest Python (`.python-version` is 3.14); only the
+      declared floor moved. Worth compiling against the floor after language-level changes:
+      `uv run --no-project --python 3.10 python -m compileall -q arena test`.
 - [ ] **Consider dropping the CORS entry** in `arena/api/app.py` when serving from one origin —
       it exists only for the Vite dev server on :5173, and is harmless but no longer needed.
 - [ ] Longer term, if the admin pages should stay off the public internet, they can move to a

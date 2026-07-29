@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from enum import StrEnum
+from enum import Enum
 
 from arena.engine.history import Tick
 from arena.engine.objects.component import Component
@@ -51,9 +51,14 @@ class Pilot(Controller):
                 self.add_command(tick.tick + 1, turn_command, objects_in_space)
 
 
-class TargetingMode(StrEnum):
+class TargetingMode(str, Enum):
+    """The 3.10-compatible spelling of a StrEnum: members are strings, and printing one gives
+    its value rather than 'TargetingMode.Defensive'. Same shape as DamageType."""
     Defensive = 'Defensive'
     Offensive = 'Offensive'
+
+    def __str__(self):
+        return self.value
 
 class Gunner(Controller):
     def __init__(self):
