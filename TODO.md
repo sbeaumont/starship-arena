@@ -64,14 +64,24 @@ everything into one WSGI application so that shape does not have to change: `/ap
 FastAPI app through `a2wsgi`, `/play/...` to the built UI as static files, everything else to the
 Flask admin pages. No Node at runtime — `npm run build --prefix game-ui` is a build step.
 
-- [ ] **Update the PythonAnywhere WSGI file.** It still says
-      `from arena.web.app import app as application`, and `arena/web` was renamed to
-      `arena/admin_ui`, so the next deploy would fail on the import. It should become
-      `from arena.serve import application`.
-- [ ] **Set `GAME_UI_URL=/play`** in the host's environment so the admin pages link to the
-      bundled UI rather than the Vite dev server.
-- [ ] **Deploy needs the build committed or built on the host.** `game-ui/dist` is currently
-      untracked; either commit it or run the build as part of deploying.
+**Deploying is now: edit the WSGI file, and nothing else.** Every default is the deployed one and
+all paths are anchored to the repository rather than the working directory, so no host settings,
+environment variables or static-file mappings are needed. The dev overrides live in the runner
+scripts in this repo instead.
+
+- [ ] **Update the PythonAnywhere WSGI file** — the one thing that must be done there. It still
+      says `from arena.web.app import app as application`, and `arena/web` was renamed to
+      `arena/admin_ui`, so the next deploy would fail on the import. Replace that line with:
+
+      ```python
+      from arena.serve import application  # noqa
+      ```
+
+- [ ] **Rebuild and commit `game-ui/dist` whenever the UI changes** — it is tracked now, because
+      the host has no build step. `npm run build --prefix game-ui`.
+- [ ] Check the host's `secret.py` sets `GAME_DATA_DIR` to a real path there (it is gitignored,
+      so the deployed copy is its own). A relative value is now read as relative to the
+      repository, which is the safer way to write it.
 - [ ] **Consider dropping the CORS entry** in `arena/api/app.py` when serving from one origin —
       it exists only for the Vite dev server on :5173, and is harmless but no longer needed.
 - [ ] Longer term, if the admin pages should stay off the public internet, they can move to a

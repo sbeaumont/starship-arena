@@ -4,8 +4,12 @@ import logging
 
 logger = logging.getLogger('starship-arena.config')
 
-WEB_ROOT = './arena/admin_ui'
-TEMPLATE_DIR = 'arena/admin_ui/templates'
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Everything the code needs to find is anchored to the repository, not to the working
+# directory: a host decides for itself where it runs things from.
+WEB_ROOT = os.path.join(REPO_ROOT, 'arena', 'admin_ui')
+TEMPLATE_DIR = os.path.join(WEB_ROOT, 'templates')
 
 ROUND_ZERO_NAME = 'round-0'
 
@@ -13,21 +17,25 @@ ROUND_ZERO_TEMPLATE = 'round-zero.html'
 ROUND_TEMPLATE = 'round-template.html'
 ROUND_EMAIL_TEMPLATE = 'round-email-body.html'
 SHIP_COMMAND_TEMPLATE = 'ship-command-round.txt'
-MANUAL_TEMPLATE_DIR = f'{WEB_ROOT}/templates'
+MANUAL_TEMPLATE_DIR = TEMPLATE_DIR
 MANUAL_TEMPLATE = 'manual.html'
 
-# Where the interactive game UI is served, so the admin pages can link a player straight to
-# their map. In development that is the Vite dev server; when everything is served from one
-# process (see arena/serve.py) it is just '/play'.
-GAME_UI_URL = os.environ.get('GAME_UI_URL', 'http://localhost:5173')
+# Where the interactive game UI lives, so the admin pages can link a player straight to their
+# map. Defaults to how a deployed game serves it (arena/serve.py puts it at /play), so a host
+# needs no configuring; the dev runners override it to point at the Vite dev server instead.
+GAME_UI_URL = os.environ.get('GAME_UI_URL', '/play')
 
 # The built game UI. `npm run build --prefix game-ui` writes it here; it is plain static files,
-# so no Node is involved in serving it.
-GAME_UI_DIST = os.environ.get('GAME_UI_DIST', os.path.abspath('game-ui/dist'))
+# so no Node is involved in serving it. Anchored to the repository rather than the working
+# directory, because a host decides for itself where it runs things from.
+GAME_UI_DIST = os.environ.get('GAME_UI_DIST', os.path.join(REPO_ROOT, 'game-ui', 'dist'))
 
 GAME_DATA_DIR = os.environ.get('GAME_DATA_DIR')
 if (not GAME_DATA_DIR) and ('GAME_DATA_DIR' in dir(secret)):
     GAME_DATA_DIR = secret.GAME_DATA_DIR
+# A relative setting means "inside the repository", so it survives being run from elsewhere.
+if GAME_DATA_DIR and not os.path.isabs(GAME_DATA_DIR):
+    GAME_DATA_DIR = os.path.join(REPO_ROOT, GAME_DATA_DIR)
 logger.info(f"cfg.py: Loading game data from {GAME_DATA_DIR}")
 
 GRAVEYARD_TEMPLATE = "graveyard.pickle"
@@ -40,7 +48,7 @@ PDF_TEMPLATE = "round-{rnr}/{name}-round-{rnr}.pdf"
 
 INIT_FILE_NAME = "ships.txt"
 EMAIL_CFG_NAME = "email.txt"
-MANUAL_FILENAME = "starship-arena-manual.pdf"
+MANUAL_FILENAME = os.path.join(REPO_ROOT, "starship-arena-manual.pdf")
 
 # ============================================= SHIP CORE METRICS
 

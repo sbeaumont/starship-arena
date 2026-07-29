@@ -129,9 +129,13 @@ they are one WSGI application, `arena.serve:application`:
 - `/play/...` the built game UI: static files from `game-ui/dist`, **no Node at runtime**
 - everything else, the Flask admin pages
 
-One origin, so the UI's relative `/api/...` calls need no configuration and no CORS. Set
-`GAME_UI_URL=/play` so the admin pages link to the bundled UI, and `GAME_UI_DIST` if the build
-lives elsewhere. A WSGI host's entry point should be `from arena.serve import application`.
+One origin, so the UI's relative `/api/...` calls need no configuration and no CORS.
+
+A WSGI host needs one line — `from arena.serve import application` — and nothing else: every
+default in `arena/cfg.py` is the deployed one (`GAME_UI_URL` is `/play`) and all paths are
+anchored to `REPO_ROOT`, never to the working directory, which a host chooses for itself. The dev
+runners override `GAME_UI_URL` to the Vite server; `game-ui/dist` is committed because the host
+has no build step, so rebuild it when the UI changes.
 
 ## Code Style Philosophy
 

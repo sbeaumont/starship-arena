@@ -13,7 +13,7 @@ from arena.engine.admin import GameSetup
 from arena.engine.command import parse_commands
 from arena.engine.gamedirectory import GameDirectory, ShipFile
 from arena.engine.game import Game
-from secret import GAME_DATA_DIR
+from arena.cfg import GAME_DATA_DIR
 from arena.engine.objects.registry.builder import all_ship_types
 from arena.engine.objects.ship import Ship
 from arena.engine.objects.starbase import Starbase
