@@ -14,6 +14,7 @@ For a WSGI host, point it at `arena.serve:application`. To try it locally:
 """
 
 import os
+from functools import cache
 
 from a2wsgi import ASGIMiddleware
 from werkzeug.middleware.shared_data import SharedDataMiddleware
@@ -22,7 +23,18 @@ from arena.admin_ui.app import app as admin_app
 from arena.api.app import app as api_app
 from arena.cfg import GAME_UI_DIST
 
-_api = ASGIMiddleware(api_app)
+
+@cache
+def _api():
+    """The API as a WSGI app, built on first use rather than at import.
+
+    a2wsgi runs the ASGI app on an event loop in a thread of its own, started the moment the
+    adapter is constructed. A preforking host (uWSGI, so PythonAnywhere) imports the
+    application in its master process and then forks the workers, and a fork inherits only the
+    thread that called it - so an adapter built at import time leaves its loop behind in the
+    master, and the worker that has to answer waits on it until the host kills the request.
+    Building it on first use puts the thread in the process that uses it."""
+    return ASGIMiddleware(api_app)
 
 
 def _dispatch(environ, start_response):
@@ -31,7 +43,7 @@ def _dispatch(environ, start_response):
     The API's routes already carry their own /api prefix, so the path is matched rather than
     mounted under one: mounting would strip the prefix and leave the routes unreachable."""
     if environ.get('PATH_INFO', '').startswith('/api/'):
-        return _api(environ, start_response)
+        return _api()(environ, start_response)
     return admin_app(environ, start_response)
 
 
