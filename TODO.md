@@ -77,18 +77,30 @@ scripts in this repo instead.
       from arena.serve import application  # noqa
       ```
 
-- [ ] **Set up a virtualenv on the host for the new dependencies.** The venv's Python must match
-      the web app's — [PythonAnywhere docs](https://help.pythonanywhere.com/pages/VirtualEnvForWebsites) —
-      and they offer 3.10, which the code now supports (`requires-python = ">=3.10"`; the one
-      3.11-only thing, `StrEnum`, has been rewritten). In a Bash console there:
+- [ ] **Install the dependencies the host does not preinstall.** PythonAnywhere ships Flask,
+      Jinja, Pillow, WeasyPrint and WTForms for its system Pythons, but not these three — a
+      missing one shows up as `ModuleNotFoundError: No module named 'a2wsgi'` when the WSGI app
+      loads. In a Bash console there:
+
+      ```
+      pip3.10 install --user a2wsgi fastapi pydantic
+      ```
+
+      Then reload the web app; nothing on the dashboard needs changing, because the web app
+      picks up `~/.local/lib/python3.10/site-packages` on its own. (`starlette` comes with
+      fastapi, and `uvicorn` is not needed — it only runs the dev API server.)
+
+      If that clashes with a preinstalled version, use a virtualenv instead — its Python must
+      match the web app's, see the
+      [PythonAnywhere docs](https://help.pythonanywhere.com/pages/VirtualEnvForWebsites):
 
       ```
       mkvirtualenv starship-arena --python=/usr/bin/python3.10
       pip install flask jinja2 weasyprint pillow wtforms fastapi pydantic a2wsgi
       ```
 
-      Then put `starship-arena` in the Virtualenv field on the Web tab and reload. `uvicorn` is
-      not needed — it only runs the dev API server.
+      Then put `starship-arena` in the Virtualenv field on the Web tab and reload. A venv starts
+      empty, hence the full list rather than just the three.
 - [ ] **Watch WeasyPrint.** The floor was raised to `>=63` (69 installs today) and it depends on
       system Pango/Cairo. If PDF generation breaks on the host, pin it back to whatever version
       works there rather than chasing the latest.
