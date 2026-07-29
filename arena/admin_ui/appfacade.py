@@ -11,7 +11,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from arena.engine.admin import GameSetup
+from arena.engine.admin import GameSetup, regenerate_game
 from arena.engine.gamedirectory import GameDirectory, ShipFile
 from arena.engine.game import Game
 from arena.cfg import GAME_DATA_DIR, MANUAL_FILENAME
@@ -135,6 +135,9 @@ class AppFacade(object):
             game.process_current_round()
         else:
             logger.info(f"Not proceeding to process {game_name}: not all command files ok")
+
+    def regenerate_game(self, game_name: str) -> int:
+        return regenerate_game(self.gd(game_name))
 
     def create_new_game(self, name: str, ship_init_file: str):
         logger.info(f"Creating new game: {name}")

@@ -145,6 +145,12 @@ def process_turn(game: str):
     return redirect(url_for('game_overview', game_name=game))
 
 
+@app.route('/regenerate/<game>', methods=['POST'])
+def regenerate(game: str):
+    facade().regenerate_game(game)
+    return redirect(url_for('game_overview', game_name=game))
+
+
 @app.route('/ship_overview')
 def ship_overview():
     return render_template('ship-overview.html',

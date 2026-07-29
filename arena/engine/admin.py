@@ -110,6 +110,25 @@ class GameSetup(object):
         self.shipfile.save(self.ships.values())
 
 
+def regenerate_game(gd: GameDirectory) -> int:
+    """Rebuild a game from its ships file and command files, back to the round it was on.
+
+    Snapshots are written as rounds are processed, so a change to what they hold only reaches
+    rounds processed afterwards; this replays the earlier ones. Deterministic, because setup only
+    places ships still sitting on the origin and the ships file holds the coordinates from the
+    first setup. Returns the round it ended on."""
+    target = gd.last_round_number
+    logger.info(f"Regenerating {gd.game_name} up to round {target}")
+    GameSetup(gd).execute()
+    while gd.last_round_number < target:
+        game = Game(gd)
+        if not game.current_round_ready:
+            logger.info(f"Stopping at round {gd.last_round_number}: not all orders are in")
+            break
+        game.process_current_round()
+    return gd.last_round_number
+
+
 def setup_game(gd: GameDirectory, ship_file: ShipFile=None) -> Game:
     setup = GameSetup(gd, ship_file)
     logger.info(f"Setup {gd.path} for ship file: {setup.shipfile}")

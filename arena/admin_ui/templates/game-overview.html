@@ -6,11 +6,18 @@
 <h1>{{ game }}</h1>
 <p class="lede">Round {{ round_nr }} &mdash; {{ orders_in }} of {{ ships }} ships have orders in.</p>
 
-<form method="POST" action="{{ url_for('process_turn', game=game) }}">
-    <button class="go" type="submit" {{ 'disabled' if not all_command_files_ok }}>
-        {{ 'Process round ' ~ round_nr if all_command_files_ok else 'Waiting for orders' }}
-    </button>
-</form>
+<div class="rowactions">
+    <form method="POST" action="{{ url_for('process_turn', game=game) }}">
+        <button class="go" type="submit" {{ 'disabled' if not all_command_files_ok }}>
+            {{ 'Process round ' ~ round_nr if all_command_files_ok else 'Waiting for orders' }}
+        </button>
+    </form>
+    <form method="POST" action="{{ url_for('regenerate', game=game) }}"
+          onsubmit="return confirm('Replay {{ game }} from its ships file and orders? Its saved rounds are rebuilt.')">
+        <button type="submit">Regenerate</button>
+    </form>
+    <span class="hint">Regenerating replays every round, so saved state is rebuilt with the current engine.</span>
+</div>
 
 {% for faction, ships_of in factions.items() %}
     <div class="faction">Faction {{ faction }}</div>
