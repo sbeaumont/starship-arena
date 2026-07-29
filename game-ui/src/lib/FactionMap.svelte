@@ -758,7 +758,7 @@
       {#if loading}
         <p class="overlay-msg">Loading {player}'s tactical picture…</p>
       {:else if error}
-        <p class="overlay-msg err">Couldn't reach the API: {error}<br />Is arena-api.sh running on :8000?</p>
+        <p class="overlay-msg err">Couldn't reach the API: {error}</p>
       {/if}
 
       <!-- Layer 1: geometry, in world coordinates. Pans and zooms. -->

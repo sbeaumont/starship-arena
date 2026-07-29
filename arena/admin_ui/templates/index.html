@@ -1,19 +1,34 @@
 {% extends 'base.html' %}
 
-{% block title %}Starship Arena{% endblock %}
+{% block title %}Games{% endblock %}
 
 {% block content %}
-<section>
-    <h1>Running Games</h1>
-    <div id="running_games_overview" class="info_grid">
-        <span class="gamelink">Game Name</span>
-        <span class="round_number">Round</span>
-        <span class="ready_to_process">Ready</span>
-        {% for game in games %}
-        <a class="gamelink" href="{{ url_for('game_overview', game_name=game.name) }}">{{game.name}}</a>
-        <span class="round_number">Round {{game.current_round_nr}}</span>
-        <span class="ready_to_process">{{"Yes" if game.current_round_ready else "No"}}</span>
+<h1>Games</h1>
+<p class="lede">A round can be processed once every ship has its orders in.</p>
+
+{% if not games %}
+    <div class="empty">
+        No games yet. <a href="{{ url_for('new_game') }}">Set one up</a>.
+    </div>
+{% else %}
+    <div class="games">
+        {% for g in games %}
+            <div class="game">
+                <span class="dot {{ 'ready' if g.ready else ('idle' if not g.ships else 'waiting') }}"></span>
+                <span class="name"><a href="{{ url_for('game_overview', game_name=g.name) }}">{{ g.name }}</a></span>
+                <span class="round">Round {{ g.round_nr }}</span>
+                <span class="orders">
+                    <span class="count">{{ g.orders_in }} / {{ g.ships }} orders in</span>
+                    <span class="bar"><i style="width: {{ g.percent_in }}%"></i></span>
+                </span>
+                <form method="POST" action="{{ url_for('process_turn', game=g.name) }}">
+                    <button class="go" type="submit" {{ 'disabled' if not g.ready }}>Process</button>
+                </form>
+                {% if g.missing %}
+                    <span class="waiting-for">waiting for {{ g.missing|join(', ') }}</span>
+                {% endif %}
+            </div>
         {% endfor %}
     </div>
-</section>
+{% endif %}
 {% endblock content %}

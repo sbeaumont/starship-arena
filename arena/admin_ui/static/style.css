@@ -1,314 +1,275 @@
-/* General stuff */
+/* Director's console. Same tokens as the game UI (game-ui/src/app.css) so the two halves of
+   Starship Arena read as one product: mono for anything the game generated, sans for prose. */
 
-* {
-    color: white;
-    background-color: black;
-    font-family: "Raleway", sans-serif;
+:root {
+    --bg:        #0a0e17;
+    --panel:     #111726;
+    --panel-lit: #151d31;
+    --edge:      #1b2440;
+    --ring:      #223056;
+    --ink:       #c2ccdf;
+    --ink-dim:   #7b86a4;
+    --ink-faint: #41496a;
+    --amber:     #ffb454;
+    --cyan:      #57d8ff;
+    --green:     #57d98a;
+    --warn:      #ff5d6c;
+    --hull:      #eef2fb;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Raleway", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+    color-scheme: dark;
 }
 
-h1,h2,h3,h4,h5 {
-    background-color: #1f1f1f;
-    width: 100%;
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
 }
 
-a {
-    color: lightblue;
-}
+a { color: var(--cyan); text-decoration: none; }
+a:hover { color: var(--hull); }
 
-/* Style page content */
+h1, h2, h3 { color: var(--hull); font-weight: 600; letter-spacing: .02em; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 15px; margin: 28px 0 12px; }
+h3 { font-size: 13px; margin: 20px 0 8px; }
 
-.main {
-    margin-left: 160px; /* Same as the width of the sidebar */
-    padding: 0 10px;
-    width: calc(100% - 180px);
-}
+p { font-family: var(--sans); line-height: 1.6; color: var(--ink); }
 
-.info_grid {
-    display: grid;
-    width: auto;
-    row-gap: 15px;
-    column-gap: 15px;
-    background-color: #000;
-}
+/* ---------------------------------------------------------------- CHROME */
 
-#running_games_overview, #admin_overview {
-    grid-template-columns: max-content max-content auto;
-    padding: 10px;
-
-    .gamelink {
-        grid-column: 1;
-    }
-    .round_number {
-        grid-column: 2;
-    }
-    .ready_to_process {
-        grid-column: 3;
-    }
-}
-
-#admin-new-game {
-    label {
-        display: block;
-        margin-top: 10px;
-        margin-bottom: 5px;
-    }
-
-    textarea {
-        margin-top: 5px;
-        width: 300px;
-        height: 100px;
-    }
-
-    .block {
-        display: block;
-    }
-}
-
-#game_overview {
-    grid-template-columns: max-content max-content max-content max-content max-content;
-    padding: 20px 20px 30px 10px;
-    border-bottom: #f1f1f1 solid 1px;
-
-    .header {
-        border-bottom: #f1f1f1 solid 1px;
-        padding-bottom: 5px;
-    }
-
-    .name {
-        grid-column: 1;
-    }
-    .score {
-        grid-column: 2;
-    }
-    .player {
-        grid-column: 3;
-    }
-    .past-rounds {
-        grid-column: 4;
-    }
-    .command_file_ready {
-        grid-column: 5;
-        text-align: center;
-    }
-}
-
-#graveyard {
-    grid-template-columns: max-content max-content max-content max-content;
-    padding: 20px 20px 30px 10px;
-    border-bottom: #f1f1f1 solid 1px;
-
-    .header {
-        border-bottom: #f1f1f1 solid 1px;
-        padding-bottom: 5px;
-    }
-
-    .name {
-        grid-column: 1;
-    }
-    .score {
-        grid-column: 2;
-    }
-    .player {
-        grid-column: 3;
-    }
-    .past-rounds {
-        grid-column: 4;
-    }
-}
-
-#ship_status {
-    grid-template-columns: repeat(3, max-content);
-
-    label {
-        font-weight: bold;
-    }
-
-    #position {
-        grid-column: 1;
-    }
-    #heading {
-        grid-column: 2;
-    }
-    #speed {
-        grid-column: 3;
-    }
-    #hull {
-        grid-column: 1;
-    }
-    #battery {
-        grid-column: 2;
-    }
-    #defense {
-        grid-column-start: 1;
-        grid-column-end: 4;
-    }
-}
-
-#ship_components {
-    grid-template-columns: repeat(4, max-content max-content);
-    grid-auto-flow: row;
-    margin-top: 20px;
-    row-gap: 10px;
-
-    label {
-        font-weight: bold;
-    }
-    .component_stat {
-        display: block;
-    }
-}
-
-.ship_overview {
-    grid-template-columns: repeat(7, max-content);
-    grid-auto-flow: row;
-    margin-top: 20px;
-    row-gap: 10px;
-
-    .ship_attribute {
-        display: block;
-    }
-    label {
-        display: block;
-        font-weight: bold;
-    }
-    .attribute_value {
-        margin-top: 5px;
-        display: block;
-    }
-}
-
-.component_overview {
-    grid-template-columns: repeat(1, max-content max-content);
-    grid-auto-flow: row;
-    margin-top: 10px;
-    row-gap: 5px;
-    column-gap: 4px;
-
-    label {
-        font-weight: bold;
-        grid-column-start: span 2;
-        margin-bottom: 4px;
-    }
-    .component_name {
-        font-weight: bold;
-        grid-column: 1;
-    }
-    .component_description {
-        grid-column: 2;
-    }
-    .defense_description {
-        grid-column: 1;
-    }
-}
-
-#planning {
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
     display: flex;
-    width: auto;
-
-    #feedback {
-        flex: auto;
-    }
-
-    .feedback_item {
-        margin-bottom: 4px;
-        padding: 1px 2px;
-    }
-
-    #planning_form {
-        flex: auto;
-        margin-left: 10px;
-        margin-right: 10px;
-
-        textarea {
-            width: 99%;
-            margin-bottom: 5px;
-        }
-        #buttons input {
-            background-color: #d1d1d1;
-            color: black;
-            margin-right: 10px;
-        }
-    }
-    #explanation {
-        flex: auto;
-    }
+    align-items: center;
+    gap: 28px;
+    padding: 0 24px;
+    height: 52px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--edge);
 }
 
-.scans {
-    grid-template-columns: max-content max-content max-content max-content max-content;
-    row-gap: 5px;
-    padding: 20px 20px 30px 10px;
-    border-bottom: #f1f1f1 solid 1px;
-
-    .header {
-        border-bottom: #f1f1f1 solid 1px;
-        padding-bottom: 5px;
-    }
-
-    .name {
-        grid-column: 1;
-    }
-    .position {
-        grid-column: 2;
-    }
-    .distance {
-        grid-column: 3;
-        text-align: right;
-    }
-    .direction_rel {
-        grid-column: 4;
-        text-align: right;
-    }
-    .direction_abs {
-        grid-column: 5;
-        text-align: right;
-    }
+.brand { color: var(--hull); font-weight: 600; letter-spacing: .06em; }
+.brand span {
+    color: var(--amber);
+    font-weight: 400;
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    margin-left: 8px;
 }
 
-/* Collapsible Scans */
+.topbar nav { display: flex; gap: 20px; align-items: center; }
+.topbar nav a { color: var(--ink-dim); font-size: 13px; }
+.topbar nav a:hover { color: var(--hull); }
+.topbar nav a.here { color: var(--amber); }
+.topbar nav .sep { width: 1px; height: 18px; background: var(--edge); }
 
-/* Style the button that is used to open and close the collapsible content */
-.collapsible {
-    cursor: pointer;
-    display: block;
-    width: 100%;
+.main { max-width: 1000px; margin: 0 auto; padding: 28px 24px 64px; }
+
+.lede { color: var(--ink-dim); font-family: var(--sans); margin: 0 0 24px; }
+
+#footer { max-width: 1000px; margin: 0 auto; padding: 0 24px 32px; color: var(--ink-faint); }
+
+/* ---------------------------------------------------------------- PANELS */
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    padding: 18px 20px;
 }
 
-/* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
-.active, .collapsible:hover {
-    background-color: #ccc;
-    color: black;
+.empty {
+    border: 1px dashed var(--edge);
+    border-radius: 8px;
+    padding: 32px;
+    text-align: center;
+    color: var(--ink-dim);
+    font-family: var(--sans);
 }
 
-/* Style the collapsible content. Note: hidden by default */
-.collapsed-content {
-    display: none;
+/* ---------------------------------------------------------------- GAME LIST */
+
+.games { display: flex; flex-direction: column; gap: 10px; }
+
+.game {
+    display: grid;
+    grid-template-columns: 10px minmax(140px, 1fr) 120px 1fr 110px;
+    align-items: center;
+    gap: 18px;
+    background: var(--panel);
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    padding: 14px 18px;
+}
+.game:hover { background: var(--panel-lit); border-color: var(--ring); }
+
+.game .name a { color: var(--hull); font-size: 15px; }
+.game .name a:hover { color: var(--cyan); }
+.game .round { color: var(--ink-dim); font-size: 12px; }
+/* Second line of the row, under the name: who is still owed. */
+.game .waiting-for { grid-column: 2 / -1; }
+
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot.ready   { background: var(--green); box-shadow: 0 0 8px rgba(87, 217, 138, .5); }
+.dot.waiting { background: var(--amber); }
+.dot.idle    { background: var(--ink-faint); }
+
+/* Orders in, as a count and as a bar - the director's one question is who we are waiting for. */
+.orders { display: flex; align-items: center; gap: 10px; }
+.orders .count { color: var(--ink-dim); font-size: 12px; white-space: nowrap; }
+.orders .bar {
+    flex: 1;
+    height: 4px;
+    min-width: 60px;
+    background: var(--grid, #172038);
+    border-radius: 2px;
     overflow: hidden;
 }
+.orders .bar i { display: block; height: 100%; background: var(--green); }
 
-.collapsible:after {
-    content: '\02795'; /* Unicode character for "plus" sign (+) */
+.waiting-for { color: var(--ink-faint); font-size: 11px; font-style: normal; }
+
+/* ---------------------------------------------------------------- CONTROLS */
+
+button, .button {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .04em;
+    padding: 7px 14px;
+    border-radius: 5px;
+    border: 1px solid var(--ring);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+}
+button:hover, .button:hover { background: var(--panel-lit); color: var(--hull); }
+
+button.go {
+    border-color: var(--amber);
+    color: var(--amber);
+}
+button.go:hover { background: var(--amber); color: #14100a; }
+
+button:disabled, button:disabled:hover {
+    border-color: var(--edge);
+    color: var(--ink-faint);
+    background: transparent;
+    cursor: default;
+}
+
+label { display: block; color: var(--ink-dim); font-size: 12px; margin: 16px 0 6px; }
+
+input[type=text], textarea, select {
+    font-family: var(--mono);
     font-size: 13px;
-    color: white;
-    float: left;
-    margin-right: 5px;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--edge);
+    border-radius: 5px;
+    padding: 8px 10px;
+    width: 100%;
+}
+input[type=text]:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--cyan);
+}
+textarea { min-height: 160px; resize: vertical; line-height: 1.5; }
+
+/* ---------------------------------------------------------------- SHIP TABLE */
+
+.shiptable { display: flex; flex-direction: column; gap: 6px; }
+
+.shiprow {
+    display: grid;
+    grid-template-columns: 1.3fr 1.9fr 1fr 1fr 68px 68px 26px;
+    gap: 6px;
+    align-items: center;
+}
+.shiprow.head {
+    color: var(--ink-faint);
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    padding: 0 2px;
+}
+.shiprow input, .shiprow select { padding: 7px 9px; }
+.shiprow .coord { text-align: right; }
+.shiprow input::placeholder { color: var(--ink-faint); }
+
+.shiprow .drop {
+    padding: 0;
+    height: 26px;
+    border-color: transparent;
+    color: var(--ink-faint);
+    font-size: 16px;
+    line-height: 1;
+}
+.shiprow .drop:hover { border-color: var(--warn); color: var(--warn); background: transparent; }
+
+.rowactions { display: flex; align-items: center; gap: 14px; margin: 14px 0 24px; }
+.rowactions .hint { color: var(--ink-faint); font-size: 11px; }
+
+details.import { margin-bottom: 24px; }
+details.import summary { cursor: pointer; color: var(--ink-dim); font-size: 13px; }
+details.import summary:hover { color: var(--hull); }
+details.import textarea { min-height: 120px; margin-bottom: 12px; }
+details.import .lede { font-size: 12px; }
+code { color: var(--cyan); font-size: 12px; }
+
+.messages { list-style: none; padding: 0; margin: 16px 0 0; }
+.messages li {
+    color: var(--warn);
+    font-size: 12px;
+    padding: 6px 10px;
+    border-left: 2px solid var(--warn);
+    background: rgba(255, 93, 108, .07);
+    margin-bottom: 6px;
 }
 
-.active:after {
-    content: "\2796"; /* Unicode character for "minus" sign (-) */
-}
+/* ---------------------------------------------------------------- TABLES */
 
-.error {
-    background-color: darkred;
-    color: white;
+.grid { display: grid; gap: 1px; background: var(--edge); border: 1px solid var(--edge);
+        border-radius: 6px; overflow: hidden; }
+.grid > * { background: var(--panel); padding: 9px 12px; font-size: 13px; }
+.grid .header {
+    background: var(--bg);
+    color: var(--ink-faint);
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
 }
+.grid .num { text-align: right; font-variant-numeric: tabular-nums; }
+.grid .ok { color: var(--green); }
+.grid .no { color: var(--warn); }
+.grid .gone { color: var(--ink-faint); text-decoration: line-through; }
 
-.ok {
-    background-color: darkgreen;
-    color: white;
-}
+.faction { margin: 24px 0 8px; color: var(--amber); font-size: 12px;
+           letter-spacing: .14em; text-transform: uppercase; }
 
-#round_nav {
-    padding: 10px;
-    background-color: black;
+.ships { grid-template-columns: 1fr 80px 1fr 110px; }
+.graveyard { grid-template-columns: 1fr 80px 1fr; }
+
+/* ---------------------------------------------------------------- REFERENCE PAGES */
+/* ship-overview.html and lore.html still use the older markup; they move to the game UI
+   later, so this only has to keep them legible. */
+
+.info_grid { display: grid; gap: 12px; margin-bottom: 12px; }
+.ship_overview { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.ship_attribute {
+    background: var(--panel);
+    border: 1px solid var(--edge);
+    border-radius: 6px;
+    padding: 10px 12px;
 }
+.ship_attribute label { margin: 0 0 4px; }
+.attribute_value { color: var(--hull); font-size: 15px; }

@@ -66,7 +66,7 @@
   {#if loading}
     <p class="msg">Loading games…</p>
   {:else if error}
-    <p class="msg err">Couldn't reach the API: {error}<br />Is arena-api.sh running on :8000?</p>
+    <p class="msg err">Couldn't reach the API: {error}</p>
   {:else}
     <div class="cols">
       <section class="games">

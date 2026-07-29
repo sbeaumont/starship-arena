@@ -5,8 +5,8 @@
     everything else, the Flask admin and director pages
 
 Because it is all one origin, the game UI's relative /api/... calls just work and no CORS is
-needed. In development the three are run separately instead (see arena-api.sh and
-arena-game-ui.sh), which is what gives hot reloading.
+needed. In development the three are run separately instead (see arena-dev.sh), which is what
+gives hot reloading.
 
 For a WSGI host, point it at `arena.serve:application`. To try it locally:
 

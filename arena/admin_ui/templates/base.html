@@ -1,39 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    {% block head %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
-    <link rel="stylesheet" href="{{ url_for('static', filename='nav.css') }}"/>
-    <title>{% block title %}{% endblock %}</title>
-    {% endblock %}
-    {% block css %}
-    {% endblock %}
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body {
-            background-image: url('{{ url_for("static", filename="gfx/astronaut.jpeg") }}');
-        }
-    </style>
+    <title>{% block title %}{% endblock %} · Starship Arena</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+    {% block css %}{% endblock %}
 </head>
 <body>
+<header class="topbar">
+    <a class="brand" href="{{ url_for('overview') }}">STARSHIP ARENA<span>director</span></a>
     <nav>
-        <div id="game_name">
-            Starship Arena
-        </div>
-        <div>
-            <a href="/">Games</a></li>
-        </div>
-        <div>
-            <a href="{{ url_for('ship_overview') }}">Ship Overview</a>
-            <a href="{{ url_for('manual_pdf') }}">Manual</a>
-            <a href="{{ url_for('lore') }}">Lore</a>
-        </div>
-        <div>
-            <a href="{{ url_for('admin') }}">Admin</a>
-        </div>
+        <a href="{{ url_for('overview') }}" class="{{ 'here' if request.endpoint == 'overview' }}">Games</a>
+        <a href="{{ url_for('new_game') }}" class="{{ 'here' if request.endpoint == 'new_game' }}">New game</a>
+        <span class="sep"></span>
+        <a href="{{ url_for('ship_overview') }}" class="{{ 'here' if request.endpoint == 'ship_overview' }}">Ships</a>
+        <a href="{{ url_for('manual_pdf') }}">Manual</a>
+        <a href="{{ url_for('lore') }}" class="{{ 'here' if request.endpoint == 'lore' }}">Lore</a>
     </nav>
-    <div id="content" class="main">{% block content %}{% endblock %}</div>
-    <div id="footer">{% block footer %}{% endblock %}</div>
+</header>
+<div class="main">{% block content %}{% endblock %}</div>
+<div id="footer">{% block footer %}{% endblock %}</div>
 </body>
 </html>

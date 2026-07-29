@@ -1,68 +1,52 @@
 {% extends 'base.html' %}
 
-{% block title %}Game Overview: {{game}}{% endblock %}
+{% block title %}{{ game }}{% endblock %}
 
 {% block content %}
-<h1>Overview</h1>
-<h2>Game: {{game}} Round: {{round_nr}}</h2>
-{% if all_command_files_ok %}
-<div style="padding: 10px; background-color: darkgoldenrod; color: yellow;">
-    Turn can be processed!
-</div>
-{% endif %}
-{% for faction, ships in factions.items() %}
-<div id="game_overview" class="info_grid">
-    <div class="name"><em>Faction {{faction}}</em></div>
-    <span class="name header">Name</span>
-    <span class="score header">Score</span>
-    <span class="player header">Player</span>
-    <span class="past-rounds header">Past Rounds</span>
-    <span class="command_file_ready">Command File?</span>
-    {% for ship in ships %}
-        <span class="name"><a href="{{ url_for('plan_round', game=game, ship_name=ship.name) }}">{{ ship.name }}</a></span>
-        <span class="score">{{ ship.score }}</span>
-        <span class="player">{{ ship.player }}
-            {%- if ship.player %}
-            <a href="{{ game_ui_url }}/?game={{ game|urlencode }}&amp;player={{ ship.player|urlencode }}"
-               target="_blank" rel="noopener" title="Open this player's interactive map">map</a>
-            {%- endif %}
-        </span>
-        <span class="past-rounds">
-        {% for i in range(round_nr + 1) %}
-            <a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a>
+<h1>{{ game }}</h1>
+<p class="lede">Round {{ round_nr }} &mdash; {{ orders_in }} of {{ ships }} ships have orders in.</p>
+
+<form method="POST" action="{{ url_for('process_turn', game=game) }}">
+    <button class="go" type="submit" {{ 'disabled' if not all_command_files_ok }}>
+        {{ 'Process round ' ~ round_nr if all_command_files_ok else 'Waiting for orders' }}
+    </button>
+</form>
+
+{% for faction, ships_of in factions.items() %}
+    <div class="faction">Faction {{ faction }}</div>
+    <div class="grid ships">
+        <span class="header">Ship</span>
+        <span class="header num">Score</span>
+        <span class="header">Player</span>
+        <span class="header">Orders</span>
+        {% for ship in ships_of %}
+            <span>{{ ship.name }}</span>
+            <span class="num">{{ ship.score }}</span>
+            <span>
+                {{ ship.player }}
+                {%- if ship.player %}
+                    <a href="{{ game_ui_url }}/?game={{ game|urlencode }}&amp;player={{ ship.player|urlencode }}"
+                       target="_blank" rel="noopener" title="Open this player's interactive map">map</a>
+                {%- endif %}
+            </span>
+            <span class="{{ 'ok' if command_file[ship.name] else 'no' }}">
+                {{ 'in' if command_file[ship.name] else 'waiting' }}
+            </span>
         {% endfor %}
-        </span>
-        <span class="command_file_ready {% if not command_file[ship.name] %}error">No{% else %}ok">Yes{% endif %}</span>
-    {% endfor %}
-</div>
+    </div>
 {% endfor %}
+
 {% if dead_ships %}
-<h1>Graveyard</h1>
-<div id="graveyard" class="info_grid">
-    <span class="name header">Name</span>
-    <span class="score header">Score</span>
-    <span class="player header">Player</span>
-    <span class="past-rounds header">Past rounds</span>
-    {% for ship in dead_ships %}
-        <span class="name">{{ ship.name }}</span>
-        <span class="score">{{ ship.score }}</span>
-        <span class="player">{{ ship.player }}</span>
-        <span class="past-rounds">
-        {% for i in range(ship.history.last_round + 1) %}
-            <a href="{{ url_for('past_round', game=game, ship_name=ship.name, round=i) }}">Rd {{i}}</a>
+    <h2>Graveyard</h2>
+    <div class="grid graveyard">
+        <span class="header">Ship</span>
+        <span class="header num">Score</span>
+        <span class="header">Player</span>
+        {% for ship in dead_ships %}
+            <span class="gone">{{ ship.name }}</span>
+            <span class="num">{{ ship.score }}</span>
+            <span>{{ ship.player }}</span>
         {% endfor %}
-        </span>
-    {% endfor %}
-</div>
+    </div>
 {% endif %}
-<div>
-    <h1>Honor system</h1>
-    <p>There is NO protection built in to prevent players to look at each other's results.
-        We're working on an honor system: please make sure you only look at your own ships.
-            When the round ends by all means browse around!</p>
-        <p>It's fine to look at the output of your Faction mates,
-            otherwise we'd be copy-pasting stuff anyway. Also if you are completely out of the game
-            because all your ships are blown up, by all means have a look around, making
-        sure not to give anything away to those still in the game.</p>
-</div>
 {% endblock content %}

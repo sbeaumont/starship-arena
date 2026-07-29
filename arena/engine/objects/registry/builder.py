@@ -4,12 +4,17 @@ Configurations of types of weapons and ships.
 The create function is how new objects in the registry are instantiated.
 """
 import importlib
+import os
 import pkgutil
 from arena.engine.objects.objectinspace import Point, Vector
 from arena.engine.objects.ship import ShipType
 
 # Force loading of every package under ois.registry so its subclasses can be found for the manual.
-for (module_loader, name, ispkg) in pkgutil.iter_modules(['arena/engine/objects/registry', ]):
+# Anchored to this file rather than to the working directory: a host picks that for itself, and
+# scanning the wrong directory would leave the registry silently empty instead of failing.
+_REGISTRY_DIR = os.path.dirname(os.path.abspath(__file__))
+
+for (module_loader, name, ispkg) in pkgutil.iter_modules([_REGISTRY_DIR]):
     if name != 'builder':
         importlib.import_module(f'arena.engine.objects.registry.{name}')
 

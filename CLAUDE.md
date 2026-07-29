@@ -38,22 +38,12 @@ uv sync
 # CLI interface
 uv run python arena/cli/main.py [setup|generate|manual|send] <game_name>
 
-# Flask admin/director web app
-uv run flask --app arena.admin_ui.app:app run --host=0.0.0.0 -p 8080
-
-# FastAPI JSON API (hot reload)
-bash arena-api.sh           # -> http://localhost:8000
-
-# Svelte game UI dev server (hot module reload; proxies /api to the API above)
-bash arena-game-ui.sh       # -> http://localhost:5173
+# Development: all three servers, hot reloading, tagged per stream, Ctrl-C stops all
+bash arena-dev.sh           # api :8000, ui :5173, admin :8080
 
 # Everything from one WSGI app, the way a single-app host runs it (needs a UI build first)
 npm run build --prefix game-ui
 bash arena-serve.sh         # admin at /, game UI at /play/, API at /api/
-
-# Alternative web runners
-bash arena-web.sh           # Flask
-bash arena-dev-web.sh       # Development Flask
 ```
 
 ### Testing

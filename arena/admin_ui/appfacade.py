@@ -1,23 +1,22 @@
 """
-Facade that ensures that the flask_app file does not know too much about the internals like the database.
+Facade that keeps the director's console from knowing too much about the internals.
 
-The AppFacade class may be a bit inconsistent: I simply added a method whenever I wanted to know or do something.
+It is the semantic layer for this one UI: everything the console asks about a game, in the
+console's own terms. Player-facing operations live in the application-services layer instead.
 """
 
 import logging
 import os
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from arena.engine.admin import GameSetup
-from arena.engine.command import parse_commands
 from arena.engine.gamedirectory import GameDirectory, ShipFile
 from arena.engine.game import Game
-from arena.cfg import GAME_DATA_DIR
+from arena.cfg import GAME_DATA_DIR, MANUAL_FILENAME
 from arena.engine.objects.registry.builder import all_ship_types
-from arena.engine.objects.ship import Ship
 from arena.engine.objects.starbase import Starbase
-from arena.cfg import MANUAL_FILENAME
 
 logger = logging.getLogger('starship-arena.facade')
 
@@ -29,9 +28,12 @@ class NameValidator(object):
         self.name = name
         self.messages = list()
 
-        self._check_correct_characters()
         self._check_not_empty()
-        self._check_first_character_is_letter()
+        # The other two have nothing to say about a name that isn't there, and saying it anyway
+        # buries the one message that matters under two that don't.
+        if self.name and self.name.strip():
+            self._check_correct_characters()
+            self._check_first_character_is_letter()
 
     @property
     def is_valid(self):
@@ -54,6 +56,24 @@ class NameValidator(object):
         return re.sub(r'\s', '_', self.name)
 
 
+@dataclass
+class GameLine:
+    """One game as the director's console shows it: is this round ready, and if not, who is owed.
+
+    `ready` is the engine's own verdict rather than something derived here, so there is only ever
+    one definition of a round being ready to process."""
+    name: str
+    round_nr: int
+    ships: int
+    orders_in: int
+    missing: list[str]
+    ready: bool
+
+    @property
+    def percent_in(self) -> int:
+        return round(100 * self.orders_in / self.ships) if self.ships else 0
+
+
 class AppFacade(object):
     """Object that hides specifics from the web interface."""
 
@@ -72,12 +92,6 @@ class AppFacade(object):
         return Game(self.gd(game_name))
 
     # ---------------------------------------------------------------------- QUERIES - Reference
-
-    def get_turn_picture_name(self, game: str, ship_name: str, round_nr: int) -> str:
-        return self.gd(game).get_turn_picture_name(round_nr, ship_name)
-
-    def get_turn_pdf_name(self, game: str, ship_name: str, round_nr: int) -> str:
-        return self.gd(game).get_turn_pdf_name(round_nr, ship_name)
 
     def get_manual_pdf(self) -> str:
         return MANUAL_FILENAME
@@ -100,63 +114,19 @@ class AppFacade(object):
     def all_game_objs(self) -> list:
         return [self.game(name) for name in self.all_game_names()]
 
-    def ships_for_game(self, game) -> list:
-        return self.game(game).player_ships
-
-    def dead_ships_for_game(self, game) -> dict:
-        return self.gd(game).load_graveyard()
-
-    def current_round_of_game(self, game) -> int:
-        return self.gd(game).last_round_number + 1
-
-    def all_command_files_ok(self, game):
-        return all(self.command_file_status_of_game(game).values())
-
-    def get_last_commands(self, game, ship_name):
-        round_nr = self.current_round_of_game(game)
-        return self.commands_of_round(game, ship_name, round_nr)
-
-    def get_ship(self, game_name: str, ship_name: str, round_nr=None) -> Ship:
-        gd = self.gd(game_name)
-        dead_ships = gd.load_graveyard()
-        if round_nr is not None and (round_nr > -1):
-            if ship_name in dead_ships:
-                return dead_ships[ship_name]
-            else:
-                return gd.load_status(round_nr)[ship_name]
-        else:
-            return gd.load_current_status()[ship_name]
-
-    def commands_of_round(self, game: str, name: str, round_nr: int):
-        gd = self.gd(game)
-        if gd.command_file_exists(name, round_nr):
-            return gd.read_command_file(name, round_nr)
-        else:
-            return []
+    def game_lines(self) -> list[GameLine]:
+        lines = []
+        for game in self.all_game_objs():
+            status = game.command_file_status
+            lines.append(GameLine(name=game.name,
+                                  round_nr=game.current_round_nr,
+                                  ships=len(status),
+                                  orders_in=sum(1 for ok in status.values() if ok),
+                                  missing=sorted(n for n, ok in status.items() if not ok),
+                                  ready=game.current_round_ready))
+        return lines
 
     # ---------------------------------------------------------------------- COMMANDS
-
-    def check_commands(self, game_name: str, ship_name: str, commands: list[str]) -> list[(bool, str)]:
-        logger.debug(f"Checking commands for {game_name} {ship_name}: {commands}")
-        ship = self.get_ship(game_name, ship_name)
-        ois = self.gd(game_name).load_current_status()
-        parse_result = parse_commands(commands, ship, ois)
-        commands = list()
-        if parse_result:
-            for t in sorted(parse_result.keys()):
-                cs = parse_result[t]
-                for c in cs.all:
-                    commands.append([c.is_valid, c.command_line.text, c.feedback_results])
-                logger.debug(f"Tick {t}: {str(cs)}")
-        return commands
-
-    def save_last_commands(self, game, ship, commands):
-        round_nr = self.current_round_of_game(game)
-        file_name = self.gd(game).command_file(ship, round_nr)
-        logger.info(f"Writing G:{game} S:{ship} R:{round_nr} to {file_name}")
-        with open(file_name, 'w') as f:
-            f.write('\n'.join(commands))
-            logger.debug(f"{commands} written to {file_name}")
 
     def process_turn(self, game_name: str):
         game = Game(self.gd(game_name))
