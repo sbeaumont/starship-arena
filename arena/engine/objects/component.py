@@ -28,7 +28,7 @@ class Component(ABC):
 
     @property
     def status(self) -> dict:
-        """Returns a dictionary of names and values"""
+        """Names and values of what changes about this component during play."""
         raise NotImplementedError
 
     @property

@@ -41,8 +41,6 @@ class Weapon(Component, ABC):
 
     @property
     def status(self) -> dict:
-        return {
-            'Firing Arc': self.firing_arc if self.firing_arc else '360'
-        }
+        return dict()
 
 

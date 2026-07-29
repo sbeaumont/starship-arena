@@ -12,7 +12,7 @@ class TestMissile(TestCase):
 
     def test_decide(self):
         tg = self.ois['TargetShip']
-        self.missile.decide(self.ois)
+        self.missile.decide(self.ois, TICK_ZERO)
         self.assertTrue(self.missile.is_destroyed)
         events = tg.history[TICK_ZERO].events
         self.assertEqual(len(events), 3)

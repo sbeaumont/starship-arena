@@ -97,15 +97,22 @@ class TrackPoint:
 
 
 @dataclass
-class TickEvent:
-    """Something that happened to a ship on a tick, in the words the round report uses.
+class ComponentStatus:
+    """What a component reports, next to what the type object reports for a pristine one.
 
-    Scans are left out: they are the fog-of-war picture, which the map draws, and they would
-    bury the handful of lines that say what actually happened."""
+    The pairs are the component's own, so a reader renders what it is handed. Ordered as the
+    machine carries them: defense, weapons, ECM."""
+    name: str
+    status: dict[str, str]
+    full: dict[str, str]
+
+
+@dataclass
+class TickEvent:
+    """Something that happened to a ship on a tick. Scans are left out; the map draws those."""
     tick: int
     text: str
-    kind: str   # 'internal' | 'hit' | 'explosion' — the event's own answer, so the UI can pick
-                # out what matters without matching on wording
+    kind: str   # 'internal' | 'hit' | 'explosion'
 
 
 @dataclass
@@ -138,7 +145,8 @@ class WeaponInfo:
     name: str
     description: str
     firing_arc: tuple[float, float] | None   # relative to the ship's heading; None = all round
-    ammo: int | None                         # None = does not use ammunition
+    ammo: int | None                         # live count; None = does not use ammunition
+    max_ammo: int | None                     # the full load, from the type object
     payload: str | None                      # what it launches, e.g. 'Rocket'; None if nothing
     # The speed the payload carries of its own, so a shot can be drawn the distance it really
     # covers in a tick. None when the payload has no speed of its own: a mine leaves at the
@@ -156,8 +164,14 @@ class ShipPlan:
     y: float
     heading: float
     speed: float
+    hull: int
+    max_hull: int
+    battery: int
+    max_battery: int
     owned: bool          # True = this player's ship (editable); False = faction ally (context)
     limits: ShipLimits
+    components: list[ComponentStatus]   # shields, weapons and ECM as they stand
+    specs: dict[str, str]               # what the type object says this model can do
     weapons: list[WeaponInfo]
     track: list[TrackPoint]   # where it actually went during the round: your own ships are
                               # ground truth, not fog of war

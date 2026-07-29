@@ -56,17 +56,6 @@ class GameDirectory(object):
             last_round = max([int(n) for s in pickle_files for n in re.split('[-_. ]+', s) if n.isdigit()])
         return last_round
 
-    def get_turn_picture_name(self, round_nr, ship_name) -> str:
-        relpath = os.path.join(self._dir, PICTURE_TEMPLATE.format(rnr=round_nr, name=ship_name))
-        return os.path.abspath(relpath)
-
-    def get_turn_pdf_name(self, round_nr, ship_name) -> str:
-        relpath = os.path.join(self._dir, PDF_TEMPLATE.format(rnr=round_nr, name=ship_name))
-        return os.path.abspath(relpath)
-
-    @property
-    def email_file(self) -> str:
-        return os.path.join(self._dir, EMAIL_CFG_NAME)
 
     def command_file(self, name, round_nr) -> str:
         return CommandFile(self, name, round_nr).full_name
@@ -87,9 +76,6 @@ class GameDirectory(object):
     @property
     def last_status_file(self) -> str:
         return StatusFile(self, self.last_round_number).full_name
-
-    def round_dir(self, round_nr: int):
-        return RoundDirectory(self, round_nr)
 
     # ---------------------------------------------------------------------- QUERIES - Loading Data
 
@@ -309,30 +295,3 @@ class CommandFile(GameFile):
     @property
     def name(self):
         return COMMAND_FILE_TEMPLATE.format(self.ship_name, self.round_nr)
-
-
-class RoundDirectory(object):
-    def __init__(self, gd: GameDirectory, round_nr: int):
-        self.gd = gd
-        self.name = ROUND_DIR_TEMPLATE.format(rnr=round_nr)
-        self.round_nr = round_nr
-
-        if not self.exists:
-            os.mkdir(self.full_name)
-
-    @property
-    def full_name(self):
-        return os.path.join(self.gd.path, self.name)
-
-    @property
-    def exists(self):
-        return os.path.exists(self.full_name)
-
-    def save(self, filename, contents, binary=False):
-        mode = 'wb' if binary else 'w'
-        with open(os.path.join(self.full_name, filename), mode) as f:
-            f.write(contents)
-
-    def load(self, filename):
-        with open(os.path.join(self.full_name, filename)) as f:
-            return f.read()

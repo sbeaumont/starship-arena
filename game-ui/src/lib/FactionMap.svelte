@@ -21,8 +21,7 @@
   let showGrid = $state(true);
   let cursor = $state(null);   // world position under the pointer, for orientation
 
-  // The log of what happened. Collapsed by default: it is for reading after the fact, while
-  // the map is what you want in front of you when planning.
+  // Collapsed by default: the map is what you want in front of you when planning.
   let showLog = $state(false);
   let logAllShips = $state(false);
 
@@ -163,9 +162,17 @@
   const ownShips = $derived(plan ? plan.ships.filter((s) => s.owned) : []);
   const canMove = (s) => s.category_name === "Ship";
 
-  // The log follows the ship you have selected, the way the paper round report was always one
-  // ship's story. "All ships" widens it to the whole faction, which is several hundred lines a
-  // round and worth asking for rather than getting by default.
+  // A full value only means something for a quantity: "3 Splinter" against a full "5 Splinter"
+  // reads as "3/5 Splinter", while a state like a cloak's just reads as itself.
+  function pairText(value, full) {
+    if (value === full) return value;
+    if (/^\d+$/.test(value) && /^\d+$/.test(full)) return `${value}/${full}`;
+    const a = value.match(/^(\d+)\s+(.+)$/);
+    const b = full.match(/^(\d+)\s+(.+)$/);
+    return a && b && a[2] === b[2] ? `${a[1]}/${b[1]} ${a[2]}` : value;
+  }
+
+  // Scoped to the selected ship; the whole faction is several hundred lines a round.
   const logByTick = $derived.by(() => {
     if (!plan) return [];
     const ships = logAllShips ? plan.ships : plan.ships.filter((s) => s.name === selected);
@@ -695,16 +702,13 @@
     try { svgEl.releasePointerCapture(e.pointerId); } catch (_) {}
   }
 
-  // The wheel zooms, whatever produced it: a mouse notch, a trackpad's two-finger scroll, or a
-  // pinch (which browsers report as a wheel event with ctrlKey set). Panning is done by
-  // dragging the map, so the wheel does not need to do two jobs.
+  // The wheel always zooms; panning is dragging.
   const WHEEL_ZOOM = 1.06; // per mouse notch
   const NOTCH_PX = 100;    // what a notch reports in pixel mode; Firefox reports 3 lines
 
   function onWheel(e) {
     e.preventDefault();
-    // Normalised to pixels and capped at one notch, so a mouse (which reports a whole notch at
-    // once) and a trackpad (many small deltas) both zoom at a rate that can be felt.
+    // Normalised to pixels and capped at one notch, so mouse and trackpad both feel the same.
     const px = clamp(e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY, -NOTCH_PX, NOTCH_PX);
     const rect = svgEl.getBoundingClientRect();
     const cxPx = e.clientX - rect.left, cyPx = e.clientY - rect.top;
@@ -780,7 +784,36 @@
               title={showLog ? "Hide the log" : "What happened this round"}>Log</button>
       {#if showLog && plan}
         <div class="logbody">
-          <h2>Round {plan.round} · {logAllShips ? "faction" : (selected ?? "no ship")}</h2>
+          {#if selectedShip}
+            <h2>Condition at Tick 0</h2>
+            <div class="gauge">
+              <span class="gk">Hull</span>
+              <span class="gbar"><i class:low={selectedShip.hull / selectedShip.max_hull < 0.34}
+                                    style="width: {(100 * selectedShip.hull) / selectedShip.max_hull}%"></i></span>
+              <span class="gv">{selectedShip.hull}/{selectedShip.max_hull}</span>
+            </div>
+            <div class="gauge">
+              <span class="gk">Battery</span>
+              <span class="gbar"><i class="power"
+                                    style="width: {(100 * selectedShip.battery) / selectedShip.max_battery}%"></i></span>
+              <span class="gv">{selectedShip.battery}/{selectedShip.max_battery}</span>
+            </div>
+
+            {#each selectedShip.components as c (c.name)}
+              <div class="comp">
+                <span class="cn">{c.name}</span>
+                <span class="cs">
+                  {#each Object.entries(c.status) as [k, v] (k)}
+                    <span class="pair" class:spent={v !== c.full[k]}>
+                      {pairText(v, c.full[k])}<span class="pk">{k}</span>
+                    </span>
+                  {/each}
+                </span>
+              </div>
+            {/each}
+          {/if}
+
+          <h2 class:spaced={selectedShip}>Round {plan.round} · {logAllShips ? "faction" : (selected ?? "no ship")}</h2>
           <label class="all"><input type="checkbox" bind:checked={logAllShips} /> all ships</label>
           {#if !logByTick.length}
             <p class="note">{selected ? "Nothing recorded." : "Pick a ship to read its log."}</p>
@@ -1042,6 +1075,19 @@
         </ul>
       </section>
 
+      {#if selectedShip}
+        <section>
+          <details class="fold">
+            <summary>Specs</summary>
+            <div class="specs">
+              {#each Object.entries(selectedShip.specs) as [k, v] (k)}
+                <span class="sk">{k}</span><span class="sv">{v}</span>
+              {/each}
+            </div>
+          </details>
+        </section>
+      {/if}
+
       {#if selectedShip && selectedOrders && selectedChain}
         <section>
           <h2>{selectedShip.name} — course</h2>
@@ -1096,9 +1142,19 @@
                 <li class:armed={existing}>
                   <div class="wrow">
                     <span class="wname">{w.name}</span>
-                    <span class="wdesc">{w.description}</span>
+                    {#if !editable}
+                      <span></span>
+                    {:else if existing}
+                      <button type="button" class="wfire on"
+                              onclick={() => unarm(selectedTick, w.name)}>clear</button>
+                    {:else}
+                      <button type="button" class="wfire" disabled={left !== null && left <= 0}
+                              onclick={() => arm(w)}>
+                        {w.inputs[0].kind === "object_name" ? "pick target" : "fire"}
+                      </button>
+                    {/if}
                     <span class="wammo" class:out={left !== null && left <= 0}>
-                      {left === null ? "∞" : left}
+                      {#if w.ammo !== null}{left}/{w.max_ammo} {w.payload}{/if}
                     </span>
                   </div>
                   {#if existing}
@@ -1123,15 +1179,7 @@
                           </label>
                         {/each}
                       {/if}
-                      {#if editable}
-                        <button type="button" class="clear-shot" onclick={() => unarm(selectedTick, w.name)}>clear</button>
-                      {/if}
                     </div>
-                  {:else if editable}
-                    <button type="button" class="wfire" disabled={left !== null && left <= 0}
-                            onclick={() => arm(w)}>
-                      {w.inputs[0].kind === "object_name" ? "pick target" : "fire"}
-                    </button>
                   {/if}
                 </li>
               {/each}
@@ -1220,7 +1268,7 @@
 
   main { flex: 1; display: flex; min-height: 0; }
 
-  /* The log, on the left, collapsed to a strip you can always see but never have to look at. */
+  /* The log, on the left, collapsed to a strip. */
   .log { display: flex; flex-shrink: 0; border-right: 1px solid var(--edge); background: var(--panel); }
   .log .tab {
     writing-mode: vertical-rl; text-orientation: mixed;
@@ -1234,13 +1282,13 @@
 
   .logbody { width: 310px; overflow-y: auto; padding: 14px 16px 28px;
              border-left: 1px solid var(--edge); }
+  .logbody h2.spaced { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--edge); }
   .logbody h2 { margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.16em;
                 text-transform: uppercase; color: var(--ink-dim); }
   .logbody h3 { margin: 16px 0 5px; font-size: 10px; font-weight: 600; letter-spacing: 0.14em;
                 text-transform: uppercase; color: var(--ink-faint); }
   .logbody ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
   .logbody li { font-size: 11.5px; line-height: 1.45; color: var(--ink-dim); }
-  /* Kinds come from the event itself, so hits and blasts stand out without matching on words. */
   .logbody li.hit { color: var(--warn); }
   .logbody li.explosion { color: var(--amber); }
   .logbody .who { color: var(--cyan); margin-right: 6px; }
@@ -1351,6 +1399,29 @@
               text-transform: uppercase; color: var(--ink-dim); }
   .panel h2.spaced { margin-top: 20px; }
 
+  /* Bars only where there is a numeric maximum: hull and battery. */
+  .gauge { display: grid; grid-template-columns: 54px 1fr 72px; align-items: center;
+           gap: 8px; margin-bottom: 6px; }
+  .gk { font-size: 11px; color: var(--ink-dim); }
+  .gbar { height: 5px; background: #0d1320; border: 1px solid var(--edge); border-radius: 3px;
+          overflow: hidden; }
+  .gbar i { display: block; height: 100%; background: var(--hull-ok, #57d98a); }
+  .gbar i.power { background: var(--cyan); }
+  .gbar i.low { background: var(--warn); }
+  .gv { font-size: 11px; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+
+  .comp { display: grid; grid-template-columns: 54px 1fr; gap: 8px; margin-top: 8px; }
+  .cn { font-size: 11px; color: var(--ink-dim); }
+  .cs { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .pair { font-size: 11px; color: var(--ink); white-space: nowrap; }
+  .pair.spent { color: var(--amber); }
+  .pk { color: var(--ink-faint); margin-left: 4px; }
+
+  .specs { display: grid; grid-template-columns: 88px 1fr; gap: 4px 10px; font-size: 11px; }
+  .sk { color: var(--ink-faint); }
+  .sv { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .pf { color: var(--ink-faint); }
+
   .hint { font-size: 12.5px; line-height: 1.55; margin: 0; }
   .sub-hint { margin-top: 10px; color: var(--ink-dim); font-size: 11.5px; }
   .note { font-size: 11.5px; color: var(--ink-dim); margin: 10px 0 0; line-height: 1.45; }
@@ -1374,18 +1445,19 @@
   .weapons { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   .weapons li { border: 1px solid var(--edge); border-radius: 3px; padding: 7px 9px; background: #0d1320; }
   .weapons li.armed { border-color: #ff7b7b; }
-  .wrow { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; }
-  .wname { color: var(--hull); font-weight: 600; min-width: 26px; }
-  .wdesc { flex: 1; color: var(--ink-dim); font-size: 11px; }
-  .wammo { font-variant-numeric: tabular-nums; color: var(--cyan); }
+  .wrow { display: grid; grid-template-columns: 30px 74px 1fr; align-items: center;
+          gap: 8px; font-size: 12.5px; }
+  .wname { color: var(--hull); font-weight: 600; }
+  .wammo { font-variant-numeric: tabular-nums; color: var(--cyan); font-size: 11.5px; }
   .wammo.out { color: var(--warn); }
   .wfire {
-    margin-top: 6px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em;
     text-transform: uppercase; color: var(--ink); background: #121a2b;
-    border: 1px solid var(--edge); border-radius: 3px; padding: 4px 10px; cursor: pointer;
+    border: 1px solid var(--edge); border-radius: 3px; padding: 4px 0; cursor: pointer;
   }
   .wfire:hover:not(:disabled) { border-color: #ff7b7b; color: #ff7b7b; }
   .wfire:disabled { opacity: 0.35; cursor: not-allowed; }
+  .wfire.on { border-color: #ff7b7b; color: #ff7b7b; }
   .worder { display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap; font-size: 12px; }
   .at { color: #ff9d9d; font-variant-numeric: tabular-nums; }
   .slider { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-dim); padding: 0; }

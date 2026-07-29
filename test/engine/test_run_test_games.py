@@ -42,7 +42,5 @@ class TestGames(unittest.TestCase):
         self.assertEqual(number_of_rounds, game._dir.last_round_number)
         ships_1 = game._dir.load_current_status()
         self.assertEqual(ships_1['Blaster-1'].score, total_score)
-        self.assertTrue(os.path.exists(os.path.join(self.test_dir, 'test-game', 'round-0')))
-        self.assertTrue(os.path.exists(os.path.join(self.test_dir, 'test-game', 'round-1')))
 
 

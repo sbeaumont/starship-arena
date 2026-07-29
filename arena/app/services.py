@@ -20,7 +20,8 @@ from arena.engine.history import Tick
 from arena.engine.objects.event import ExplosionEvent
 from arena.app.dto import (
     GameSummary, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
-    TrackPoint, TickEvent, Contact, ShipPlan, PlayerPlan, Explosion, WeaponInfo, WeaponInput,
+    TrackPoint, TickEvent, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
+    WeaponInfo, WeaponInput,
     ShipSummary, FactionSummary, GameOverview,
 )
 
@@ -152,12 +153,20 @@ class GameService(_EngineAccess):
         ships = []
         for s in faction_ships:
             st = s._type
+            # The state at the end of the round, taken from the history like everything else.
+            final = s.history[round_ticks[-1]]
+            pristine_weapons = {w.name: w for w in st.weapons}
             ships.append(ShipPlan(
                 name=s.name, ship_type=st.name, category_name=s.category_name,
                 x=s.pos.x, y=s.pos.y, heading=s.heading, speed=s.speed,
+                hull=final['hull'], max_hull=st.max_hull,
+                battery=final['battery'], max_battery=st.max_battery,
                 owned=(getattr(s, 'player', None) == player),
                 limits=ShipLimits(st.max_turn, st.max_delta_v, st.max_speed),
-                weapons=[self._weapon_info(w) for w in s.weapons.values()],
+                components=self._component_status(s, final),
+                specs=self._specs(st),
+                weapons=[self._weapon_info(w, pristine_weapons[w.name])
+                         for w in s.weapons.values()],
                 track=[TrackPoint(tick=t.tick, x=s.history[t]['pos'].x, y=s.history[t]['pos'].y)
                        for t in round_ticks if t in s.history],
                 events=[TickEvent(tick=t.tick, text=str(e), kind=e.kind)
@@ -226,17 +235,47 @@ class GameService(_EngineAccess):
         return known
 
     @staticmethod
-    def _weapon_info(weapon) -> WeaponInfo:
+    def _specs(ship_type) -> dict[str, str]:
+        """What the type object says this model is. Each component describes itself."""
+        specs = {
+            'Model': ship_type.name,
+            'Hull': str(ship_type.max_hull),
+            'Battery': f"{ship_type.start_battery}/{ship_type.max_battery}",
+            'Generators': str(ship_type.generators),
+            'Max speed': str(ship_type.max_speed),
+            'Max turn': str(ship_type.max_turn),
+            'Acceleration': str(ship_type.max_delta_v),
+            'Scan range': str(ship_type.max_scan_distance),
+        }
+        for c in (ship_type.defense + ship_type.weapons + ship_type.ecm + ship_type.control):
+            specs[c.name] = c.description
+        return specs
+
+    @staticmethod
+    def _component_status(ship, snapshot: dict) -> list[ComponentStatus]:
+        """Component state at the tick of that snapshot, with the type object's for comparison.
+
+        Components with nothing to report are left out."""
+        on_type = (ship._type.defense + ship._type.weapons + ship._type.ecm + ship._type.control)
+        full = {c.name: {k: str(v) for k, v in c.status.items()} for c in on_type}
+        return [ComponentStatus(name=name,
+                                status={k: str(v) for k, v in status.items()},
+                                full=full[name])
+                for name, status in snapshot['components'].items() if status]
+
+    @staticmethod
+    def _weapon_info(weapon, pristine) -> WeaponInfo:
         """Describe a weapon well enough for an interface to offer the right controls.
-        The inputs come from the weapon itself, so a new kind of weapon needs no changes
-        here. Ammo is the live count on this ship, not the type's initial load."""
+        The inputs come from the weapon itself, so a new kind of weapon needs no changes here.
+        `pristine` is the same weapon on the type object, which carries the full load."""
         inputs = []
         for p in weapon.expected_parameters:
             lo, hi = p.range if p.kind == 'number_in_range' else (None, None)
             inputs.append(WeaponInput(name=p.name, kind=p.kind, min=lo, max=hi))
         payload = weapon.payload_type
         return WeaponInfo(name=weapon.name, description=weapon.description,
-                          firing_arc=weapon.firing_arc, ammo=weapon.ammo,
+                          firing_arc=weapon.firing_arc,
+                          ammo=weapon.ammo, max_ammo=pristine.ammo,
                           payload=payload.name if payload else None,
                           payload_speed=(payload.max_speed or None) if payload else None,
                           inputs=inputs)

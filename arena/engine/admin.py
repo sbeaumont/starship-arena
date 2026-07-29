@@ -12,8 +12,6 @@ import arena.engine.objects.registry.builder as builder
 from arena.engine.gamedirectory import GameDirectory, ShipFile
 from arena.engine.game import Game
 from arena.engine.objects.objectinspace import Point
-from arena.engine.reporting.visualize import Visualizer
-from arena.engine.reporting.report import report_round_zero
 from arena.engine.history import TICK_ZERO
 
 logger = logging.getLogger('starship-arena.admin')
@@ -45,15 +43,6 @@ def group_by_faction(ships) -> dict:
     for s in ships:
         result[s.faction].append(s)
     return result
-
-
-def visualise_points(list_of_points):
-    boundaries = Visualizer.boundaries(list_of_points, padding=50)
-    vis = Visualizer(boundaries, scale=2)
-    vis.draw_circle(Point(0, 0))
-    for p in list_of_points:
-        vis.draw_circle(Point(*p))
-    vis.show()
 
 
 def distribute_factions(ships, distance) -> None:
@@ -94,7 +83,6 @@ class GameSetup(object):
             for ship in ships:
                 logger.info(f"Ship: {ship.name}, Faction: {ship.faction}, Pos: {ship.pos}, Type: {ship.class_name}")
         self.save()
-        self.report()
 
     def run_tick_zero(self, distance_from_center=500):
         distribute_factions(self.ships.values(), distance_from_center)
@@ -102,9 +90,6 @@ class GameSetup(object):
             ship.history.set_tick(TICK_ZERO)
             ship.scan(self.ships)
             ship.history.update()
-
-    def report(self):
-        report_round_zero(self._dir, self.ships.values())
 
     def _init_ships(self, ship_file: list) -> dict:
         """Load and initialize all the ships to their status at the start of a round."""

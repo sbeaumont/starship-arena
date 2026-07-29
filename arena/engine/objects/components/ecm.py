@@ -37,7 +37,7 @@ class Cloak(Component):
     @property
     def status(self) -> dict:
         return {
-            'Active': 'Yes' if self.active else 'No'
+            'Active': 'On' if self.active else 'Off'
         }
 
     @property

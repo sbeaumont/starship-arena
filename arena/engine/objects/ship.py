@@ -65,14 +65,6 @@ class Ship(MachineInSpace):
     def scans_sorted_by(self, attribute_name):
         return self.history.current.scans_sorted_by(attribute_name)
 
-    @property
-    def snapshot(self):
-        sn = super().snapshot
-        sn['hull'] = self.hull
-        sn['battery'] = self.battery
-        sn['defense'] = self.defense.copy()
-        return sn
-
     def can_scan(self, ois: ObjectInSpace):
         scan_distance = ois.modify_scan_range(self._type.max_scan_distance)
         return (ois != self) and self.distance_to(ois.xy) < scan_distance

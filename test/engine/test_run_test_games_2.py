@@ -13,13 +13,14 @@ original_ship_file = f"""Name Type Faction Player X Y
 {ship_1_name}        H2545  One       Serge   1   0
 {ship_2_name}        H2552  Two       Piet    122 0"""
 
+# A weapon takes one order per tick, so the two rockets a tick come from the two launchers.
 command_ship_1_1 = """
     1: Fire S1 45
     1: Fire R1 90
-    1: Fire R1 90
+    1: Fire R2 90
     2: Fire S1 90
     2: Fire R1 90
-    2: Fire R1 90
+    2: Fire R2 90
 """
 
 commands = {
@@ -29,24 +30,11 @@ commands = {
 
 
 class MockGameDirectory(object):
-    class MockRoundDir(object):
-        def __init__(self, round_nr: int):
-            self.files = dict()
-            self.round_nr = round_nr
-
-        def save(self, name, contents, binary=False):
-            self.files[name] = contents
-
-        @property
-        def full_name(self):
-            return f'mock-round-{self.round_nr}'
-
     def __init__(self):
         self.path = ''
         self.ships = None
         self.round_number = 0
         self.graveyard = dict()
-        self.round_dirs = dict()
 
     def setup_directories(self):
         pass
@@ -89,14 +77,6 @@ class MockGameDirectory(object):
     @property
     def last_round_number(self):
         return self.round_number
-
-    def round_dir(self, round_nr: int):
-        if round_nr in self.round_dirs:
-            return self.round_dirs[round_nr]
-        else:
-            rd = MockGameDirectory.MockRoundDir(round_nr)
-            self.round_dirs[round_nr] = rd
-            return rd
 
 
 class MockShipFile(object):
@@ -150,8 +130,6 @@ class TestGames2(unittest.TestCase):
         ships_1 = game._dir.load_current_status()
         self.assertEqual(total_score, ships_1[ship_1_name].score)
         self.assertIn(ship_2_name, game._dir.load_graveyard())
-        round_files = game._dir.round_dir(1).files
-        self.assertEqual(6, len(round_files))
 
 
 

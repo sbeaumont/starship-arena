@@ -12,7 +12,6 @@ import logging
 
 from arena.engine.command import Commandable, parse_commands, CommandSet
 from arena.engine.gamedirectory import GameDirectory
-from arena.engine.reporting.report import report_round
 from .round import GameRound
 
 logger = logging.getLogger('starship-arena.game')
@@ -104,11 +103,7 @@ class Game(object):
         cr = self.current_round
         cr.do_round(self.load_commands())
 
-        # Report the round
-        report_round(cr.ois, self._dir, cr.round_nr)
-        # ...incl. the final report of any player ships destroyed this round.
         if cr.destroyed:
-            report_round(cr.destroyed, self._dir, cr.round_nr)
             self.update_graveyard(cr.destroyed.values())
 
         # Save the state of the current round.

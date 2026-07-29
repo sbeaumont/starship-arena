@@ -53,8 +53,7 @@ class Launcher(Weapon):
     @property
     def status(self):
         return {
-            'Ammo': f"{self.ammo} {self.payload_type.name}",
-            'Firing Arc': self.firing_arc if self.firing_arc else '360'
+            self.payload_type.name: self.ammo
         }
 
     @property

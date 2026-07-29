@@ -83,7 +83,6 @@ class Laser(Weapon):
     def status(self):
         st = super().status
         st['Temperature'] = f"{self.temperature}/{self.max_temperature}"
-        st['Strength'] = self.strength
         return st
 
     @property

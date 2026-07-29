@@ -112,10 +112,11 @@ class MachineInSpace(ObjectInSpace, ABC):
         return self._type.type_name
 
     @property
-    def simple_snapshot(self):
-        snap = super().simple_snapshot
+    def snapshot(self):
+        snap = super().snapshot
         snap['hull'] = self.hull
         snap['battery'] = self.battery
         snap['class'] = self.class_name
+        snap['components'] = {name: dict(c.status) for name, c in self.all_components.items()}
         return snap
 

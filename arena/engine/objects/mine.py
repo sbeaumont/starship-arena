@@ -36,12 +36,7 @@ class Mine(MachineInSpace):
 
     # ---------------------------------------------------------------------- HISTORY INTERFACE
 
-    @property
-    def snapshot(self):
-        sn = super().snapshot
-        sn['battery'] = self.battery
-        sn['hull'] = self.hull
-        return sn
+
 
     # ---------------------------------------------------------------------- ENGINE HOOKS
 

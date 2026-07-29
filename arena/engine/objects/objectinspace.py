@@ -174,18 +174,14 @@ class ObjectInSpace(ABC):
 
     @property
     def snapshot(self):
-        snap = self.simple_snapshot
-        snap['xy'] = self.vector.pos
-        snap['owner'] = self.owner
-        return snap
-
-    @property
-    def simple_snapshot(self):
+        """This object's state for one tick. Each level adds what it owns; values, not references."""
         return {
             'name': self.name,
             'pos': self.pos,
+            'xy': self.vector.pos,   # unrounded
             'heading': self.heading,
             'speed': self.speed,
+            'owner': self.owner,
         }
 
     # ---------------------------------------------------------------------- COMMANDS

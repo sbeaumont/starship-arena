@@ -50,8 +50,6 @@ class Missile(MachineInSpace):
     @property
     def snapshot(self):
         sn = super().snapshot
-        sn['hull'] = self.hull
-        sn['battery'] = self.battery
         sn['target'] = self.target
         return sn
 
