@@ -1143,7 +1143,7 @@
               <button type="button" class="save" disabled={sending} onclick={saveAll}>Save all</button>
             </div>
             <div class="buttons">
-              <button type="button" class="state" class:on={locked.has(selected)}
+              <button type="button" class="state" class:on={!locked.has(selected)}
                       onclick={() => toggleLock(selected)}
                       title="Stop the course being dragged by accident">
                 {locked.has(selected) ? "Locked" : "Unlocked"}
