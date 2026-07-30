@@ -11,11 +11,9 @@ each section.
 
 ## Game UI (`game-ui/`)
 
-- [ ] **Tell the other players when a round has been processed.** The one who says the last Ready
-      is told in the response, but everyone else finds out by reloading. Push is out on this host:
-      SSE or a WebSocket holds a worker open, there are 2 of them, and harakiri kills a connection
-      at 300 seconds anyway. So poll a small endpoint (last round, ready count) every 20 seconds
-      while the tab is visible, and offer a reload when it moves.
+- [x] **Players are told when a round has been processed**, by polling `/pulse` every 20 seconds
+      while the tab is visible. Push stays out on this host: SSE or a WebSocket holds a worker
+      open, there are 2 of them, and harakiri kills a connection at 300 seconds anyway.
 - [x] **Feedback after regenerating, processing and forcing.** The console redirects with a
       message and the game page shows it.
 - [ ] **Lock the path.** A button that freezes the plotted course, because setting weapon arcs or

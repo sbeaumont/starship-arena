@@ -8,7 +8,7 @@ Backed by the UI-agnostic GameService; returns its DTOs directly (FastAPI serial
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
-from arena.app.dto import GameSummary, ShipRound, PlayerPlan, GameOverview, ShipTypeInfo, Me
+from arena.app.dto import GameSummary, ShipRound, PlayerPlan, GameOverview, ShipTypeInfo, Me, Pulse
 from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE, Player
 from arena.app.services import GameService
 
@@ -123,6 +123,12 @@ def player_plan(game: str, player: str, round: int | None = None,
         return service.get_player_plan(game, player, round)
     except (KeyError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/{game}/pulse")
+def pulse(game: str, me: Player = Depends(require_login)) -> Pulse:
+    """Polled while a player waits: has the round moved on, and who has said they are ready."""
+    return service.pulse(game, me.name)
 
 
 class ReadyBody(BaseModel):

@@ -1,19 +1,29 @@
 1: R45
-2: A20
-3: A20
-4: A-20
-5: A-20
-
 1: Fire S1 0
+2: A20
 2: Fire L1 Dummy
 2: Fire M1 0
+3: L5
+3: A10
 3: Fire L1 Dummy
+4: A-20
 4: Fire S1 0
+5: A-20
+6: L35
+6: A13
+7: R13
+7: A1
 7: Fire S1 20
 7: Fire R1 0
+8: R26
+8: A5
 8: Fire S1 0
 8: Fire R1 0
+9: R3
+9: A-1
 9: Fire S1 0
 9: Fire R1 0
+10: R4
+10: A-4
 10: Fire S1 0
 10: Fire R1 0

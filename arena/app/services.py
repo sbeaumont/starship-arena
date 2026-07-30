@@ -21,7 +21,7 @@ from arena.app.dto import (
     GameSummary, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
     WeaponInfo, WeaponInput,
-    ShipSummary, FactionSummary, GameOverview, ShipTypeInfo, Me, LoginInfo, GameSettings,
+    ShipSummary, FactionSummary, GameOverview, ShipTypeInfo, Me, LoginInfo, GameSettings, Pulse,
 )
 
 
@@ -99,6 +99,17 @@ class _EngineAccess:
                 g.process_current_round()
                 return True
         return False
+
+    def pulse(self, game: str, player: str) -> Pulse:
+        """Read from the ships file and the ready files only: no round is unpickled, because
+        this is asked over and over while a player waits."""
+        gd = self._gd(game)
+        lines = [line for line in ShipFile(gd).ship_lines if line.player]
+        factions = {line.faction for line in lines if line.player == player}
+        players = {line.player for line in lines if line.faction in factions}
+        round_nr = gd.last_round_number + 1
+        return Pulse(last_round=gd.last_round_number,
+                     ready={p: gd.is_ready(p, round_nr) for p in sorted(players)})
 
     def games_for_player(self, name: str) -> list[str]:
         return [g.name for g in self.list_games() if name in self._roster(g.name).values()]
@@ -248,6 +259,8 @@ class GameService(_EngineAccess):
                           if s.faction in factions and s.name not in alive_names
                           and round_ticks[0] in s.history]
         own_names = {s.name for s in faction_ships}
+        readiness = {p: gd.is_ready(p, last_round + 1)
+                     for p in {getattr(s, 'player', None) for s in faction_ships} if p}
 
         ships = []
         for s in faction_ships:
@@ -260,6 +273,8 @@ class GameService(_EngineAccess):
                 x=s.pos.x, y=s.pos.y, heading=s.heading, speed=s.speed,
                 hull=final['hull'], max_hull=st.max_hull,
                 battery=final['battery'], max_battery=st.max_battery,
+                player=getattr(s, 'player', None),
+                player_ready=readiness.get(getattr(s, 'player', None), False),
                 owned=(getattr(s, 'player', None) == player),
                 limits=ShipLimits(st.max_turn, st.max_delta_v, st.max_speed),
                 components=self._component_status(s, final),

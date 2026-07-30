@@ -97,6 +97,13 @@ class TrackPoint:
 
 
 @dataclass
+class Pulse:
+    """What a waiting player wants to know, cheap enough to ask for repeatedly."""
+    last_round: int
+    ready: dict[str, bool]   # per player in the asker's factions
+
+
+@dataclass
 class GameSettings:
     """How a game decides to process a round by itself. Both off means the director does it."""
     on_all_ready: bool
@@ -214,6 +221,8 @@ class ShipPlan:
     max_hull: int
     battery: int
     max_battery: int
+    player: str | None   # who commands it
+    player_ready: bool   # whether they have said they are done with the round being planned
     owned: bool          # True = this player's ship (editable); False = faction ally (context)
     limits: ShipLimits
     components: list[ComponentStatus]   # shields, weapons and ECM as they stand

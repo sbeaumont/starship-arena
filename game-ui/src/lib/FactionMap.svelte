@@ -40,6 +40,7 @@
   let locked = $state(new SvelteSet());   // per ship, this session only
   let ready = $state(false);
   let settingReady = $state(false);
+  let moved = $state(null);   // a newer round exists than the one being looked at
   let sending = $state(false);
 
   // Text sizes live here rather than in the CSS because the de-overlap maths needs them.
@@ -146,6 +147,7 @@
         saveMsg = "";
         ready = data.ready;
         locked.clear();
+        moved = null;
       } catch (e) {
         if (!cancelled) error = String(e);
       } finally {
@@ -752,6 +754,28 @@
     else locked.add(name);
   }
 
+  // Polled while you wait. Push would need a connection held open, and the host has two workers.
+  const PULSE_MS = 20000;
+
+  $effect(() => {
+    game; player;
+    const beat = async () => {
+      if (document.visibilityState !== "visible" || !plan) return;
+      const res = await fetch(`/api/game/${game}/pulse`);
+      if (!res.ok) return;
+      const p = await res.json();
+      for (const s of plan.ships) if (s.player in p.ready) s.player_ready = p.ready[s.player];
+      if (p.last_round > plan.last_round) moved = p.last_round;
+    };
+    const id = setInterval(beat, PULSE_MS);
+    const onVisible = () => beat();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  });
+
   async function toggleReady() {
     settingReady = true;
     try {
@@ -816,6 +840,11 @@
                   onclick={() => onRound(r)}>{r}</button>
         {/each}
       </span>
+    {/if}
+    {#if moved}
+      <button type="button" class="badge moved" onclick={() => onRound(moved)}>
+        Round {moved} has been played. Open it
+      </button>
     {/if}
     {#if aimingWeapon}<span class="badge aiming">click a target for {aimingWeapon}</span>{/if}
     {#if plan && !editable}<span class="badge past">read only</span>{/if}
@@ -1122,6 +1151,8 @@
             <li>
               <button type="button" class="pick" class:on={s.name === selected} class:gone={!s.alive}
                       onclick={() => { selected = s.name; selectedTick = null; aimingWeapon = null; centreOn(s); }}>
+                <span class="lamp" class:lit={s.player_ready}
+                      title={s.player_ready ? "you said ready" : "you have not said ready"}></span>
                 <span class="nm">{s.name}</span>
                 <span class="ty">{s.ship_type}</span>
                 <span class="sp">{s.speed}</span>
@@ -1130,7 +1161,11 @@
           {/each}
           {#if plan}
             {#each plan.ships.filter((s) => !s.owned) as s (s.name)}
-              <li class="ally-row"><span class="nm">{s.name}</span><span class="ty">{s.ship_type}</span></li>
+              <li class="ally-row">
+                <span class="lamp" class:lit={s.player_ready}
+                      title={s.player ? `${s.player} is ${s.player_ready ? "ready" : "not ready"}` : ""}></span>
+                <span class="nm">{s.name}</span><span class="ty">{s.player ?? s.ship_type}</span>
+              </li>
             {/each}
           {/if}
         </ul>
@@ -1320,6 +1355,9 @@
            border: 1px solid var(--amber); padding: 3px 8px; border-radius: 2px; opacity: 0.9; }
   .badge.aiming { color: var(--cyan); border-color: var(--cyan); }
   .badge.past { color: var(--ink-dim); border-color: var(--ink-faint); }
+  .badge.moved { font-family: var(--mono); color: #79b894; border-color: #79b894;
+                 background: #121c17; cursor: pointer; }
+  .badge.moved:hover { filter: brightness(1.2); }
 
   .back {
     font-family: var(--mono); font-size: 14px; color: var(--ink-dim);
@@ -1518,8 +1556,14 @@
   .pick .nm { flex: 1; }
   .pick .ty, .ally-row .ty { color: var(--ink-dim); font-size: 11px; }
   .pick .sp { font-variant-numeric: tabular-nums; }
-  .ally-row { display: flex; gap: 8px; padding: 6px 9px; font-size: 12.5px; color: var(--cyan); opacity: 0.7; }
+  .ally-row { display: flex; gap: 8px; align-items: center; padding: 6px 9px; font-size: 12.5px;
+              color: var(--cyan); opacity: 0.7; }
   .ally-row .nm { flex: 1; }
+
+  /* Ready or not, per commander. Dim rather than red: not being ready yet is normal. */
+  .lamp { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+          background: #33405f; }
+  .lamp.lit { background: #79b894; box-shadow: 0 0 5px rgba(121, 184, 148, 0.6); }
 
   .weapons { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   .weapons li { border: 1px solid var(--edge); border-radius: 3px; padding: 7px 9px; background: #0d1320; }
