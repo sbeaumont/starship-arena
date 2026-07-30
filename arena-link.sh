@@ -5,7 +5,14 @@
 #     ./arena-link.sh Serge https://your.site/play --director        the director, deployed
 #     ./arena-link.sh Menno http://localhost:5173                    arena-dev.sh (Vite)
 #     ./arena-link.sh Menno http://localhost:8080/play               arena-serve.sh
-#     ./arena-link.sh Menno                                          just the path
+#
+# Set the address players use once, in secret.py, and leave it off from then on:
+#
+#     SITE_URL = 'https://your.site'
+#
+# That is the address the link is *for*, not the one this machine serves from - a link goes to
+# somebody else. Pass an address when you want one pointing somewhere else, like a local server
+# to try it out on; given, it wins.
 #
 # Issuing again replaces the link somebody had, so this is also how a lost or leaked one is
 # replaced. The first director's link has to be made here: the console will not let anyone in

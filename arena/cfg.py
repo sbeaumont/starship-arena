@@ -32,6 +32,13 @@ if GAME_DATA_DIR and not os.path.isabs(GAME_DATA_DIR):
     GAME_DATA_DIR = os.path.join(REPO_ROOT, GAME_DATA_DIR)
 logger.info(f"cfg.py: Loading game data from {GAME_DATA_DIR}")
 
+# The address players use, so login links can be printed whole. Not "where this machine serves
+# from": a link is handed to somebody else, so it has to point at the game they play, wherever
+# it is issued from. Only the CLI wants this; the web app never has to know its own name.
+SITE_URL = os.environ.get('SITE_URL', '')
+if (not SITE_URL) and ('SITE_URL' in dir(secret)):
+    SITE_URL = secret.SITE_URL
+
 GRAVEYARD_TEMPLATE = "graveyard.pickle"
 STATUS_FILE_TEMPLATE = "status_round_{}.pickle"
 COMMANDS_DIR = 'commands/'

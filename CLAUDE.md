@@ -74,6 +74,7 @@ uv run python -m arena.cli.main manual
 # Login links. A shell on the host is the one credential that cannot be handed out, so the
 # first director's link is made here - until one exists, nobody can reach the console.
 # The address is where the game UI is: Vite answers at its root, the merged app under /play.
+# A deployed host sets SITE_URL in secret.py instead and leaves the address off.
 ./arena-link.sh                                          who can log in
 ./arena-link.sh <you> https://your.site/play --director   the first director
 ./arena-link.sh <player> http://localhost:5173            a player, against arena-dev.sh
