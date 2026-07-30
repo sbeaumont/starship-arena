@@ -1,13 +1,4 @@
-"""
-This is the main processing engine.
-
-GameRound processes a game turn.
-1) It loads the previous round's status,
-2) runs the round based on the players' command files,
-3) saves the round's result and generates the output reports
-
-Each tick has sub-phases where all objects get called in a specific ordering (see do_tick method).
-"""
+"""Game is one game directory: which round it is on, whether the next one can run, and running it."""
 import logging
 
 from arena.engine.command import Commandable, parse_commands, CommandSet

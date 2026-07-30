@@ -1,86 +1,84 @@
 # Starship Arena
 
-The game is played in rounds, and every round consists of 10 ticks (1-10).
-For a full description of gameplay, see [the starship-arena-manual](./starship-arena-manual.pdf).
+A recreation of a play-by-mail space combat game from 1991, rebuilt as something you can actually
+play in a browser.
 
-## Development instructions
+You command a starship. Every round you write ten ticks of orders: turn, accelerate, fire, scan,
+cloak. Everyone hands their orders in, the round runs, and you find out together what happened.
 
-This version has been developed with Python 3.10. You'll need to set up you environment with:
+The original was played by post. This one keeps the week-long rhythm and drops the envelope.
 
-- Python 3.10 (or higher)
-- weasyprint
-- Jinja2
-- Pillow
-- Flask
+## What it looks like
 
-The command-line entrypoint of this project is `./main.py`.
+The player's view is one tactical map. Your fleet, your faction's shared picture of the enemy, and
+your course for the coming round as a chain of joints you drag:
 
-`python main.py [setup, generate, manual, send]`
+```
+tick 1 ──── 2 ──── 3 ──┐
+                        4      drag a joint, and everything downstream
+                        │      swings with it, clamped to what the ship can do
+                        5 ──── 6
+```
 
-This project can also be hosted as a Flask project with a Web UI.
+Dragging sets that tick's turn and acceleration. The client predicts the path exactly, because a
+ship's own course is deterministic from its own orders. Point a weapon and you get its firing arc,
+rotated to where the ship will actually be pointing at that tick.
 
-`flask --app flask_app run --debug`
+Everything else follows from what your ships saw. A contact is a track of sightings, and its course
+is inferred from the last two, because the game never tells you a target's true heading.
 
-Watch out you don't use the debug flag in an unsafe environment.
+## Playing
 
-## Overall Architecture
+Players get a link and open the map. The director runs a separate console: create a game, watch the
+orders come in, process the round.
 
-There are two entry points: the CLI in main.py, and the web app in flask_app.py.
-The main packages are:
+Ship statistics are public, all of them. The game is won by flying well.
 
-- engine: executes a round plus game directory and command features
-- ois: the game objects and their behavior
-- rep: generating the reports, mostly for the CLI, but also has the 
-important history and visualize packages also used in the webapp.
+## Running it
 
-Persistence is based on simple pickle files which turn our to be surprisingly useful
-and robust in this case. Each round leads to a generated pickle file with the status of
-all objects until that time. These pickle files are used both by the engine to intitialize
-itself at the start of the round, the PDF generator to generate results, but also by the 
-web interface to present all information.
+```bash
+uv sync
+bash arena-dev.sh          # api :8000, game UI :5173, console :8080
+./arena-link.sh Serge http://localhost:5173 --director
+```
 
-The web interface consists of flask_app, appfacade and specific templates (some templates
-are for the PDF generator).
+Open the link it prints. That signs you into both halves.
 
-Some notable architectural choices:
-- Commands are implemented with a Command pattern.
-- Parameters to the commands are more complex than you may expect, but this is needed
-to allow the web interface to offer validation while the player is creating their commands
-for the next round.
-- The History and TickHistory objects are an object's "memory", allowing all the reporting
-capabilities in the game to generate the history, graphics, etc.
-- The main game objects are composed of component objects to allow flexible creation of new
-space ships, missiles, etc.
-- Game objects are implemented as object - type object pairs that configure a specific instance
-of a game object. The type object knows the specific components a game object should have. This
-is how it's very easy to come up with a new ship or missile design and add it to the registry.
-- AppFacade is intended to shield the web app (flask_app.py) from knowing how too much of the
-internals of the rest of the code base.
+```bash
+npm run build --prefix game-ui
+bash arena-serve.sh        # everything from one server on :8080, the way it deploys
+```
 
-## Todo
+## How it is built
 
-- [x] Allied ship paths drawn in green 
-- [ ] A predictive graphic in the plan round screen
-- [ ] Utilities like repair droids
-- [ ] Objects like black holes and gas clouds, nebulae
-- [ ] Scenario mechanism
-- [ ] (NPC) Pilots and Gunners. Programmable / commandable?
-- [ ] Security system to allow unique player logins
-- [ ] Game master, player and admin roles
-- [ ] Message of the Day
-- [ ] Message of the round, possibly tied to scenario
-- [ ] Scanner that reveals internal details of ships like ammo and energy levels.
-- [ ] Damage to components
-- [ ] Point defense, possibly tied to an NPC gunner?
-- [ ] Fix the crash in a malformed Boost command
-- [ ] Allow in-game spawning. Maybe an admin command file? Probably related to scenarios.
-Respawning after death could also be a thing.
-- [ ] Race condition problem when launching missiles: Weapons fire in post move, which leads 
-to the common occurrence that all 
-fired rockets blow up when the ship gets hit in the same tick (they're in space but didn't move yet). 
-Move weapon firing to pre_move? Or weapons fire after existing objects explode. Another problem that
-there is now an ordering problem. It depends on if a ship executed its fire command before or after a
-missile does its post move step. If the ship was before, the fired missiles are placed in space and will 
-explode. If the ship was after the missile in the list the fired missiles are not in space yet and will
-not explode. The game is built on the premise that the order of processing each object must never matter
-so this needs to be fixed.
+A Python engine, a JSON API over it, a Svelte map for players and a Flask console for the director.
+One WSGI application serves all of it, which is what lets it run on a host that offers exactly one.
+
+Three things are worth knowing before reading the code:
+
+**Rounds are deterministic.** A round is a pure function of the previous round's state and the
+command files. No clock, no random numbers. That's why saved state can be deleted and rebuilt
+rather than migrated, and why the console has a Regenerate button.
+
+**Ships are built from components, configured by type objects.** A new ship model is one small
+class, and it shows up in the reference, the new-game dropdown and the manual without any of them
+being told.
+
+**Components describe themselves.** They say what orders they take, what state they're in, and what
+their type says they are. So the firing UI offers the right control for a weapon it has never heard
+of.
+
+## Documentation
+
+[`docs/`](docs/) has the architecture, the glossary, the data formats and the deployment notes.
+[`docs/adr/`](docs/adr/) has 18 decision records, each with what was rejected and why, which is the
+part that stops the next person undoing it.
+
+[`TODO.md`](TODO.md) is what's next.
+
+## State of it
+
+Playable and deployed. Games run, players plan, rounds process.
+
+Logins, the console, the map, the planner, the ship reference and the round log all work. A
+scenario builder, solid bodies to crash into, and a leaderboard are next.

@@ -1,15 +1,8 @@
-"""
-FastAPI JSON API for Starship Arena.
+"""The JSON API. Two surfaces: /api/game for players, /api/admin for the director.
 
-Pure JSON seam between the engine and the UIs. It exposes no storage details -- every
-endpoint speaks in the DTOs of the application-services layer (arena/app). The API is
-split into two surfaces:
+Speaks only in the DTOs of arena/app, never in engine objects. See docs/architecture.md.
 
-    /api/game/...   player-facing, restricted (ship state, planning)
-    /api/admin/...  lower-level operations for the director/admin interface
-
-Run with:  uv run uvicorn arena.api.app:app --reload
-"""
+Run with: uv run uvicorn arena.api.app:app --reload"""
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

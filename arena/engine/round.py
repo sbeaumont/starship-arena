@@ -1,13 +1,6 @@
-"""
-This is the main processing engine.
+"""GameRound runs one round: ten ticks over the objects in space.
 
-GameRound processes a game turn.
-1) It loads the previous round's status,
-2) runs the round based on the players' command files,
-3) saves the round's result and generates the output reports
-
-Each tick has sub-phases where all objects get called in a specific ordering (see do_tick method).
-"""
+do_tick holds the phase order, which is the heart of the engine."""
 
 import logging
 

@@ -1,18 +1,6 @@
-"""
-Who may log in.
+"""Who can log in. One token per person, and the name is their identity in every game.
 
-A player's name is their identity across every game, so the registry lives at the data root
-rather than inside a game directory. A token is a long random string that stands for the person
-who holds it: it goes out in a link, comes back in a cookie, and is what an interface trades for
-an identity. Kept in plain text so a link can be sent again.
-
-The file is the same shape as ships.txt - a header line naming the columns, whitespace separated,
-lines starting with # ignored:
-
-    Name   Token                 Role
-    Serge  k3Jd9x_2mQpLzR7t      director
-    Menno  8fQnT1wVbY4hLs0e
-"""
+See docs/data.md for the file format and what a token is."""
 
 import logging
 import os
@@ -23,8 +11,7 @@ from arena.cfg import PLAYERS_FILE_NAME
 
 logger = logging.getLogger('starship-arena.players')
 
-# The token is the session: it arrives in a link, is traded for this cookie once, and the link
-# can then be forgotten. A play-by-mail game runs for months, so the cookie is long-lived.
+# A play-by-mail game runs for months, so the cookie outlives any session.
 LOGIN_COOKIE = 'arena_login'
 LOGIN_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 TOKEN_BYTES = 16
@@ -63,7 +50,7 @@ class PlayerRegistry:
         return players
 
     def by_token(self, token: str) -> Player | None:
-        """Who holds this token, or None. Compared in constant time, since it is a secret."""
+        """Who holds this token, or None. Constant-time compare: it is a secret."""
         if not token:
             return None
         for p in self.all():
@@ -75,10 +62,7 @@ class PlayerRegistry:
         return next((p for p in self.all() if p.name == name), None)
 
     def issue(self, name: str, role: str = '') -> Player:
-        """Give this player a fresh token, replacing any they had, and return them.
-
-        Rotating is the same operation as issuing: a link that leaked is replaced by asking for
-        another one."""
+        """A fresh token, replacing any they had. Rotating a leaked link is the same call."""
         players = [p for p in self.all() if p.name != name]
         issued = Player(name=name, token=secrets.token_urlsafe(TOKEN_BYTES), role=role)
         players.append(issued)

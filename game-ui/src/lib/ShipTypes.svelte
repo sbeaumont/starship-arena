@@ -34,7 +34,7 @@
   <header>
     <button type="button" class="back" onclick={onLeave}>‹ back</button>
     <h1>Ships</h1>
-    <p class="sub">Every model in the registry, with what it carries. Stats are public — the
+    <p class="sub">Every model in the registry, with what it carries. Stats are public: the
       game is won by flying well, not by knowing something the others do not.</p>
   </header>
 

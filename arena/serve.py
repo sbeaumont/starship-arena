@@ -1,16 +1,6 @@
-"""One WSGI application serving the whole game, for hosts that run a single WSGI app.
+"""One WSGI application serving the API, the game UI and the console. See docs/deployment.md.
 
-    /api/...   the JSON API (FastAPI, an ASGI app, run through an adapter)
-    /play/...  the built game UI - static files, no Node involved
-    everything else, the Flask admin and director pages
-
-Because it is all one origin, the game UI's relative /api/... calls just work and no CORS is
-needed. In development the three are run separately instead (see arena-dev.sh), which is what
-gives hot reloading.
-
-For a WSGI host, point it at `arena.serve:application`. To try it locally:
-
-    uv run python arena/serve.py
+Point a WSGI host at `arena.serve:application`. To try it locally: uv run python arena/serve.py
 """
 
 import os
@@ -26,22 +16,14 @@ from arena.cfg import GAME_UI_DIST
 
 @cache
 def _api():
-    """The API as a WSGI app, built on first use rather than at import.
-
-    a2wsgi runs the ASGI app on an event loop in a thread of its own, started the moment the
-    adapter is constructed. A preforking host (uWSGI, so PythonAnywhere) imports the
-    application in its master process and then forks the workers, and a fork inherits only the
-    thread that called it - so an adapter built at import time leaves its loop behind in the
-    master, and the worker that has to answer waits on it until the host kills the request.
-    Building it on first use puts the thread in the process that uses it."""
+    """Built on first use, inside the worker: the host preforks. See docs/deployment.md."""
     return ASGIMiddleware(api_app)
 
 
 def _dispatch(environ, start_response):
-    """Send API calls to the API and everything else to the admin pages.
+    """Send API calls to the API and everything else to the console.
 
-    The API's routes already carry their own /api prefix, so the path is matched rather than
-    mounted under one: mounting would strip the prefix and leave the routes unreachable."""
+    Matched rather than mounted: mounting would strip the /api the routes already carry."""
     if environ.get('PATH_INFO', '').startswith('/api/'):
         return _api()(environ, start_response)
     return admin_app(environ, start_response)
@@ -54,9 +36,8 @@ def application(environ, start_response):
     """The entry point a WSGI host should be pointed at."""
     path = environ.get('PATH_INFO', '')
     if path == '/play':
-        # The page links its assets relatively. Without the trailing slash a browser resolves
-        # those against the site root and asks for /assets/..., which is nothing, so the page
-        # comes up blank - redirect instead of serving it from here.
+        # Without the trailing slash the page's relative asset links resolve against the site
+        # root and it comes up blank. See docs/deployment.md.
         target = environ.get('SCRIPT_NAME', '') + '/play/'
         query = environ.get('QUERY_STRING', '')
         if query:

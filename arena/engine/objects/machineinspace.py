@@ -1,21 +1,7 @@
-"""
-Abstract base class for all "man-made" objects.
+"""Base class for anything built: ships, starbases, missiles, mines.
 
-It introduces a component system with:
-- hull, battery
-- offense, defense and ecm components
-
-MachineType is the type object of a MachineInSpace, with the MachineInSpace - MachineType relationship being
-similar to a object - class relationship. This was done to prevent an enormous class hierarchy and duplication.
-
-Whenever a MachineInSpace needs type information it will query its type object (MachineType)
-
-The variation lies in the components, and a MachineType simply defines a set of components. This could also
-have been done with configuration files, but I made the choice that it's easier to just write the configuration
-in Python and not have to parse and translate json files.
-
-It also introduces an "owner" which is ultimately a player (but could also be an NPC object).
-"""
+A machine holds hull, battery and components, and asks its MachineType for anything about the
+model. See docs/adr/0003-type-objects-for-machines.md."""
 
 from abc import ABC
 from .objectinspace import ObjectInSpace, Vector

@@ -1,24 +1,7 @@
-"""
-The Command system allows players to control their ships (Command Pattern).
+"""Player orders: parsing them, checking them, running them.
 
-- Knows how to parse a command file and which command objects to instantiate for it
-- All commands depend on the Commandable protocol which is implemented by ObjectInSpace
-- Commands can be validated before they're executed, useful for the web interface (parse_commands).
-
-Command objects:
-- know how to retrieve Parameter objects from relevant Components and populate them.
-- know how to specifically manipulate the object they're a command for.
-
-CommandSet objects:
-- holds all the commands of a player for one target ship for a specific tick.
-- triggers its commands in the correct order within the tick.
-
-The read_command_file function loads a command file and returns a dictionary (Tick, CommandSet). Wraps parse_commands.
-
-The parse_commands is called by:
-- the web interface (for validation)
-- and the read_command_file (during the actual execution of the game engine)
-"""
+A command pulls Parameter objects from the components it addresses, so an order can be validated
+before the round runs. See docs/adr/0005-commands-validated-before-execution.md."""
 
 import re
 import logging

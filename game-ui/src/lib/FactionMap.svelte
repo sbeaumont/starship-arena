@@ -553,7 +553,7 @@
     contacts.filter((c) => !NAMED.has(c.category_name)).map((c) => {
       const v = lastOf(c);
       return { key: c.name, x: sx(v.vx), y: sy(v.vy), letter: c.type_name[0],
-               enemy: !c.friendly, title: `${c.name} — ${c.type_name}` };
+               enemy: !c.friendly, title: `${c.name} · ${c.type_name}` };
     })
   );
 
@@ -1070,7 +1070,7 @@
       {#if selectedShip}
         <section>
           <details class="fold">
-            <summary>Specs — {selectedShip.ship_type}</summary>
+            <summary>Specs · {selectedShip.ship_type}</summary>
             <div class="specs">
               {#each Object.entries(selectedShip.specs) as [k, v] (k)}
                 <span class="sk">{k}</span><span class="sv">{v}</span>
@@ -1082,7 +1082,7 @@
 
       {#if selectedShip && selectedOrders && selectedChain}
         <section>
-          <h2>{selectedShip.name} — course</h2>
+          <h2>{selectedShip.name} · course</h2>
           <table>
             <thead><tr><th class="t">Tick</th><th>Turn</th><th>Throttle</th><th>Speed</th><th>Fire</th></tr></thead>
             <tbody>
@@ -1123,10 +1123,10 @@
         <section class="grow">
           {#if !selectedTick}
             <h2>Weapons</h2>
-            <p class="hint">Click a joint on the course — or a tick number above — to give
+            <p class="hint">Click a joint on the course, or a tick number above, to give
               {selectedShip.name} weapon orders for that tick.</p>
           {:else}
-            <h2>Tick {selectedTick} — weapons</h2>
+            <h2>Tick {selectedTick} · weapons</h2>
             <ul class="weapons">
               {#each selectedShip.weapons as w (w.name)}
                 {@const existing = orderAt(selectedTick, w.name)}

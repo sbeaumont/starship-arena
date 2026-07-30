@@ -52,7 +52,7 @@
     </form>
 
     <p class="sub">
-      Already commanding ships and no link? Ask the director to send you one — your name is
+      Already commanding ships and no link? Ask the director to send you one. Your name is
       already taken, by you.
     </p>
 

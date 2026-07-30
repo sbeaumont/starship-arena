@@ -1,13 +1,7 @@
-"""
-Application-services layer: UI-agnostic operations over the game engine.
+"""The seam every interface sits on: operations in domain terms, returning DTOs.
 
-This is the "lower layer" that every UI's own facade sits on. It speaks in domain
-terms and returns DTOs (see arena/app/dto.py). Storage -- currently pickle files behind
-GameDirectory -- is an implementation detail hidden here and never exposed upward.
-
-    GameService  -- player-facing, restricted operations (read state, plan moves).
-    AdminService -- lower-level operations for the admin/director interface.
-"""
+GameService is player-facing and restricted, AdminService is the director's. Storage stays below
+this line. See docs/adr/0001-layered-architecture.md."""
 
 import re
 from pathlib import Path
@@ -172,14 +166,11 @@ class GameService(_EngineAccess):
             f.write('\n'.join(lines))
 
     def get_player_plan(self, game: str, player: str, round_nr: int = None) -> PlayerPlan:
-        """The faction-shared picture for a player, as at the end of a round.
+        """The faction-shared picture for a player at the end of a round.
 
-        Returns the player's faction's ships in world coordinates (their own flagged), plus
-        fog-of-war contacts: every non-faction object any faction ship scanned during that
-        round, grouped per object into a chronological track of positions. Asking for an
-        earlier round gives the picture as it was known then; only the latest round can
-        still be planned.
-        """
+        Their faction's ships in world coordinates, plus fog-of-war contacts: everything any
+        faction ship scanned, as a track of sightings. An earlier round gives the picture as it
+        was known then."""
         gd = self._gd(game)
         last_round = gd.last_round_number
         if last_round < 0:

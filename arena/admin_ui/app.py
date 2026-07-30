@@ -78,17 +78,9 @@ def submitted_rows(form) -> list[dict]:
 def ship_file_lines(rows: list[dict], known_types) -> tuple[list[str], list[str]]:
     """Turn the submitted rows into ships.txt lines. Returns (problems, lines).
 
-    The file is whitespace separated, so a name with a space in it would silently become two
-    columns and shift everything after it. NameValidator's cleaning - spaces become underscores -
-    is what keeps that from happening quietly.
-
-    A row with neither a name nor a player is one the director added and did not use, so it is
-    dropped rather than complained about. Those two fields are the test because the others are
-    never empty by the time they arrive: a <select> always submits a type, and the Add button
-    carries the previous row's faction over. Half-filled rows still get their error.
-
-    Blank coordinates mean (0, 0), which is the engine's signal to place the ship itself:
-    distribute_factions only moves ships still sitting on the origin."""
+    See docs/data.md for the file's rules: no spaces, blank coordinates mean "place it for me".
+    A row with neither a name nor a player was added and never used, so it is dropped; those two
+    are the test because a <select> always submits a type and Add carries the faction over."""
     problems, lines, seen = [], [], set()
     for i, row in enumerate(rows, start=1):
         if not (row['name'].strip() or row['player'].strip()):

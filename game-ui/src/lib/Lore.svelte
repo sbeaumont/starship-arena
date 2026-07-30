@@ -13,7 +13,7 @@
       Millenia in the future, war has followed humanity into the skies. Now, instead of fighting
       for land and power, humanity fights with other powerful races across the galaxy for
       ownership of entire planets. Some of these races fight for dominance and prestige, others
-      fight for their very survival, but one thing is for sure — nobody will ever submit. The
+      fight for their very survival, but one thing is for sure: nobody will ever submit. The
       races of Starship Arena are battling over one thing: planets rich in oxygen and liquid
       water, with survivable conditions to allow them to continue to grow and prosper in this
       brutal universe. They will do whatever it takes to gain control of planets for their

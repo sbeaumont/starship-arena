@@ -134,7 +134,7 @@
           <h2>Factions</h2>
           <p class="msg quiet">Nothing to show for {game}.</p>
         {:else}
-          <h2>{game} — planning round {overview.last_round + 1}, best first</h2>
+          <h2>{game} · planning round {overview.last_round + 1}, best first</h2>
           {#each overview.factions as f, rank (f.name)}
             <div class="faction">
               <div class="fhead">

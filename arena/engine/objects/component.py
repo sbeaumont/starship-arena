@@ -1,15 +1,7 @@
-"""
-This package holds the base of the component system.
+"""The component system: the parts a machine is built from.
 
-The Component class introduces:
-- referencing owner and container
-- default hooks that the engine calls that can be overridden
-- a parameter system to allow pre-checking of a player's command file.
-- a status method to report on the active state of the component, used by the history system and the reporting.
-
-The ComponentParameter classes allow a component to introduce validation of its inputs without leaking
-the internals of the component to other parts of the engine.
-"""
+A component answers for itself what orders it takes, what its state is and what its type says it
+is. See docs/adr/0004-components-own-their-parameters.md."""
 
 import re
 from abc import ABC

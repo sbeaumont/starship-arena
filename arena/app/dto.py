@@ -189,7 +189,7 @@ class WeaponInfo:
 class ShipPlan:
     name: str
     ship_type: str
-    category_name: str   # 'Ship' or 'Starbase' — a starbase is drawn (and flies) differently
+    category_name: str   # 'Ship' or 'Starbase'; a starbase is drawn, and flies, differently
     x: float
     y: float
     heading: float

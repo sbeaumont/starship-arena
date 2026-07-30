@@ -5,10 +5,9 @@ each section.
 
 ## Next, in order
 
-1. **Documentation** — `docs/` with an architecture overview and ADRs.
-2. **Player management** — archiving, deactivating, the leaderboard.
-3. **Large objects** — solid bodies and crossing them (see Engine).
-4. **Scenario builder.**
+1. **Player management**: archiving, deactivating, the leaderboard.
+2. **Large objects**: solid bodies and crossing them (see Engine).
+3. **Scenario builder.**
 
 ## Game UI (`game-ui/`)
 
@@ -54,6 +53,17 @@ each section.
       boundaries, after everything has moved. A Splinter travels 60 a tick and triggers within 6,
       so it can pass straight through a ship. The same path primitive fixes it - worth doing as a
       separate change from bodies, so a shift in trigger behaviour is attributable.
+- [ ] **Processing order must not affect the outcome, and today it can.** Weapons fire in the
+      post-move phase, so a missile launched this tick may or may not already be "in space" when
+      something explodes, depending on where its launcher sat in the iteration. The common symptom:
+      every rocket a ship just fired blows up when that ship is hit in the same tick. Possible
+      fixes: fire pre-move, or let weapons fire only after existing objects have exploded. The game
+      is built on the premise that iteration order never matters, so this is a real defect rather
+      than a quirk.
+- [ ] **A malformed Boost command crashes.** Long-standing.
+- [ ] **Damage to individual components**, rather than only hull and shields.
+- [ ] **In-game spawning**, and possibly respawning after death. Probably an admin command file,
+      probably tied to scenarios.
 - [ ] **Objects in space that are not machines.** Black holes, asteroids, loot crates, and
       whatever a scenario needs to put in the world. `ObjectInSpace` is already the base for
       "anything in space" rather than "anything built", and `type_name` / `category_name` are
@@ -67,7 +77,7 @@ each section.
       none of this is visible to the UI.
 - [ ] **NPC controllers build commands from text.** `Pilot`/`Gunner` format a string and hand it
       to the parser. If they go live, construct `Command` objects directly and add
-      `Command.as_text()` for reports and logs — validation lives in `Command.__init__` /
+      `Command.as_text()` for reports and logs. Validation lives in `Command.__init__` /
       `Parameter.is_valid`, not in the parsing, so nothing is lost.
 - [ ] **A duplicate order for one weapon in one tick disappears silently.** Two `Fire R1 90`
       lines on the same tick produce one shot with no feedback, which is what made
@@ -96,23 +106,40 @@ of Accepted or Superseded by NNNN. Numbered once, never renumbered, never edited
 payload**: "we use DTOs" prevents nothing, "passing engine objects upward was rejected, and here
 is what it cost last time" prevents the re-proposal.
 
-- [ ] **First pass** - the ones where drift would actually hurt: layered architecture and the
-      services seam; DTOs at the seam; pickle storage and the no-compatibility-shims rule; one
-      WSGI application; nothing with a thread or event loop at import; paths anchored to the
-      repository; objects describing themselves through abstract properties rather than class
-      attributes or MRO inspection; snapshots holding values and not references; open information
-      as a design principle; magic-link logins with the name as identity.
-- [ ] **Then, as each area is touched**: Type Object for machine types; the component registry by
-      reflection; commands and `Parameter.kind`; a round as a pure function of prior state and
-      command files; refused commands as player feedback; faction-shared fog of war and derived
-      courses; validating orders against everything you could know; Svelte 5 without SvelteKit;
-      the view living in the URL; the two SVG layers; forward-kinematics course planning;
-      world-fixed north-up; registration limited to unused names; the console being director-only.
-- [ ] **Fold `CLAUDE.md` back to a pointer** at `docs/` plus the genuinely agent-specific rules.
-      It currently carries architecture description that will contradict `architecture.md` the
-      first time either changes.
-- [ ] **Decide what `readme.md` becomes** - a short front door into `docs/`, most likely.
-- [ ] Diagrams as Mermaid in Markdown: renders on GitHub, diffable, top-down with the UI on top.
+- [x] **18 ADRs written**, covering the layering, determinism, type objects, components,
+      commands, file storage, the single WSGI app, laziness and statelessness, anchored paths,
+      self-describing objects, snapshots, open information, fog of war, logins, Svelte, the URL as
+      state, the two SVG layers and jointed-chain planning.
+- [ ] **New ADRs as decisions come up.** Not a backlog to work through: write one when something is
+      decided, especially when an alternative was rejected for a reason worth remembering.
+- [x] **`CLAUDE.md` folded back** to constraints plus commands, with per-directory files for
+      `arena/engine`, `arena/app`, `arena/api`, `arena/admin_ui` and `game-ui`.
+- [x] **`readme.md` rewritten** as the front door: what the game is, how to run it, what is worth
+      knowing before reading the code, and where the rest lives. Its old backlog was migrated into
+      this file first, including the processing-order defect and the Boost crash.
+- [x] **Mermaid diagrams**: the layers and the tick phases in `architecture.md`, the request
+      switchboard and dev-versus-deployed in `deployment.md`.
+
+## Documentation, continued
+
+- [x] **Documentation meta-rules extracted into a skill**:
+      `.claude/skills/project-documentation/`, with copyable templates. `share/ai-guardrails/`
+      is the same thing packaged for someone on another agent, prose rules included.
+
+- [ ] **Close the console's engine imports.** `arena/admin_ui` reaches into `arena/engine` in five
+      places, which `docs/architecture.md` rule 3 forbids: the console is a user interface and
+      goes through `AdminService`. `AppFacade` builds `Game` objects directly today. Doing this
+      also makes the later move of the console onto `/api/admin/*` possible.
+
+## Game features
+
+Ideas from the original readme, kept because they are still wanted.
+
+- [ ] **A scanner that reveals internal detail** of a scanned ship: ammo, energy levels.
+- [ ] **Point defence**, possibly as something an NPC gunner runs.
+- [ ] **Utilities**, such as repair droids.
+- [ ] **Message of the day**, and a message per round, the latter probably tied to a scenario.
+- [ ] **Gas clouds and nebulae** alongside the solid bodies, once objects in space exist.
 
 ## Player management
 
@@ -158,12 +185,12 @@ The lists grow without bound as games pile up, so this is about keeping them mai
 
 Deployed on PythonAnywhere as a single WSGI app: `arena/serve.py` sends `/api/...` to the FastAPI
 app through `a2wsgi`, `/play/...` to the built UI as static files, and everything else to the
-Flask console. No Node at runtime — `npm run build --prefix game-ui` is a build step. Deploying is
+Flask console. No Node at runtime; `npm run build --prefix game-ui` is a build step. Deploying is
 `git pull` and a reload; every default in `arena/cfg.py` is the deployed one and all paths are
 anchored to the repository rather than the working directory.
 
 **The host preforks with Python threads disabled.** uWSGI loads the app in a master process and
-forks the workers, and a fork keeps only the calling thread — so anything with a background
+forks the workers, and a fork keeps only the calling thread, so anything with a background
 thread, event loop or connection pool must be built on first use inside the worker, never at
 import. `arena/serve.py` builds the ASGI adapter that way; the symptom of getting it wrong is
 every route timing out at `504-loadbalancer`.
@@ -176,7 +203,7 @@ every route timing out at `504-loadbalancer`.
       `SITE_URL = 'https://starship-arena-agfx.pythonanywhere.com'`) so `./arena-link.sh <name>`
       prints a whole link there without the address being typed each time. Left unset it prints a
       path, which is right for development where the address differs per runner.
-- [ ] **Rebuild and commit `game-ui/dist` whenever the UI changes** — it is tracked, because the
+- [ ] **Rebuild and commit `game-ui/dist` whenever the UI changes**, tracked because the
       host has no build step. `npm run build --prefix game-ui`.
 - [ ] **Consider dropping the CORS entry** in `arena/api/app.py`. It exists only for the Vite dev
       server, but `arena-dev.sh` proxies `/api` through Vite, so the browser is same-origin in
@@ -188,7 +215,7 @@ every route timing out at `504-loadbalancer`.
       floor is 3.10. Worth compiling against the floor after language-level changes:
       `uv run --no-project --python 3.10 python -m compileall -q arena test`.
 - [ ] Longer term, if the console should stay off the public internet, it can move to a separate
-      deployment — but it would then need converting into a client of `/api/admin/*`, since today
+      deployment, but it would then need converting into a client of `/api/admin/*`, since today
       it calls the services layer **in-process** and reads game data from the filesystem.
 
 ## Testing / data
