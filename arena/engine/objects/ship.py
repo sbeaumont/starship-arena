@@ -95,9 +95,9 @@ class Ship(MachineInSpace):
         if old_speed != self.speed:
             self.add_internal_event(f"Changed speed from {old_speed} to {self.speed}")
 
-    def fire(self, weapon_name: str, params, objects_in_space):
+    def fire(self, weapon_name: str, params, objects_in_space, tick: Tick):
         if weapon_name in self.weapons:
-            return self.weapons[weapon_name].fire(params, objects_in_space)
+            return self.weapons[weapon_name].fire(params, objects_in_space, tick)
         else:
             self.add_event(InternalEvent(f"No weapon named {weapon_name} found"))
 

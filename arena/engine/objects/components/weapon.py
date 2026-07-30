@@ -1,10 +1,11 @@
 from abc import ABC
 
+from arena.engine.history import Tick
 from arena.engine.objects.component import Component
 
 
 class Weapon(Component, ABC):
-    """An object that is attached to an owner (Ship) and can damage other objects in space."""
+    """A component a Fire order triggers. Most of them damage something; a Gravscan sweeps."""
 
     # Weapons that consume ammunition shadow this with a count of what is left. Ammo is
     # spent for the rest of the game unless the ship replenishes.
@@ -21,7 +22,7 @@ class Weapon(Component, ABC):
             assert 0 <= firing_arc[1] <= 360
         self.firing_arc = firing_arc
 
-    def fire(self, params: dict, objects_in_space: dict):
+    def fire(self, params: dict, objects_in_space: dict, tick: Tick):
         raise NotImplementedError
 
     def in_firing_arc(self, angle):

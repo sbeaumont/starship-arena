@@ -17,7 +17,7 @@ class GameRound(object):
         self.destroyed = dict()
         self.round_nr = round_nr
 
-    def pre_move_commands(self, cs: CommandSet, tick: int):
+    def pre_move_commands(self, cs: CommandSet, tick: Tick):
         logger.debug(f"Pre-Move Commands @ tick {tick} for {cs}")
         if cs.acceleration:
             cs.acceleration.execute(tick)
@@ -26,7 +26,7 @@ class GameRound(object):
         for cmd in cs.pre_move:
             cmd.execute(tick)
 
-    def post_move_commands(self, cs: CommandSet, tick: int):
+    def post_move_commands(self, cs: CommandSet, tick: Tick):
         logger.debug(f"Post-Move Commands @ tick {tick} for {cs}")
         for wpn_cmd in cs.weapons.values():
             wpn_cmd.execute(tick)
@@ -52,14 +52,14 @@ class GameRound(object):
             ois.generate()
             ois.use_energy()
             if isinstance(ois, Commandable) and ois.commands and (tick_nr in ois.commands):
-                self.pre_move_commands(ois.commands[tick_nr], tick_nr)
+                self.pre_move_commands(ois.commands[tick_nr], tick)
             ois.pre_move(self.ois)
             ois.move()
 
         # All ships perform their post move commands do post-move commands like firing weapons
         for ois in list(self.ois.values()):
             if isinstance(ois, Commandable) and ois.commands and (tick_nr in ois.commands):
-                self.post_move_commands(ois.commands[tick_nr], tick_nr)
+                self.post_move_commands(ois.commands[tick_nr], tick)
 
         # All ships scan, "intelligent" objects make decisions (like guided missiles intercepting their target)
         for ois in list(self.ois.values()):

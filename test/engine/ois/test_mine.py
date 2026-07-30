@@ -8,7 +8,8 @@ from arena.engine.history import TICK_ZERO
 class TestMine(TestCase):
     def setUp(self) -> None:
         self.ois = create_ship_fixture()
-        self.mine = SplinterMine().create("TestMine", Vector(Point(0, 9), 0, 0), owner=self.ois['OwnerShip'], tick=1)
+        self.mine = SplinterMine().create("TestMine", Vector(Point(0, 9), 0, 0),
+                                          owner=self.ois['OwnerShip'], tick=TICK_ZERO)
 
     def test_decide(self):
         self.mine.decide(self.ois, TICK_ZERO)

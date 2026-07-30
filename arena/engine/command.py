@@ -9,6 +9,7 @@ from collections import defaultdict
 from typing import Protocol, runtime_checkable
 from abc import ABC, abstractmethod
 
+from arena.engine.history import Tick
 from arena.engine.objects.objectinspace import ObjectInSpace
 from arena.engine.objects.ship import AccelerationParameter, TurnParameter
 from arena.engine.objects.components.defense import Shields
@@ -67,7 +68,7 @@ class Commandable(Protocol):
     def turn(self, angle: int):
         ...
 
-    def fire(self, weapon_name: str, params: dict, objects_in_space: dict) -> ObjectInSpace:
+    def fire(self, weapon_name: str, params: dict, objects_in_space: dict, tick: Tick) -> ObjectInSpace:
         ...
 
     def try_replenish(self, objects_in_space: dict):
@@ -124,7 +125,7 @@ class Command(ABC):
     def text(self) -> str:
         return self.command_line.text
 
-    def execute(self, tick: int):
+    def execute(self, tick: Tick):
         logger.debug(f'{self.target.name} executing command "{self.command_line.text}"')
         self.target.add_event(InternalEvent(f'Executing command "{self.command_line.text}"'))
 
@@ -203,7 +204,7 @@ class AccelerateCommand(Command):
             self.feedback.append(f"Expected 1 parameter, got {len(params)}")
             return False
 
-    def execute(self, tick: int):
+    def execute(self, tick: Tick):
         super().execute(tick)
         self.target.accelerate(self.params['amount'].value)
 
@@ -211,7 +212,7 @@ class AccelerateCommand(Command):
 class ActivationCommand(ComponentCommand):
     key = 'activation'
 
-    def execute(self, tick: int):
+    def execute(self, tick: Tick):
         super().execute(tick)
         self.target.activation(self.selector, self.params['on/off'].value)
 
@@ -232,7 +233,7 @@ class BoostCommand(Command):
             return False
         return True
 
-    def execute(self, tick: int):
+    def execute(self, tick: Tick):
         super().execute(tick)
         quadrant, amount = self.params['boost'].value
         self.component.boost(quadrant, int(amount))
@@ -241,10 +242,10 @@ class BoostCommand(Command):
 class FireCommand(ComponentCommand):
     key = 'fire'
 
-    def execute(self, tick: int):
+    def execute(self, tick: Tick):
         super().execute(tick)
         weapon = self.selector.value
-        fired_object = weapon.fire(self.params, self.ois)
+        fired_object = weapon.fire(self.params, self.ois, tick)
         if fired_object:
             self.ois[fired_object.name] = fired_object
 
@@ -258,7 +259,7 @@ class ReplenishCommand(Command):
             return False
         return True
 
-    def execute(self, tick: int):
+    def execute(self, tick: Tick):
         super().execute(tick)
         self.target.try_replenish(self.ois)
 
@@ -282,7 +283,7 @@ class TurnCommand(Command):
             self.feedback.append(f"Expected 1 parameter, got {len(params)}")
             return False
 
-    def execute(self, tick: int):
+    def execute(self, tick: Tick):
         super().execute(tick)
         self.target.turn(self.params['amount'].value * self.sign)
 
@@ -304,7 +305,7 @@ class UnknownCommand(Command):
     def is_valid(self, value):
         pass
 
-    def execute(self, tick: int):
+    def execute(self, tick: Tick):
         self.target.add_event(f"Can't execute unknown command {self.command_line.text}")
 
 

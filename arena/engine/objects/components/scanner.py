@@ -1,3 +1,4 @@
+from arena.engine.history import Tick
 from arena.engine.objects.components.weapon import Weapon
 from arena.engine.objects.event import ScanEvent
 from arena.engine.objects.component import DirectionParameter, NumberInRangeParameter
@@ -22,7 +23,7 @@ class Gravscan(Weapon):
         return [DirectionParameter('direction', self),
                 NumberInRangeParameter('scan cone', self, (30, 360))]
 
-    def fire(self, params: dict, objects_in_space: dict):
+    def fire(self, params: dict, objects_in_space: dict, tick: Tick):
         direction = params['direction'].value
         scan_cone = params['scan cone'].value
 

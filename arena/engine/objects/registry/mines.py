@@ -1,3 +1,4 @@
+from arena.engine.history import Tick, TICK_ZERO
 from arena.engine.objects.components.warhead import SplinterWarhead, NanocyteWarhead
 from arena.engine.objects.machineinspace import MachineType
 from arena.engine.objects.mine import Mine
@@ -9,7 +10,7 @@ class MineType(MachineType):
     energy_per_tick = 1
     max_speed = 0
 
-    def create(self, name: str, vector: Vector, owner=None, tick: int = 0):
+    def create(self, name: str, vector: Vector, owner=None, tick: Tick = TICK_ZERO):
         vector = vector.accelerate(-self.slow_down_rate)
         return super().create(name, vector, owner, tick)
 

@@ -1,5 +1,6 @@
 from typing import Protocol, runtime_checkable
 
+from arena.engine.history import Tick
 from arena.engine.objects.components.weapon import Weapon
 from arena.engine.objects.objectinspace import Vector
 from arena.engine.objects.component import DirectionParameter
@@ -11,7 +12,7 @@ class PayloadType(Protocol):
     def name(self):
         ...
 
-    def create(self, name: str, vector: Vector, owner=None, tick: int = 0):
+    def create(self, name: str, vector: Vector, owner=None, tick: Tick = None):
         ...
 
 
@@ -24,9 +25,9 @@ class Launcher(Weapon):
         self.ammo = initial_load
         self.payload_type = payload_type
 
-    def _create_missile(self, name, heading):
+    def _create_missile(self, name, heading, tick: Tick):
         vector = Vector(pos=self.container.vector.pos, heading=heading, speed=self.container.speed)
-        payload = self.payload_type.create(name, vector, owner=self.owner)
+        payload = self.payload_type.create(name, vector, owner=self.owner, tick=tick)
         # Born inside its own reach, a payload acts on the ship that just fired it: a Rocket
         # triggering on its launch tick takes 50 hull off its own launcher.
         payload.place_at(payload.xy.translate(heading, payload.range + 1))
@@ -36,7 +37,7 @@ class Launcher(Weapon):
     def expected_parameters(self):
         return [DirectionParameter('direction', self)]
 
-    def fire(self, params: dict, objects_in_space: dict):
+    def fire(self, params: dict, objects_in_space: dict, tick: Tick):
         firing_angle = params['direction'].value
 
         if self.ammo <= 0:
@@ -52,7 +53,7 @@ class Launcher(Weapon):
         heading = (self.container.heading + firing_angle) % 360
         name = f'{self.container.name}-{self.payload_type.name}-{self.name}-{self.missile_number}'
         self.add_internal_event(f"Launcher {self.name} fired {name} in direction {firing_angle}")
-        return self._create_missile(name, heading=heading)
+        return self._create_missile(name, heading=heading, tick=tick)
 
     @property
     def status(self):

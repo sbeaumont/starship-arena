@@ -1,3 +1,4 @@
+from arena.engine.history import Tick
 from arena.engine.objects.components.weapon import Weapon
 from arena.engine.objects.event import HitEvent, DrawType
 from arena.engine.objects.component import ObjectByNameParameter
@@ -41,7 +42,7 @@ class Laser(Weapon):
 
     # ---------------------------------------------------------------------- COMMANDS
 
-    def fire(self, params: dict, objects_in_space: dict):
+    def fire(self, params: dict, objects_in_space: dict, tick: Tick):
         target_ship = params['target'].value
         if not target_ship:
             self.add_internal_event(f"Can't fire {self.name}. Unknown (or dead?) ship name: {params['target'].object_name}")

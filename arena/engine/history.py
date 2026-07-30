@@ -128,6 +128,7 @@ class History(object):
     __slots__ = ('owner', 'ticks', 'current')
     """Holds snapshots and events per tick for its owner, to be used to report on the round."""
     def __init__(self, owner, tick: Tick):
+        assert isinstance(tick, Tick), f"{tick} is not a Tick, so {owner.name} would start its history nowhere"
         super().__init__()
         self.owner = owner
         self.ticks = defaultdict(TickHistory)
