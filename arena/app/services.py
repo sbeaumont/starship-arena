@@ -19,7 +19,7 @@ from arena.engine.objects.event import ExplosionEvent
 from arena.app.players import DIRECTOR, LOGIN_COOKIE, Player, PlayerRegistry
 from arena.app.dto import (
     GameSummary, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
-    TrackPoint, TickEvent, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
+    TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
     WeaponInfo, WeaponInput,
     ShipSummary, FactionSummary, GameOverview, ShipTypeInfo, Me, LoginInfo, GameSettings,
 )
@@ -238,16 +238,22 @@ class GameService(_EngineAccess):
         if not factions:
             raise KeyError(f"No ships for player '{player}' in {game}")
 
+        round_ticks = Tick.for_start_of_round(round_nr).ticks_for_round
         faction_ships = [s for s in ois.values()
                          if getattr(s, 'is_player_controlled', False) and s.faction in factions]
+        alive_names = {s.name for s in faction_ships}
+        # A ship destroyed during this round is gone from the saved state but its history is in
+        # the graveyard, and its player should be able to read what happened to it.
+        faction_ships += [s for s in gd.load_graveyard().values()
+                          if s.faction in factions and s.name not in alive_names
+                          and round_ticks[0] in s.history]
         own_names = {s.name for s in faction_ships}
-        round_ticks = Tick.for_start_of_round(round_nr).ticks_for_round
 
         ships = []
         for s in faction_ships:
             st = s._type
-            # The state at the end of the round, taken from the history like everything else.
-            final = s.history[round_ticks[-1]]
+            recorded = [t for t in round_ticks if t in s.history]
+            final = s.history[recorded[-1]]
             pristine_weapons = {w.name: w for w in st.weapons}
             ships.append(ShipPlan(
                 name=s.name, ship_type=st.name, category_name=s.category_name,
@@ -261,10 +267,11 @@ class GameService(_EngineAccess):
                 weapons=[self._weapon_info(w, pristine_weapons[w.name])
                          for w in s.weapons.values()],
                 track=[TrackPoint(tick=t.tick, x=s.history[t]['pos'].x, y=s.history[t]['pos'].y)
-                       for t in round_ticks if t in s.history],
+                       for t in recorded],
                 events=[TickEvent(tick=t.tick, text=str(e), kind=e.kind)
-                        for t in round_ticks if t in s.history
-                        for e in s.history[t].non_scan_events],
+                        for t in recorded for e in s.history[t].non_scan_events],
+                conditions=[self._tick_condition(s, t) for t in recorded],
+                alive=s.name in alive_names,
                 # Orders are planned from the end of a round, so they belong to the one after
                 # it. For the last round that is the current round, still open for changes.
                 commands=self.get_commands(game, s.name, round_nr + 1),
@@ -342,6 +349,16 @@ class GameService(_EngineAccess):
         for c in (ship_type.defense + ship_type.weapons + ship_type.ecm + ship_type.control):
             specs[c.name] = c.description
         return specs
+
+    @staticmethod
+    def _tick_condition(ship, tick) -> TickCondition:
+        """Shields come from whichever component the type calls its defence, so nothing here
+        needs to know what a shield is called."""
+        snap = ship.history[tick]
+        defence = next((c.name for c in ship._type.defense), None)
+        return TickCondition(tick=tick.tick, hull=snap['hull'], battery=snap['battery'],
+                             shields={k: str(v) for k, v in
+                                      snap['components'].get(defence, {}).items()})
 
     @staticmethod
     def _component_status(ship, snapshot: dict) -> list[ComponentStatus]:

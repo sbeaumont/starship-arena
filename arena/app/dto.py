@@ -145,6 +145,15 @@ class ComponentStatus:
 
 
 @dataclass
+class TickCondition:
+    """What a ship was down to at the end of a tick. The map already shows where it was."""
+    tick: int
+    hull: int
+    battery: int
+    shields: dict[str, str]
+
+
+@dataclass
 class TickEvent:
     """Something that happened to a ship on a tick. Scans are left out; the map draws those."""
     tick: int
@@ -213,6 +222,9 @@ class ShipPlan:
     track: list[TrackPoint]   # where it actually went during the round: your own ships are
                               # ground truth, not fog of war
     events: list[TickEvent]   # what happened to it during the round, tick by tick
+    conditions: list[TickCondition]   # what it was down to, tick by tick
+    alive: bool               # False for a ship destroyed in this round, kept so its player
+                              # can read what happened to it
     commands: list[str]  # any plan already saved for the upcoming round
 
 

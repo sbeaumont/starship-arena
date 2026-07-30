@@ -26,6 +26,7 @@
   // Collapsed by default: the map is what you want in front of you when planning.
   let showLog = $state(false);
   let logAllShips = $state(false);
+  let everyMessage = $state(false);
 
   // Orders per own ship: the movement the player draws, the weapon orders per tick, and
   // anything else already on file (activations, boosts) which travels through untouched.
@@ -167,7 +168,19 @@
   // Everything you command can be given orders. A starbase cannot be given a course - it
   // does not move - but it carries weapons and is one of the heavier platforms in the game.
   const ownShips = $derived(plan ? plan.ships.filter((s) => s.owned) : []);
-  const canMove = (s) => s.category_name === "Ship";
+  const canMove = (s) => s.category_name === "Ship" && s.alive;
+
+  // A ray burst, drawn where something died.
+  function burst(x, y, r) {
+    let d = "";
+    for (let i = 0; i < 12; i++) {
+      const a = (i * Math.PI) / 6;
+      const inner = i % 2 ? r * 0.28 : r * 0.42;
+      d += `M${x + Math.sin(a) * inner} ${y - Math.cos(a) * inner}`
+         + `L${x + Math.sin(a) * r} ${y - Math.cos(a) * r}`;
+    }
+    return d;
+  }
 
   // A full value only means something for a quantity: "3 Splinter" against a full "5 Splinter"
   // reads as "3/5 Splinter", while a state like a cloak's just reads as itself.
@@ -180,17 +193,23 @@
   }
 
   // Scoped to the selected ship; the whole faction is several hundred lines a round.
+  // One row per tick: what the ship was down to, and what was done to it. Movement and energy
+  // are left out; the map shows where it went, and the numbers show the rest.
   const logByTick = $derived.by(() => {
     if (!plan) return [];
     const ships = logAllShips ? plan.ships : plan.ships.filter((s) => s.name === selected);
-    const byTick = new Map();
+    const rows = new Map();
+    const row = (t) => {
+      if (!rows.has(t)) rows.set(t, { tick: t, condition: null, events: [] });
+      return rows.get(t);
+    };
     for (const s of ships) {
       for (const e of s.events) {
-        if (!byTick.has(e.tick)) byTick.set(e.tick, []);
-        byTick.get(e.tick).push({ ship: s.name, ...e });
+        if (everyMessage || e.kind !== "internal") row(e.tick).events.push({ ship: s.name, ...e });
       }
+      if (!logAllShips) for (const c of s.conditions) row(c.tick).condition = c;
     }
-    return [...byTick.entries()].sort((a, b) => a[0] - b[0]);
+    return [...rows.values()].sort((a, b) => a.tick - b.tick);
   });
 
   function fit() {
@@ -838,13 +857,23 @@
 
           <h2 class:spaced={selectedShip}>Round {plan.round} · {logAllShips ? "faction" : (selected ?? "no ship")}</h2>
           <label class="all"><input type="checkbox" bind:checked={logAllShips} /> all ships</label>
+          <label class="all"><input type="checkbox" bind:checked={everyMessage} /> every message</label>
           {#if !logByTick.length}
             <p class="note">{selected ? "Nothing recorded." : "Pick a ship to read its log."}</p>
           {:else}
-            {#each logByTick as [tick, entries] (tick)}
-              <h3>Tick {tick}</h3>
+            {#each logByTick as r (r.tick)}
+              <div class="tickrow">
+                <span class="t">{r.tick}</span>
+                {#if r.condition}
+                  <span class="v">hull {r.condition.hull}</span>
+                  <span class="v">bat {r.condition.battery}</span>
+                  {#each Object.entries(r.condition.shields) as [q, s] (q)}
+                    <span class="v"><span class="q">{q}</span>{s}</span>
+                  {/each}
+                {/if}
+              </div>
               <ul>
-                {#each entries as e, i (i)}
+                {#each r.events as e, i (i)}
                   <li class={e.kind}>
                     {#if logAllShips}<span class="who">{e.ship}</span>{/if}{e.text}
                   </li>
@@ -889,6 +918,13 @@
                       fill={BLAST[e.damage_type] ?? BLAST.Explosion} stroke-width={cam.upp} />
             {/each}
           {/if}
+
+          {#each plan.ships.filter((s) => !s.alive && s.track.length) as s (s.name)}
+            {@const last = s.track[s.track.length - 1]}
+            {@const v = w2v(last.x, last.y)}
+            <path class="wreck" d={burst(v.vx, v.vy, 22 * cam.upp)} stroke-width={1.6 * cam.upp} />
+            <circle class="wreck-core" cx={v.vx} cy={v.vy} r={3.5 * cam.upp} />
+          {/each}
 
           {#each contacts as c (c.name)}
             {#if showTracks && c.track.length > 1}
@@ -1082,7 +1118,7 @@
         <ul class="ships">
           {#each ownShips as s (s.name)}
             <li>
-              <button type="button" class="pick" class:on={s.name === selected}
+              <button type="button" class="pick" class:on={s.name === selected} class:gone={!s.alive}
                       onclick={() => { selected = s.name; selectedTick = null; aimingWeapon = null; centreOn(s); }}>
                 <span class="nm">{s.name}</span>
                 <span class="ty">{s.ship_type}</span>
@@ -1320,8 +1356,11 @@
   .logbody h2.spaced { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--edge); }
   .logbody h2 { margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.16em;
                 text-transform: uppercase; color: var(--ink-dim); }
-  .logbody h3 { margin: 16px 0 5px; font-size: 10px; font-weight: 600; letter-spacing: 0.14em;
-                text-transform: uppercase; color: var(--ink-faint); }
+  .tickrow { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline;
+             margin: 14px 0 4px; padding-top: 6px; border-top: 1px solid var(--edge); }
+  .tickrow .t { color: var(--amber); font-size: 11px; min-width: 16px; font-variant-numeric: tabular-nums; }
+  .tickrow .v { font-size: 10.5px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+  .tickrow .q { color: var(--ink-faint); margin-right: 2px; }
   .logbody ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
   .logbody li { font-size: 11.5px; line-height: 1.45; color: var(--ink-dim); }
   .logbody li.hit { color: var(--warn); }
@@ -1348,6 +1387,8 @@
   .grid.axis { stroke: #26375e; }
   .origin { fill: none; stroke: #3d5384; }
   .blast { fill-opacity: 0.13; stroke: #04070d; }
+  .wreck { stroke: #ffb454; fill: none; stroke-linecap: round; opacity: 0.9; }
+  .wreck-core { fill: #fff2d8; }
   .track { fill: none; stroke: var(--ghost); opacity: 0.75; }
   .track.enemy { stroke: #6d3242; }
   .mark { fill: var(--cyan); opacity: 0.45; }
@@ -1470,6 +1511,7 @@
   }
   .pick:hover { border-color: var(--cyan); }
   .pick.on { border-color: var(--amber); color: var(--amber); }
+  .pick.gone .nm { text-decoration: line-through; color: var(--ink-faint); }
   .pick:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
   .pick .nm { flex: 1; }
   .pick .ty, .ally-row .ty { color: var(--ink-dim); font-size: 11px; }
