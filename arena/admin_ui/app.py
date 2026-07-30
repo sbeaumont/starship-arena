@@ -141,6 +141,7 @@ def new_game():
     return render_template('new-game.html',
                            game_name=game_name,
                            rows=rows,
+                           known_players=[p.name for p in facade().logins()],
                            ship_types=facade().all_ship_types.values(),
                            starbase_types=facade().all_starbase_types.values(),
                            messages=messages)

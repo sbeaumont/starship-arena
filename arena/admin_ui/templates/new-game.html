@@ -27,7 +27,8 @@
     <input type="text" name="ship_name" value="{{ row.name if row else '' }}" placeholder="Ship name">
     {{ type_select(row.type if row else '') }}
     <input type="text" name="ship_faction" value="{{ row.faction if row else '' }}" placeholder="Faction">
-    <input type="text" name="ship_player" value="{{ row.player if row else '' }}" placeholder="Player">
+    <input type="text" name="ship_player" value="{{ row.player if row else '' }}" placeholder="Player"
+           list="known-players" autocomplete="off">
     <input type="text" name="ship_x" value="{{ row.x if row else '' }}" placeholder="auto" class="coord">
     <input type="text" name="ship_y" value="{{ row.y if row else '' }}" placeholder="auto" class="coord">
     <button type="button" class="drop" title="Remove this ship">&times;</button>
@@ -35,6 +36,12 @@
 {%- endmacro %}
 
 {% block content %}
+{#- Everyone the game already knows, so a commander's name is picked rather than typed: it is
+    also their login, and a typo makes a player who can never sign in. -#}
+<datalist id="known-players">
+    {% for name in known_players %}<option value="{{ name }}"></option>{% endfor %}
+</datalist>
+
 <h1>New game</h1>
 <p class="lede">Name the game and add its ships. Leave the coordinates blank and the engine
     scatters the factions evenly around the origin for you.</p>
