@@ -84,6 +84,26 @@ each section.
       "anything in space" rather than "anything built", and `type_name` / `category_name` are
       abstract, so a new kind answers for itself and the map keys its blip off the category
       without being told. Needed by the scenario builder.
+- [ ] **Wrecks that stay on the battlefield.** A destroyed ship as an object in space rather than
+      only a graveyard entry: something to scan, to shoot, to salvage, to hide behind. Belongs with
+      the entry above, and it collects prerequisites. A wreck has no faction, and
+      `Warhead.triggers_on` goes off on anything factionless, so every wreck would be a minefield.
+      It also wants the large-objects work, to have a radius.
+- [ ] **`Ship.fire` and the `Commandable` protocol have to go together.** `Ship.fire`
+      (`ship.py:98`) is called by nothing: `FireCommand` resolves the component through the
+      selector and calls it directly. But `Commandable` is `runtime_checkable`, so deleting the
+      method alone makes `isinstance(ship, Commandable)` false and every ship's orders are skipped
+      in silence. The method and the protocol member go, or neither does. See
+      [ADR 0019](docs/adr/0019-machines-drive-components-through-one-vocabulary.md) on why a
+      protocol is the wrong shape here.
+- [ ] **`MineType.max_scan_distance` asks the type, not the mine** (`registry/mines.py:18`). It
+      reads `self.weapons[0].range`, which builds a throwaway warhead to get a number off it and
+      then takes whichever happens to be first, so a `NanocyteMine` reports its Splinter's 6 rather
+      than its Nanocyte's 50. `MachineInSpace.range` already answers this on the instance. Fixing
+      it moves scan ranges and therefore outcomes.
+- [ ] **Parameter naming says the opposite of what it means.** `ComponentParameter` means "a
+      parameter belonging to a component", while `ComponentSelectorParameter`, whose value *is* a
+      component, subclasses `Parameter` directly.
 - [ ] **Separate history from the entities.** `ObjectInSpace` is both the live object and its own
       per-tick archivist. Staged plan: (1) pull the recorder/timeline out of the entity,
       (2) if replay and scenarios become central, make the timeline *derivable* by re-running the
@@ -213,6 +233,9 @@ The lists grow without bound as games pile up, so this is about keeping them mai
 - [ ] **More than one ship.** A player may ask for, or be given, several ships - expressed at
       sign-up or set during setup. The planning UI already handles a fleet; this is about the
       dealing.
+- [ ] **Tooling for large rosters.** A row per ship and a paste box stop scaling somewhere above
+      twenty ships, and a scenario wants more than a roster: sides, objectives, world objects. A
+      formal roster file format is the groundwork; the tools come with the scenario builder.
 
 ## Admin / director UI (`arena/admin_ui/`)
 

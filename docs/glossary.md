@@ -21,6 +21,11 @@ round", and never store both when one is the other plus one.
 **Object in space.** Anything with a position: ships, missiles, mines, and later asteroids and
 worse. The base of everything in the simulation.
 
+**Owner.** A reference to an object in space, never to a person. A missile's owner is the ship that
+fired it, a mine's is the ship that laid it, and **a ship's owner is itself** (`Ship.__init__`
+passes `owner=self`). Warheads and scoring reach a faction through it, which is how anything a ship
+puts into space knows whose side it is on. The person is the *player*, and only a ship has one.
+
 **Machine.** An object that was built, so it has hull, battery and components. Ships, starbases,
 missiles and mines are machines.
 
