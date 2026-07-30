@@ -107,10 +107,14 @@ class LoginInfo:
 
 @dataclass
 class Me:
-    """Who the caller is. `games` are the games they have ships in, theirs to plan."""
+    """Who the caller is. `games` are the games they have ships in, theirs to plan.
+
+    `admin_url` is where the console is, and empty for anyone who may not use it - so an
+    interface offers the way through by having been told, not by knowing the rule."""
     name: str
     is_director: bool
     games: list[str]
+    admin_url: str
 
 
 @dataclass

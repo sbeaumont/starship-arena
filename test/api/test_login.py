@@ -62,7 +62,9 @@ class TestLogin(TestCase):
     def test_registering_a_free_name_logs_you_in(self):
         r = self.client.post('/api/game/register', json={'name': 'Newcomer'})
         self.assertEqual(200, r.status_code)
-        self.assertEqual({'name': 'Newcomer', 'is_director': False, 'games': []}, r.json())
+        # No admin_url: the console is not theirs, so they are not told where it is.
+        self.assertEqual({'name': 'Newcomer', 'is_director': False, 'games': [], 'admin_url': ''},
+                         r.json())
         self.assertEqual('Newcomer', self.client.get('/api/game/me').json()['name'])
 
     def test_a_name_that_commands_ships_cannot_be_claimed(self):

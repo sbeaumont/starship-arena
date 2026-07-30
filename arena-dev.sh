@@ -31,7 +31,9 @@ export PYTHONUNBUFFERED=1
 # port. Without this you get "address already in use" on the next run.
 trap 'kill 0' EXIT
 
-uv run uvicorn arena.api.app:app --reload --reload-dir arena --port 8000 2>&1 \
+# The console is a separate server here, so the API has to be told where it is.
+ADMIN_UI_URL="${ADMIN_UI_URL:-http://localhost:8080}" \
+    uv run uvicorn arena.api.app:app --reload --reload-dir arena --port 8000 2>&1 \
     | prefix api "$CYAN" &
 
 npm run dev --prefix game-ui 2>&1 \

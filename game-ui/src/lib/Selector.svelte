@@ -88,6 +88,9 @@
           {asPlayer ? "View as director" : "View as player"}
         </button>
       {/if}
+      {#if directing && me.admin_url}
+        <a href={me.admin_url}>Console</a>
+      {/if}
       <button type="button" onclick={() => onPage("ships")}>Ships</button>
       <button type="button" onclick={() => onPage("lore")}>Lore</button>
       <button type="button" onclick={onSignOut}>Sign out</button>
@@ -223,6 +226,12 @@
     padding: 0 0 2px; cursor: pointer;
   }
   header nav button:hover { color: var(--cyan); border-color: var(--cyan); }
+  header nav a {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-dim); text-decoration: none; border-bottom: 1px solid var(--edge);
+    padding: 0 0 2px;
+  }
+  header nav a:hover { color: var(--cyan); border-color: var(--cyan); }
   header nav button.mode { color: var(--amber); border-color: var(--edge); }
   header nav button.mode.on { border-color: var(--amber); }
   .role { color: var(--amber); }

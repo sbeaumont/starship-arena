@@ -12,7 +12,7 @@ GameDirectory -- is an implementation detail hidden here and never exposed upwar
 import re
 from pathlib import Path
 
-from arena.cfg import GAME_DATA_DIR
+from arena.cfg import ADMIN_UI_URL, GAME_DATA_DIR
 from arena.engine.admin import GameSetup
 from arena.engine.command import parse_commands
 from arena.engine.game import Game
@@ -86,7 +86,8 @@ class GameService(_EngineAccess):
 
     def me(self, player: Player) -> Me:
         return Me(name=player.name, is_director=player.is_director,
-                  games=self.games_for_player(player.name))
+                  games=self.games_for_player(player.name),
+                  admin_url=ADMIN_UI_URL if player.is_director else '')
 
     def ship_owner(self, game: str, ship: str) -> str | None:
         return self._roster(game).get(ship)

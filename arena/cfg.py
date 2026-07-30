@@ -19,6 +19,11 @@ MANUAL_TEMPLATE = 'manual.html'
 # needs no configuring; the dev runners override it to point at the Vite dev server instead.
 GAME_UI_URL = os.environ.get('GAME_UI_URL', '/play')
 
+# And back the other way, so a director can step from the game to the console. Defaults to how a
+# deployed game serves it - one application, console at the root; the dev runner points it at the
+# separate Flask server.
+ADMIN_UI_URL = os.environ.get('ADMIN_UI_URL', '/')
+
 # The built game UI. `npm run build --prefix game-ui` writes it here; it is plain static files,
 # so no Node is involved in serving it. Anchored to the repository rather than the working
 # directory, because a host decides for itself where it runs things from.
