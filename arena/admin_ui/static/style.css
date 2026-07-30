@@ -300,7 +300,6 @@ label.check input { width: auto; }
     border: 1px solid var(--edge); border-radius: 4px;
 }
 .hour:hover { border-color: var(--ring); color: var(--ink); }
-/* Straight from the checkbox, so a click shows immediately and there is one truth on the page. */
 .hour:has(input:checked) { color: var(--green); border-color: #2f4a3a; background: #121c17; }
 .hour input { display: none; }
 

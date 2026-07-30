@@ -30,6 +30,10 @@ Comments are sparse and say *why*, never *what* and never what used to be there.
 explanation belongs in `docs/` with a one-line pointer from the code.
 See [docs/writing.md](docs/writing.md).
 
+**Say less.** Reasoning worked out in conversation goes in `docs/` or an ADR, not into a comment.
+A comment earns its place only where the code looks wrong and someone would undo it. Text on
+screen says what the reader cannot already see, and nothing more.
+
 ## Keep it simple
 
 Hand-crafted on purpose. No defensive programming, no abstraction without a present need, no

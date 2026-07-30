@@ -96,12 +96,26 @@ round blocks the whole round from being processed.
 At the data root, not inside a game, because a player's name is their identity everywhere.
 
 ```
-Name    Token                   Role
-Dennis  3R5iNHN5ROLvLG3VpoMocQ
-Serge   Br-A2Ly1XYYF65yHFo2cQA  director
+Name    Token                   Role      Active
+Dennis  3R5iNHN5ROLvLG3VpoMocQ  player    yes
+Menno   T7bAvKQEr4tRNMbF-EJ6Rw  player    no
+Serge   Br-A2Ly1XYYF65yHFo2cQA  director  yes
 ```
 
 Same shape as `ships.txt`. Gitignored, because the tokens are secrets.
+
+Columns are read by position, and a field is split off on whitespace, so an empty one would
+collapse into the gap between its neighbours. Every column is therefore written out: an ordinary
+player has the role `player`, not a blank. A file from before a column existed is still read, with
+the missing column taking its default, so adding one costs nothing.
+
+A name holds no spaces, and one typed with them is stored with underscores instead. It is a column
+here, a column in `ships.txt`, and part of a filename (`ready/<player>.txt`), so it has to survive
+all three. Looking a name up accepts either spelling.
+
+`Active` is `no` for someone deactivated: they keep their name, and old games still name them, but
+no token of theirs resolves to anyone and the new-game screen does not offer them. Distinct from
+revoking, which takes the row away and frees the name.
 
 A token is a long random string standing for the person holding it: it goes out in a link, comes
 back in a cookie, and is what an interface trades for an identity. Kept in plain text so a link can

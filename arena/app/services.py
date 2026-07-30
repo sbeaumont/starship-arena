@@ -16,7 +16,7 @@ from arena.engine.history import Tick
 from arena.engine.objects.registry.builder import all_ship_types
 from arena.engine.objects.starbase import Starbase
 from arena.engine.objects.event import ExplosionEvent
-from arena.app.players import DIRECTOR, LOGIN_COOKIE, Player, PlayerRegistry
+from arena.app.players import DIRECTOR, LOGIN_COOKIE, PLAYER, Player, PlayerRegistry
 from arena.app.dto import (
     GameSummary, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
@@ -486,15 +486,19 @@ class AdminService(_EngineAccess):
         return [LoginInfo(name=name,
                           is_director=name in registered and registered[name].is_director,
                           token=registered[name].token if name in registered else '',
-                          games=self.games_for_player(name))
+                          games=self.games_for_player(name),
+                          active=name not in registered or registered[name].active)
                 for name in sorted(registered.keys() | in_games)]
 
     def issue_login(self, name: str, director: bool = False) -> Player:
         """A fresh link for someone, replacing any they had."""
-        return self.players.issue(name, role=DIRECTOR if director else '')
+        return self.players.issue(name, role=DIRECTOR if director else PLAYER)
 
     def revoke_login(self, name: str) -> None:
         self.players.revoke(name)
+
+    def set_player_active(self, name: str, active: bool) -> None:
+        self.players.set_active(name, active)
 
     def create_game(self, name: str, ship_init_file: str) -> None:
         gd = GameDirectory(self.data_root, name)
@@ -524,11 +528,9 @@ class AdminService(_EngineAccess):
         return Game(self._gd(game)).command_file_status
 
     def game_pulse(self, game: str) -> GamePulse:
-        """Everyone's standing, read from the ships file, the command files and the ready files.
+        """Polled by the console: read from the ships file and the ready files, no round loaded.
 
-        No round is unpickled: the console asks this every few seconds while it waits. It answers
-        for every ship the game was set up with, so a caller showing only the living skips the
-        dead rather than being told about them."""
+        It answers for every ship the game was set up with, including the dead."""
         gd = self._gd(game)
         roster = self._roster(game)
         round_nr = gd.last_round_number + 1

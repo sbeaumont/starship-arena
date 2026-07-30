@@ -105,9 +105,9 @@ class Pulse:
 
 @dataclass
 class GamePulse:
-    """The same question for a whole game, which is what the console watches while it waits."""
+    """The same question for a whole game, which is what the console watches."""
     round_nr: int            # the round being planned
-    orders: dict[str, bool]  # per ship, whether its orders are in
+    orders: dict[str, bool]  # per ship
     ready: dict[str, bool]   # per player
 
 
@@ -125,6 +125,7 @@ class LoginInfo:
     is_director: bool
     token: str
     games: list[str]
+    active: bool   # a deactivated player keeps their name and their games, but cannot log in
 
 
 @dataclass

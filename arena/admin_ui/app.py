@@ -161,7 +161,7 @@ def new_game():
     return render_template('new-game.html',
                            game_name=game_name,
                            rows=rows,
-                           known_players=[p.name for p in facade().logins()],
+                           known_players=[p.name for p in facade().active_players()],
                            ship_types=facade().all_ship_types.values(),
                            starbase_types=facade().all_starbase_types.values(),
                            messages=messages)
@@ -245,6 +245,12 @@ def issue_login():
 @app.route('/players/revoke', methods=['POST'])
 def revoke_login():
     facade().revoke_login(request.form['name'])
+    return redirect(url_for('players'))
+
+
+@app.route('/players/active', methods=['POST'])
+def set_player_active():
+    facade().set_player_active(request.form['name'], bool(request.form.get('active')))
     return redirect(url_for('players'))
 
 

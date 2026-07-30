@@ -18,7 +18,7 @@ from datetime import datetime
 from arena.cfg import GAME_DATA_DIR, GAME_UI_URL, SITE_URL
 from arena.log import configure_logger
 
-from arena.app.players import PlayerRegistry, DIRECTOR
+from arena.app.players import PlayerRegistry, DIRECTOR, PLAYER
 from arena.app.services import AdminService
 from arena.engine.admin import setup_game
 from arena.engine.game import Game
@@ -74,7 +74,7 @@ def issue_link(name: str, director: bool, url: str):
     before they can hand out anything."""
     if not name:
         sys.exit("Who for? Use --name.")
-    player = PlayerRegistry(GAME_DATA_DIR).issue(name, role=DIRECTOR if director else '')
+    player = PlayerRegistry(GAME_DATA_DIR).issue(name, role=DIRECTOR if director else PLAYER)
     # The address given is the game UI's own, wherever that is: the Vite server answers at its
     # root, a deployed site under /play. A host that knows its own address says so in secret.py.
     where = url.rstrip('/') if url else (SITE_URL.rstrip('/') + GAME_UI_URL if SITE_URL else '')
@@ -102,7 +102,7 @@ def list_players():
         print("  python arena/cli/main.py link --name <you> --director")
         return
     for p in players:
-        print(f"  {p.name:20} {p.role or 'player'}")
+        print(f"  {p.name:20} {p.role}{'' if p.active else '   deactivated'}")
 
 
 def main():

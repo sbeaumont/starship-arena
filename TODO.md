@@ -16,19 +16,18 @@ each section.
       open, there are 2 of them, and harakiri kills a connection at 300 seconds anyway.
 - [x] **Feedback after regenerating, processing and forcing.** The console redirects with a
       message and the game page shows it.
-- [ ] **Lock the path.** A button that freezes the plotted course, because setting weapon arcs or
+- [x] **Lock the path.** A button that freezes the plotted course, because setting weapon arcs or
       panning the map too easily drags a joint and changes a course that was already right.
-- [ ] **Ready / Not Ready, per player.** A flag saying "I am done with this round", distinct from
+- [x] **Ready / Not Ready, per player.** A flag saying "I am done with this round", distinct from
       having saved orders: you can save a plan and keep thinking about it.
 
       One file per player in the game directory, holding a `Round X Ready` line that gets added or
       removed. A file each, so two players marking ready at the same moment cannot race.
 
-      This is the groundwork for two things. First, processing a round automatically once everyone
-      says ready. Then a cron job that processes on a deadline whether or not they did, writing an
-      empty command file for anyone who did not send one, which reads as "no orders arrived in
-      time".
-- [ ] **Rename "Send all" to "Save all".** It saves orders; it does not send them anywhere. With
+      Both things it was groundwork for are in: `process_on_all_ready` in a game's settings, and
+      `arena-cron.sh` processing on the hours a game names, writing an empty command file for
+      anyone who did not send one, which reads as "no orders arrived in time".
+- [x] **Rename "Send all" to "Save all".** It saves orders; it does not send them anywhere. With
       Ready as a separate flag the distinction starts to matter.
 - [ ] **A new manual.** The current one is generated from `manual.html` and badly out of date.
       Decide whether it stays a PDF or becomes a page in the game UI.
@@ -164,15 +163,16 @@ Ideas from the original readme, kept because they are still wanted.
 
 The lists grow without bound as games pile up, so this is about keeping them maintainable.
 
-- [ ] **Archive a game.** An archived game is no longer referenced anywhere: not in the console's
+- [x] **Archive a game.** An archived game is no longer referenced anywhere: not in the console's
       list, not in a player's games, not in the roster that decides whether a name is claimable.
-      Its data stays. Needs a decision on where the flag lives - a marker file in the game
-      directory, or an archived subdirectory.
-- [ ] **Unarchive**, and **delete an archived game for good** - deletion only from archived, so it
+      Its data stays. It moves to an `archived` directory beside the games, so nothing that lists
+      games has to filter and `archived` stays a legal game name.
+- [x] **Unarchive**, and **delete an archived game for good** - deletion only from archived, so it
       is always two deliberate steps.
-- [ ] **Deactivate a player.** The name stays reserved (nobody else can claim it, and old games
+- [x] **Deactivate a player.** The name stays reserved (nobody else can claim it, and old games
       keep naming them), but they cannot log in and are not offered when setting up a new game.
-      Distinct from revoking a link, which only takes away the current token.
+      Distinct from revoking a link, which only takes away the current token. An `Active` column
+      in `players.txt`, and `by_token` refusing them, which closes every interface at once.
 - [ ] **Leaderboard.** Per player: the last ten games and a lifetime total. A game's contribution
       is **total score divided by the number of ships they had in it**, so commanding a fleet is
       not worth more than commanding one ship well.
@@ -246,6 +246,13 @@ every route timing out at `504-loadbalancer`.
 - [ ] **The test suite writes into the committed test data.** `test_run_test_games.py` uses a
       cwd-relative `'./test/test-games'` and re-runs `setup_game()` on the real `test-game`, so
       running tests changes which round it is on. Should work on a copy.
+
+      The same data root is what the console runs on, so archiving a game there takes it away from
+      the suite: `test/api/test_fastapimain.py` copies its fixture out of `test-games/apitest`,
+      and with that game archived three tests error on a missing directory.
+- [ ] **`test_distribute_ships` is flaky.** It asserts no placed ship has an x or y of exactly
+      zero, but `centers_for` places them at a random angle, which occasionally rounds to it.
+      Seen twice; 20 runs since have been clean.
 - [ ] There is no test covering the game API beyond command validation
       (`test/api/test_fastapimain.py`). The planning endpoint and the overview are only checked
       by hand.

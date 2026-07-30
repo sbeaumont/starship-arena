@@ -197,6 +197,12 @@ class AppFacade(object):
     def revoke_login(self, name: str) -> None:
         self.admin.revoke_login(name)
 
+    def set_player_active(self, name: str, active: bool) -> None:
+        self.admin.set_player_active(name, active)
+
+    def active_players(self) -> list:
+        return [p for p in self.logins() if p.active]
+
     def create_new_game(self, name: str, ship_init_file: str):
         logger.info(f"Creating new game: {name}")
 

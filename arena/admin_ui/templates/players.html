@@ -13,13 +13,14 @@
     <span class="header">Link</span>
     <span class="header"></span>
     {% for p in logins %}
-        <span>
+        <span class="{{ '' if p.active else 'gone' }}">
             {{ p.name }}
             {%- if p.is_director %} <em class="role">director</em>{% endif %}
         </span>
         <span class="games">{{ p.games | join(', ') or '—' }}</span>
         <span class="link">
-            {% if p.token %}
+            {% if not p.active %}
+            {% elif p.token %}
                 <input type="text" readonly value="{{ game_ui_url }}/?login={{ p.token }}"
                        onclick="this.select()">
             {% else %}
@@ -27,12 +28,20 @@
             {% endif %}
         </span>
         <span class="act">
-            <form method="POST" action="{{ url_for('issue_login') }}">
-                <input type="hidden" name="name" value="{{ p.name }}">
-                {% if p.is_director %}<input type="hidden" name="director" value="1">{% endif %}
-                <button type="submit">{{ 'New link' if p.token else 'Issue link' }}</button>
-            </form>
+            {% if p.active %}
+                <form method="POST" action="{{ url_for('issue_login') }}">
+                    <input type="hidden" name="name" value="{{ p.name }}">
+                    {% if p.is_director %}<input type="hidden" name="director" value="1">{% endif %}
+                    <button type="submit">{{ 'New link' if p.token else 'Issue link' }}</button>
+                </form>
+            {% endif %}
             {% if p.token %}
+                <form method="POST" action="{{ url_for('set_player_active') }}"
+                      {% if p.active %}onsubmit="return confirm('Deactivate {{ p.name }}? They keep their name and their games, but cannot log in.')"{% endif %}>
+                    <input type="hidden" name="name" value="{{ p.name }}">
+                    {% if not p.active %}<input type="hidden" name="active" value="1">{% endif %}
+                    <button type="submit" class="quiet">{{ 'Deactivate' if p.active else 'Reactivate' }}</button>
+                </form>
                 <form method="POST" action="{{ url_for('revoke_login') }}"
                       onsubmit="return confirm('Take away {{ p.name }}\'s login?')">
                     <input type="hidden" name="name" value="{{ p.name }}">

@@ -123,7 +123,6 @@
         const res = await fetch("{{ url_for('game_status', game=game) }}");
         if (!res.ok) return;
         const status = await res.json();
-        // The page is written around one round, so once that moves on it is all stale.
         if (status.round_nr !== round_nr) return location.reload();
         for (const cell of document.querySelectorAll('[data-orders]')) {
             show(cell, status.orders[cell.dataset.orders], 'in', 'waiting');
@@ -131,7 +130,7 @@
         for (const cell of document.querySelectorAll('[data-ready]')) {
             show(cell, status.ready[cell.dataset.ready], 'ready', 'not yet');
         }
-        // Counted from the ships shown rather than from the answer, which also names the dead.
+        // From the ships shown, not from the answer, which also names the dead.
         const cells = [...document.querySelectorAll('[data-orders]')];
         const handed_in = cells.filter((c) => c.classList.contains('ok')).length;
         document.getElementById('orders-in').textContent = handed_in;
