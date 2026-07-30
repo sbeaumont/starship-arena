@@ -4,9 +4,10 @@ GameService is player-facing and restricted, AdminService is the director's. Sto
 this line. See docs/adr/0001-layered-architecture.md."""
 
 import re
+import shutil
 from pathlib import Path
 
-from arena.cfg import ADMIN_UI_URL, GAME_DATA_DIR
+from arena.cfg import ADMIN_UI_URL, ARCHIVE_DIR_NAME, GAME_DATA_DIR
 from arena.engine.admin import GameSetup
 from arena.engine.command import parse_commands
 from arena.engine.game import Game
@@ -20,7 +21,7 @@ from arena.app.dto import (
     GameSummary, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
     TrackPoint, TickEvent, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
     WeaponInfo, WeaponInput,
-    ShipSummary, FactionSummary, GameOverview, ShipTypeInfo, Me, LoginInfo,
+    ShipSummary, FactionSummary, GameOverview, ShipTypeInfo, Me, LoginInfo, GameSettings,
 )
 
 
@@ -34,6 +35,23 @@ class _EngineAccess:
     def _gd(self, game: str) -> GameDirectory:
         return GameDirectory(self.data_root, game)
 
+    @property
+    def _archive(self) -> Path:
+        return Path(self.data_root).parent / ARCHIVE_DIR_NAME
+
+    def list_games(self) -> list[GameSummary]:
+        return self._games_in(Path(self.data_root))
+
+    def list_archived_games(self) -> list[GameSummary]:
+        return self._games_in(self._archive)
+
+    @staticmethod
+    def _games_in(root: Path) -> list[GameSummary]:
+        if not root.exists():
+            return []
+        return [GameSummary(name=d.name, current_round=GameDirectory(str(root), d.name).last_round_number + 1)
+                for d in sorted(root.iterdir()) if d.is_dir()]
+
     def _roster(self, game: str) -> dict[str, str]:
         """Which player commands which ship, from the game's ships file.
 
@@ -44,13 +62,43 @@ class _EngineAccess:
             return {}
         return {line.name: line.player for line in ShipFile(gd).ship_lines if line.player}
 
-    def list_games(self) -> list[GameSummary]:
-        summaries = []
-        for d in sorted(Path(self.data_root).iterdir()):
-            if d.is_dir():
-                gd = GameDirectory(self.data_root, d.name)
-                summaries.append(GameSummary(name=d.name, current_round=gd.last_round_number + 1))
-        return summaries
+    def settings(self, game: str) -> GameSettings:
+        raw = self._gd(game).read_settings()
+        hours = raw.get('process_hours', '').strip()
+        return GameSettings(on_all_ready=raw.get('process_on_all_ready', '') == 'yes',
+                            process_hours=list(range(24)) if hours == '*' else
+                                          sorted(int(h) for h in hours.split()))
+
+    def save_settings(self, game: str, settings: GameSettings) -> None:
+        hours = sorted(set(settings.process_hours))
+        if any(not 0 <= h <= 23 for h in hours):
+            raise ValueError(f"Hours run from 0 to 23: {hours}")
+        self._gd(game).write_settings({
+            'process_on_all_ready': 'yes' if settings.on_all_ready else 'no',
+            'process_hours': '*' if len(hours) == 24 else ' '.join(str(h) for h in hours),
+        })
+
+    def all_ready(self, game: str) -> bool:
+        players = {p for p in Game(self._gd(game)).players if p}
+        return bool(players) and all(self.is_ready(game, p) for p in players)
+
+    def is_ready(self, game: str, player: str) -> bool:
+        """Whether a player has said they are done with the round being planned.
+
+        Independent of whether orders are saved: you can save a plan and keep thinking."""
+        gd = self._gd(game)
+        return gd.is_ready(player, gd.last_round_number + 1)
+
+    def set_ready(self, game: str, player: str, ready: bool) -> bool:
+        """Returns whether saying so processed the round."""
+        gd = self._gd(game)
+        gd.set_ready(player, gd.last_round_number + 1, ready)
+        if ready and self.settings(game).on_all_ready and self.all_ready(game):
+            g = Game(self._gd(game))
+            if g.current_round_ready:
+                g.process_current_round()
+                return True
+        return False
 
     def games_for_player(self, name: str) -> list[str]:
         return [g.name for g in self.list_games() if name in self._roster(g.name).values()]
@@ -257,8 +305,8 @@ class GameService(_EngineAccess):
                                                              radius=e.radius, damage_type=str(e._type)))
 
         return PlayerPlan(game=game, player=player, factions=sorted(factions), round=round_nr,
-                          last_round=last_round, ships=ships, contacts=contacts,
-                          explosions=list(blasts.values()))
+                          last_round=last_round, ready=gd.is_ready(player, last_round + 1),
+                          ships=ships, contacts=contacts, explosions=list(blasts.values()))
 
     # ---------------------------------------------------------------- internals
 
@@ -356,6 +404,45 @@ class GameService(_EngineAccess):
 class AdminService(_EngineAccess):
     """Lower-level operations for the admin/director interface."""
 
+    def process_due(self, hour: int) -> list[str]:
+        """Force a round in every game whose settings say this hour is its hour.
+
+        Called once an hour by cron, which is where the timing comes from: the games say which
+        hour they want, and nothing here measures elapsed time. Deadlines override readiness, so a
+        due game processes whether the orders are in or not."""
+        run = []
+        for game in self.list_games():
+            try:
+                if hour not in self.settings(game.name).process_hours:
+                    continue
+                silent = self.force_process_turn(game.name)
+                run.append(f"{game.name}: round {game.current_round} processed"
+                           + (f", no orders from {', '.join(silent)}" if silent else ""))
+            except Exception as e:
+                # One unreadable game must not stop the rest of the hour's work.
+                run.append(f"{game.name}: FAILED, {e}")
+        return run
+
+    # ---------------------------------------------------------------------- GAMES
+
+    def archive_game(self, name: str) -> None:
+        """Move a game out of every list. Its data is untouched."""
+        self._archive.mkdir(parents=True, exist_ok=True)
+        target = self._archive / name
+        if target.exists():
+            raise ValueError(f"'{name}' is already archived.")
+        shutil.move(str(Path(self.data_root) / name), str(target))
+
+    def unarchive_game(self, name: str) -> None:
+        target = Path(self.data_root) / name
+        if target.exists():
+            raise ValueError(f"A game called '{name}' is already being played.")
+        shutil.move(str(self._archive / name), str(target))
+
+    def delete_archived_game(self, name: str) -> None:
+        """Delete for good. Only reaches into the archive, so a live game cannot be lost here."""
+        shutil.rmtree(self._archive / name)
+
     # ---------------------------------------------------------------------- LOGINS
 
     def logins(self) -> list[LoginInfo]:
@@ -385,6 +472,20 @@ class AdminService(_EngineAccess):
         g = Game(self._gd(game))
         if g.current_round_ready:
             g.process_current_round()
+
+    def force_process_turn(self, game: str) -> list[str]:
+        """Process whether or not the orders are in, writing an empty file for those that are not.
+
+        An empty command file reads as "no orders arrived in time", which is what a deadline
+        means. Returns the ships it had to do that for."""
+        gd = self._gd(game)
+        g = Game(gd)
+        silent = sorted(g.missing_command_files)
+        for ship in silent:
+            with open(gd.command_file(ship, g.current_round_nr), 'w') as f:
+                f.write('')
+        Game(gd).process_current_round()
+        return silent
 
     def command_status(self, game: str) -> dict[str, bool]:
         return Game(self._gd(game)).command_file_status

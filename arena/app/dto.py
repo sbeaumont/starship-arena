@@ -97,6 +97,13 @@ class TrackPoint:
 
 
 @dataclass
+class GameSettings:
+    """How a game decides to process a round by itself. Both off means the director does it."""
+    on_all_ready: bool
+    process_hours: list[int]   # hours of the day it runs on. Empty means never
+
+
+@dataclass
 class LoginInfo:
     """A person the director can hand a link to. `token` is empty when they have none yet."""
     name: str
@@ -228,6 +235,7 @@ class PlayerPlan:
     round: int           # the round this picture is drawn from
     last_round: int      # the newest round there is. Orders can only be changed while
                          # looking at it, since that is what the current round plans from.
+    ready: bool          # the player has said they are done with the round being planned
     ships: list[ShipPlan]
     contacts: list[Contact]
     explosions: list[Explosion]

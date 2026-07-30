@@ -51,6 +51,32 @@ underscores rather than rejected.
 **`Player` is an identity, not a label.** It's the name someone logs in with, so a typo creates a
 commander who can never sign in. The new game screen autocompletes it for that reason.
 
+## settings.txt
+
+Optional, per game. `key value` per line, `#` starts a comment.
+
+```
+process_hours 8 20
+process_on_all_ready yes
+```
+
+`process_hours` are the hours of the day at which the round is processed whether the orders are in
+or not. `*` means every hour. Absent means the director processes it. The timing comes from cron
+running `arena-cron.sh` on the hour; nothing here measures elapsed time.
+
+`process_on_all_ready` processes the moment the last player says they are ready.
+
+## ready/
+
+One file per player, so two of them saying ready at once cannot race.
+
+```
+ready/Menno.txt      Round 4 Ready
+```
+
+A line per round they have declared themselves done with. Unreadying removes the line. This is a
+separate signal from having saved orders: you can save a plan and keep thinking about it.
+
 ## Command files
 
 One per ship per round, named `<ship>-commands-<round>.txt`. A ship without one for the current

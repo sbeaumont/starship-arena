@@ -125,6 +125,19 @@ def player_plan(game: str, player: str, round: int | None = None,
         raise HTTPException(status_code=404, detail=str(e))
 
 
+class ReadyBody(BaseModel):
+    ready: bool
+
+
+@router.post("/{game}/players/{player}/ready")
+def set_ready(game: str, player: str, body: ReadyBody, me: Player = Depends(require_login)) -> dict:
+    """Saying you are done with the round, which is not the same as having saved orders."""
+    if not (me.is_director or me.name == player):
+        raise HTTPException(status_code=403, detail=f"{player} is not you.")
+    processed = service.set_ready(game, player, body.ready)
+    return {"ready": service.is_ready(game, player), "processed": processed}
+
+
 @router.get("/{game}/ships/{ship}/commands")
 def get_commands(game: str, ship: str, me: Player = Depends(require_login)) -> list[str]:
     require_own_ship(game, ship, me)

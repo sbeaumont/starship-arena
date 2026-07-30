@@ -1,4 +1,6 @@
 <script>
+  import { SvelteSet } from "svelte/reactivity";
+
   let { game, player, round = null, onRound, onLeave } = $props();
 
   const N = 10; // ticks in a round
@@ -33,7 +35,10 @@
   let selected = $state(null);
   let selectedTick = $state(null);   // which node's weapons we are looking at
   let aimingWeapon = $state(null);   // weapon waiting for a target to be clicked
-  let sendMsg = $state("");
+  let saveMsg = $state("");
+  let locked = $state(new SvelteSet());   // per ship, this session only
+  let ready = $state(false);
+  let settingReady = $state(false);
   let sending = $state(false);
 
   // Text sizes live here rather than in the CSS because the de-overlap maths needs them.
@@ -137,7 +142,9 @@
         selected = first ? first.name : null;
         selectedTick = null;
         aimingWeapon = null;
-        sendMsg = "";
+        saveMsg = "";
+        ready = data.ready;
+        locked.clear();
       } catch (e) {
         if (!cancelled) error = String(e);
       } finally {
@@ -342,7 +349,7 @@
     );
     if (!selectedOrders.fire[selectedTick]) selectedOrders.fire[selectedTick] = {};
     selectedOrders.fire[selectedTick][weapon.name] = params;
-    sendMsg = "";
+    saveMsg = "";
   }
 
   function pickTarget(contactName) {
@@ -350,14 +357,14 @@
     if (!selectedOrders.fire[selectedTick]) selectedOrders.fire[selectedTick] = {};
     selectedOrders.fire[selectedTick][aimingWeapon] = [contactName];
     aimingWeapon = null;
-    sendMsg = "";
+    saveMsg = "";
   }
 
   function unarm(tick, weaponName) {
     if (!selectedOrders?.fire[tick]) return;
     delete selectedOrders.fire[tick][weaponName];
     if (!Object.keys(selectedOrders.fire[tick]).length) delete selectedOrders.fire[tick];
-    sendMsg = "";
+    saveMsg = "";
   }
 
   // Every planned shot of every ship you command, so a course and its firing read together
@@ -606,7 +613,7 @@
   }
 
   function nodeDown(k, e) {
-    if (!editable) return;
+    if (!editable || locked.has(selected)) return;
     dragK = k; movedFar = false;
     lastX = e.clientX; lastY = e.clientY;
     e.stopPropagation();
@@ -716,12 +723,36 @@
   function resetCourse(name) {
     if (!baseline[name]) return;
     orders[name] = parseOrders(baseline[name]);
-    sendMsg = "";
+    saveMsg = "";
   }
 
-  async function sendAll() {
+  function toggleLock(name) {
+    if (locked.has(name)) locked.delete(name);
+    else locked.add(name);
+  }
+
+  async function toggleReady() {
+    settingReady = true;
+    try {
+      const res = await fetch(`/api/game/${game}/players/${player}/ready`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ready: !ready }),
+      });
+      if (!res.ok) return;
+      const body = await res.json();
+      ready = body.ready;
+      if (body.processed) {
+        saveMsg = "Everyone was ready. The round has been processed.";
+        onRound(plan.last_round + 1);
+      }
+    } finally {
+      settingReady = false;
+    }
+  }
+
+  async function saveAll() {
     sending = true;
-    sendMsg = "Sending…";
+    saveMsg = "Saving…";
     const results = [];
     for (const s of ownShips) {
       const lines = orderLines(orders[s.name]);
@@ -741,7 +772,7 @@
         results.push(`${s.name}: error ${e}`);
       }
     }
-    sendMsg = results.join(" · ");
+    saveMsg = results.join(" · ");
     sending = false;
   }
 </script>
@@ -1109,14 +1140,26 @@
           {#if editable}
             <div class="buttons">
               <button type="button" class="ghost-btn" onclick={() => resetCourse(selected)}>Reset course</button>
-              <button type="button" class="send" disabled={sending} onclick={sendAll}>Send all</button>
+              <button type="button" class="save" disabled={sending} onclick={saveAll}>Save all</button>
+            </div>
+            <div class="buttons">
+              <button type="button" class="state" class:on={locked.has(selected)}
+                      onclick={() => toggleLock(selected)}
+                      title="Stop the course being dragged by accident">
+                {locked.has(selected) ? "Locked" : "Unlocked"}
+              </button>
+              <button type="button" class="state" class:on={ready} disabled={settingReady}
+                      onclick={toggleReady}
+                      title="Tell the director you are done with this round">
+                {ready ? "Ready" : "Not ready"}
+              </button>
             </div>
           {:else}
             <p class="note">Round {plan.round} has already been played. Go to round
               {plan.last_round} to give orders.</p>
           {/if}
-          {#if sendMsg}
-            <p class="savemsg" class:err={sendMsg.includes("REJECTED") || sendMsg.includes("error")}>{sendMsg}</p>
+          {#if saveMsg}
+            <p class="savemsg" class:err={saveMsg.includes("REJECTED") || saveMsg.includes("error")}>{saveMsg}</p>
           {/if}
         </section>
 
@@ -1520,10 +1563,15 @@
   }
   .ghost-btn { color: var(--ink); background: #0d1320; }
   .ghost-btn:hover:not(:disabled) { border-color: var(--cyan); color: var(--cyan); }
-  .send { color: #08111e; background: var(--amber); border-color: var(--amber); font-weight: 600; }
-  .send:hover:not(:disabled) { filter: brightness(1.1); }
+  .save { color: #08111e; background: var(--amber); border-color: var(--amber); font-weight: 600; }
+  .save:hover:not(:disabled) { filter: brightness(1.1); }
   .buttons button:disabled { opacity: 0.4; cursor: not-allowed; }
   .buttons button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+  /* Muted, because these sit at rest most of the time. */
+  .state { color: #b07a80; background: #1a1218; border-color: #4a2f34; }
+  .state:hover:not(:disabled) { filter: brightness(1.25); }
+  .state.on { color: #79b894; background: #121c17; border-color: #2f4a3a; }
 
   .savemsg { margin: 8px 0 0; font-size: 11.5px; line-height: 1.45; color: var(--cyan); word-break: break-word; }
   .savemsg.err { color: var(--warn); }

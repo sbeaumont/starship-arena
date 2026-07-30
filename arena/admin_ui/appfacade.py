@@ -11,6 +11,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from arena.app.dto import GameSettings
 from arena.app.services import AdminService
 from arena.engine.admin import GameSetup, regenerate_game
 from arena.engine.gamedirectory import GameDirectory, ShipFile
@@ -69,10 +70,17 @@ class GameLine:
     orders_in: int
     missing: list[str]
     ready: bool
+    players: int
+    players_ready: int
+    not_ready: list[str]
 
     @property
     def percent_in(self) -> int:
         return round(100 * self.orders_in / self.ships) if self.ships else 0
+
+    @property
+    def all_ready(self) -> bool:
+        return bool(self.players) and self.players_ready == self.players
 
 
 class AppFacade(object):
@@ -120,12 +128,17 @@ class AppFacade(object):
         lines = []
         for game in self.all_game_objs():
             status = game.command_file_status
+            players = sorted(p for p in game.players if p)
+            said_ready = [p for p in players if self.admin.is_ready(game.name, p)]
             lines.append(GameLine(name=game.name,
                                   round_nr=game.current_round_nr,
                                   ships=len(status),
                                   orders_in=sum(1 for ok in status.values() if ok),
                                   missing=sorted(n for n, ok in status.items() if not ok),
-                                  ready=game.current_round_ready))
+                                  ready=game.current_round_ready,
+                                  players=len(players),
+                                  players_ready=len(said_ready),
+                                  not_ready=[p for p in players if p not in said_ready]))
         return lines
 
     # ---------------------------------------------------------------------- COMMANDS
@@ -140,6 +153,27 @@ class AppFacade(object):
 
     def regenerate_game(self, game_name: str) -> int:
         return regenerate_game(self.gd(game_name))
+
+    def is_ready(self, game: str, player: str) -> bool:
+        return self.admin.is_ready(game, player)
+
+    def settings(self, game: str):
+        return self.admin.settings(game)
+
+    def save_settings(self, game: str, on_all_ready: bool, hours: list[int]) -> None:
+        self.admin.save_settings(game, GameSettings(on_all_ready=on_all_ready, process_hours=hours))
+
+    def archived_games(self) -> list:
+        return self.admin.list_archived_games()
+
+    def archive_game(self, name: str) -> None:
+        self.admin.archive_game(name)
+
+    def unarchive_game(self, name: str) -> None:
+        self.admin.unarchive_game(name)
+
+    def delete_archived_game(self, name: str) -> None:
+        self.admin.delete_archived_game(name)
 
     # ---------------------------------------------------------------------- LOGINS
 

@@ -57,6 +57,46 @@ class GameDirectory(object):
         return last_round
 
 
+    def read_settings(self) -> dict[str, str]:
+        path = os.path.join(self._dir, SETTINGS_FILE_NAME)
+        if not os.path.exists(path):
+            return {}
+        settings = {}
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    key, _, value = line.partition(' ')
+                    settings[key] = value.strip()
+        return settings
+
+    def write_settings(self, settings: dict[str, str]) -> None:
+        with open(os.path.join(self._dir, SETTINGS_FILE_NAME), 'w') as f:
+            for key, value in sorted(settings.items()):
+                f.write(f"{key} {value}\n")
+
+    def is_ready(self, player: str, round_nr: int) -> bool:
+        path = os.path.join(self._dir, READY_FILE_TEMPLATE.format(player))
+        if not os.path.exists(path):
+            return False
+        line = READY_LINE_TEMPLATE.format(round_nr)
+        with open(path) as f:
+            return any(l.strip() == line for l in f)
+
+    def set_ready(self, player: str, round_nr: int, ready: bool) -> None:
+        """A file per player, so two of them saying ready at once cannot race."""
+        os.makedirs(os.path.join(self._dir, READY_DIR), exist_ok=True)
+        path = os.path.join(self._dir, READY_FILE_TEMPLATE.format(player))
+        line = READY_LINE_TEMPLATE.format(round_nr)
+        lines = []
+        if os.path.exists(path):
+            with open(path) as f:
+                lines = [l.strip() for l in f if l.strip() and l.strip() != line]
+        if ready:
+            lines.append(line)
+        with open(path, 'w') as f:
+            f.write('\n'.join(lines) + ('\n' if lines else ''))
+
     def command_file(self, name, round_nr) -> str:
         return CommandFile(self, name, round_nr).full_name
 

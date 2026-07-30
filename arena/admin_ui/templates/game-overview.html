@@ -26,6 +26,7 @@
         <span class="header num">Score</span>
         <span class="header">Player</span>
         <span class="header">Orders</span>
+        <span class="header">Ready</span>
         {% for ship in ships_of %}
             <span>{{ ship.name }}</span>
             <span class="num">{{ ship.score }}</span>
@@ -39,9 +40,38 @@
             <span class="{{ 'ok' if command_file[ship.name] else 'no' }}">
                 {{ 'in' if command_file[ship.name] else 'waiting' }}
             </span>
+            <span class="{{ 'ok' if ready.get(ship.player) else 'no' }}">
+                {{ 'ready' if ready.get(ship.player) else 'not yet' }}
+            </span>
         {% endfor %}
     </div>
 {% endfor %}
+
+<h2>Processing</h2>
+<div class="panel">
+    <form method="POST" action="{{ url_for('save_settings', game=game) }}">
+        <label class="check">
+            <input type="checkbox" name="on_all_ready" value="1" {{ 'checked' if settings.on_all_ready }}>
+            Process as soon as every player says they are ready
+        </label>
+
+        <label>Process at these hours, ready or not</label>
+        <div class="hours">
+            {% for h in range(24) %}
+                <label class="hour {{ 'on' if h in settings.process_hours }}">
+                    <input type="checkbox" name="hour" value="{{ h }}"
+                           {{ 'checked' if h in settings.process_hours }}>
+                    {{ '%02d' % h }}
+                </label>
+            {% endfor %}
+        </div>
+        <p class="lede">Cron runs on the hour and processes the games that name it. A game with no
+            hours is yours to process. Anyone who has not sent orders by then gets an empty command
+            file, which counts as no orders in time.</p>
+
+        <button class="go" type="submit">Save settings</button>
+    </form>
+</div>
 
 {% if dead_ships %}
     <h2>Graveyard</h2>

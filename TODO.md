@@ -11,6 +11,28 @@ each section.
 
 ## Game UI (`game-ui/`)
 
+- [ ] **Tell the other players when a round has been processed.** The one who says the last Ready
+      is told in the response, but everyone else finds out by reloading. Push is out on this host:
+      SSE or a WebSocket holds a worker open, there are 2 of them, and harakiri kills a connection
+      at 300 seconds anyway. So poll a small endpoint (last round, ready count) every 20 seconds
+      while the tab is visible, and offer a reload when it moves.
+- [ ] **No feedback after regenerating a game.** The console redirects back to the game page and
+      says nothing, so a replay that stopped early, or did nothing at all, looks the same as one
+      that worked. It should report the round it ended on and why it stopped.
+- [ ] **Lock the path.** A button that freezes the plotted course, because setting weapon arcs or
+      panning the map too easily drags a joint and changes a course that was already right.
+- [ ] **Ready / Not Ready, per player.** A flag saying "I am done with this round", distinct from
+      having saved orders: you can save a plan and keep thinking about it.
+
+      One file per player in the game directory, holding a `Round X Ready` line that gets added or
+      removed. A file each, so two players marking ready at the same moment cannot race.
+
+      This is the groundwork for two things. First, processing a round automatically once everyone
+      says ready. Then a cron job that processes on a deadline whether or not they did, writing an
+      empty command file for anyone who did not send one, which reads as "no orders arrived in
+      time".
+- [ ] **Rename "Send all" to "Save all".** It saves orders; it does not send them anywhere. With
+      Ready as a separate flag the distinction starts to matter.
 - [ ] **A new manual.** The current one is generated from `manual.html` and badly out of date.
       Decide whether it stays a PDF or becomes a page in the game UI.
 - [ ] **Time-scrubbing within a round.** Round-by-round works; stepping tick by tick does not.

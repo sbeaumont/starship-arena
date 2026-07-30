@@ -20,13 +20,50 @@
                 <span class="orders">
                     <span class="count">{{ g.orders_in }} / {{ g.ships }} orders in</span>
                     <span class="bar"><i style="width: {{ g.percent_in }}%"></i></span>
+                    <span class="count {{ 'ok' if g.all_ready }}">
+                        {{ g.players_ready }} / {{ g.players }} ready
+                    </span>
                 </span>
-                <form method="POST" action="{{ url_for('process_turn', game=g.name) }}">
-                    <button class="go" type="submit" {{ 'disabled' if not g.ready }}>Process</button>
-                </form>
-                {% if g.missing %}
-                    <span class="waiting-for">waiting for {{ g.missing|join(', ') }}</span>
+                <span class="act">
+                    <form method="POST" action="{{ url_for('process_turn', game=g.name) }}">
+                        <button class="go" type="submit" {{ 'disabled' if not g.ready }}>Process</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('archive', game=g.name) }}"
+                          onsubmit="return confirm('Archive {{ g.name }}? It leaves every list; nothing is deleted.')">
+                        <button type="submit" class="quiet">Archive</button>
+                    </form>
+                </span>
+                {% if g.missing or g.not_ready %}
+                    <span class="waiting-for">
+                        {%- if g.missing %}no orders from {{ g.missing|join(', ') }}{% endif -%}
+                        {%- if g.missing and g.not_ready %} · {% endif -%}
+                        {%- if g.not_ready %}not ready: {{ g.not_ready|join(', ') }}{% endif -%}
+                    </span>
                 {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% if archived %}
+    <h2>Archived</h2>
+    <p class="lede">Out of every list, including the players'. The data is still there.</p>
+    <div class="games">
+        {% for g in archived %}
+            <div class="game archived">
+                <span class="dot idle"></span>
+                <span class="name">{{ g.name }}</span>
+                <span class="round">{{ g.current_round - 1 }} rounds played</span>
+                <span></span>
+                <span class="act">
+                    <form method="POST" action="{{ url_for('unarchive', game=g.name) }}">
+                        <button type="submit" class="quiet">Unarchive</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('delete_archived', game=g.name) }}"
+                          onsubmit="return confirm('Delete {{ g.name }} for good? Its ships file, orders and rounds are gone.')">
+                        <button type="submit" class="danger">Delete</button>
+                    </form>
+                </span>
             </div>
         {% endfor %}
     </div>

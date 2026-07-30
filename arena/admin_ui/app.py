@@ -62,7 +62,35 @@ def only_the_director():
 @app.route('/')
 def overview():
     """Every game, and whether its round can be processed."""
-    return render_template('index.html', games=facade().game_lines())
+    return render_template('index.html',
+                           games=facade().game_lines(),
+                           archived=facade().archived_games())
+
+
+@app.route('/settings/<game>', methods=['POST'])
+def save_settings(game: str):
+    facade().save_settings(game,
+                           on_all_ready=bool(request.form.get('on_all_ready')),
+                           hours=[int(h) for h in request.form.getlist('hour')])
+    return redirect(url_for('game_overview', game_name=game))
+
+
+@app.route('/archive/<game>', methods=['POST'])
+def archive(game: str):
+    facade().archive_game(game)
+    return redirect(url_for('overview'))
+
+
+@app.route('/unarchive/<game>', methods=['POST'])
+def unarchive(game: str):
+    facade().unarchive_game(game)
+    return redirect(url_for('overview'))
+
+
+@app.route('/delete_archived/<game>', methods=['POST'])
+def delete_archived(game: str):
+    facade().delete_archived_game(game)
+    return redirect(url_for('overview'))
 
 
 SHIP_FILE_HEADER = 'Name Type Faction Player X Y'
@@ -146,8 +174,11 @@ def game_overview(game_name: str):
     for s in game.player_ships:
         factions[s.faction].append(s)
     command_file = game.command_file_status
+    ready = {p: facade().is_ready(game.name, p) for p in game.players if p}
     return render_template('game-overview.html',
                            factions=factions,
+                           ready=ready,
+                           settings=facade().settings(game.name),
                            round_nr=game.current_round_nr,
                            game=game.name,
                            command_file=command_file,

@@ -13,11 +13,13 @@ import argparse
 import logging
 import sys
 import os
+from datetime import datetime
 
 from arena.cfg import GAME_DATA_DIR, GAME_UI_URL, SITE_URL
 from arena.log import configure_logger
 
 from arena.app.players import PlayerRegistry, DIRECTOR
+from arena.app.services import AdminService
 from arena.engine.admin import setup_game
 from arena.engine.game import Game
 from arena.engine.gamedirectory import GameDirectory
@@ -30,9 +32,10 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("action",
                         nargs="*",
-                        choices=['setup', 'generate', 'manual', 'link', 'players'],
+                        choices=['setup', 'generate', 'manual', 'link', 'players', 'process_due'],
                         help="Set a game up, generate its unprocessed rounds, build the manual, "
-                             "issue a login link, or list who can log in")
+                             "issue a login link, list who can log in, or process the games due "
+                             "this hour")
     parser.add_argument("gamedir", nargs='?',
                         help="The name of the game you want to process.")
     parser.add_argument("-n", "--name", help="Who to issue a login link for.")
@@ -82,6 +85,16 @@ def issue_link(name: str, director: bool, url: str):
               "SITE_URL in secret.py.")
 
 
+def process_due():
+    """Process every game whose settings name this hour. Run hourly by cron."""
+    hour = datetime.now().hour
+    done = AdminService().process_due(hour)
+    for line in done:
+        logger.info(line)
+    if not done:
+        logger.info(f"Nothing due at {hour}:00")
+
+
 def list_players():
     players = PlayerRegistry(GAME_DATA_DIR).all()
     if not players:
@@ -102,6 +115,8 @@ def main():
         issue_link(args.name, args.director, args.url)
     if 'players' in args.action:
         list_players()
+    if 'process_due' in args.action:
+        process_due()
     if {'setup', 'generate'} & set(args.action):
         if not args.gamedir:
             sys.exit("Which game? Give its name.")
