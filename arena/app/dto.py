@@ -104,6 +104,14 @@ class Pulse:
 
 
 @dataclass
+class GamePulse:
+    """The same question for a whole game, which is what the console watches while it waits."""
+    round_nr: int            # the round being planned
+    orders: dict[str, bool]  # per ship, whether its orders are in
+    ready: dict[str, bool]   # per player
+
+
+@dataclass
 class GameSettings:
     """How a game decides to process a round by itself. Both off means the director does it."""
     on_all_ready: bool

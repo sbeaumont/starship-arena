@@ -4,7 +4,7 @@
 
 {% block content %}
 <h1>{{ game }}</h1>
-<p class="lede">Round {{ round_nr }}, {{ orders_in }} of {{ ships }} ships have orders in.</p>
+<p class="lede">Round {{ round_nr }}, <span id="orders-in">{{ orders_in }}</span> of {{ ships }} ships have orders in.</p>
 
 {% if request.args.get('msg') %}
     <p class="notice">{{ request.args.get('msg') }}</p>
@@ -12,7 +12,7 @@
 
 <div class="rowactions">
     <form method="POST" action="{{ url_for('process_turn', game=game) }}">
-        <button class="go" type="submit" {{ 'disabled' if not all_command_files_ok }}>
+        <button class="go" type="submit" id="process" {{ 'disabled' if not all_command_files_ok }}>
             {{ 'Process round ' ~ round_nr if all_command_files_ok else 'Waiting for orders' }}
         </button>
     </form>
@@ -45,41 +45,13 @@
                        target="_blank" rel="noopener" title="Open this player's interactive map">map</a>
                 {%- endif %}
             </span>
-            <span class="{{ 'ok' if command_file[ship.name] else 'no' }}">
-                {{ 'in' if command_file[ship.name] else 'waiting' }}
-            </span>
-            <span class="{{ 'ok' if ready.get(ship.player) else 'no' }}">
-                {{ 'ready' if ready.get(ship.player) else 'not yet' }}
-            </span>
+            <span data-orders="{{ ship.name }}" class="{{ 'ok' if command_file[ship.name] else 'no' }}"
+                >{{ 'in' if command_file[ship.name] else 'waiting' }}</span>
+            <span data-ready="{{ ship.player }}" class="{{ 'ok' if ready.get(ship.player) else 'no' }}"
+                >{{ 'ready' if ready.get(ship.player) else 'not yet' }}</span>
         {% endfor %}
     </div>
 {% endfor %}
-
-<h2>Processing</h2>
-<div class="panel">
-    <form method="POST" action="{{ url_for('save_settings', game=game) }}">
-        <label class="check">
-            <input type="checkbox" name="on_all_ready" value="1" {{ 'checked' if settings.on_all_ready }}>
-            Process as soon as every player says they are ready
-        </label>
-
-        <label>Process at these hours, ready or not</label>
-        <div class="hours">
-            {% for h in range(24) %}
-                <label class="hour {{ 'on' if h in settings.process_hours }}">
-                    <input type="checkbox" name="hour" value="{{ h }}"
-                           {{ 'checked' if h in settings.process_hours }}>
-                    {{ '%02d' % h }}
-                </label>
-            {% endfor %}
-        </div>
-        <p class="lede">Cron runs on the hour and processes the games that name it. A game with no
-            hours is yours to process. Anyone who has not sent orders by then gets an empty command
-            file, which counts as no orders in time.</p>
-
-        <button class="go" type="submit">Save settings</button>
-    </form>
-</div>
 
 {% if dead_ships %}
     <h2>Graveyard</h2>
@@ -94,4 +66,81 @@
         {% endfor %}
     </div>
 {% endif %}
+
+<details class="settings">
+    <summary>Processing
+        {%- if settings.on_all_ready or settings.process_hours %} <span class="when">&mdash;
+            {%- if settings.on_all_ready %} automatic on ready{% endif -%}
+            {%- if settings.process_hours|length == 24 %}
+                {{- ' and' if settings.on_all_ready }} on every hour
+            {%- elif settings.process_hours %}
+                {{- ' and' if settings.on_all_ready }} on hours
+                {%- for h in settings.process_hours %} {{ '%02d' % h }}{{ ',' if not loop.last }}{% endfor %}
+            {%- endif %}</span>
+        {%- endif %}
+    </summary>
+    <div class="panel">
+        <form method="POST" action="{{ url_for('save_settings', game=game) }}" id="settings">
+            <label class="check">
+                <input type="checkbox" name="on_all_ready" value="1" {{ 'checked' if settings.on_all_ready }}>
+                Process as soon as every player says they are ready
+            </label>
+
+            <label>Process at these hours, ready or not</label>
+            <div class="hours">
+                {% for h in range(24) %}
+                    <label class="hour">
+                        <input type="checkbox" name="hour" value="{{ h }}"
+                               {{ 'checked' if h in settings.process_hours }}>
+                        {{ '%02d' % h }}
+                    </label>
+                {% endfor %}
+            </div>
+            <div class="saveline">
+                <button class="go" type="submit">Save settings</button>
+                <span class="dirty" hidden>Not saved yet</span>
+            </div>
+        </form>
+    </div>
+</details>
+
+<script>
+    const POLL_MS = 15000;
+    const round_nr = {{ round_nr }};
+
+    const form = document.getElementById('settings');
+    const dirty = form.querySelector('.dirty');
+    form.addEventListener('change', () => { dirty.hidden = false; });
+
+    function show(cell, on, yes, no) {
+        cell.textContent = on ? yes : no;
+        cell.classList.toggle('ok', on);
+        cell.classList.toggle('no', !on);
+    }
+
+    async function poll() {
+        if (document.visibilityState !== 'visible') return;
+        const res = await fetch("{{ url_for('game_status', game=game) }}");
+        if (!res.ok) return;
+        const status = await res.json();
+        // The page is written around one round, so once that moves on it is all stale.
+        if (status.round_nr !== round_nr) return location.reload();
+        for (const cell of document.querySelectorAll('[data-orders]')) {
+            show(cell, status.orders[cell.dataset.orders], 'in', 'waiting');
+        }
+        for (const cell of document.querySelectorAll('[data-ready]')) {
+            show(cell, status.ready[cell.dataset.ready], 'ready', 'not yet');
+        }
+        // Counted from the ships shown rather than from the answer, which also names the dead.
+        const cells = [...document.querySelectorAll('[data-orders]')];
+        const handed_in = cells.filter((c) => c.classList.contains('ok')).length;
+        document.getElementById('orders-in').textContent = handed_in;
+        const button = document.getElementById('process');
+        button.disabled = handed_in < cells.length;
+        button.textContent = button.disabled ? 'Waiting for orders' : `Process round ${round_nr}`;
+    }
+
+    setInterval(poll, POLL_MS);
+    document.addEventListener('visibilitychange', poll);
+</script>
 {% endblock content %}

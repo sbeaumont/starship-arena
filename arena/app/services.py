@@ -22,6 +22,7 @@ from arena.app.dto import (
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
     WeaponInfo, WeaponInput,
     ShipSummary, FactionSummary, GameOverview, ShipTypeInfo, Me, LoginInfo, GameSettings, Pulse,
+    GamePulse,
 )
 
 
@@ -521,3 +522,16 @@ class AdminService(_EngineAccess):
 
     def command_status(self, game: str) -> dict[str, bool]:
         return Game(self._gd(game)).command_file_status
+
+    def game_pulse(self, game: str) -> GamePulse:
+        """Everyone's standing, read from the ships file, the command files and the ready files.
+
+        No round is unpickled: the console asks this every few seconds while it waits. It answers
+        for every ship the game was set up with, so a caller showing only the living skips the
+        dead rather than being told about them."""
+        gd = self._gd(game)
+        roster = self._roster(game)
+        round_nr = gd.last_round_number + 1
+        return GamePulse(round_nr=round_nr,
+                         orders={ship: gd.command_file_exists(ship, round_nr) for ship in roster},
+                         ready={p: gd.is_ready(p, round_nr) for p in sorted(set(roster.values()))})

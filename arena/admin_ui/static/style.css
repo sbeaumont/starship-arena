@@ -293,15 +293,26 @@ label.check { display: flex; align-items: center; gap: 8px; color: var(--ink-dim
               font-size: 12px; margin-top: 14px; }
 label.check input { width: auto; }
 
-.hours { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.hours { display: grid; grid-template-columns: repeat(12, 44px); gap: 4px; margin-bottom: 4px; }
 .hour {
-    margin: 0; padding: 6px 0; width: 38px; text-align: center; cursor: pointer;
+    margin: 0; padding: 6px 0; text-align: center; cursor: pointer;
     font-size: 11px; color: var(--ink-faint); background: var(--bg);
     border: 1px solid var(--edge); border-radius: 4px;
 }
 .hour:hover { border-color: var(--ring); color: var(--ink); }
-.hour.on { color: var(--green); border-color: #2f4a3a; background: #121c17; }
+/* Straight from the checkbox, so a click shows immediately and there is one truth on the page. */
+.hour:has(input:checked) { color: var(--green); border-color: #2f4a3a; background: #121c17; }
 .hour input { display: none; }
+
+details.settings { margin: 28px 0; }
+details.settings summary { cursor: pointer; color: var(--ink-dim); font-size: 13px;
+                           font-family: var(--sans); }
+details.settings[open] summary { margin-bottom: 12px; }
+details.settings summary:hover { color: var(--hull); }
+details.settings summary .when { color: var(--ink-faint); font-size: 12px; }
+.saveline { display: flex; align-items: center; gap: 12px; }
+.saveline .dirty { color: var(--warn); font-size: 11px; font-family: var(--sans); }
+
 .graveyard { grid-template-columns: 1fr 80px 1fr; }
 
 /* ---------------------------------------------------------------- REFERENCE PAGES */

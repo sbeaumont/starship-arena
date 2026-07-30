@@ -8,7 +8,8 @@ everything else to an AppFacade.
 
 import logging
 from collections import defaultdict
-from flask import Flask, render_template, request, g, send_file, redirect, url_for
+from dataclasses import asdict
+from flask import Flask, render_template, request, g, jsonify, send_file, redirect, url_for
 
 from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE
 from arena.cfg import WEB_ROOT, GAME_UI_URL
@@ -187,6 +188,12 @@ def game_overview(game_name: str):
                            all_command_files_ok=game.current_round_ready,
                            dead_ships=game.graveyard.values()
                            )
+
+
+@app.route('/game_status/<game>')
+def game_status(game: str):
+    """What the overview page polls for: who has handed in, and who has said they are ready."""
+    return jsonify(asdict(facade().game_pulse(game)))
 
 
 @app.route('/process_turn/<game>', methods=['POST'])

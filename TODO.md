@@ -195,6 +195,10 @@ The lists grow without bound as games pile up, so this is about keeping them mai
 
 ## Admin / director UI (`arena/admin_ui/`)
 
+- [x] **The game page keeps up by itself**, polling `/game_status/<game>` every 15 seconds for who
+      has handed in and who has said ready. It costs no round load. When the round has moved on
+      the whole page is stale, so it reloads.
+
 - [ ] **Scenario builder.** The long-term goal: world objects, NPCs, story beats, timed triggers,
       pick-ups, objective missions (protect a VIP, and so on). Grow it out of the admin UI,
       reusing the map and drag components from the game UI. The new-game screen's row editor is

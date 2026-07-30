@@ -160,6 +160,9 @@ class AppFacade(object):
     def is_ready(self, game: str, player: str) -> bool:
         return self.admin.is_ready(game, player)
 
+    def game_pulse(self, game: str):
+        return self.admin.game_pulse(game)
+
     def settings(self, game: str):
         return self.admin.settings(game)
 
