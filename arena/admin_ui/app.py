@@ -193,14 +193,32 @@ def game_overview(game_name: str):
 def process_turn(game: str):
     """POST rather than GET: a browser is free to prefetch a link, and processing a round twice
     is not something to leave to chance."""
+    was = facade().game(game).current_round_nr
     facade().process_turn(game)
-    return redirect(url_for('game_overview', game_name=game))
+    now = facade().game(game).current_round_nr
+    told = f"Round {was} processed." if now > was else "Nothing processed: orders are still missing."
+    return redirect(url_for('game_overview', game_name=game, msg=told))
+
+
+@app.route('/force_process/<game>', methods=['POST'])
+def force_process(game: str):
+    """Run the round now, whatever the state of the orders."""
+    was = facade().game(game).current_round_nr
+    silent = facade().force_process_turn(game)
+    told = f"Round {was} processed."
+    if silent:
+        told += f" No orders from {', '.join(silent)}."
+    return redirect(url_for('game_overview', game_name=game, msg=told))
 
 
 @app.route('/regenerate/<game>', methods=['POST'])
 def regenerate(game: str):
-    facade().regenerate_game(game)
-    return redirect(url_for('game_overview', game_name=game))
+    was = facade().game(game).current_round_nr - 1
+    now = facade().regenerate_game(game)
+    told = f"Replayed to round {now}."
+    if now < was:
+        told += f" It stopped short of round {was}: orders are missing for a round in between."
+    return redirect(url_for('game_overview', game_name=game, msg=told))
 
 
 @app.route('/players')

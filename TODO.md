@@ -16,9 +16,8 @@ each section.
       SSE or a WebSocket holds a worker open, there are 2 of them, and harakiri kills a connection
       at 300 seconds anyway. So poll a small endpoint (last round, ready count) every 20 seconds
       while the tab is visible, and offer a reload when it moves.
-- [ ] **No feedback after regenerating a game.** The console redirects back to the game page and
-      says nothing, so a replay that stopped early, or did nothing at all, looks the same as one
-      that worked. It should report the round it ended on and why it stopped.
+- [x] **Feedback after regenerating, processing and forcing.** The console redirects with a
+      message and the game page shows it.
 - [ ] **Lock the path.** A button that freezes the plotted course, because setting weapon arcs or
       panning the map too easily drags a joint and changes a course that was already right.
 - [ ] **Ready / Not Ready, per player.** A flag saying "I am done with this round", distinct from

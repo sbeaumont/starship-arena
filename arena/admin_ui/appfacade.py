@@ -154,6 +154,9 @@ class AppFacade(object):
     def regenerate_game(self, game_name: str) -> int:
         return regenerate_game(self.gd(game_name))
 
+    def force_process_turn(self, game_name: str) -> list[str]:
+        return self.admin.force_process_turn(game_name)
+
     def is_ready(self, game: str, player: str) -> bool:
         return self.admin.is_ready(game, player)
 

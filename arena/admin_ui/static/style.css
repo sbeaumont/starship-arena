@@ -235,6 +235,12 @@ details.import textarea { min-height: 120px; margin-bottom: 12px; }
 details.import .lede { font-size: 12px; }
 code { color: var(--cyan); font-size: 12px; }
 
+.notice {
+    font-family: var(--mono); font-size: 12.5px; color: var(--green);
+    border-left: 2px solid var(--green); background: rgba(87, 217, 138, .07);
+    padding: 8px 12px; margin: 0 0 20px;
+}
+
 .messages { list-style: none; padding: 0; margin: 16px 0 0; }
 .messages li {
     color: var(--warn);

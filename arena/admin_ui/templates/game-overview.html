@@ -4,13 +4,21 @@
 
 {% block content %}
 <h1>{{ game }}</h1>
-<p class="lede">Round {{ round_nr }} &mdash; {{ orders_in }} of {{ ships }} ships have orders in.</p>
+<p class="lede">Round {{ round_nr }}, {{ orders_in }} of {{ ships }} ships have orders in.</p>
+
+{% if request.args.get('msg') %}
+    <p class="notice">{{ request.args.get('msg') }}</p>
+{% endif %}
 
 <div class="rowactions">
     <form method="POST" action="{{ url_for('process_turn', game=game) }}">
         <button class="go" type="submit" {{ 'disabled' if not all_command_files_ok }}>
             {{ 'Process round ' ~ round_nr if all_command_files_ok else 'Waiting for orders' }}
         </button>
+    </form>
+    <form method="POST" action="{{ url_for('force_process', game=game) }}"
+          onsubmit="return confirm('Process round {{ round_nr }} now? Anyone without orders gets an empty file and does nothing.')">
+        <button type="submit">Force it</button>
     </form>
     <form method="POST" action="{{ url_for('regenerate', game=game) }}"
           onsubmit="return confirm('Replay {{ game }} from its ships file and orders? Its saved rounds are rebuilt.')">
