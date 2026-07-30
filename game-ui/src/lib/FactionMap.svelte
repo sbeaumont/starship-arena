@@ -170,6 +170,8 @@
   const ownShips = $derived(plan ? plan.ships.filter((s) => s.owned) : []);
   const canMove = (s) => s.category_name === "Ship" && s.alive;
 
+  const WRECK_RADIUS = 20;   // world units, like a blast
+
   // A ray burst, drawn where something died.
   function burst(x, y, r) {
     let d = "";
@@ -922,8 +924,8 @@
           {#each plan.ships.filter((s) => !s.alive && s.track.length) as s (s.name)}
             {@const last = s.track[s.track.length - 1]}
             {@const v = w2v(last.x, last.y)}
-            <path class="wreck" d={burst(v.vx, v.vy, 22 * cam.upp)} stroke-width={1.6 * cam.upp} />
-            <circle class="wreck-core" cx={v.vx} cy={v.vy} r={3.5 * cam.upp} />
+            <path class="wreck" d={burst(v.vx, v.vy, WRECK_RADIUS)} stroke-width={1.4 * cam.upp} />
+            <circle class="wreck-core" cx={v.vx} cy={v.vy} r={WRECK_RADIUS * 0.18} />
           {/each}
 
           {#each contacts as c (c.name)}
@@ -1387,8 +1389,8 @@
   .grid.axis { stroke: #26375e; }
   .origin { fill: none; stroke: #3d5384; }
   .blast { fill-opacity: 0.13; stroke: #04070d; }
-  .wreck { stroke: #ffb454; fill: none; stroke-linecap: round; opacity: 0.9; }
-  .wreck-core { fill: #fff2d8; }
+  .wreck { stroke: var(--warn); fill: none; stroke-linecap: round; opacity: 0.9; }
+  .wreck-core { fill: #ffd2d6; }
   .track { fill: none; stroke: var(--ghost); opacity: 0.75; }
   .track.enemy { stroke: #6d3242; }
   .mark { fill: var(--cyan); opacity: 0.45; }
