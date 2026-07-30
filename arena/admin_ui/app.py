@@ -10,8 +10,7 @@ import logging
 from collections import defaultdict
 from flask import Flask, render_template, request, g, send_file, redirect, url_for
 
-from arena.app.players import LOGIN_COOKIE
-from arena.api.game import COOKIE_MAX_AGE
+from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE
 from arena.cfg import WEB_ROOT, GAME_UI_URL
 from arena.admin_ui.appfacade import AppFacade, NameValidator
 
@@ -48,7 +47,7 @@ def only_the_director():
         if player and player.is_director:
             stripped = {k: v for k, v in request.args.items() if k != 'login'}
             answer = redirect(url_for(request.endpoint, **(request.view_args or {}), **stripped))
-            answer.set_cookie(LOGIN_COOKIE, player.token, max_age=COOKIE_MAX_AGE,
+            answer.set_cookie(LOGIN_COOKIE, player.token, max_age=LOGIN_COOKIE_MAX_AGE,
                               httponly=True, samesite='lax', secure=True)
             return answer
     player = facade().player_holding(request.cookies.get(LOGIN_COOKIE))

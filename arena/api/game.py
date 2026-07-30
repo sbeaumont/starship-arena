@@ -9,16 +9,11 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
 from arena.app.dto import GameSummary, ShipRound, PlayerPlan, GameOverview, ShipTypeInfo, Me
-from arena.app.players import LOGIN_COOKIE, Player
+from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE, Player
 from arena.app.services import GameService
 
 router = APIRouter(prefix="/api/game", tags=["game"])
 service = GameService()
-
-# The token itself is the session: it arrives in a link, is traded for the cookie once, and the
-# link can then be forgotten. A play-by-mail game runs for months, so the cookie is long-lived.
-COOKIE_MAX_AGE = 60 * 60 * 24 * 365
-
 
 class CommandsBody(BaseModel):
     lines: list[str]
@@ -51,7 +46,7 @@ def require_own_ship(game: str, ship: str, me: Player) -> None:
 
 
 def _remember(response: Response, player: Player) -> None:
-    response.set_cookie(LOGIN_COOKIE, player.token, max_age=COOKIE_MAX_AGE,
+    response.set_cookie(LOGIN_COOKIE, player.token, max_age=LOGIN_COOKIE_MAX_AGE,
                         httponly=True, samesite='lax', secure=True)
 
 

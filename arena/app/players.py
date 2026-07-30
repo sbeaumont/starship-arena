@@ -23,7 +23,10 @@ from arena.cfg import PLAYERS_FILE_NAME
 
 logger = logging.getLogger('starship-arena.players')
 
+# The token is the session: it arrives in a link, is traded for this cookie once, and the link
+# can then be forgotten. A play-by-mail game runs for months, so the cookie is long-lived.
 LOGIN_COOKIE = 'arena_login'
+LOGIN_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 TOKEN_BYTES = 16
 DIRECTOR = 'director'
 COLUMNS = ('Name', 'Token', 'Role')
