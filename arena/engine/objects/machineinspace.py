@@ -98,6 +98,11 @@ class MachineInSpace(ObjectInSpace, ABC):
         return self._type.type_name
 
     @property
+    def range(self) -> int:
+        """The furthest any of this machine's components acts into space."""
+        return max((c.range for c in self.all_components.values()), default=0)
+
+    @property
     def snapshot(self):
         snap = super().snapshot
         snap['hull'] = self.hull

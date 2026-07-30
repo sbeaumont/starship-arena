@@ -56,7 +56,7 @@ def distribute_factions(ships, distance) -> None:
         for ship, offset in zip(group, offsets):
             # Only move ship if it has not already been set in the ships file
             if ship.xy == Point(0, 0):
-                ship.vector.pos = Point(0, 0).move(center).move(offset)
+                ship.place_at(Point(0, 0).move(center).move(offset))
 
 
 def ships_to_lines(ships) -> list[str]:

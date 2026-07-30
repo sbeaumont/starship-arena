@@ -46,6 +46,12 @@ class Vector(object):
     heading: float
     speed: float
 
+    def __post_init__(self):
+        # A heading is a direction, so 450 and 90 are the same one. direction_to folds a
+        # difference into [-180, 180] with a single wrap, and gets it wrong for anything
+        # further out, so a heading never gets to leave the circle.
+        self.heading = self.heading % 360
+
     @property
     def x(self):
         return self.pos.x
@@ -84,6 +90,7 @@ class ObjectInSpace(ABC):
         super().__init__()
         self.name = name
         self.vector = vector
+        self.moved_from = vector.pos
         self.owner = None
         self.faction = None
         self.history = History(self, tick)
@@ -113,6 +120,40 @@ class ObjectInSpace(ABC):
         if isinstance(point, tuple):
             point = Point(*point)
         return round(sqrt((self.vector.x - point.x)**2 + (self.vector.y - point.y)**2), 1)
+
+    def position_at(self, fraction: float) -> Point:
+        """Where this object was, that far through the travel it made this tick."""
+        return Point(
+            self.moved_from.x + (self.vector.x - self.moved_from.x) * fraction,
+            self.moved_from.y + (self.vector.y - self.moved_from.y) * fraction,
+        )
+
+    def approach_fraction(self, other: 'ObjectInSpace', distance: float) -> float | None:
+        """How far into this tick the gap to other first closed to distance, None if it never did.
+
+        A tick is a jump: move() translates the whole speed at once, so comparing only where the
+        two ended up lets a rocket flying 60 a tick pass clean through the ship it was aimed at.
+        Both objects travelled, so the test is on the gap between the two paths.
+        """
+        gap_x = self.moved_from.x - other.moved_from.x
+        gap_y = self.moved_from.y - other.moved_from.y
+        outside = gap_x * gap_x + gap_y * gap_y - distance * distance
+        if outside <= 0:
+            return 0.0
+
+        closing_x = (self.vector.x - self.moved_from.x) - (other.vector.x - other.moved_from.x)
+        closing_y = (self.vector.y - self.moved_from.y) - (other.vector.y - other.moved_from.y)
+        closing = closing_x * closing_x + closing_y * closing_y
+        if closing == 0:
+            return None
+
+        along = 2 * (gap_x * closing_x + gap_y * closing_y)
+        discriminant = along * along - 4 * closing * outside
+        if discriminant < 0:
+            return None
+
+        fraction = (-along - sqrt(discriminant)) / (2 * closing)
+        return fraction if 0 <= fraction <= 1 else None
 
     def heading_to(self, point: Point) -> float:
         return round((atan2(point.x - self.vector.x, point.y - self.vector.y) / pi * 180) % 360, 1)
@@ -186,9 +227,15 @@ class ObjectInSpace(ABC):
 
     # ---------------------------------------------------------------------- COMMANDS
 
+    def place_at(self, pos: Point):
+        """Put this object somewhere without it having travelled there."""
+        self.vector = replace(self.vector, pos=pos)
+        self.moved_from = pos
+
     def move(self):
         """Move along heading with speed to next coordinate."""
-        old_pos = self.vector.pos.rounded().as_tuple
+        self.moved_from = self.vector.pos
+        old_pos = self.moved_from.rounded().as_tuple
         self.vector = self.vector.move()
         new_pos = self.vector.pos.rounded().as_tuple
         if old_pos != new_pos:

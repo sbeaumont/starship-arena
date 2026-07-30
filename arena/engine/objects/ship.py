@@ -33,6 +33,9 @@ shipType = NewType("ShipType", MachineType)
 
 class Ship(MachineInSpace):
     """A player-commanded space ship."""
+
+    kill_score = 100
+
     def __init__(self, name: str, _type: shipType, vector: Vector, owner = None, tick: Tick = TICK_ZERO):
         assert isinstance(vector, Vector)
         super().__init__(name, _type, vector, owner=self, tick=tick)
@@ -130,10 +133,21 @@ class Ship(MachineInSpace):
         for ois in [ob for ob in objects_in_space.values() if self.can_scan(ob)]:
             self.add_event(ScanEvent.create_scan(self, ois))
 
+    def _damage_hull(self, amount: int) -> int:
+        """Take the damage, and score for the hull that was actually there to remove.
+
+        Ships are cleared out at the end of the tick, so a later explosion in the same tick
+        still lands on a corpse whose hull has gone negative. That scores nothing.
+        """
+        score = min(amount, self.hull) if self.hull > 0 else 0
+        self.hull -= amount
+        return score
+
     def take_damage_from(self, hit_event: HitEvent):
         """First pass the damage to the defense components, any remaining damage goes to the hull.
-        Note that we allow overkilling hits (and scoring) on the tick a ship is destroyed, but only
-        count one killing blow for scoring."""
+
+        A ship destroyed earlier in the same tick is still here to be hit, because the round
+        clears the dead out only at the end of it. Only the first killing blow scores."""
         logger.debug(f"{self.name} taking damage from HitEvent {str(hit_event)}")
         self.add_event(hit_event)
 
@@ -148,8 +162,7 @@ class Ship(MachineInSpace):
         if amount > 0:
             if hit_event._type == DamageType.Nanocyte:
                 amount = 2 * amount
-                score = min(amount, self.hull)
-                self.hull -= amount
+                score = self._damage_hull(amount)
                 self.add_internal_event(f"Nanocytes burned your hull for {amount} to {self.hull}")
             elif hit_event._type == DamageType.EMP:
                 battery_drain = amount if amount <= self.battery else self.battery
@@ -157,8 +170,7 @@ class Ship(MachineInSpace):
                 self.battery -= battery_drain
                 self.add_internal_event(f"EMP blast drained out battery by {battery_drain}: {self.battery} left.")
             else:
-                score = min(amount, self.hull)
-                self.hull -= amount
+                score = self._damage_hull(amount)
                 self.add_internal_event(f"Hull decreased by {amount} to {self.hull}")
 
             if hit_event.can_score:
@@ -170,11 +182,11 @@ class Ship(MachineInSpace):
             hit_event.notify_owner(f"{hit_event.source.name} hit {self.name}'s {what_was_hit} for {amount}: ({score} points)")
 
         if not already_killed and self.is_destroyed:
-            # 100 points for an extra ship kill, but only for the final blow
+            # Only the final blow scores the kill.
             score = 0
             if hit_event.can_score:
-                score = 100
-                hit_event.score += 100
+                score = self.kill_score
+                hit_event.score += self.kill_score
             hit_event.notify_owner(f"{hit_event.source.name} landed the killing blow on {self.name}: ({score} points)")
             self.add_internal_event(f"You were destroyed. Killing blow by {hit_event.source.name}.")
 

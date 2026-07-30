@@ -1,7 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python -m unittest:*)"
+      "Bash(uv run --group test python -m unittest:*)"
     ],
     "deny": []
   }

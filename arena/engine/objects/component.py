@@ -1,7 +1,11 @@
 """The component system: the parts a machine is built from.
 
 A component answers for itself what orders it takes, what its state is and what its type says it
-is. See docs/adr/0004-components-own-their-parameters.md."""
+is. See docs/adr/0004-components-own-their-parameters.md.
+
+The methods below are the whole vocabulary a machine has for talking to its parts. It asks all of
+them the same questions and names none of them, so a new component needs no machine changed: see
+docs/adr/0019-machines-drive-components-through-one-vocabulary.md."""
 
 import re
 from abc import ABC
@@ -13,6 +17,11 @@ from arena.engine.parameter import Parameter
 
 class Component(ABC):
     """An object that is attached to an owner (Ship) and can do stuff."""
+
+    # How far this component acts into space. Components that reach shadow this, the way a
+    # Warhead does with its blast radius; a cloak or a pilot really does reach nowhere.
+    range = 0
+
     def __init__(self, name: str, container=None):
         assert name, "name may not be None"
         self.name = name

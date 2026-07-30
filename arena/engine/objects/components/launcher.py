@@ -26,7 +26,11 @@ class Launcher(Weapon):
 
     def _create_missile(self, name, heading):
         vector = Vector(pos=self.container.vector.pos, heading=heading, speed=self.container.speed)
-        return self.payload_type.create(name, vector, owner=self.owner)
+        payload = self.payload_type.create(name, vector, owner=self.owner)
+        # Born inside its own reach, a payload acts on the ship that just fired it: a Rocket
+        # triggering on its launch tick takes 50 hull off its own launcher.
+        payload.place_at(payload.xy.translate(heading, payload.range + 1))
+        return payload
 
     @property
     def expected_parameters(self):

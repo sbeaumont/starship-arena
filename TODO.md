@@ -60,17 +60,14 @@ each section.
 
 - [ ] **Large objects, and crossing them.** Solid bodies with a radius, and movement that notices
       them. A tick is a teleport: `move()` translates the whole speed at once, so nothing between
-      the endpoints exists. The primitive needed is "does this tick's path pass within r of a
-      point, and where does it first cross" - a `Vector` knows its own path, so it can answer.
+      the endpoints exists. The primitive already exists: `ObjectInSpace.approach_fraction` answers
+      how far into the tick two paths closed to a given distance, and `position_at` turns that back
+      into a point. Warheads use both.
       Static bodies first: everything moves in one loop, so ship-versus-ship collision would
       depend on iteration order. Open: what a hit does (stop at the surface with damage by speed,
       or worse), whether bodies are public knowledge (probably - terrain, not fog of war),
       whether they block line of sight (big, separate), and where they are placed (`bodies.txt`
       until the scenario builder owns world objects). Gravity is a different feature; park it.
-- [ ] **Warheads have the same tunnelling bug.** `Warhead.can_explode` tests distance at tick
-      boundaries, after everything has moved. A Splinter travels 60 a tick and triggers within 6,
-      so it can pass straight through a ship. The same path primitive fixes it - worth doing as a
-      separate change from bodies, so a shift in trigger behaviour is attributable.
 - [ ] **Processing order must not affect the outcome, and today it can.** Weapons fire in the
       post-move phase, so a missile launched this tick may or may not already be "in space" when
       something explodes, depending on where its launcher sat in the iteration. The common symptom:
@@ -101,6 +98,30 @@ each section.
       lines on the same tick produce one shot with no feedback, which is what made
       `test_run_test_games_2` wrong for a long time. Everywhere else a refused command records an
       `InternalEvent`; this should too.
+- [ ] **`Vector` and `Point` are mutable, so the heading guarantee has a hole.**
+      `Vector.__post_init__` folds a heading into [0, 360), which covers construction and
+      everything built through `replace`: `turn`, `move`, `translate`, `accelerate`. Assigning a
+      field in place skips it, which is why `Ship.turn` (`ship.py:120`) still needs its own
+      `% 360`. Freezing both dataclasses would close it and put every change through one door.
+      Touches `mine.py:52`, `ship.py:93,120` and `missile.py:114`. Note `Ship.turn` normalises the
+      *rounded* heading where `Vector.turn` uses the raw float, so consolidating the two shifts
+      ship headings by fractions of a degree and moves every replay outcome.
+- [ ] **Five places name a component instead of asking all of them**, against
+      [ADR 0019](docs/adr/0019-machines-drive-components-through-one-vocabulary.md). Each is a spot
+      where a new component is silently ignored, so they block the healer, the teleporter and the
+      spawner-in-a-missile as much as they are wrong today.
+      - `Missile.decide` calls `self.warhead.decide(...)` (`missile.py:59`) through a property that
+        looks up the literal key `'warhead'` (`missile.py:39`, `mine.py:28`). A missile with two
+        components only ever runs one. `Mine.decide` loops and is right; copy that.
+      - `BoostCommand._init_params` finds its shield with `isinstance(d, Shields)`
+        (`command.py:224`). Asking each defense component for a `boost` parameter would do it.
+      - `Gunner.lasers` filters `isinstance(weapon, Laser)` (`control.py:99`) so an NPC gunner can
+        fire nothing else, and `Gunner.decide` sorts targets with `isinstance(enemy, (Missile,
+        Mine))` (`control.py:82`). The second wants a question on the object, not its class.
+      - `Ship.take_damage_from` guards with `hasattr(self, 'outer_defense')` (`ship.py:143`), which
+        is always true: `outer_defense` is a property on the class (`ship.py:58`). Dead guard.
+      - `Warhead.explode` reads `ois._type.max_scan_distance` (`warhead.py:49`, `:67`), through
+        another object's type and past a private attribute.
 - Decided against: making each `Command` declare its own execution phase. The switch in
   `CommandSet.add` keeps all the tick ordering visible in one place, which is what makes it easy
   to move a command between phases while debugging.

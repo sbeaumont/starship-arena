@@ -26,6 +26,8 @@ and mark the old one `Superseded by NNNN`. The trail is the point.
 | [0016](0016-the-view-lives-in-the-url.md) | The whole view lives in the URL |
 | [0017](0017-two-svg-layers.md) | The map is two SVG layers, world and screen |
 | [0018](0018-planning-as-a-jointed-chain.md) | A course is planned by dragging a jointed chain |
+| [0019](0019-machines-drive-components-through-one-vocabulary.md) | Machines drive their components through one vocabulary |
+| [0020](0020-explosions-do-not-take-sides.md) | An explosion damages everything in range |
 
 ## Template
 

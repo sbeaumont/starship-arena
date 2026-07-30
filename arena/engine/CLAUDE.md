@@ -11,8 +11,13 @@ The game itself. Knows nothing about interfaces, HTTP or storage locations.
    are abstract properties each subclass implements. Never a class attribute, never inspection of
    the class hierarchy, never matching on a name.
    [ADR 0004](../../docs/adr/0004-components-own-their-parameters.md)
-5. **A refused order is feedback.** Record an `InternalEvent` rather than silently doing nothing.
-6. **Fail loudly.** Bad input raises. No clamping, no silent fallbacks; if something needs
+5. **A machine asks all its components the same questions.** Iterate `all_components`; never index
+   by name, never `isinstance`, never `hasattr`. A new question goes on `Component` with a neutral
+   default that the components it means something for shadow, the way `Weapon.ammo` does. Name it
+   for what is asked, not for the component that prompted it.
+   [ADR 0019](../../docs/adr/0019-machines-drive-components-through-one-vocabulary.md)
+6. **A refused order is feedback.** Record an `InternalEvent` rather than silently doing nothing.
+7. **Fail loudly.** Bad input raises. No clamping, no silent fallbacks; if something needs
    clamping, the caller has a bug.
 
 A model is a type object in `objects/registry/`, and the registry loads by reflection.

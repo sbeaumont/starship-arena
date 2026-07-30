@@ -92,7 +92,7 @@ class GuidedMissile(Missile):
             amount = -self._type.max_turn
         elif amount > self._type.max_turn:
             amount = self._type.max_turn
-        self.vector.turn(amount)
+        self.vector = self.vector.turn(amount)
 
     def scan(self, objects_in_space: dict):
         """Find the nearest enemy object in the scan cone"""

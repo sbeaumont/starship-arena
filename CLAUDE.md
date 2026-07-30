@@ -18,8 +18,11 @@ is 10 ticks, and one engine is played through three interfaces.
 6. Snapshots hold values, never references.
 7. An object says what it is through its own properties, not through class attributes or
    inspection of its class hierarchy.
-8. Stale game data is regenerated, never read through a compatibility shim.
-9. Round processing stays deterministic: no clock, no random numbers.
+8. A machine asks all its components the same questions, and names none of them. Composition is
+   what the engine is for; a lookup by key or an `isinstance` makes the next component a special
+   case. See [ADR 0019](docs/adr/0019-machines-drive-components-through-one-vocabulary.md).
+9. Stale game data is regenerated, never read through a compatibility shim.
+10. Round processing stays deterministic: no clock, no random numbers.
 
 See [docs/architecture.md](docs/architecture.md).
 

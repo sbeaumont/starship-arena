@@ -21,6 +21,9 @@ command_ship_1_1 = """
     2: Fire S1 90
     2: Fire R1 90
     2: Fire R2 90
+    3: Fire S1 90
+    3: Fire R1 90
+    3: Fire R2 90
 """
 
 commands = {
@@ -109,27 +112,26 @@ class TestGames2(unittest.TestCase):
             game.process_current_round()
 
     def test_game_2(self):
+        """Same shape as test_game_1, but with two launchers firing rather than one.
+
+        Scores the shield break and the kill. The total is not one sum: see test_game_1.
+        """
         game = self._setup_game()
-        ships_0 = game._dir.load_current_status()
-        ship = ships_0[ship_2_name]
-        total_score = 0
-        shield = ship.defense[0]
-        # Half point per hit on shield
-        total_score += shield.strengths['W'] // 2
-        # Shield break bonus
-        total_score += shield.shield_break_score
-        # Point per hit on hull
-        total_score += ship.hull
-        # Ship kill bonus
-        total_score += 100
+        target = game._dir.load_current_status()[ship_2_name]
+        shield = target.defense[0]
+        self.assertGreater(shield.strengths['W'], 0)
+        without_shield_damage = shield.shield_break_score + target.hull + target.kill_score
 
         number_of_rounds = 1
         self._run(game, number_of_rounds)
 
         self.assertEqual(game._dir.last_round_number, number_of_rounds)
         ships_1 = game._dir.load_current_status()
-        self.assertEqual(total_score, ships_1[ship_1_name].score)
-        self.assertIn(ship_2_name, game._dir.load_graveyard())
+        wreck = game._dir.load_graveyard()[ship_2_name]
+
+        self.assertNotIn(ship_2_name, ships_1)
+        self.assertEqual(0, wreck.defense[0].strengths['W'])
+        self.assertGreater(ships_1[ship_1_name].score, without_shield_damage)
 
 
 

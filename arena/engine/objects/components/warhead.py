@@ -29,16 +29,29 @@ class Warhead(Component):
         }
 
     def decide(self, objects_in_space: dict, tick: Tick):
-        if self.can_explode(objects_in_space):
+        contact = self.contact_fraction(objects_in_space)
+        if contact is not None:
+            self.container.place_at(self.container.position_at(contact))
             self.explode(objects_in_space)
 
-    def can_explode(self, objects_in_space: dict) -> bool:
-        """Explode if there is an object in range that is not itself or owned by the same owner"""
-        for ois_name, ois in objects_in_space.items():
-            ois_in_range = (self.container.distance_to(ois.xy) <= self.range)
-            if not ois.owner.faction or (ois.owner.faction != self.owner.faction) and ois_in_range:
-                return True
-        return False
+    def contact_fraction(self, objects_in_space: dict) -> float | None:
+        """How far into this tick something worth exploding on first came within range.
+
+        The earliest contact wins, so which object happens to be checked first cannot change
+        where the warhead goes off.
+        """
+        contacts = list()
+        for ois in objects_in_space.values():
+            if self.triggers_on(ois):
+                fraction = self.container.approach_fraction(ois, self.range)
+                if fraction is not None:
+                    contacts.append(fraction)
+        return min(contacts) if contacts else None
+
+    def triggers_on(self, ois) -> bool:
+        """Anything that is not itself and not of its owner's faction."""
+        return (ois is not self.container) and \
+            (not ois.owner.faction or ois.owner.faction != self.owner.faction)
 
     def explode(self, objects_in_space):
         self.container.hull = 0
