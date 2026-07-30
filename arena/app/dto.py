@@ -97,6 +97,32 @@ class TrackPoint:
 
 
 @dataclass
+class LoginInfo:
+    """A person the director can hand a link to. `token` is empty when they have none yet."""
+    name: str
+    is_director: bool
+    token: str
+    games: list[str]
+
+
+@dataclass
+class Me:
+    """Who the caller is. `games` are the games they have ships in, theirs to plan."""
+    name: str
+    is_director: bool
+    games: list[str]
+
+
+@dataclass
+class ShipTypeInfo:
+    """A model as the registry defines it, for a reference page."""
+    type_name: str
+    name: str
+    category: str          # 'Ship' | 'Starbase'
+    specs: dict[str, str]
+
+
+@dataclass
 class ComponentStatus:
     """What a component reports, next to what the type object reports for a pristine one.
 

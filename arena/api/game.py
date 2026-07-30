@@ -5,23 +5,95 @@ Reads ship/round state for viewing and time-travel, and validates/saves move pla
 Backed by the UI-agnostic GameService; returns its DTOs directly (FastAPI serialises them).
 """
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
-from arena.app.dto import GameSummary, ShipRound, PlayerPlan, GameOverview
+from arena.app.dto import GameSummary, ShipRound, PlayerPlan, GameOverview, ShipTypeInfo, Me
+from arena.app.players import LOGIN_COOKIE, Player
 from arena.app.services import GameService
 
 router = APIRouter(prefix="/api/game", tags=["game"])
 service = GameService()
+
+# The token itself is the session: it arrives in a link, is traded for the cookie once, and the
+# link can then be forgotten. A play-by-mail game runs for months, so the cookie is long-lived.
+COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
 
 class CommandsBody(BaseModel):
     lines: list[str]
 
 
+class LoginBody(BaseModel):
+    token: str
+
+
+class RegisterBody(BaseModel):
+    name: str
+
+
+def logged_in(request: Request) -> Player | None:
+    return service.resolve_login(request.cookies.get(LOGIN_COOKIE))
+
+
+def require_login(request: Request) -> Player:
+    player = logged_in(request)
+    if player is None:
+        raise HTTPException(status_code=401, detail="Not logged in.")
+    return player
+
+
+def require_own_ship(game: str, ship: str, me: Player) -> None:
+    if me.is_director:
+        return
+    if service.ship_owner(game, ship) != me.name:
+        raise HTTPException(status_code=403, detail=f"{ship} is not yours.")
+
+
+def _remember(response: Response, player: Player) -> None:
+    response.set_cookie(LOGIN_COOKIE, player.token, max_age=COOKIE_MAX_AGE,
+                        httponly=True, samesite='lax', secure=True)
+
+
+@router.post("/login")
+def login(body: LoginBody, response: Response) -> Me:
+    player = service.resolve_login(body.token)
+    if player is None:
+        raise HTTPException(status_code=401, detail="That link no longer works.")
+    _remember(response, player)
+    return service.me(player)
+
+
+@router.post("/register")
+def register(body: RegisterBody, response: Response) -> Me:
+    """Claim a name that no game is using yet, and be logged in as it."""
+    try:
+        player = service.register_player(body.name)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    _remember(response, player)
+    return service.me(player)
+
+
+@router.get("/me")
+def whoami(me: Player = Depends(require_login)) -> Me:
+    return service.me(me)
+
+
+@router.post("/logout")
+def logout(response: Response) -> dict:
+    response.delete_cookie(LOGIN_COOKIE)
+    return {"ok": True}
+
+
 @router.get("/games")
 def list_games() -> list[GameSummary]:
     return service.list_games()
+
+
+@router.get("/ship-types")
+def list_ship_types() -> list[ShipTypeInfo]:
+    return service.list_ship_types()
 
 
 @router.get("/{game}/ships")
@@ -30,7 +102,8 @@ def list_ships(game: str) -> list[str]:
 
 
 @router.get("/{game}/ships/{ship}/rounds/{round_nr}")
-def ship_round(game: str, ship: str, round_nr: int) -> ShipRound:
+def ship_round(game: str, ship: str, round_nr: int, me: Player = Depends(require_login)) -> ShipRound:
+    require_own_ship(game, ship, me)
     try:
         return service.get_ship_round(game, ship, round_nr)
     except (KeyError, FileNotFoundError) as e:
@@ -46,8 +119,11 @@ def game_overview(game: str) -> GameOverview:
 
 
 @router.get("/{game}/players/{player}/plan")
-def player_plan(game: str, player: str, round: int | None = None) -> PlayerPlan:
+def player_plan(game: str, player: str, round: int | None = None,
+                me: Player = Depends(require_login)) -> PlayerPlan:
     """The player's picture at the end of a round; the last round if none is given."""
+    if not (me.is_director or me.name == player):
+        raise HTTPException(status_code=403, detail=f"{player}'s picture is not yours to see.")
     try:
         return service.get_player_plan(game, player, round)
     except (KeyError, FileNotFoundError) as e:
@@ -55,12 +131,15 @@ def player_plan(game: str, player: str, round: int | None = None) -> PlayerPlan:
 
 
 @router.get("/{game}/ships/{ship}/commands")
-def get_commands(game: str, ship: str) -> list[str]:
+def get_commands(game: str, ship: str, me: Player = Depends(require_login)) -> list[str]:
+    require_own_ship(game, ship, me)
     return service.get_commands(game, ship)
 
 
 @router.post("/{game}/ships/{ship}/commands")
-def post_commands(game: str, ship: str, body: CommandsBody, response: Response):
+def post_commands(game: str, ship: str, body: CommandsBody, response: Response,
+                  me: Player = Depends(require_login)):
+    require_own_ship(game, ship, me)
     checks = service.check_commands(game, ship, body.lines)
     all_ok = all(c.ok for c in checks)
     if all_ok:

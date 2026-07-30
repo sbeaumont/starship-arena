@@ -1,20 +1,44 @@
 """
-Tests for the game API's command endpoints, run against the `apitest` game.
+Tests for the game API's command endpoints, run against a copy of the `apitest` game.
+
+A copy, so the test does not move the committed game's state, and its own data root so the
+login it needs does not land in the shared registry.
 
 Needs the `test` dependency group (httpx2, for FastAPI's TestClient):
     uv run --group test python -m unittest test.api.test_fastapimain
 """
 
+import os
+import shutil
+import tempfile
 import unittest
 
 from fastapi.testclient import TestClient
 
+from arena.api import game as game_api
 from arena.api.app import app
+from arena.app.services import GameService
 
-client = TestClient(app)
+GAME = 'apitest'
+SHIP = 'Blaster'
+PLAYER = 'Serge'
 
 
 class TestCommandsApi(unittest.TestCase):
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        shutil.copytree(os.path.join('test', 'test-games', GAME), os.path.join(self.root, GAME))
+        self.service = GameService(self.root)
+        self.original, game_api.service = game_api.service, self.service
+        # https, so the client keeps a Secure cookie the way a browser would.
+        self.client = TestClient(app, base_url="https://testserver")
+        token = self.service.players.issue(PLAYER).token
+        self.client.post('/api/game/login', json={'token': token})
+
+    def tearDown(self):
+        game_api.service = self.original
+        shutil.rmtree(self.root, ignore_errors=True)
+
     def test_add_commands(self):
         commands = {
             'lines': [
@@ -23,7 +47,7 @@ class TestCommandsApi(unittest.TestCase):
                 '3:A25',
             ]
         }
-        response = client.post('/api/game/apitest/ships/Blaster/commands', json=commands)
+        response = self.client.post(f'/api/game/{GAME}/ships/{SHIP}/commands', json=commands)
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()['ok'])
 
@@ -37,9 +61,14 @@ class TestCommandsApi(unittest.TestCase):
                 'flrarlakf',
             ]
         }
-        response = client.post('/api/game/apitest/ships/Blaster/commands', json=commands)
+        response = self.client.post(f'/api/game/{GAME}/ships/{SHIP}/commands', json=commands)
         self.assertEqual(response.status_code, 400)
         self.assertFalse(response.json()['ok'])
+
+    def test_commands_are_refused_without_a_login(self):
+        anonymous = TestClient(app, base_url="https://testserver")
+        response = anonymous.post(f'/api/game/{GAME}/ships/{SHIP}/commands', json={'lines': []})
+        self.assertEqual(response.status_code, 401)
 
 
 if __name__ == '__main__':

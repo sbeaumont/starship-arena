@@ -36,7 +36,8 @@ The codebase follows a component-based architecture with these core packages:
 uv sync
 
 # CLI interface
-uv run python arena/cli/main.py [setup|generate|manual|send] <game_name>
+# Run as a module: `python arena/cli/main.py` puts arena/cli on sys.path, not the repo root.
+uv run python -m arena.cli.main [setup|generate|manual|link|players] [<game_name>]
 
 # Development: all three servers, hot reloading, tagged per stream, Ctrl-C stops all
 bash arena-dev.sh           # api :8000, ui :5173, admin :8080
@@ -62,16 +63,20 @@ uv run python test/engine/test_run_test_games.py
 
 ```bash
 # Set up a new game
-uv run python arena/cli/main.py setup <game_name>
+uv run python -m arena.cli.main setup <game_name>
 
 # Generate/process rounds
-uv run python arena/cli/main.py generate <game_name>
+uv run python -m arena.cli.main generate <game_name>
 
 # Generate manual PDF
-uv run python arena/cli/main.py manual
+uv run python -m arena.cli.main manual
 
-# Send results via email
-uv run python arena/cli/main.py send <game_name> -s manual zero last
+# Login links. A shell on the host is the one credential that cannot be handed out, so the
+# first director's link is made here - until one exists, nobody can reach the console.
+# The address is where the game UI is: Vite answers at its root, the merged app under /play.
+./arena-link.sh                                          who can log in
+./arena-link.sh <you> https://your.site/play --director   the first director
+./arena-link.sh <player> http://localhost:5173            a player, against arena-dev.sh
 ```
 
 ## Configuration

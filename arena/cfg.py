@@ -37,6 +37,9 @@ STATUS_FILE_TEMPLATE = "status_round_{}.pickle"
 COMMANDS_DIR = 'commands/'
 COMMAND_FILE_TEMPLATE = COMMANDS_DIR + "{}-commands-{}.txt"
 INIT_FILE_NAME = "ships.txt"
+# Who may log in, across every game. Lives at the data root rather than inside a game, because a
+# player's name is their identity everywhere.
+PLAYERS_FILE_NAME = "players.txt"
 MANUAL_FILENAME = os.path.join(REPO_ROOT, "starship-arena-manual.pdf")
 
 # ============================================= SHIP CORE METRICS

@@ -1070,7 +1070,7 @@
       {#if selectedShip}
         <section>
           <details class="fold">
-            <summary>Specs</summary>
+            <summary>Specs — {selectedShip.ship_type}</summary>
             <div class="specs">
               {#each Object.entries(selectedShip.specs) as [k, v] (k)}
                 <span class="sk">{k}</span><span class="sv">{v}</span>

@@ -9,6 +9,7 @@ GameDirectory -- is an implementation detail hidden here and never exposed upwar
     AdminService -- lower-level operations for the admin/director interface.
 """
 
+import re
 from pathlib import Path
 
 from arena.cfg import GAME_DATA_DIR
@@ -17,12 +18,15 @@ from arena.engine.command import parse_commands
 from arena.engine.game import Game
 from arena.engine.gamedirectory import GameDirectory, ShipFile
 from arena.engine.history import Tick
+from arena.engine.objects.registry.builder import all_ship_types
+from arena.engine.objects.starbase import Starbase
 from arena.engine.objects.event import ExplosionEvent
+from arena.app.players import DIRECTOR, LOGIN_COOKIE, Player, PlayerRegistry
 from arena.app.dto import (
     GameSummary, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
     TrackPoint, TickEvent, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
     WeaponInfo, WeaponInput,
-    ShipSummary, FactionSummary, GameOverview,
+    ShipSummary, FactionSummary, GameOverview, ShipTypeInfo, Me, LoginInfo,
 )
 
 
@@ -31,13 +35,20 @@ class _EngineAccess:
 
     def __init__(self, data_root: str = None):
         self.data_root = str(data_root if data_root is not None else GAME_DATA_DIR)
+        self.players = PlayerRegistry(self.data_root)
 
     def _gd(self, game: str) -> GameDirectory:
         return GameDirectory(self.data_root, game)
 
+    def _roster(self, game: str) -> dict[str, str]:
+        """Which player commands which ship, from the game's ships file.
 
-class GameService(_EngineAccess):
-    """Player-facing operations: reading ship state and planning moves."""
+        The ships file rather than the saved rounds: it costs no unpickling, and it still lists a
+        player whose every ship has been destroyed."""
+        gd = self._gd(game)
+        if not Path(gd.init_file).exists():
+            return {}
+        return {line.name: line.player for line in ShipFile(gd).ship_lines if line.player}
 
     def list_games(self) -> list[GameSummary]:
         summaries = []
@@ -46,6 +57,48 @@ class GameService(_EngineAccess):
                 gd = GameDirectory(self.data_root, d.name)
                 summaries.append(GameSummary(name=d.name, current_round=gd.last_round_number + 1))
         return summaries
+
+    def games_for_player(self, name: str) -> list[str]:
+        return [g.name for g in self.list_games() if name in self._roster(g.name).values()]
+
+
+class GameService(_EngineAccess):
+    """Player-facing operations: reading ship state and planning moves."""
+
+    # ---------------------------------------------------------------------- WHO IS ASKING
+
+    def resolve_login(self, token: str) -> Player | None:
+        return self.players.by_token(token)
+
+    def register_player(self, name: str) -> Player:
+        """Claim a name nobody is using, and get a token for it.
+
+        A name that already commands ships somewhere is not claimable: it belongs to whoever the
+        director gave those ships to, and they get their link from the director."""
+        if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]*', name or ''):
+            raise ValueError("A name starts with a letter and holds only letters, "
+                             "numbers, dashes and underscores.")
+        if self.players.by_name(name):
+            raise ValueError(f"'{name}' is already registered.")
+        if any(name in self._roster(g.name).values() for g in self.list_games()):
+            raise ValueError(f"'{name}' already commands ships. Ask the director for a link.")
+        return self.players.issue(name)
+
+    def me(self, player: Player) -> Me:
+        return Me(name=player.name, is_director=player.is_director,
+                  games=self.games_for_player(player.name))
+
+    def ship_owner(self, game: str, ship: str) -> str | None:
+        return self._roster(game).get(ship)
+
+    # ---------------------------------------------------------------------- REFERENCE
+
+    def list_ship_types(self) -> list[ShipTypeInfo]:
+        """Every model in the registry. Reflection, so a new type needs no change here."""
+        return [ShipTypeInfo(type_name=st.type_name, name=st.name,
+                             category='Starbase' if issubclass(st.base_type, Starbase) else 'Ship',
+                             specs=self._specs(st))
+                for st in sorted(all_ship_types.values(), key=lambda t: t.name)]
 
     def list_ships(self, game: str) -> list[str]:
         return [s.name for s in Game(self._gd(game)).player_ships]
@@ -238,7 +291,6 @@ class GameService(_EngineAccess):
     def _specs(ship_type) -> dict[str, str]:
         """What the type object says this model is. Each component describes itself."""
         specs = {
-            'Model': ship_type.name,
             'Hull': str(ship_type.max_hull),
             'Battery': f"{ship_type.start_battery}/{ship_type.max_battery}",
             'Generators': str(ship_type.generators),
@@ -311,6 +363,26 @@ class GameService(_EngineAccess):
 
 class AdminService(_EngineAccess):
     """Lower-level operations for the admin/director interface."""
+
+    # ---------------------------------------------------------------------- LOGINS
+
+    def logins(self) -> list[LoginInfo]:
+        """Everyone who plays or could play: the registry, plus any player name a game knows
+        that has no login yet. Those are the ones still owed a link."""
+        registered = {p.name: p for p in self.players.all()}
+        in_games = {name for g in self.list_games() for name in self._roster(g.name).values()}
+        return [LoginInfo(name=name,
+                          is_director=name in registered and registered[name].is_director,
+                          token=registered[name].token if name in registered else '',
+                          games=self.games_for_player(name))
+                for name in sorted(registered.keys() | in_games)]
+
+    def issue_login(self, name: str, director: bool = False) -> Player:
+        """A fresh link for someone, replacing any they had."""
+        return self.players.issue(name, role=DIRECTOR if director else '')
+
+    def revoke_login(self, name: str) -> None:
+        self.players.revoke(name)
 
     def create_game(self, name: str, ship_init_file: str) -> None:
         gd = GameDirectory(self.data_root, name)

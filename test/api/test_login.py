@@ -1,0 +1,112 @@
+"""What the game API lets an unknown, a player and the director do.
+
+Only the ships file is needed here: who owns what is read from it, and the access decision is
+taken before any saved round is loaded.
+"""
+import os
+import shutil
+import tempfile
+from unittest import TestCase
+
+from fastapi.testclient import TestClient
+
+from arena.api import game as game_api
+from arena.api.app import app
+from arena.app.players import DIRECTOR
+from arena.app.services import GameService
+
+SHIPS = """Name   Type   Faction Player X   Y
+McAve  F2547  Three   Menno  0   0
+Other  A2527  One     Rik    100 0
+"""
+
+
+class TestLogin(TestCase):
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.root, 'mygame'))
+        with open(os.path.join(self.root, 'mygame', 'ships.txt'), 'w') as f:
+            f.write(SHIPS)
+        self.service = GameService(self.root)
+        self.original, game_api.service = game_api.service, self.service
+        # https, so the client keeps a Secure cookie the way a browser would.
+        self.client = TestClient(app, base_url="https://testserver")
+
+    def tearDown(self):
+        game_api.service = self.original
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def login_as(self, name, role=''):
+        token = self.service.players.issue(name, role=role).token
+        return self.client.post('/api/game/login', json={'token': token})
+
+    # ---------------------------------------------------------------- unknown visitor
+
+    def test_no_cookie_is_not_logged_in(self):
+        self.assertEqual(401, self.client.get('/api/game/me').status_code)
+
+    def test_the_scoreboard_stays_open(self):
+        self.assertEqual(200, self.client.get('/api/game/games').status_code)
+        self.assertEqual(200, self.client.get('/api/game/ship-types').status_code)
+
+    def test_a_made_up_token_is_refused(self):
+        r = self.client.post('/api/game/login', json={'token': 'not-a-token'})
+        self.assertEqual(401, r.status_code)
+
+    def test_a_plan_needs_a_login(self):
+        r = self.client.get('/api/game/mygame/players/Menno/plan')
+        self.assertEqual(401, r.status_code)
+
+    # ---------------------------------------------------------------- registering
+
+    def test_registering_a_free_name_logs_you_in(self):
+        r = self.client.post('/api/game/register', json={'name': 'Newcomer'})
+        self.assertEqual(200, r.status_code)
+        self.assertEqual({'name': 'Newcomer', 'is_director': False, 'games': []}, r.json())
+        self.assertEqual('Newcomer', self.client.get('/api/game/me').json()['name'])
+
+    def test_a_name_that_commands_ships_cannot_be_claimed(self):
+        r = self.client.post('/api/game/register', json={'name': 'Menno'})
+        self.assertEqual(409, r.status_code)
+        self.assertIn('Ask the director', r.json()['detail'])
+
+    def test_a_registered_name_cannot_be_claimed_twice(self):
+        self.client.post('/api/game/register', json={'name': 'Newcomer'})
+        r = self.client.post('/api/game/register', json={'name': 'Newcomer'})
+        self.assertEqual(409, r.status_code)
+
+    # ---------------------------------------------------------------- a player
+
+    def test_a_link_logs_you_in_and_names_your_games(self):
+        r = self.login_as('Menno')
+        self.assertEqual(200, r.status_code)
+        self.assertEqual(['mygame'], r.json()['games'])
+
+    def test_a_player_may_not_see_another_player(self):
+        self.login_as('Menno')
+        r = self.client.get('/api/game/mygame/players/Rik/plan')
+        self.assertEqual(403, r.status_code)
+
+    def test_a_player_may_not_read_another_ship_s_orders(self):
+        self.login_as('Menno')
+        self.assertEqual(403, self.client.get('/api/game/mygame/ships/Other/commands').status_code)
+
+    def test_a_player_may_not_write_another_ship_s_orders(self):
+        self.login_as('Menno')
+        r = self.client.post('/api/game/mygame/ships/Other/commands', json={'lines': ['1: A 10']})
+        self.assertEqual(403, r.status_code)
+
+    def test_logging_out_forgets_you(self):
+        self.login_as('Menno')
+        self.client.post('/api/game/logout')
+        self.assertEqual(401, self.client.get('/api/game/me').status_code)
+
+    # ---------------------------------------------------------------- the director
+
+    def test_the_director_is_refused_nothing(self):
+        self.login_as('Serge', role=DIRECTOR)
+        self.assertTrue(self.client.get('/api/game/me').json()['is_director'])
+        # No saved rounds here, so the answer is "no data" rather than "not yours".
+        for path in ('/api/game/mygame/players/Rik/plan',
+                     '/api/game/mygame/ships/Other/commands'):
+            self.assertNotEqual(403, self.client.get(path).status_code, path)

@@ -11,6 +11,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from arena.app.services import AdminService
 from arena.engine.admin import GameSetup, regenerate_game
 from arena.engine.gamedirectory import GameDirectory, ShipFile
 from arena.engine.game import Game
@@ -79,6 +80,7 @@ class AppFacade(object):
 
     def __init__(self):
         self.data_root = Path(GAME_DATA_DIR)
+        self.admin = AdminService(self.data_root)
 
     def gd(self, game: str) -> GameDirectory:
         """To make the webapp more robust it initializes a game if it wasn't before returning."""
@@ -138,6 +140,22 @@ class AppFacade(object):
 
     def regenerate_game(self, game_name: str) -> int:
         return regenerate_game(self.gd(game_name))
+
+    # ---------------------------------------------------------------------- LOGINS
+
+    def player_holding(self, token: str):
+        """Who this token belongs to, or None. The console is the director's, so callers check
+        `is_director` rather than merely that somebody answered."""
+        return self.admin.players.by_token(token)
+
+    def logins(self) -> list:
+        return self.admin.logins()
+
+    def issue_login(self, name: str, director: bool = False):
+        return self.admin.issue_login(name, director)
+
+    def revoke_login(self, name: str) -> None:
+        self.admin.revoke_login(name)
 
     def create_new_game(self, name: str, ship_init_file: str):
         logger.info(f"Creating new game: {name}")

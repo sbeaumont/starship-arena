@@ -1,8 +1,15 @@
 <script>
-  let { onPick } = $props();
+  let { me, onPick, onPage, onSignOut } = $props();
 
-  let games = $state([]);
+  let allGames = $state([]);
   let overview = $state(null);
+  // A director is a commander too. This drops them to what one of their players sees, both to
+  // plan their own ships without the noise and to check the experience.
+  let asPlayer = $state(false);
+  const directing = $derived(me.is_director && !asPlayer);
+  const games = $derived(directing
+    ? allGames
+    : allGames.filter((g) => me.games.includes(g.name)));
   let game = $state(null);
   let loading = $state(true);
   let loadingOverview = $state(false);
@@ -15,7 +22,7 @@
         if (!res.ok) throw new Error(`API returned ${res.status}`);
         // A game that has been set up can be played: at round 0 there is nothing to look
         // back on yet, but that is exactly when the first round gets planned.
-        games = (await res.json()).filter((g) => g.current_round > 0);
+        allGames = (await res.json()).filter((g) => g.current_round > 0);
       } catch (e) {
         error = String(e);
       } finally {
@@ -44,6 +51,18 @@
       .sort((a, b) => b.score - a.score || (a.player ?? "").localeCompare(b.player ?? ""));
   }
 
+  // The standings are everyone's to read; only your own view is yours to open.
+  const canOpen = (player) => !!player && (directing || player === me.name);
+
+  function toggleAsPlayer() {
+    asPlayer = !asPlayer;
+    // A game that is not yours makes no sense to keep open once you are looking as a player.
+    if (!directing && game && !me.games.includes(game)) {
+      game = null;
+      overview = null;
+    }
+  }
+
   async function chooseGame(name) {
     game = name;
     overview = null;
@@ -60,7 +79,19 @@
 <div class="screen">
   <header>
     <h1>Starship Arena</h1>
-    <p class="sub">Choose a game, then whose view to open.</p>
+    <p class="sub">
+      Signed in as {me.name}{#if me.is_director} · <span class="role">{directing ? "director" : "director, looking as a player"}</span>{/if}
+    </p>
+    <nav>
+      {#if me.is_director}
+        <button type="button" class="mode" class:on={asPlayer} onclick={toggleAsPlayer}>
+          {asPlayer ? "View as director" : "View as player"}
+        </button>
+      {/if}
+      <button type="button" onclick={() => onPage("ships")}>Ships</button>
+      <button type="button" onclick={() => onPage("lore")}>Lore</button>
+      <button type="button" onclick={onSignOut}>Sign out</button>
+    </nav>
   </header>
 
   {#if loading}
@@ -71,6 +102,9 @@
     <div class="cols">
       <section class="games">
         <h2>Game</h2>
+        {#if !games.length}
+          <p class="msg quiet">No games yet. The director will add you to one.</p>
+        {/if}
         <ul>
           {#each games as g (g.name)}
             <li>
@@ -109,9 +143,9 @@
                 {#if c.ships.length === 1}
                   <!-- One ship, one row: grouping a single ship under a header is just noise. -->
                   {@const s = c.ships[0]}
-                  <button type="button" class="ship" disabled={!c.player}
+                  <button type="button" class="ship" disabled={!canOpen(c.player)}
                           onclick={() => onPick(game, c.player)}
-                          title={c.player ? `Open ${c.player}'s view` : "No player commands this ship"}>
+                          title={canOpen(c.player) ? `Open ${c.player}'s view` : "Not yours to open"}>
                     <span class="dot" class:in={s.orders_in} class:dead={!s.alive}
                           title={!s.alive ? "destroyed" : s.orders_in ? "orders handed in" : "waiting for orders"}
                     ></span>
@@ -125,11 +159,11 @@
                   <div class="commander">
                     <!-- Same columns as a single-ship row, so the player name and score line
                          up whichever shape a game happens to have. -->
-                    <button type="button" class="ship fleet" disabled={!c.player}
+                    <button type="button" class="ship fleet" disabled={!canOpen(c.player)}
                             onclick={() => onPick(game, c.player)}
-                            title={c.player
+                            title={canOpen(c.player)
                               ? `Open ${c.player}'s view and plan all ${c.ships.length} of their ships`
-                              : "No player commands these"}>
+                              : "Not yours to open"}>
                       <span class="dot" class:in={c.waiting === 0} class:dead={c.lost}
                             title={c.lost ? "all ships lost"
                                    : c.waiting === 0 ? "all orders handed in"
@@ -164,8 +198,9 @@
       </section>
     </div>
     <p class="honour">
-      Opening a player plans all of their ships together in one view.
-      There is no login yet: please look only at your own ships while a round is open.
+      {directing
+        ? "Opening a commander plans all of their ships together in one view."
+        : "The standings are open to everyone; only your own view can be opened."}
     </p>
   {/if}
 </div>
@@ -180,6 +215,17 @@
   h1 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: 0.2em;
        text-transform: uppercase; color: var(--hull); }
   .sub { margin: 8px 0 0; font-size: 13px; color: var(--ink-dim); }
+
+  header nav { display: flex; gap: 16px; margin-top: 14px; }
+  header nav button {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-dim); background: transparent; border: none; border-bottom: 1px solid var(--edge);
+    padding: 0 0 2px; cursor: pointer;
+  }
+  header nav button:hover { color: var(--cyan); border-color: var(--cyan); }
+  header nav button.mode { color: var(--amber); border-color: var(--edge); }
+  header nav button.mode.on { border-color: var(--amber); }
+  .role { color: var(--amber); }
 
   .cols { display: flex; gap: 28px; align-items: flex-start; }
   .games { width: 230px; flex-shrink: 0; }

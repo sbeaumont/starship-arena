@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Players{% endblock %}
+
+{% block content %}
+<h1>Players</h1>
+<p class="lede">Everyone who plays, and the link they sign in with. Issuing a link again replaces
+    the old one, which is also how you deal with one that leaked.</p>
+
+<div class="grid logins">
+    <span class="header">Name</span>
+    <span class="header">Games</span>
+    <span class="header">Link</span>
+    <span class="header"></span>
+    {% for p in logins %}
+        <span>
+            {{ p.name }}
+            {%- if p.is_director %} <em class="role">director</em>{% endif %}
+        </span>
+        <span class="games">{{ p.games | join(', ') or '—' }}</span>
+        <span class="link">
+            {% if p.token %}
+                <input type="text" readonly value="{{ game_ui_url }}/?login={{ p.token }}"
+                       onclick="this.select()">
+            {% else %}
+                <em class="no">no link yet</em>
+            {% endif %}
+        </span>
+        <span class="act">
+            <form method="POST" action="{{ url_for('issue_login') }}">
+                <input type="hidden" name="name" value="{{ p.name }}">
+                {% if p.is_director %}<input type="hidden" name="director" value="1">{% endif %}
+                <button type="submit">{{ 'New link' if p.token else 'Issue link' }}</button>
+            </form>
+            {% if p.token %}
+                <form method="POST" action="{{ url_for('revoke_login') }}"
+                      onsubmit="return confirm('Take away {{ p.name }}\'s login?')">
+                    <input type="hidden" name="name" value="{{ p.name }}">
+                    <button type="submit" class="drop" title="Take away this login">&times;</button>
+                </form>
+            {% endif %}
+        </span>
+    {% endfor %}
+</div>
+
+<h2>Someone new</h2>
+<div class="panel">
+    <form method="POST" action="{{ url_for('issue_login') }}">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" placeholder="Their commander name"
+               autocomplete="off">
+        <label class="check">
+            <input type="checkbox" name="director" value="1"> Director &mdash; runs the games
+        </label>
+        <div class="rowactions">
+            <button class="go" type="submit">Issue link</button>
+            <span class="hint">A player can also claim a name themselves, as long as no game
+                already uses it.</span>
+        </div>
+    </form>
+</div>
+{% endblock content %}

@@ -10,11 +10,15 @@ import logging
 from collections import defaultdict
 from flask import Flask, render_template, request, g, send_file, redirect, url_for
 
+from arena.app.players import LOGIN_COOKIE
+from arena.api.game import COOKIE_MAX_AGE
 from arena.cfg import WEB_ROOT, GAME_UI_URL
 from arena.admin_ui.appfacade import AppFacade, NameValidator
 
 app = Flask('starship-arena', template_folder=f'{WEB_ROOT}/templates', static_folder=f'{WEB_ROOT}/static')
 app.logger.setLevel(logging.DEBUG)
+# Player-facing pages live in the game UI; the console links out to them.
+app.jinja_env.globals['game_ui_url'] = GAME_UI_URL
 
 
 # ---------------------------------------------------------------------- HELPERS
@@ -25,6 +29,32 @@ def facade():
     if not _facade:
         _facade = g._facade = AppFacade()
     return _facade
+
+
+# ---------------------------------------------------------------------- WHO IS ASKING
+
+
+@app.before_request
+def only_the_director():
+    """The console runs the game, so only the director gets in.
+
+    A director's link works here as well as on the game UI: both live on one origin, so trading
+    it for the cookie at either end signs you in at both."""
+    if request.endpoint == 'static':
+        return None
+    token = request.args.get('login')
+    if token:
+        player = facade().player_holding(token)
+        if player and player.is_director:
+            stripped = {k: v for k, v in request.args.items() if k != 'login'}
+            answer = redirect(url_for(request.endpoint, **(request.view_args or {}), **stripped))
+            answer.set_cookie(LOGIN_COOKIE, player.token, max_age=COOKIE_MAX_AGE,
+                              httponly=True, samesite='lax', secure=True)
+            return answer
+    player = facade().player_holding(request.cookies.get(LOGIN_COOKIE))
+    if player and player.is_director:
+        return None
+    return render_template('no-entry.html', player=player, game_ui_url=GAME_UI_URL), 403
 
 
 # ---------------------------------------------------------------------- ROUTING
@@ -132,8 +162,7 @@ def game_overview(game_name: str):
                            ships=len(command_file),
                            orders_in=sum(1 for ok in command_file.values() if ok),
                            all_command_files_ok=game.current_round_ready,
-                           dead_ships=game.graveyard.values(),
-                           game_ui_url=GAME_UI_URL
+                           dead_ships=game.graveyard.values()
                            )
 
 
@@ -151,20 +180,27 @@ def regenerate(game: str):
     return redirect(url_for('game_overview', game_name=game))
 
 
-@app.route('/ship_overview')
-def ship_overview():
-    return render_template('ship-overview.html',
-                           ship_types=facade().all_ship_types.values(),
-                           starbase_types=facade().all_starbase_types.values()
-                           )
+@app.route('/players')
+def players():
+    """Who can log in, and the link each of them holds."""
+    return render_template('players.html', logins=facade().logins())
+
+
+@app.route('/players/issue', methods=['POST'])
+def issue_login():
+    name_v = NameValidator(request.form.get('name', ''))
+    if name_v.is_valid:
+        facade().issue_login(name_v.cleaned, director=bool(request.form.get('director')))
+    return redirect(url_for('players'))
+
+
+@app.route('/players/revoke', methods=['POST'])
+def revoke_login():
+    facade().revoke_login(request.form['name'])
+    return redirect(url_for('players'))
 
 
 @app.route('/manual_pdf')
 def manual_pdf():
     filename = facade().get_manual_pdf()
     return send_file(filename, mimetype='application/pdf', as_attachment=False)
-
-
-@app.route('/lore')
-def lore():
-    return render_template('lore.html')

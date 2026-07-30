@@ -13,10 +13,11 @@
     <nav>
         <a href="{{ url_for('overview') }}" class="{{ 'here' if request.endpoint == 'overview' }}">Games</a>
         <a href="{{ url_for('new_game') }}" class="{{ 'here' if request.endpoint == 'new_game' }}">New game</a>
+        <a href="{{ url_for('players') }}" class="{{ 'here' if request.endpoint == 'players' }}">Players</a>
         <span class="sep"></span>
-        <a href="{{ url_for('ship_overview') }}" class="{{ 'here' if request.endpoint == 'ship_overview' }}">Ships</a>
+        <a href="{{ game_ui_url }}/?page=ships" target="_blank" rel="noopener">Ships</a>
+        <a href="{{ game_ui_url }}/?page=lore" target="_blank" rel="noopener">Lore</a>
         <a href="{{ url_for('manual_pdf') }}">Manual</a>
-        <a href="{{ url_for('lore') }}" class="{{ 'here' if request.endpoint == 'lore' }}">Lore</a>
     </nav>
 </header>
 <div class="main">{% block content %}{% endblock %}</div>

@@ -257,6 +257,25 @@ code { color: var(--cyan); font-size: 12px; }
            letter-spacing: .14em; text-transform: uppercase; }
 
 .ships { grid-template-columns: 1fr 80px 1fr 110px; }
+.logins { grid-template-columns: minmax(120px, 1fr) 1fr minmax(240px, 2fr) 130px; }
+.logins .role { color: var(--amber); font-size: 10px; letter-spacing: .1em;
+                text-transform: uppercase; font-style: normal; }
+.logins .games { color: var(--ink-dim); font-size: 12px; }
+.logins .no { color: var(--ink-faint); font-style: normal; font-size: 12px; }
+.logins .link input {
+    width: 100%; padding: 4px 6px; font-size: 11px; color: var(--ink-dim);
+    background: var(--bg); border: 1px solid var(--edge); border-radius: 3px;
+}
+.logins .link input:focus { color: var(--ink); border-color: var(--cyan); outline: none; }
+.logins .act { display: flex; gap: 6px; align-items: center; }
+.logins .act form { display: inline; }
+.logins .act button { font-size: 10px; padding: 4px 8px; }
+.logins .act .drop { border-color: transparent; color: var(--ink-faint); font-size: 14px;
+                     padding: 2px 6px; }
+.logins .act .drop:hover { border-color: var(--warn); color: var(--warn); background: transparent; }
+label.check { display: flex; align-items: center; gap: 8px; color: var(--ink-dim);
+              font-size: 12px; margin-top: 14px; }
+label.check input { width: auto; }
 .graveyard { grid-template-columns: 1fr 80px 1fr; }
 
 /* ---------------------------------------------------------------- REFERENCE PAGES */

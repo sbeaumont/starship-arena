@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Not for you · Starship Arena</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body>
+<div class="main">
+    <h1>Director's console</h1>
+    {% if player %}
+        <p class="lede">You are signed in as <strong>{{ player.name }}</strong>, and this half of
+            Starship Arena belongs to the director.</p>
+    {% else %}
+        <p class="lede">This half of Starship Arena belongs to the director, and nothing here
+            recognises you.</p>
+    {% endif %}
+    <p class="lede">Your game is over at <a href="{{ game_ui_url }}/">the map</a>. If you are the
+        director, open your own link once and you will be let in here too.</p>
+</div>
+</body>
+</html>

@@ -1,7 +1,9 @@
 """
 Recreation of a Play-By-Mail game of 1991.
 
-This is the command-line interface, not used by the web app.
+This is the command-line interface, not used by the web app. It is also how the first login is
+made: a shell on the host is the one credential that cannot be handed out, so issuing the
+director's link belongs here rather than on a web page.
 """
 
 __version__ = '0.1'
@@ -12,9 +14,10 @@ import logging
 import sys
 import os
 
-from arena.cfg import GAME_DATA_DIR
+from arena.cfg import GAME_DATA_DIR, GAME_UI_URL
 from arena.log import configure_logger
 
+from arena.app.players import PlayerRegistry, DIRECTOR
 from arena.engine.admin import setup_game
 from arena.engine.game import Game
 from arena.engine.gamedirectory import GameDirectory
@@ -27,10 +30,17 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("action",
                         nargs="*",
-                        choices=['setup', 'generate', 'manual'],
-                        help="Action: set a game up, generate its unprocessed rounds, or build the manual")
-    parser.add_argument("gamedir",
+                        choices=['setup', 'generate', 'manual', 'link', 'players'],
+                        help="Set a game up, generate its unprocessed rounds, build the manual, "
+                             "issue a login link, or list who can log in")
+    parser.add_argument("gamedir", nargs='?',
                         help="The name of the game you want to process.")
+    parser.add_argument("-n", "--name", help="Who to issue a login link for.")
+    parser.add_argument("-d", "--director", action="store_true",
+                        help="Issue the link with director rights.")
+    parser.add_argument("-u", "--url", default="",
+                        help="Where the game UI is, e.g. https://example.com/play. Left out, the "
+                             "link is printed as a path.")
     return parser.parse_args()
 
 
@@ -53,13 +63,45 @@ def generate(data_root: str, game_name: str):
         game.process_current_round()
 
 
+def issue_link(name: str, director: bool, url: str):
+    """Give someone a fresh login link, printed for sending on.
+
+    Issuing again replaces whatever they had, so this is also how a lost or leaked link is
+    replaced. The first director's link has to come from here: the web pages need a director
+    before they can hand out anything."""
+    if not name:
+        sys.exit("Who for? Use --name.")
+    player = PlayerRegistry(GAME_DATA_DIR).issue(name, role=DIRECTOR if director else '')
+    # The address given is the game UI's own, wherever that is: the Vite server answers at its
+    # root, a deployed site under /play. Without one, print where it sits by default.
+    where = url.rstrip('/') if url else GAME_UI_URL
+    print(f"{player.name}{' (director)' if player.is_director else ''}")
+    print(f"  {where}/?login={player.token}")
+
+
+def list_players():
+    players = PlayerRegistry(GAME_DATA_DIR).all()
+    if not players:
+        print("Nobody can log in yet. Issue the first link with:")
+        print("  python arena/cli/main.py link --name <you> --director")
+        return
+    for p in players:
+        print(f"  {p.name:20} {p.role or 'player'}")
+
+
 def main():
     configure_logger(False, ["fontTools"])
     args = parse_args()
     if 'manual' in args.action:
         logger.info("Generating manual...")
         generate_manual()
-    else:
+    if 'link' in args.action:
+        issue_link(args.name, args.director, args.url)
+    if 'players' in args.action:
+        list_players()
+    if {'setup', 'generate'} & set(args.action):
+        if not args.gamedir:
+            sys.exit("Which game? Give its name.")
         game_dir = GameDirectory(GAME_DATA_DIR, args.gamedir)
         game_dir.check_ok()
 
