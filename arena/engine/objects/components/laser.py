@@ -71,7 +71,7 @@ class Laser(Weapon):
 
     # ---------------------------------------------------------------------- ENGINE INTERFACE
 
-    def tick(self, tick_nr):
+    def tick(self, tick: Tick):
         if self.temperature > 0:
             self.temperature -= 5
         if self.temperature < 0:

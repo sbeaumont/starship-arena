@@ -55,7 +55,7 @@ class Component(ABC):
     def post_round_reset(self):
         pass
 
-    def tick(self, tick_nr):
+    def tick(self, tick: Tick):
         pass
 
     def post_move(self, objects_in_space: dict):

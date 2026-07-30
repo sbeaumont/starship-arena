@@ -1,6 +1,6 @@
 from typing import Protocol, runtime_checkable
 
-from arena.engine.history import Tick
+from arena.engine.history import Tick, TICK_ZERO
 from arena.engine.objects.components.weapon import Weapon
 from arena.engine.objects.objectinspace import Vector
 from arena.engine.objects.component import DirectionParameter
@@ -12,7 +12,7 @@ class PayloadType(Protocol):
     def name(self):
         ...
 
-    def create(self, name: str, vector: Vector, owner=None, tick: Tick = None):
+    def create(self, name: str, vector: Vector, owner=None, tick: Tick = TICK_ZERO):
         ...
 
 
