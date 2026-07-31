@@ -229,11 +229,6 @@ textarea { min-height: 160px; resize: vertical; line-height: 1.5; }
 .rowactions { display: flex; align-items: center; gap: 14px; margin: 14px 0 24px; }
 .rowactions .hint { color: var(--ink-faint); font-size: 11px; }
 
-details.import { margin-bottom: 24px; }
-details.import summary { cursor: pointer; color: var(--ink-dim); font-size: 13px; }
-details.import summary:hover { color: var(--hull); }
-details.import textarea { min-height: 120px; margin-bottom: 12px; }
-details.import .lede { font-size: 12px; }
 code { color: var(--cyan); font-size: 12px; }
 
 .notice {

@@ -9,9 +9,10 @@ ship_1_name = "Poodle"
 ship_2_name = "PoodleII"
 
 
-original_ship_file = f"""Name Type Faction Player X Y
-{ship_1_name}        H2545  One       Serge   1   0
-{ship_2_name}        H2552  Two       Piet    122 0"""
+original_ship_file = [
+    {'name': ship_1_name, 'type': 'H2545', 'faction': 'One', 'player': 'Serge', 'x': 1, 'y': 0},
+    {'name': ship_2_name, 'type': 'H2552', 'faction': 'Two', 'player': 'Piet', 'x': 122, 'y': 0},
+]
 
 # A weapon takes one order per tick, so the two rockets a tick come from the two launchers.
 command_ship_1_1 = """

@@ -7,6 +7,7 @@ everything else to an AppFacade.
 """
 
 import logging
+import re
 from collections import defaultdict
 from dataclasses import asdict
 from flask import Flask, render_template, request, g, jsonify, send_file, redirect, url_for
@@ -94,9 +95,6 @@ def delete_archived(game: str):
     return redirect(url_for('overview'))
 
 
-SHIP_FILE_HEADER = 'Name Type Faction Player X Y'
-
-
 def submitted_rows(form) -> list[dict]:
     """The ship table as it was submitted, one dict per row, in the order shown."""
     fields = ('name', 'type', 'faction', 'player', 'x', 'y')
@@ -104,13 +102,13 @@ def submitted_rows(form) -> list[dict]:
     return [dict(zip(fields, values)) for values in zip(*columns)]
 
 
-def ship_file_lines(rows: list[dict], known_types) -> tuple[list[str], list[str]]:
-    """Turn the submitted rows into ships.txt lines. Returns (problems, lines).
+def ship_records(rows: list[dict], known_types) -> tuple[list[str], list[dict]]:
+    """Turn the submitted rows into ship records. Returns (problems, ships).
 
-    See docs/data.md for the file's rules: no spaces, blank coordinates mean "place it for me".
-    A row with neither a name nor a player was added and never used, so it is dropped; those two
-    are the test because a <select> always submits a type and Add carries the faction over."""
-    problems, lines, seen = [], [], set()
+    Blank coordinates mean "place it for me", which is a zero. A row with neither a name nor a
+    player was added and never used, so it is dropped; those two are the test because a <select>
+    always submits a type and Add carries the faction over."""
+    problems, ships, seen = [], [], set()
     for i, row in enumerate(rows, start=1):
         if not (row['name'].strip() or row['player'].strip()):
             continue
@@ -132,13 +130,21 @@ def ship_file_lines(rows: list[dict], known_types) -> tuple[list[str], list[str]
         if not player.is_valid:
             problems.append(f"Ship {i}: player - {' '.join(player.messages)}")
             continue
+        coordinates = {}
+        for axis in ('x', 'y'):
+            value = row[axis].strip() or '0'
+            if not re.match(r'^-?\d+$', value):
+                problems.append(f"Ship {i}: {axis} '{value}' is not a whole number.")
+            else:
+                coordinates[axis] = int(value)
+        if len(coordinates) < 2:
+            continue
         seen.add(name_v.cleaned)
-        x = row['x'].strip() or '0'
-        y = row['y'].strip() or '0'
-        lines.append(f"{name_v.cleaned} {row['type']} {faction.cleaned} {player.cleaned} {x} {y}")
-    if not lines and not problems:
+        ships.append({'name': name_v.cleaned, 'type': row['type'], 'faction': faction.cleaned,
+                      'player': player.cleaned, **coordinates})
+    if not ships and not problems:
         problems.append("A game needs at least one ship.")
-    return problems, lines
+    return problems, ships
 
 
 @app.route('/new_game', methods=['GET', 'POST'])
@@ -149,14 +155,14 @@ def new_game():
     known_types = facade().all_ship_types | facade().all_starbase_types
     if request.method == 'POST':
         name_v = NameValidator(game_name)
-        problems, lines = ship_file_lines(rows, known_types)
+        problems, ships = ship_records(rows, known_types)
         if not name_v.is_valid:
             messages = [f"Game name: {m}" for m in name_v.messages]
         elif name_v.cleaned in facade().all_game_names():
             messages.append("Game name already exists.")
         messages.extend(problems)
         if not messages:
-            facade().create_new_game(name_v.cleaned, '\n'.join([SHIP_FILE_HEADER] + lines))
+            facade().create_new_game(name_v.cleaned, ships)
             return redirect(url_for('game_overview', game_name=name_v.cleaned))
     return render_template('new-game.html',
                            game_name=game_name,

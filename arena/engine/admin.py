@@ -59,15 +59,6 @@ def distribute_factions(ships, distance) -> None:
                 ship.place_at(Point(0, 0).move(center).move(offset))
 
 
-def ships_to_lines(ships) -> list[str]:
-    lines = list()
-    faction_groups = group_by_faction(ships)
-    for members in faction_groups.values():
-        for m in members:
-            lines.append(str(m))
-    return lines
-
-
 class GameSetup(object):
     def __init__(self, game_directory: GameDirectory, ship_file: ShipFile=None):
         self._dir: GameDirectory = game_directory

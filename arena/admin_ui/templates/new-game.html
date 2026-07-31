@@ -70,16 +70,6 @@
         <span class="hint">Spaces in a name, faction or player become underscores.</span>
     </div>
 
-    <details class="panel import">
-        <summary>Paste a table instead</summary>
-        <p class="lede">One ship per line: name, type, faction, player, and optionally x and y,
-            separated by spaces. A <code>Name Type Faction Player</code> header line is ignored,
-            so an existing <code>ships.txt</code> can be pasted straight in.</p>
-        <textarea id="paste" spellcheck="false"
-                  placeholder="Name Type Faction Player X Y&#10;Voyager A2527 One Rik 479 121&#10;PewPew I2544 Two Dennis"></textarea>
-        <button type="button" id="import">Import into the table</button>
-    </details>
-
     <div class="rowactions">
         <button class="go" type="submit">Create game</button>
     </div>
@@ -119,22 +109,5 @@
         }
     });
 
-    document.getElementById('import').addEventListener('click', () => {
-        const lines = document.getElementById('paste').value.split('\n')
-            .map((l) => l.trim().split(/\s+/))
-            .filter((f) => f.length >= 4 && f[0] !== 'Name' && !f[0].startsWith('#'));
-        if (!lines.length) return;
-        rows.innerHTML = '';
-        for (const f of lines) {
-            const row = addRow();
-            const set = (n, v) => { row.querySelector(`[name=ship_${n}]`).value = v ?? ''; };
-            set('name', f[0]);
-            row.querySelector('[name=ship_type]').value = f[1];
-            set('faction', f[2]);
-            set('player', f[3]);
-            set('x', f[4]);
-            set('y', f[5]);
-        }
-    });
 </script>
 {% endblock content %}

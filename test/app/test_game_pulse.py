@@ -5,10 +5,10 @@ from unittest import TestCase
 
 from arena.app.services import AdminService, GameService
 
-SHIPS = """Name  Type   Faction Player X Y
-Alpha A2527  One     Serge  0 0
-Bravo A2527  Two     Ilya   100 100
-"""
+SHIPS = [
+    {'name': 'Alpha', 'type': 'A2527', 'faction': 'One', 'player': 'Serge', 'x': 0, 'y': 0},
+    {'name': 'Bravo', 'type': 'A2527', 'faction': 'Two', 'player': 'Ilya', 'x': 100, 'y': 100},
+]
 
 
 class TestGamePulse(TestCase):

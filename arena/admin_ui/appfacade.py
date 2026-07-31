@@ -203,11 +203,11 @@ class AppFacade(object):
     def active_players(self) -> list:
         return [p for p in self.logins() if p.active]
 
-    def create_new_game(self, name: str, ship_init_file: str):
+    def create_new_game(self, name: str, ships: list[dict]):
         logger.info(f"Creating new game: {name}")
 
         gd = GameDirectory(str(self.data_root), name)
         if not gd.exists or not gd.has_been_setup:
             logger.info(f"Setting up game {name}, since this was not done yet.")
-            ship_file = ShipFile(gd, ship_init_file)
+            ship_file = ShipFile(gd, ships)
             GameSetup(gd, ship_file).execute()

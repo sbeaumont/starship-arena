@@ -500,10 +500,10 @@ class AdminService(_EngineAccess):
     def set_player_active(self, name: str, active: bool) -> None:
         self.players.set_active(name, active)
 
-    def create_game(self, name: str, ship_init_file: str) -> None:
+    def create_game(self, name: str, ships: list[dict]) -> None:
         gd = GameDirectory(self.data_root, name)
         if not gd.exists or not gd.has_been_setup:
-            GameSetup(gd, ShipFile(gd, ship_init_file)).execute()
+            GameSetup(gd, ShipFile(gd, ships)).execute()
 
     def process_turn(self, game: str) -> None:
         g = Game(self._gd(game))

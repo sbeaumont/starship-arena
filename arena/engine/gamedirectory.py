@@ -208,59 +208,60 @@ class ShipFile(GameFile):
         x: float = 0
         y: float = 0
 
-        def move(self, xy: tuple):
-            self.x += xy[0]
-            self.y += xy[1]
-            return self
-
         @property
         def xy(self):
             return self.x, self.y
 
-        def __str__(self):
-            return f"{self.name},{self.type},{self.faction},{self.player},{round(self.x)},{round(self.y)}"
-
-    def __init__(self, gd: GameDirectory, premade_lines: str = None):
+    def __init__(self, gd: GameDirectory, ships: list[dict] = None):
+        """Ships as records: name, type, faction, and optionally player, x and y."""
         super().__init__(gd, self.name)
-        text_lines = [line.strip().split() for line in premade_lines.splitlines()] if premade_lines else self.load()
-        self.ship_lines = self.ship_lines_to_objects(text_lines)
+        records = ships if ships is not None else self.load()
+        self.ship_lines = [self.line_from_record(r) for r in records]
 
     @property
     def name(self):
         return INIT_FILE_NAME
 
-    def load(self) -> list:
-        return [line.split() for line in super().load()]
+    def load(self) -> list[dict]:
+        return self.records_from_columns([line.split() for line in super().load()])
+
+    @staticmethod
+    def line_from_record(record: dict):
+        return ShipFile.ShipFileLine(
+            name=record['name'],
+            type=record['type'],
+            faction=record['faction'],
+            player=record.get('player', ''),
+            x=record.get('x', 0),
+            y=record.get('y', 0),
+        )
 
     def save(self, ships):
         assert isinstance(ships, list) or isinstance(ships, type(dict().values()))
         super().save(self.ship_file_with_coordinates(ships))
 
     @staticmethod
-    def ship_lines_to_objects(lines: list):
+    def records_from_columns(lines: list) -> list[dict]:
         field_defs = {sl[1]: sl[0] for sl in enumerate(lines[0])}
-        ships = list()
+        records = list()
         for line in lines[1:]:
             try:
                 if line[0].strip().startswith('#'):
-                    # Ignore lines that start with #
                     continue
-                ship = ShipFile.ShipFileLine(
-                    name=line[field_defs['Name']],
-                    type=line[field_defs['Type']],
-                    faction=line[field_defs['Faction']],
-                    player=line[field_defs['Player']]
-                )
+                record = {
+                    'name': line[field_defs['Name']],
+                    'type': line[field_defs['Type']],
+                    'faction': line[field_defs['Faction']],
+                    'player': line[field_defs['Player']],
+                }
                 if 'X' in field_defs and 'Y' in field_defs:
-                    x = int(line[field_defs['X']])
-                    y = int(line[field_defs['Y']])
-                    ship.move((x, y))
-                ships.append(ship)
+                    record['x'] = int(line[field_defs['X']])
+                    record['y'] = int(line[field_defs['Y']])
+                records.append(record)
             except (KeyError, ValueError):
                 logger.error(f"Failed to process <{line}>")
-                print(line)
                 raise
-        return ships
+        return records
 
     @staticmethod
     def ship_file_with_coordinates(ships: list):
