@@ -336,6 +336,8 @@
   // absolute bearing follows the course you drew.
   const nodeAt = (tick) => (selectedChain ? selectedChain[tick] : null);
 
+  const directionIndex = (weapon) => weapon.inputs.findIndex((i) => i.kind === "direction");
+
   function defaultDirection(weapon) {
     const [lo, hi] = arcRange(weapon);
     return Math.round((lo + hi) / 2);
@@ -362,13 +364,16 @@
     if (!selectedTick || !selectedOrders) return;
     const left = ammoLeft(weapon);
     if (left !== null && left <= 0) return;
-    const kinds = weapon.inputs.map((i) => i.kind);
-    if (kinds.includes("object_name")) {
-      aimingWeapon = weapon.name;       // wait for a contact to be clicked
+    // A weapon that names something on the map waits for it to be clicked. One that offers a
+    // list picks from that instead: a wreck is not on the map to click.
+    if (weapon.inputs.some((i) => i.kind === "object_name" && !i.choices)) {
+      aimingWeapon = weapon.name;
       return;
     }
     const params = weapon.inputs.map((i) =>
-      i.kind === "direction" ? String(defaultDirection(weapon)) : String(Math.round(i.max ?? 0))
+      i.choices ? (i.choices[0] ?? "")
+      : i.kind === "direction" ? String(defaultDirection(weapon))
+      : String(Math.round(i.max ?? 0))
     );
     if (!selectedOrders.fire[selectedTick]) selectedOrders.fire[selectedTick] = {};
     selectedOrders.fire[selectedTick][weapon.name] = params;
@@ -405,16 +410,19 @@
           const weapon = byName[name];
           const node = chain[t];
           if (!weapon || !node) continue;
-          const kind = weapon.inputs[0]?.kind;
+          const listed = Boolean(weapon.inputs[0]?.choices);
+          const kind = listed ? "direction" : weapon.inputs[0]?.kind;
+          // Whatever it puts in space is named in the order, so say that rather than "SS".
+          const label = listed ? params[0] : name;
           const nv = w2v(node.x, node.y);
           const cur = mine && t === selectedTick;
           const key = `${ship.name}:${t}:${name}`;
           if (kind === "object_name") {
             const c = plan.contacts.find((x) => x.name === params[0]);
-            out.push({ key, ship: ship.name, mine, tick: t, weapon: name, kind, node, nv, cur,
+            out.push({ key, ship: ship.name, mine, tick: t, weapon: name, label, kind, node, nv, cur,
                        target: c ? c.track[c.track.length - 1] : null, targetName: params[0] });
           } else {
-            const angle = Number(params[0]) || 0;
+            const angle = Number(params[directionIndex(weapon)]) || 0;
             const heading = node.heading + angle;
             // Everything that stands for a real distance is drawn in world units, so it can be
             // read against the grid. Only the handle you drag is sized on screen, because that
@@ -438,7 +446,7 @@
             } else {
               end = alongWorld(nv.vx, nv.vy, heading, SCAN_REACH);   // a scanner sweep
             }
-            out.push({ key, ship: ship.name, mine, tick: t, weapon: name, kind: "direction",
+            out.push({ key, ship: ship.name, mine, tick: t, weapon: name, label, kind: "direction",
                        node, nv, cur, angle, heading, end });
           }
         }
@@ -615,10 +623,10 @@
         if (!s.target) return null;
         const tv = w2v(s.target.x, s.target.y);
         return { key: s.key, x: sx((s.nv.vx + tv.vx) / 2), y: sy((s.nv.vy + tv.vy) / 2),
-                 text: s.weapon, cur: s.cur, mine: s.mine };
+                 text: s.label, cur: s.cur, mine: s.mine };
       }
       const tip = along(s.end[0], s.end[1], s.heading, 11);   // just beyond the arrow's point
-      return { key: s.key, x: sx(tip[0]), y: sy(tip[1]), text: s.weapon, cur: s.cur, mine: s.mine };
+      return { key: s.key, x: sx(tip[0]), y: sy(tip[1]), text: s.label, cur: s.cur, mine: s.mine };
     }).filter(Boolean);
   });
 
@@ -671,7 +679,7 @@
       const bearing = (Math.atan2(w.x - node.x, w.y - node.y) * 180) / Math.PI;
       const relative = normDelta(bearing - node.heading);
       const params = orders[dragShot.ship].fire[dragShot.tick][dragShot.weapon];
-      params[0] = String(clampToArc(weapon, relative));
+      params[directionIndex(weapon)] = String(clampToArc(weapon, relative));
       // A scanner takes its cone width from how far out the handle is pulled.
       const coneIn = coneInput(weapon);
       if (coneIn) {
@@ -1256,9 +1264,12 @@
                       <button type="button" class="wfire on"
                               onclick={() => unarm(selectedTick, w.name)}>clear</button>
                     {:else}
-                      <button type="button" class="wfire" disabled={left !== null && left <= 0}
+                      <button type="button" class="wfire"
+                              disabled={(left !== null && left <= 0)
+                                        || (w.inputs[0].choices?.length === 0)}
                               onclick={() => arm(w)}>
-                        {w.inputs[0].kind === "object_name" ? "pick target" : "fire"}
+                        {w.inputs[0].choices ? "choose"
+                         : w.inputs[0].kind === "object_name" ? "pick target" : "fire"}
                       </button>
                     {/if}
                     <span class="wammo" class:out={left !== null && left <= 0}>
@@ -1267,7 +1278,24 @@
                   </div>
                   {#if existing}
                     <div class="worder">
-                      {#if w.inputs[0].kind === "object_name"}
+                      {#if w.inputs[0].choices}
+                        <label class="slider">
+                          {w.inputs[0].name}
+                          <select value={existing[0]}
+                                  onchange={(e) => (selectedOrders.fire[selectedTick][w.name][0] = e.currentTarget.value)}>
+                            {#each w.inputs[0].choices as c (c)}<option value={c}>{c}</option>{/each}
+                          </select>
+                        </label>
+                        {#each w.inputs.slice(1) as inp, i (inp.name)}
+                          <label class="slider aim">
+                            {inp.name}
+                            <input type="range" min={arcRange(w)[0]} max={arcRange(w)[1]} step="5"
+                                   value={existing[i + 1]}
+                                   oninput={(e) => (selectedOrders.fire[selectedTick][w.name][i + 1] = e.currentTarget.value)} />
+                            <b>{existing[i + 1]}°</b>
+                          </label>
+                        {/each}
+                      {:else if w.inputs[0].kind === "object_name"}
                         <span class="at">→ {existing[0]}</span>
                       {:else}
                         <label class="slider aim">
@@ -1588,6 +1616,10 @@
   .slider.aim { flex: 1 1 100%; }
   .slider.aim input { flex: 1; width: auto; }
   .slider b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .slider select {
+    flex: 1; min-width: 0; font: inherit; color: var(--ink); background: var(--panel);
+    border: 1px solid var(--edge); border-radius: 3px; padding: 2px 4px;
+  }
   .clear-shot {
     margin-left: auto; font-family: var(--mono); font-size: 10.5px; text-transform: uppercase;
     color: var(--ink-dim); background: transparent; border: 1px solid var(--edge);

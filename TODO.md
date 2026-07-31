@@ -97,11 +97,14 @@ each section.
 
       What it opens up: a carrier's hangar is the same component with a different source for what
       it may put out, and a scenario trigger is a third writer of the spawn plan.
-- [ ] **A wreck can be claimed more than once.** `ShipSpawner` checks the graveyard but nothing
-      records that a wreck's loss has been made good, so the same one can be rebuilt until the
-      base runs out of its three. A flag on the wreck was rejected as too fixed a rule; the
-      thought was to derive it, by finding whether anything in the world was born from that wreck.
-      That needs the replacement to say where it came from, or the name stem to be searched.
+- [x] **A wreck is claimed once.** A `claimed` tag on the wreck rather than a field: too small a
+      fact to earn one. `ObjectInSpace.tags` is a set of strings, the well-known ones defined next
+      to the rule that sets them. See [docs/information.md](docs/information.md) for the line a tag
+      must not cross.
+
+      It also gave the planning UI its dropdown: `World.find_objects` takes where, tags and
+      faction, so an order can offer "our unclaimed wrecks" without anything above the engine
+      knowing what those words mean.
 - [ ] **Objects in space that are not machines.** Black holes, asteroids, loot crates, and
       whatever a scenario needs to put in the world. `ObjectInSpace` is already the base for
       "anything in space" rather than "anything built", and `type_name` / `category_name` are

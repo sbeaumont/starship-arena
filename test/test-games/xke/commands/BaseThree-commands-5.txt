@@ -1,5 +1,6 @@
 1: Fire L1 WhereAmI
 1: Fire R1 -40
+1: Fire SS McAve -173
 2: Fire L1 WhereAmI
 2: Fire R1 -20
 3: Fire L1 WhereAmI
@@ -15,4 +16,4 @@
 6: Fire R2 35
 7: Fire R2 45
 7: Fire R1 50
-10: Scan G 0 180
+10: Fire G 0 180

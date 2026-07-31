@@ -143,9 +143,10 @@ class ObjectByNameParameter(ComponentParameter):
         return is_known
 
     @property
-    def choices(self) -> list:
-        """What to offer. Narrower than what `value` resolves, so a name off the list is still
-        accepted and refused with a reason."""
+    def choices(self) -> list | None:
+        """What to offer, or None for something picked off the map instead."""
+        if self.where == frozenset({Whereabouts.Objects}):
+            return None
         return sorted(self.world.find_objects(
             where=self.where, with_tags=self.with_tags, without_tags=self.without_tags,
             faction=self.component.container.faction if self.own_faction else None))
