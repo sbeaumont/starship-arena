@@ -75,6 +75,12 @@ each section.
       fixes: fire pre-move, or let weapons fire only after existing objects have exploded. The game
       is built on the premise that iteration order never matters, so this is a real defect rather
       than a quirk.
+- [ ] **`leaves_a_wreck` may need to be settable per ship.** It is a model constant on `ShipType`
+      today, so every ship and starbase leaves a graveyard entry and no model can differ. A swarm
+      of throwaway NPC hulls would want to opt out without becoming a new ship type. That means
+      moving it to instance state in `Ship.__init__` and overriding the derived answer, which is
+      an internal change: readers already ask the machine, and it crosses no seam. See
+      [docs/information.md](docs/information.md).
 - [ ] **A malformed Boost command crashes.** Long-standing.
 - [ ] **The CLI cannot take an action and a game name.** `python -m arena.cli.main setup xke` exits
       with `invalid choice: 'xke'`, because `action` is `nargs="*"` ahead of an optional `gamedir`,

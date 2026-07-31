@@ -97,9 +97,9 @@ class Ship(MachineInSpace):
         if old_speed != self.speed:
             self.add_internal_event(f"Changed speed from {old_speed} to {self.speed}")
 
-    def fire(self, weapon_name: str, params, objects_in_space, tick: Tick):
+    def fire(self, weapon_name: str, params, world, tick: Tick):
         if weapon_name in self.weapons:
-            return self.weapons[weapon_name].fire(params, objects_in_space, tick)
+            return self.weapons[weapon_name].fire(params, world, tick)
         else:
             self.add_event(InternalEvent(f"No weapon named {weapon_name} found"))
 
@@ -109,8 +109,8 @@ class Ship(MachineInSpace):
         else:
             self.add_internal_event(f"Can not activate/deactivate unknown component: {name}")
 
-    def try_replenish(self, objects_in_space: dict):
-        for replenisher in [ois for ois in objects_in_space.values() if isinstance(ois, Replenisher)]:
+    def try_replenish(self, world: World):
+        for replenisher in [ois for ois in world.objects.values() if isinstance(ois, Replenisher)]:
             replenisher.replenish(self)
             return
         self.add_internal_event("Failed to replenish.")
@@ -131,8 +131,8 @@ class Ship(MachineInSpace):
             self.battery = self._type.max_battery
         self.add_internal_event(f"Generated {self.generators} energy: battery at {self.battery}/{self._type.max_battery}")
 
-    def scan(self, objects_in_space: dict):
-        for ois in [ob for ob in objects_in_space.values() if self.can_scan(ob)]:
+    def scan(self, world: World):
+        for ois in [ob for ob in world.objects.values() if self.can_scan(ob)]:
             self.add_event(ScanEvent.create_scan(self, ois))
 
     def _damage_hull(self, amount: int) -> int:
@@ -205,15 +205,15 @@ class Ship(MachineInSpace):
             self.add_internal_event(f"Not enough energy for current speed: slowing down to {new_max_speed}")
             self.speed = new_max_speed
 
-    def post_move(self, objects_in_space):
+    def post_move(self, world):
         # Spend energy based on speed
         movement_energy = self.speed // 10
         self.battery -= movement_energy
         self.add_internal_event(f"Used {movement_energy} energy for movement.")
 
-    def decide(self, objects_in_space: dict, tick: Tick):
+    def decide(self, world: World, tick: Tick):
         for comp in self.control.values():
-            comp.decide(objects_in_space, tick)
+            comp.decide(world, tick)
 
     # ---------------------------------------------------------------------- HISTORY INTERFACE
 
@@ -231,6 +231,7 @@ class Ship(MachineInSpace):
 
 class ShipType(MachineType):
     base_type = Ship
+    leaves_a_wreck = True
 
     max_speed = None
     max_turn = None

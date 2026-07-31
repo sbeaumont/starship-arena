@@ -22,3 +22,8 @@ The game itself. Knows nothing about interfaces, HTTP or storage locations.
 
 A model is a type object in `objects/registry/`, and the registry loads by reflection.
 [ADR 0003](../../docs/adr/0003-type-objects-for-machines.md)
+
+**Before adding a new piece of information anywhere, read
+[docs/information.md](../../docs/information.md).** Six places a fact can live, what each one
+claims, and how to choose. Getting it wrong is not a style slip: a model constant says no two
+ships can ever differ, and instance state says they can.

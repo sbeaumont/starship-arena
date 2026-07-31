@@ -14,6 +14,7 @@ class MachineType(object):
     base_type = None
     max_hull = 0
     start_battery = 0
+    leaves_a_wreck = False
 
     def create(self, name: str, vector: Vector, owner=None, tick: Tick = TICK_ZERO):
         assert self.base_type, f"{self.name} does not have a base_type defined"
@@ -101,6 +102,10 @@ class MachineInSpace(ObjectInSpace, ABC):
     def range(self) -> int:
         """The furthest any of this machine's components acts into space."""
         return max((c.range for c in self.all_components.values()), default=0)
+
+    @property
+    def leaves_a_wreck(self) -> bool:
+        return self._type.leaves_a_wreck
 
     @property
     def snapshot(self):

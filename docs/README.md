@@ -7,6 +7,7 @@ the same thing: what the pieces are, and why they're that way rather than some o
 |---|---|
 | [architecture.md](architecture.md) | The layers, what lives where, how a round and a request flow |
 | [glossary.md](glossary.md) | Round, tick, faction, contact, commander, director, order |
+| [information.md](information.md) | The six places a fact can live, how to pick one, and every element classified |
 | [data.md](data.md) | The game directory, `ships.jsonl`, command files, pickles, `players.txt` |
 | [deployment.md](deployment.md) | One WSGI application, the host's constraints, the build step |
 | [development.md](development.md) | Running, testing, regenerating game data |

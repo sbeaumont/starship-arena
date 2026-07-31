@@ -117,6 +117,6 @@ class Game(object):
     def update_graveyard(self, destroyed: list):
         """Update the graveyard with the ships passed as arguments."""
         graveyard = self.graveyard
-        for dead_ship in [d for d in destroyed if d.is_player_controlled]:
+        for dead_ship in [d for d in destroyed if d.leaves_a_wreck]:
             graveyard[dead_ship.name] = dead_ship
         self._dir.save_graveyard(graveyard)

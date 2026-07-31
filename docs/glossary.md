@@ -76,5 +76,6 @@ on.
 records where something was, never its heading, so a contact's course is inferred from its last
 two sightings and single sightings have no course at all.
 
-**Graveyard.** Destroyed player ships, kept so their score still counts and their player can look
-back at their history.
+**Graveyard.** Destroyed ships and starbases, kept so their score still counts and whoever was
+flying them can look back at their history. Spent ordnance is not kept: a machine says whether it
+`leaves_a_wreck`, and only ships do.
