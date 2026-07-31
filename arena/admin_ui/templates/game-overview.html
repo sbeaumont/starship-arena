@@ -83,10 +83,10 @@
                 <label for="spawn_type">Type</label>
                 <select id="spawn_type" name="type">
                     <optgroup label="Ships">
-                        {% for st in ship_types %}<option value="{{ st.name }}">{{ st.name }}</option>{% endfor %}
+                        {% for st in ship_types %}<option value="{{ st.type_name }}">{{ st.name }}</option>{% endfor %}
                     </optgroup>
                     <optgroup label="Starbases">
-                        {% for st in starbase_types %}<option value="{{ st.name }}">{{ st.name }}</option>{% endfor %}
+                        {% for st in starbase_types %}<option value="{{ st.type_name }}">{{ st.name }}</option>{% endfor %}
                     </optgroup>
                 </select>
             </span>

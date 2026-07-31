@@ -2,55 +2,96 @@
 
 {% block title %}Players{% endblock %}
 
+{% macro headers() -%}
+<span class="header tick"><input type="checkbox" class="tickall"></span>
+<span class="header">Name</span>
+<span class="header">Active games</span>
+<span class="header">Link</span>
+<span class="header">Actions</span>
+{%- endmacro %}
+
+{% macro person_row(p) -%}
+<span class="tick"><input type="checkbox" name="selected" value="{{ p.name }}"></span>
+<span>{{ p.name }}</span>
+<span class="games">{{ p.games | join(', ') or '—' }}</span>
+<span class="link">
+    {% if p.token %}
+        <input type="text" readonly value="{{ game_ui_url }}/?login={{ p.token }}"
+               onclick="this.select()">
+        <button type="submit" name="new_link" value="{{ p.name }}" class="quiet">New link</button>
+        <button type="submit" name="remove_link" value="{{ p.name }}" class="quiet">Remove link</button>
+    {% else %}
+        <em class="no">no link yet</em>
+        <button type="submit" name="new_link" value="{{ p.name }}" class="quiet">Issue link</button>
+    {% endif %}
+</span>
+<span class="act">
+    {% if p.active %}
+        <button type="submit" name="deactivate" value="{{ p.name }}" class="quiet">Deactivate</button>
+    {% else %}
+        <button type="submit" name="reactivate" value="{{ p.name }}" class="quiet">Reactivate</button>
+    {% endif %}
+    <button type="submit" name="remove" value="{{ p.name }}" class="danger"
+            onclick="return confirm('Remove {{ p.name }} for good? The name becomes claimable again.')">Remove</button>
+</span>
+{%- endmacro %}
+
+{% macro bulk(verbs) -%}
+<div class="bulkbar">
+    <span class="hint">With ticked:</span>
+    {% if 'reactivate' in verbs %}
+        <button type="submit" name="action" value="reactivate" class="quiet">Reactivate</button>
+    {% else %}
+        <button type="submit" name="action" value="deactivate" class="quiet">Deactivate</button>
+        <button type="submit" name="action" value="remove_link" class="quiet">Remove link</button>
+    {% endif %}
+    <button type="submit" name="action" value="remove" class="danger"
+            onclick="return confirm('Remove every ticked player for good?')">Remove</button>
+</div>
+{%- endmacro %}
+
 {% block content %}
 <h1>Players</h1>
 <p class="lede">Everyone who plays, and the link they sign in with. Issuing a link again replaces
     the old one, which is also how you deal with one that leaked.</p>
 
-<div class="grid logins">
-    <span class="header">Name</span>
-    <span class="header">Games</span>
-    <span class="header">Link</span>
-    <span class="header"></span>
-    {% for p in logins %}
-        <span class="{{ '' if p.active else 'gone' }}">
-            {{ p.name }}
-            {%- if p.is_director %} <em class="role">director</em>{% endif %}
-        </span>
-        <span class="games">{{ p.games | join(', ') or '—' }}</span>
-        <span class="link">
-            {% if not p.active %}
-            {% elif p.token %}
-                <input type="text" readonly value="{{ game_ui_url }}/?login={{ p.token }}"
-                       onclick="this.select()">
-            {% else %}
-                <em class="no">no link yet</em>
-            {% endif %}
-        </span>
-        <span class="act">
-            {% if p.active %}
-                <form method="POST" action="{{ url_for('issue_login') }}">
-                    <input type="hidden" name="name" value="{{ p.name }}">
-                    {% if p.is_director %}<input type="hidden" name="director" value="1">{% endif %}
-                    <button type="submit">{{ 'New link' if p.token else 'Issue link' }}</button>
-                </form>
-            {% endif %}
-            {% if p.token %}
-                <form method="POST" action="{{ url_for('set_player_active') }}"
-                      {% if p.active %}onsubmit="return confirm('Deactivate {{ p.name }}? They keep their name and their games, but cannot log in.')"{% endif %}>
-                    <input type="hidden" name="name" value="{{ p.name }}">
-                    {% if not p.active %}<input type="hidden" name="active" value="1">{% endif %}
-                    <button type="submit" class="quiet">{{ 'Deactivate' if p.active else 'Reactivate' }}</button>
-                </form>
-                <form method="POST" action="{{ url_for('revoke_login') }}"
-                      onsubmit="return confirm('Take away {{ p.name }}\'s login?')">
-                    <input type="hidden" name="name" value="{{ p.name }}">
-                    <button type="submit" class="drop" title="Take away this login">&times;</button>
-                </form>
-            {% endif %}
-        </span>
-    {% endfor %}
-</div>
+<h2>Directors</h2>
+<form method="POST" action="{{ url_for('act_on_players') }}">
+    {{ bulk(['deactivate']) }}
+    <div class="grid logins">
+        {{ headers() }}
+        {% for p in directors %}{{ person_row(p) }}{% endfor %}
+    </div>
+</form>
+
+<h2>Commanders</h2>
+{% if logins %}
+<form method="POST" action="{{ url_for('act_on_players') }}">
+    {{ bulk(['deactivate']) }}
+    <div class="grid logins">
+        {{ headers() }}
+        {% for p in logins %}{{ person_row(p) }}{% endfor %}
+    </div>
+</form>
+{% else %}
+<p class="empty">Nobody yet.</p>
+{% endif %}
+
+{% if deactivated %}
+<details class="settings" {{ 'open' if show == 'deactivated' }}>
+    <summary>Deactivated <span class="when">{{ deactivated | length }}</span></summary>
+    <p class="lede">They keep their name and their old games, and nobody else can claim it. No
+        link of theirs works and the scenario screens do not offer them.</p>
+    <form method="POST" action="{{ url_for('act_on_players') }}">
+        <input type="hidden" name="show" value="deactivated">
+        {{ bulk(['reactivate']) }}
+        <div class="grid logins">
+            {{ headers() }}
+            {% for p in deactivated %}{{ person_row(p) }}{% endfor %}
+        </div>
+    </form>
+</details>
+{% endif %}
 
 <h2>Someone new</h2>
 <div class="panel">
@@ -68,4 +109,13 @@
         </div>
     </form>
 </div>
+
+<script>
+    document.querySelectorAll('.tickall').forEach((all) => {
+        const grid = all.closest('.grid');
+        all.addEventListener('change', () => {
+            grid.querySelectorAll('[name=selected]').forEach((box) => box.checked = all.checked);
+        });
+    });
+</script>
 {% endblock content %}

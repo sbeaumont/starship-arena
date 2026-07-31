@@ -2,9 +2,9 @@
 
 See docs/data.md for the file format and what a token is."""
 
+import json
 import logging
 import os
-import re
 import secrets
 from dataclasses import dataclass
 
@@ -18,19 +18,12 @@ LOGIN_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 TOKEN_BYTES = 16
 DIRECTOR = 'director'
 PLAYER = 'player'
-COLUMNS = ('Name', 'Token', 'Role', 'Active')
-
-
-def as_stored(name: str) -> str:
-    """A name is a column in a whitespace-split file and part of a filename, so it holds no
-    spaces. See docs/data.md."""
-    return re.sub(r'\s+', '_', name.strip())
 
 
 @dataclass
 class Player:
     name: str
-    token: str
+    token: str = ''
     role: str = PLAYER
     active: bool = True
 
@@ -40,24 +33,27 @@ class Player:
 
 
 class PlayerRegistry:
-    """The people who can log in, read from and written to players.txt."""
+    """The people who can log in, read from and written to players.jsonl."""
 
     def __init__(self, data_root: str):
         self.path = os.path.join(str(data_root), PLAYERS_FILE_NAME)
 
     def all(self) -> list[Player]:
-        """Columns are read by position, so every one of them is written out: see docs/data.md."""
+        """One JSON object per line. Only `name` is required: see docs/data.md."""
         if not os.path.exists(self.path):
             return []
         players = []
         with open(self.path) as f:
-            for line in f:
-                fields = line.split()
-                if not fields or fields[0].startswith('#') or fields[0] == COLUMNS[0]:
+            for number, line in enumerate(f, start=1):
+                if not line.strip() or line.lstrip().startswith('#'):
                     continue
-                players.append(Player(name=fields[0], token=fields[1],
-                                      role=fields[2] if len(fields) > 2 else PLAYER,
-                                      active=len(fields) < 4 or fields[3] != 'no'))
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError as e:
+                    raise ValueError(f"{self.path} line {number}: {e}") from e
+                players.append(Player(name=record['name'], token=record.get('token', ''),
+                                      role=record.get('role', PLAYER),
+                                      active=record.get('active', True)))
         return players
 
     def by_token(self, token: str) -> Player | None:
@@ -70,11 +66,10 @@ class PlayerRegistry:
         return None
 
     def by_name(self, name: str) -> Player | None:
-        return next((p for p in self.all() if p.name == as_stored(name)), None)
+        return next((p for p in self.all() if p.name == name), None)
 
     def issue(self, name: str, role: str = PLAYER) -> Player:
         """A fresh token, replacing any they had. Rotating a leaked link is the same call."""
-        name = as_stored(name)
         had = self.by_name(name)
         players = [p for p in self.all() if p.name != name]
         issued = Player(name=name, token=secrets.token_urlsafe(TOKEN_BYTES), role=role,
@@ -84,25 +79,45 @@ class PlayerRegistry:
         logger.info(f"Issued a login token for {name}{' (director)' if issued.is_director else ''}")
         return issued
 
-    def revoke(self, name: str) -> None:
+    def remove(self, name: str) -> None:
+        """Take the row away for good, freeing the name for anyone to claim."""
         self._save([p for p in self.all() if p.name != name])
+        logger.info(f"Removed {name}")
 
-    def set_active(self, name: str, active: bool) -> None:
+    def remove_link(self, name: str) -> None:
+        """Take the token away and keep the person. Nothing they hold opens a door."""
         players = self.all()
         theirs = next((p for p in players if p.name == name), None)
         if theirs is None:
             raise ValueError(f"Nobody called '{name}' is registered.")
+        theirs.token = ''
+        self._save(players)
+        logger.info(f"Took away {name}'s link")
+
+    def set_active(self, name: str, active: bool) -> None:
+        """Someone who has never held a link gets a row here, so any name can be put aside."""
+        players = self.all()
+        theirs = next((p for p in players if p.name == name), None)
+        if theirs is None:
+            theirs = Player(name=name)
+            players.append(theirs)
         theirs.active = active
         self._save(players)
         logger.info(f"{name} is now {'active' if active else 'deactivated'}")
 
     @staticmethod
-    def _fields(p: Player) -> tuple:
-        return p.name, p.token, p.role, 'yes' if p.active else 'no'
+    def _record(p: Player) -> dict:
+        """Defaults are left out, so a line says only what is true of this person."""
+        record = {'name': p.name}
+        if p.token:
+            record['token'] = p.token
+        if p.role != PLAYER:
+            record['role'] = p.role
+        if not p.active:
+            record['active'] = False
+        return record
 
     def _save(self, players: list[Player]) -> None:
-        rows = [COLUMNS] + [self._fields(p) for p in sorted(players, key=lambda x: x.name)]
-        widths = [max(len(row[i]) for row in rows) for i in range(len(COLUMNS))]
-        lines = ['  '.join(v.ljust(w) for v, w in zip(row, widths)).rstrip() for row in rows]
         with open(self.path, 'w') as f:
-            f.write('\n'.join(lines) + '\n')
+            for p in sorted(players, key=lambda x: x.name):
+                f.write(json.dumps(self._record(p)) + '\n')

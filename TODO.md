@@ -290,16 +290,18 @@ The lists grow without bound as games pile up, so this is about keeping them mai
 
 ## Making a game easily
 
-- [ ] **Deal players into a game.** Take a group of people and spread them evenly and randomly
-      across the factions, assigning ships as you go, instead of typing the whole roster.
+- [x] **Deal players into a game.** Tick who is playing on a scenario's screen and the roster
+      arrives filled in on the new-game screen, ready to edit. `arena/admin_ui/scenarios/`, with
+      the wizard at `/scenarios`. See [plans/scenario-setup-plan.md](plans/scenario-setup-plan.md).
 - [ ] **A sign-up page** where people put themselves forward for the next game, so the director
-      starts from a list rather than a memory.
-- [ ] **Predefined factions.** Once the scenario builder exists a scenario brings its own
-      factions, so dealing people in means distributing them over *those* rather than over an
-      arbitrary count.
-- [ ] **More than one ship.** A player may ask for, or be given, several ships - expressed at
-      sign-up or set during setup. The planning UI already handles a fleet; this is about the
-      dealing.
+      starts from a list rather than a memory. Step 2 of the plan above, and what the dealer is
+      waiting for: it already takes a ship count and a name per ship, and nothing collects them.
+- [x] **Predefined factions.** The Five Race War brings its own: five races, each with its own
+      line of hulls, every active one carrying a starbase that one of its players commands. A race
+      stays lore, and the scenario is what says a race flies as a faction.
+- [ ] **More than one ship.** The dealer grants up to what somebody asked for and levels the
+      factions against each other, so a faction is never outgunned by who happened to ask for
+      three. Nothing collects the request yet; that arrives with the sign-up page.
 - [ ] **Tooling for large rosters.** A row per ship and a paste box stop scaling somewhere above
       twenty ships, and a scenario wants more than a roster: sides, objectives, world objects. A
       formal roster file format is the groundwork; the tools come with the scenario builder.

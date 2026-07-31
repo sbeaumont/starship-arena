@@ -7,13 +7,15 @@ everything else to an AppFacade.
 """
 
 import logging
+import random
 import re
 from collections import defaultdict
 from dataclasses import asdict
-from flask import Flask, render_template, request, g, jsonify, send_file, redirect, url_for
+from flask import Flask, abort, render_template, request, g, jsonify, send_file, redirect, url_for
 
 from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE
 from arena.cfg import WEB_ROOT, GAME_UI_URL
+from arena.admin_ui import scenarios
 from arena.admin_ui.appfacade import AppFacade, NameValidator
 
 app = Flask('starship-arena', template_folder=f'{WEB_ROOT}/templates', static_folder=f'{WEB_ROOT}/static')
@@ -147,6 +149,17 @@ def ship_records(rows: list[dict], known_types) -> tuple[list[str], list[dict]]:
     return problems, ships
 
 
+def new_game_page(game_name: str, rows: list[dict], messages: list[str]):
+    """The roster screen, reached either empty or filled in by a scenario."""
+    return render_template('new-game.html',
+                           game_name=game_name,
+                           rows=rows,
+                           known_players=[p.name for p in facade().active_players()],
+                           ship_types=facade().all_ship_types.values(),
+                           starbase_types=facade().all_starbase_types.values(),
+                           messages=messages)
+
+
 @app.route('/new_game', methods=['GET', 'POST'])
 def new_game():
     messages = list()
@@ -164,12 +177,30 @@ def new_game():
         if not messages:
             facade().create_new_game(name_v.cleaned, ships)
             return redirect(url_for('game_overview', game_name=name_v.cleaned))
-    return render_template('new-game.html',
-                           game_name=game_name,
-                           rows=rows,
+    return new_game_page(game_name, rows, messages)
+
+
+@app.route('/scenarios')
+def scenario_list():
+    return render_template('scenarios.html', scenarios=scenarios.ALL)
+
+
+@app.route('/scenario/<key>', methods=['GET', 'POST'])
+def scenario_setup(key: str):
+    try:
+        scenario = scenarios.by_key(key)
+    except KeyError:
+        abort(404)
+    game_name = request.form.get('game_name', '')
+    messages = list()
+    if request.method == 'POST':
+        entries, factions = scenario.choices_from_form(request.form)
+        try:
+            return new_game_page(game_name, scenario.deal(entries, factions, random.Random()), [])
+        except ValueError as e:
+            messages.append(str(e))
+    return render_template(scenario.template, scenario=scenario, game_name=game_name,
                            known_players=[p.name for p in facade().active_players()],
-                           ship_types=facade().all_ship_types.values(),
-                           starbase_types=facade().all_starbase_types.values(),
                            messages=messages)
 
 
@@ -260,7 +291,12 @@ def regenerate(game: str):
 @app.route('/players')
 def players():
     """Who can log in, and the link each of them holds."""
-    return render_template('players.html', logins=facade().logins())
+    everyone = facade().logins()
+    return render_template('players.html',
+                           directors=[p for p in everyone if p.active and p.is_director],
+                           logins=[p for p in everyone if p.active and not p.is_director],
+                           deactivated=[p for p in everyone if not p.active],
+                           show=request.args.get('show'))
 
 
 @app.route('/players/issue', methods=['POST'])
@@ -271,16 +307,29 @@ def issue_login():
     return redirect(url_for('players'))
 
 
-@app.route('/players/revoke', methods=['POST'])
-def revoke_login():
-    facade().revoke_login(request.form['name'])
-    return redirect(url_for('players'))
+PLAYER_ACTIONS = {
+    'new_link': lambda f, name: f.reissue_login(name),
+    'remove_link': lambda f, name: f.remove_login(name),
+    'deactivate': lambda f, name: f.set_player_active(name, False),
+    'reactivate': lambda f, name: f.set_player_active(name, True),
+    'remove': lambda f, name: f.remove_player(name),
+}
 
 
-@app.route('/players/active', methods=['POST'])
-def set_player_active():
-    facade().set_player_active(request.form['name'], bool(request.form.get('active')))
-    return redirect(url_for('players'))
+@app.route('/players/act', methods=['POST'])
+def act_on_players():
+    """One button on one row, or one button over the ticked rows.
+
+    Both arrive here because a row's buttons sit inside the form the tickboxes belong to, and
+    HTML has no nested forms. A row button carries its player as its own value."""
+    for verb, act in PLAYER_ACTIONS.items():
+        if verb in request.form:
+            act(facade(), request.form[verb])
+            return redirect(url_for('players', show=request.form.get('show')))
+    act = PLAYER_ACTIONS[request.form['action']]
+    for name in request.form.getlist('selected'):
+        act(facade(), name)
+    return redirect(url_for('players', show=request.form.get('show')))
 
 
 @app.route('/manual_pdf')

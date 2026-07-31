@@ -1,4 +1,4 @@
-"""The JSON API. Two surfaces: /api/game for players, /api/admin for the director.
+"""The JSON API, serving the player's game UI at /api/game.
 
 Speaks only in the DTOs of arena/app, never in engine objects. See docs/architecture.md.
 
@@ -8,7 +8,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from arena.api.game import router as game_router
-from arena.api.admin import router as admin_router
 
 app = FastAPI(title="Starship Arena API")
 
@@ -22,7 +21,6 @@ app.add_middleware(
 )
 
 app.include_router(game_router)
-app.include_router(admin_router)
 
 
 @app.get("/api/health")

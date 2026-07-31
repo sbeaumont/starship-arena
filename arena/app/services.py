@@ -463,23 +463,26 @@ class AdminService(_EngineAccess):
     # ---------------------------------------------------------------------- LOGINS
 
     def logins(self) -> list[LoginInfo]:
-        """Everyone who plays or could play: the registry, plus any player name a game knows
-        that has no login yet. Those are the ones still owed a link."""
-        registered = {p.name: p for p in self.players.all()}
-        in_games = {name for g in self.list_games() for name in self._roster(g.name).values()}
-        return [LoginInfo(name=name,
-                          is_director=name in registered and registered[name].is_director,
-                          token=registered[name].token if name in registered else '',
-                          games=self.games_for_player(name),
-                          active=name not in registered or registered[name].active)
-                for name in sorted(registered.keys() | in_games)]
+        """Everyone in the registry. A game's rosters are not consulted: a name is on this list
+        because somebody put it here, so removing it removes it."""
+        return [LoginInfo(name=p.name, is_director=p.is_director, token=p.token,
+                          games=self.games_for_player(p.name), active=p.active)
+                for p in sorted(self.players.all(), key=lambda p: p.name)]
 
     def issue_login(self, name: str, director: bool = False) -> Player:
         """A fresh link for someone, replacing any they had."""
         return self.players.issue(name, role=DIRECTOR if director else PLAYER)
 
-    def revoke_login(self, name: str) -> None:
-        self.players.revoke(name)
+    def reissue_login(self, name: str) -> Player:
+        """A fresh link for someone already listed, keeping the role they have."""
+        had = self.players.by_name(name)
+        return self.players.issue(name, role=had.role if had else PLAYER)
+
+    def remove_login(self, name: str) -> None:
+        self.players.remove_link(name)
+
+    def remove_player(self, name: str) -> None:
+        self.players.remove(name)
 
     def set_player_active(self, name: str, active: bool) -> None:
         self.players.set_active(name, active)

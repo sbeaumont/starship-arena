@@ -56,7 +56,7 @@ ARCHIVE_DIR_NAME = "archived"
 SETTINGS_FILE_NAME = "settings.txt"
 # Who may log in, across every game. Lives at the data root rather than inside a game, because a
 # player's name is their identity everywhere.
-PLAYERS_FILE_NAME = "players.txt"
+PLAYERS_FILE_NAME = "players.jsonl"
 MANUAL_FILENAME = os.path.join(REPO_ROOT, "starship-arena-manual.pdf")
 
 # ============================================= SHIP CORE METRICS

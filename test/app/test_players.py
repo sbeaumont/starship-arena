@@ -14,6 +14,10 @@ class TestPlayerRegistry(TestCase):
     def tearDown(self):
         shutil.rmtree(self.root, ignore_errors=True)
 
+    def write(self, content: str) -> None:
+        with open(os.path.join(self.root, 'players.jsonl'), 'w') as f:
+            f.write(content)
+
     def test_no_file_yet(self):
         self.assertEqual([], self.registry.all())
         self.assertIsNone(self.registry.by_token('anything'))
@@ -35,10 +39,11 @@ class TestPlayerRegistry(TestCase):
         self.assertEqual('Menno', self.registry.by_token(second.token).name)
         self.assertEqual(1, len(self.registry.all()))
 
-    def test_revoke(self):
+    def test_remove(self):
         issued = self.registry.issue('Menno')
-        self.registry.revoke('Menno')
+        self.registry.remove('Menno')
         self.assertIsNone(self.registry.by_token(issued.token))
+        self.assertEqual([], self.registry.all())
 
     def test_survives_a_round_trip_through_the_file(self):
         self.registry.issue('Serge', role=DIRECTOR)
@@ -47,16 +52,23 @@ class TestPlayerRegistry(TestCase):
         self.assertEqual(['Menno', 'Serge'], [p.name for p in reread])
         self.assertEqual([False, True], [p.is_director for p in reread])
 
-    def test_ignores_comments_and_the_header(self):
-        with open(os.path.join(self.root, 'players.txt'), 'w') as f:
-            f.write('Name   Token   Role\n# a note\nMenno  abc123\n')
+    def test_ignores_comments_and_blank_lines(self):
+        self.write('# a note\n\n{"name": "Menno", "token": "abc123"}\n')
         self.assertEqual(['Menno'], [p.name for p in self.registry.all()])
         self.assertEqual('Menno', self.registry.by_token('abc123').name)
 
-    def test_a_file_without_the_column_reads_as_active(self):
-        with open(os.path.join(self.root, 'players.txt'), 'w') as f:
-            f.write('Name   Token   Role\nMenno  abc123\nSerge  def456  director\n')
-        self.assertEqual([True, True], [p.active for p in self.registry.all()])
+    def test_only_the_name_is_required(self):
+        self.write('{"name": "Menno"}\n')
+        menno = self.registry.by_name('Menno')
+        self.assertEqual('', menno.token)
+        self.assertFalse(menno.is_director)
+        self.assertTrue(menno.active)
+
+    def test_a_line_that_will_not_parse_names_itself(self):
+        self.write('{"name": "Menno"}\nnot json\n')
+        with self.assertRaises(ValueError) as raised:
+            self.registry.all()
+        self.assertIn('line 2', str(raised.exception))
 
     def test_deactivating_keeps_the_name_and_closes_the_door(self):
         issued = self.registry.issue('Menno')
@@ -76,17 +88,14 @@ class TestPlayerRegistry(TestCase):
         again = self.registry.issue('Menno')
         self.assertIsNone(self.registry.by_token(again.token))
 
-    def test_deactivating_a_stranger_says_so(self):
-        with self.assertRaises(ValueError):
-            self.registry.set_active('Nobody', False)
+    def test_deactivating_someone_with_no_link_gives_them_a_row(self):
+        # The names that clutter the console are old ones from game history, which have no login
+        # to hang an Active flag off. They get a row of their own so they can be put aside.
+        self.registry.set_active('Menno', False)
+        menno = self.registry.by_name('Menno')
+        self.assertFalse(menno.active)
+        self.assertEqual('', menno.token)
 
-    def test_a_name_with_spaces_is_stored_without_them(self):
-        issued = self.registry.issue('Serge Beaumont')
-        self.assertEqual('Serge_Beaumont', issued.name)
-        self.assertEqual('Serge_Beaumont', self.registry.by_token(issued.token).name)
-        self.assertIsNotNone(self.registry.by_name('Serge Beaumont'))
-
-    def test_issuing_again_under_the_spaced_name_replaces_the_same_row(self):
-        self.registry.issue('Serge Beaumont')
-        self.registry.issue('Serge_Beaumont')
-        self.assertEqual(1, len(self.registry.all()))
+    def test_a_deactivated_stranger_survives_the_file(self):
+        self.registry.set_active('Menno', False)
+        self.assertEqual([False], [p.active for p in PlayerRegistry(self.root).all()])

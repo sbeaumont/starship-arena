@@ -132,31 +132,40 @@ round blocks the whole round from being processed.
 
 `<tick>: <command>`. A weapon takes one order per tick.
 
-## players.txt
+## players.jsonl
 
 At the data root, not inside a game, because a player's name is their identity everywhere.
+Gitignored, because the tokens are secrets.
 
+```jsonl
+{"name": "Dennis", "token": "3R5iNHN5ROLvLG3VpoMocQ"}
+{"name": "Menno", "active": false}
+{"name": "Serge", "token": "Br-A2Ly1XYYF65yHFo2cQA", "role": "director"}
 ```
-Name    Token                   Role      Active
-Dennis  3R5iNHN5ROLvLG3VpoMocQ  player    yes
-Menno   T7bAvKQEr4tRNMbF-EJ6Rw  player    no
-Serge   Br-A2Ly1XYYF65yHFo2cQA  director  yes
-```
 
-Same shape as the old column files. Gitignored, because the tokens are secrets.
+Only `name` is required. `token` absent means no link has been issued, `role` defaults to
+`player`, `active` defaults to true. Writing only what differs from the default keeps a line
+readable, and it is what lets somebody exist here with no token at all.
 
-Columns are read by position, and a field is split off on whitespace, so an empty one would
-collapse into the gap between its neighbours. Every column is therefore written out: an ordinary
-player has the role `player`, not a blank. A file from before a column existed is still read, with
-the missing column taking its default, so adding one costs nothing.
+That last part is why this is JSON rather than columns. A tokenless row cannot be written in
+positional whitespace: the empty field collapses into the gap and the role is read as the token.
+Which meant a name known only from a game's roster had nowhere to record that it had been put
+aside.
 
-A name holds no spaces, and one typed with them is stored with underscores instead. It is a column
-here, a field in `ships.jsonl`, and part of a filename (`ready/<player>.txt`), so it has to survive
-all three. Looking a name up accepts either spelling.
+`active: false` is someone deactivated: they keep their name, old games still name them, and
+nobody else can claim it, but no token of theirs resolves to anyone and the scenario screens do
+not offer them.
 
-`Active` is `no` for someone deactivated: they keep their name, and old games still name them, but
-no token of theirs resolves to anyone and the new-game screen does not offer them. Distinct from
-revoking, which takes the row away and frees the name.
+Three things you can do to a row, and they are separate on purpose. **Removing the link** clears
+`token` and keeps the person. **Deactivating** sets `active` and keeps everything. **Removing**
+takes the row away and frees the name.
+
+**This file is the whole list.** Game rosters are not consulted to build it, so a name is here
+because somebody put it here and removing it removes it. A ship in a game can still name someone
+who has no row, and nothing on the players page will say so; the game's own page is where you see
+who commands what.
+
+Hand-editable on purpose: this file is how you let yourself back in when locked out.
 
 A token is a long random string standing for the person holding it: it goes out in a link, comes
 back in a cookie, and is what an interface trades for an identity. Kept in plain text so a link can

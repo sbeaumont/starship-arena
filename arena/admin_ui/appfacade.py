@@ -14,7 +14,7 @@ from pathlib import Path
 from arena.app.dto import GameSettings
 from arena.app.services import AdminService
 from arena.engine.admin import GameSetup, regenerate_game
-from arena.engine.gamedirectory import GameDirectory, ShipFile
+from arena.engine.gamedirectory import GameDirectory
 from arena.engine.game import Game
 from arena.cfg import GAME_DATA_DIR, MANUAL_FILENAME
 from arena.engine.objects.registry.builder import all_ship_types
@@ -194,8 +194,14 @@ class AppFacade(object):
     def issue_login(self, name: str, director: bool = False):
         return self.admin.issue_login(name, director)
 
-    def revoke_login(self, name: str) -> None:
-        self.admin.revoke_login(name)
+    def reissue_login(self, name: str):
+        return self.admin.reissue_login(name)
+
+    def remove_login(self, name: str) -> None:
+        self.admin.remove_login(name)
+
+    def remove_player(self, name: str) -> None:
+        self.admin.remove_player(name)
 
     def set_player_active(self, name: str, active: bool) -> None:
         self.admin.set_player_active(name, active)
@@ -210,9 +216,4 @@ class AppFacade(object):
 
     def create_new_game(self, name: str, ships: list[dict]):
         logger.info(f"Creating new game: {name}")
-
-        gd = GameDirectory(str(self.data_root), name)
-        if not gd.exists or not gd.has_been_setup:
-            logger.info(f"Setting up game {name}, since this was not done yet.")
-            ship_file = ShipFile(gd, ships)
-            GameSetup(gd, ship_file).execute()
+        self.admin.create_game(name, ships)

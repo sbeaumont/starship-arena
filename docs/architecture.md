@@ -70,11 +70,11 @@ would end up as the union of two vocabularies.
 Measured from the imports, today:
 
 ```
-admin_ui -> app      2
+admin_ui -> app      3
 admin_ui -> engine   5
-api      -> app      4
+api      -> app      3
 app      -> engine   8
-cli      -> app      1
+cli      -> app      2
 cli      -> engine   4
 ```
 

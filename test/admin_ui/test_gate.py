@@ -55,16 +55,16 @@ class TestConsoleGate(TestCase):
         token = self.registry.issue('Menno').token
         self.assertEqual(403, app.test_client().get(f'/players?login={token}').status_code)
 
-    def test_the_director_can_issue_and_revoke(self):
+    def test_the_director_can_issue_and_remove(self):
         self.as_('Serge', role=DIRECTOR)
         self.client.post('/players/issue', data={'name': 'Menno'})
         self.assertIsNotNone(self.registry.by_name('Menno'))
-        self.client.post('/players/revoke', data={'name': 'Menno'})
+        self.client.post('/players/act', data={'remove': 'Menno'})
         self.assertIsNone(self.registry.by_name('Menno'))
 
-    def test_players_lists_who_still_needs_a_link(self):
+    def test_players_lists_the_registry_and_not_the_rosters(self):
         self.as_('Serge', role=DIRECTOR)
         page = self.client.get('/players').get_data(as_text=True)
-        # Menno commands a ship in the game but has no login yet.
-        self.assertIn('Menno', page)
-        self.assertIn('no link yet', page)
+        # Menno commands a ship in the game, which is not what puts a name on this page.
+        self.assertNotIn('Menno', page)
+        self.assertIn('Serge', page)
