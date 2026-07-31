@@ -51,6 +51,7 @@ READY_FILE_TEMPLATE = READY_DIR + "{}.txt"
 READY_LINE_TEMPLATE = "Round {} Ready"
 COMMAND_FILE_TEMPLATE = COMMANDS_DIR + "{}-commands-{}.txt"
 INIT_FILE_NAME = "ships.jsonl"
+SPAWN_FILE_NAME = "spawns.jsonl"
 ARCHIVE_DIR_NAME = "archived"
 SETTINGS_FILE_NAME = "settings.txt"
 # Who may log in, across every game. Lives at the data root rather than inside a game, because a

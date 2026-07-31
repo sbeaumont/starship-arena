@@ -216,6 +216,12 @@ textarea { min-height: 160px; resize: vertical; line-height: 1.5; }
 .shiprow .coord { text-align: right; }
 .shiprow input::placeholder { color: var(--ink-faint); }
 
+.spawnrow { display: grid; gap: 10px; align-items: end; }
+.spawnrow.three { grid-template-columns: 1.2fr 1fr 1fr; }
+.spawnrow.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.spawn label { margin: 12px 0 6px; }
+.spawn .coord { text-align: right; }
+
 .shiprow .drop {
     padding: 0;
     height: 26px;

@@ -160,6 +160,15 @@ each section.
   `CommandSet.add` keeps all the tick ordering visible in one place, which is what makes it easy
   to move a command between phases while debugging.
 
+## Application services (`arena/app/`)
+
+- [ ] **`_EngineAccess` is a shared-behaviour base wearing an access name.** It holds `_gd`,
+      `list_games` and `_archive`, which is what the name promises, and then `settings`,
+      `save_settings`, `all_ready`, `is_ready`, `set_ready`, `pulse`, `games_for_player` and
+      `_roster`, which are shared game operations. `_roster` now builds a `Game` to answer, so a
+      class named for reaching files constructs an engine object. Either thin the base to file
+      access and put the shared operations somewhere honest, or rename it for what it is.
+
 ## Documentation (`docs/`)
 
 Written with the author, not handed over as a draft: the intent is human understanding *and*

@@ -192,8 +192,31 @@ def game_overview(game_name: str):
                            ships=len(command_file),
                            orders_in=sum(1 for ok in command_file.values() if ok),
                            all_command_files_ok=game.current_round_ready,
-                           dead_ships=game.graveyard.values()
+                           dead_ships=game.graveyard.values(),
+                           known_players=[p.name for p in facade().active_players()],
+                           ship_types=facade().all_ship_types.values(),
+                           starbase_types=facade().all_starbase_types.values(),
+                           spawn_error=request.args.get('spawn_error')
                            )
+
+
+@app.route('/spawn/<game>', methods=['POST'])
+def spawn(game: str):
+    """Schedule a ship for the start of a round. It takes its first orders the round after."""
+    form = request.form
+    try:
+        facade().spawn_ship(game,
+                            name=form.get('name', '').strip(),
+                            ship_type=form.get('type', ''),
+                            player=form.get('player', '').strip(),
+                            faction=form.get('faction', '').strip(),
+                            x=int(form.get('x') or 0),
+                            y=int(form.get('y') or 0),
+                            heading=int(form.get('heading') or 0),
+                            round_nr=int(form.get('round') or 0))
+    except ValueError as refused:
+        return redirect(url_for('game_overview', game_name=game, spawn_error=str(refused)))
+    return redirect(url_for('game_overview', game_name=game))
 
 
 @app.route('/game_status/<game>')

@@ -63,6 +63,9 @@ class MockGameDirectory(object):
     def load_world(self, round_nr: int):
         return self.world
 
+    def load_spawns(self) -> list:
+        return []
+
     def command_file_exists(self, ship_name, round_nr):
         return (ship_name, round_nr) in commands
 

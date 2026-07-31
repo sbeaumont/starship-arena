@@ -67,6 +67,63 @@
     </div>
 {% endif %}
 
+<details class="settings" {{ 'open' if spawn_error }}>
+    <summary>Spawn a ship</summary>
+    {% if spawn_error %}<ul class="messages"><li>{{ spawn_error }}</li></ul>{% endif %}
+    <form method="POST" action="{{ url_for('spawn', game=game) }}" class="spawn">
+        <div class="spawnrow one">
+            <span>
+                <label for="spawn_name">Name</label>
+                <input type="text" id="spawn_name" name="name" autocomplete="off" required>
+            </span>
+        </div>
+
+        <div class="spawnrow three">
+            <span>
+                <label for="spawn_type">Type</label>
+                <select id="spawn_type" name="type">
+                    <optgroup label="Ships">
+                        {% for st in ship_types %}<option value="{{ st.name }}">{{ st.name }}</option>{% endfor %}
+                    </optgroup>
+                    <optgroup label="Starbases">
+                        {% for st in starbase_types %}<option value="{{ st.name }}">{{ st.name }}</option>{% endfor %}
+                    </optgroup>
+                </select>
+            </span>
+            <span>
+                <label for="spawn_player">Player</label>
+                <input type="text" id="spawn_player" name="player" list="known_players" autocomplete="off">
+            </span>
+            <span>
+                <label for="spawn_faction">Faction</label>
+                <input type="text" id="spawn_faction" name="faction" list="known_factions" autocomplete="off">
+            </span>
+        </div>
+
+        <div class="spawnrow four">
+            <span><label for="spawn_x">X</label>
+                <input type="text" id="spawn_x" name="x" value="0" class="coord"></span>
+            <span><label for="spawn_y">Y</label>
+                <input type="text" id="spawn_y" name="y" value="0" class="coord"></span>
+            <span><label for="spawn_heading">Heading</label>
+                <input type="text" id="spawn_heading" name="heading" value="0" class="coord"></span>
+            <span><label for="spawn_round">Round</label>
+                <input type="text" id="spawn_round" name="round" value="{{ round_nr }}" class="coord"></span>
+        </div>
+
+        <datalist id="known_players">
+            {% for p in known_players %}<option value="{{ p }}">{% endfor %}
+        </datalist>
+        <datalist id="known_factions">
+            {% for f in factions %}<option value="{{ f }}">{% endfor %}
+        </datalist>
+
+        <div class="rowactions">
+            <button class="go" type="submit">Spawn</button>
+        </div>
+    </form>
+</details>
+
 <details class="settings">
     <summary>Processing
         {%- if settings.on_all_ready or settings.process_hours %} <span class="when">&mdash;

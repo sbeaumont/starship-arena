@@ -130,10 +130,17 @@ class GameDirectory(object):
     def load_world(self, round_nr) -> World:
         return StatusFile(self, round_nr).load()
 
+    def load_spawns(self) -> list[dict]:
+        return SpawnFile(self).load()
+
     # ---------------------------------------------------------------------- COMMANDS
 
     def save_world(self, world: World, nr: int):
         StatusFile(self, nr).save(world)
+
+    def append_spawn(self, record: dict):
+        """A plan is added to rather than rewritten, unlike the world it will produce."""
+        SpawnFile(self).append(record)
 
     def clean(self, keep_pickle_files=False):
         """Clean the game directory of all generated files."""
@@ -190,7 +197,22 @@ class GameFile(ABC):
             f.write('\n'.join(contents))
 
 
-class ShipFile(GameFile):
+class JsonLinesFile(GameFile):
+    """One JSON object per line, '#' starts a comment."""
+
+    def load(self) -> list[dict]:
+        records = list()
+        for nr, line in enumerate(super().load(), start=1):
+            if not line or line.startswith('#'):
+                continue
+            try:
+                records.append(json.loads(line))
+            except json.JSONDecodeError as e:
+                raise ValueError(f"{self.full_name} line {nr}: {e.msg}") from e
+        return records
+
+
+class ShipFile(JsonLinesFile):
     @dataclass
     class ShipFileLine:
         name: str
@@ -213,17 +235,6 @@ class ShipFile(GameFile):
     @property
     def name(self):
         return INIT_FILE_NAME
-
-    def load(self) -> list[dict]:
-        records = list()
-        for nr, line in enumerate(super().load(), start=1):
-            if not line or line.startswith('#'):
-                continue
-            try:
-                records.append(json.loads(line))
-            except json.JSONDecodeError as e:
-                raise ValueError(f"{self.full_name} line {nr}: {e.msg}") from e
-        return records
 
     @staticmethod
     def line_from_record(record: dict):
@@ -249,6 +260,24 @@ class ShipFile(GameFile):
         return record
 
 
+class SpawnFile(JsonLinesFile):
+    """The plan for arrivals: what a director scheduled, and later what a scenario triggers.
+
+    A plan is added to, never rewritten, so a line stands for one instruction that was given.
+    What a ShipSpawner creates does not belong here: its Fire order is already the instruction,
+    and a second record would spawn it twice on a replay."""
+
+    def __init__(self, gd: GameDirectory):
+        super().__init__(gd, SPAWN_FILE_NAME)
+
+    def load(self) -> list[dict]:
+        return super().load() if self.exists else list()
+
+    def append(self, record: dict):
+        with open(self.full_name, 'a') as f:
+            f.write(json.dumps(record) + '\n')
+
+
 class StatusFile(GameFile):
     """Pickle file with the state of the game between rounds."""
     def __init__(self, gd: GameDirectory, nr: int):
@@ -265,7 +294,9 @@ class StatusFile(GameFile):
 
     def load(self) -> World:
         with open(self.full_name, 'rb') as f:
-            return pickle.load(f)
+            world = pickle.load(f)
+        world.kept_in(self.gd)
+        return world
 
     def save(self, world: World):
         assert isinstance(world, World)

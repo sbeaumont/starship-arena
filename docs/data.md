@@ -7,28 +7,49 @@ the root. There's no database.
 <data root>/
     players.txt              who can log in, across all games
     <game name>/
-        ships.jsonl          the roster: who commands what, and where it started
+        ships.jsonl          the plan: the roster the game starts from
+        spawns.jsonl         the plan: arrivals the director scheduled
         commands/
-            <ship>-commands-<round>.txt
-        status_round_<n>.pickle
+            <ship>-commands-<round>.txt      the plan: what each player ordered
+        status_round_<n>.pickle              the state: the world at the end of a round
 ```
 
-## What is precious and what is not
+## Plan and state
 
-**The text files are the game.** `ships.jsonl` and the command files are what a player wrote and
-what the director set up. They're tracked in git for the test games, and they're irreplaceable.
+Every file here is one or the other, and which one decides everything about how it is written,
+whether it can be thrown away, and who is allowed to touch it.
 
-**The pickles are derived.** Each one holds the whole world at the end of a round, the objects
-still in space and the graveyard together, so looking back at round 3 shows the wrecks there were
-by then rather than the ones there are now. They can always be rebuilt by replaying the command
-files, because [the game is deterministic](architecture.md#processing-a-round). They're gitignored.
+**A plan says what should happen.** The roster, the scheduled arrivals, the orders. Somebody wrote
+it: a player typing commands, a director setting a game up or spawning a reinforcement. It is text,
+it is authored, and it is added to rather than recomputed. Nothing can rebuild it, so it is
+irreplaceable and tracked in git for the test games.
 
-So when saved state stops matching the code, delete it and regenerate. Never write a compatibility
-shim to read an old shape. The console's **Regenerate** button does exactly this: drop the pickles,
+**State is what did happen.** The world at the end of each round: everything in space, the
+graveyard, and what has arrived. Nobody writes it by hand. It is a pickle, it is rewritten whole
+every round, and it can always be rebuilt by replaying the plans, because [the game is
+deterministic](architecture.md#processing-a-round). So it is gitignored and disposable.
+
+The test that decides which one a new file is: **could the engine produce it again from what is
+left after you delete it?** If yes it is state. If no it is a plan, and losing it loses the game.
+
+Two consequences worth spelling out, because both have caught us:
+
+**A thing that happens must be in exactly one plan.** A ship the director schedules goes in
+`spawns.jsonl`, because nothing else records that instruction. A ship a starbase's spawner creates
+does *not*, because the Fire order that created it is already in a command file, and a second
+record would produce two ships on a replay.
+
+**State must never be the only home for anything.** Anything written into the world and nowhere
+else survives exactly until the next regenerate.
+
+## Regenerating
+
+When saved state stops matching the code, delete it and rebuild. Never write a compatibility shim
+to read an old shape. The console's **Regenerate** button does exactly this: drop the pickles,
 re-run setup, replay every round up to where the game was.
 
 Regenerating a game that has been running against older engine code will produce different combat
-outcomes. Same commands, but the rules have moved.
+outcomes. Same plans, but the rules have moved.
 
 ## ships.jsonl
 
@@ -53,6 +74,23 @@ An absent field is why this is JSON rather than columns. Positional whitespace h
 
 **`player` is an identity, not a label.** It's the name someone logs in with, so a typo creates a
 commander who can never sign in. The new game screen autocompletes it for that reason.
+
+## spawns.jsonl
+
+Arrivals the director scheduled. Same format, one object per line, added to and never rewritten:
+a line is one instruction that was given.
+
+```jsonl
+{"round": 3, "tick": 1, "name": "Voyager-2", "type": "A2527", "faction": "One", "player": "Rik", "x": 479, "y": 121, "heading": 90}
+```
+
+`round` and `tick` are when it appears, and are what make a replay put it back in the same place.
+`player` and `faction` are optional, `heading` and `speed` default to 0.
+
+The file is absent until something is scheduled.
+
+A ship arriving in round N takes its first orders in round N+1: it is not in the world when round
+N's readiness is checked, so nothing waits for orders it could not have written.
 
 ## settings.txt
 

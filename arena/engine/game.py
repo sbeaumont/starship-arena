@@ -3,6 +3,8 @@ import logging
 
 from arena.engine.command import Commandable, parse_commands, CommandSet
 from arena.engine.gamedirectory import GameDirectory
+from arena.engine.history import Tick
+from arena.engine.objects.registry import builder
 from .round import GameRound
 from .world import World
 
@@ -19,7 +21,7 @@ class Game(object):
         self._dir = gd
         self.rounds = dict()
         # The latest world, until a round is initialised and replaces it with that round's.
-        self.world = gd.load_current_world() or World()
+        self.world = gd.load_current_world() or World(gd)
 
     def init_round(self, round_nr) -> GameRound:
         """Initialize for the given round number."""
@@ -28,7 +30,18 @@ class Game(object):
         # Initialize the - unprocessed - current round with the data from the previous round.
         round_to_load = round_nr if round_nr < self.current_round_nr else self.current_round_nr - 1
         self.world = self._dir.load_world(round_to_load)
+        self.plan_spawns(round_nr)
         return GameRound(self.world, round_nr)
+
+    def plan_spawns(self, round_nr: int):
+        """Put this round's lines of the spawn plan on the world, to arrive at their tick.
+
+        The world is derived, so an arrival the director asked for lives in the plan or a
+        regenerate would lose it. What a ShipSpawner creates is not there: its Fire order is
+        the instruction, and a second record would spawn it twice."""
+        for record in self._dir.load_spawns():
+            if record['round'] == round_nr:
+                self.world.plan_spawn(builder.from_plan(record, Tick(round_nr, record['tick'])))
 
     def clear(self):
         self._dir.clean()
@@ -100,7 +113,7 @@ class Game(object):
 
         # Save the state of the current round.
         logger.debug(f"Saving game {self._dir.game_name} round {cr.round_nr}")
-        self._dir.save_world(cr.world, cr.round_nr)
+        cr.world.save(cr.round_nr)
 
 
     def load_commands(self):

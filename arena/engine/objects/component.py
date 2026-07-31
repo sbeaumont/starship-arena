@@ -9,6 +9,7 @@ docs/adr/0019-machines-drive-components-through-one-vocabulary.md."""
 
 import re
 from abc import ABC
+from enum import Enum
 
 from arena.engine.history import Tick
 from arena.engine.world import World
@@ -110,8 +111,26 @@ class ComponentSelectorParameter(Parameter):
         return self.owner.all_components[self._input]
 
 
+class Whereabouts(str, Enum):
+    """One of the world's collections, named after it, to say where an order looks for a name."""
+    Objects = 'objects'
+    Graveyard = 'graveyard'
+    Spawns = 'spawns'
+
+    def __str__(self):
+        return self.value
+
+
+ANYWHERE = frozenset(Whereabouts)
+
+
 class ObjectByNameParameter(ComponentParameter):
-    """Identifies a named object in space. Example is a laser that fires at a named object instead of a direction."""
+    """Identifies a named object. A laser names what it shoots at, a spawner names a wreck."""
+
+    def __init__(self, name: str, component: Component,
+                 whereabouts=frozenset({Whereabouts.Objects})):
+        super().__init__(name, component)
+        self.whereabouts = whereabouts
 
     @property
     def kind(self) -> str:
@@ -135,8 +154,19 @@ class ObjectByNameParameter(ComponentParameter):
 
     @property
     def value(self):
-        """Only what is live: a shot at something since destroyed fizzles rather than hitting."""
-        return self.world.objects.get(self._input, None)
+        """Whatever carries the name, in the parts of the world this order looks in.
+
+        A laser looks in space only, so a shot at something since destroyed fizzles rather than
+        hitting a corpse. Names are unique across the world, so the order of the search does not
+        decide the answer."""
+        collections = {Whereabouts.Objects: self.world.objects,
+                       Whereabouts.Graveyard: self.world.graveyard,
+                       Whereabouts.Spawns: self.world.spawns}
+        for part in self.whereabouts:
+            found = collections[part].get(self._input)
+            if found:
+                return found
+        return None
 
     @property
     def object_name(self):

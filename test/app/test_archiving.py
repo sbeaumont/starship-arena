@@ -5,19 +5,18 @@ from unittest import TestCase
 
 from arena.app.services import AdminService, GameService
 
-SHIPS = '{"name": "Alpha", "type": "A2527", "faction": "One", "player": "Serge", "x": 0, "y": 0}\n'
+SHIPS = [{'name': 'Alpha', 'type': 'A2527', 'faction': 'One', 'player': 'Serge', 'x': 0, 'y': 0}]
 
 
 class TestArchiving(TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
         self.games = os.path.join(self.root, 'games')
-        for name in ('live', 'old'):
-            os.makedirs(os.path.join(self.games, name))
-            with open(os.path.join(self.games, name, 'ships.jsonl'), 'w') as f:
-                f.write(SHIPS)
+        os.makedirs(self.games)
         self.admin = AdminService(self.games)
         self.game = GameService(self.games)
+        for name in ('live', 'old'):
+            self.admin.create_game(name, SHIPS)
 
     def tearDown(self):
         shutil.rmtree(self.root, ignore_errors=True)

@@ -6,6 +6,7 @@ from arena.engine.objects.components.defense import Shields
 from arena.engine.objects.components.launcher import Launcher
 from arena.engine.objects.components.laser import Laser
 from arena.engine.objects.components.scanner import Gravscan
+from arena.engine.objects.components.spawner import ShipSpawner
 
 
 class SB2531(ShipType):
@@ -37,5 +38,6 @@ class SB2531(ShipType):
             Launcher('S2', Splinter(), 5),
             Launcher('R1', Rocket(), 5),
             Launcher('R2', Rocket(), 5),
-            Gravscan('G')
+            Gravscan('G'),
+            ShipSpawner('SS', 3)
         ]

@@ -54,14 +54,12 @@ class _EngineAccess:
                 for d in sorted(root.iterdir()) if d.is_dir()]
 
     def _roster(self, game: str) -> dict[str, str]:
-        """Which player commands which ship, from the game's ships file.
+        """Which player commands which ship.
 
-        The ships file rather than the saved rounds: it costs no unpickling, and it still lists a
-        player whose every ship has been destroyed."""
-        gd = self._gd(game)
-        if not Path(gd.init_file).exists():
-            return {}
-        return {line.name: line.player for line in ShipFile(gd).ship_lines if line.player}
+        The world rather than the ships file, because a ship the director spawned or a starbase
+        replaced is in no roster. The world holds everything that exists and, keeping its own
+        graveyard, everything that ever did."""
+        return {s.name: s.player for s in Game(self._gd(game)).world.player_objects.values()}
 
     def settings(self, game: str) -> GameSettings:
         raw = self._gd(game).read_settings()
@@ -487,6 +485,34 @@ class AdminService(_EngineAccess):
         gd = GameDirectory(self.data_root, name)
         if not gd.exists or not gd.has_been_setup:
             GameSetup(gd, ShipFile(gd, ships)).execute()
+
+    def spawn_ship(self, game: str, name: str, ship_type: str, player: str = '',
+                   faction: str = None, x: int = 0, y: int = 0, heading: int = 0,
+                   round_nr: int = None, tick: int = 1) -> None:
+        """Schedule a ship for the start of a round, this one or a later one.
+
+        Tick 1 by default, so a director's reinforcement is there for the whole round rather than
+        appearing in the middle of a fight. Arriving part way through is what a scenario trigger
+        is for. Written to the spawn plan rather than into the world, because the world is derived
+        and a regenerate would otherwise lose it."""
+        gd = self._gd(game)
+        g = Game(gd)
+        round_nr = g.current_round_nr if round_nr is None else round_nr
+        if round_nr < g.current_round_nr:
+            raise ValueError(f"Round {round_nr} has been played. The earliest is {g.current_round_nr}.")
+        if name in g.world.all_names:
+            raise ValueError(f"'{name}' has been used in this game already.")
+        if ship_type not in all_ship_types:
+            raise ValueError(f"'{ship_type}' is not a known ship type.")
+        if player and not self.players.by_name(player):
+            raise ValueError(f"'{player}' has no login. Issue one first.")
+        record = {'round': round_nr, 'tick': tick, 'name': name, 'type': ship_type,
+                  'x': x, 'y': y, 'heading': heading}
+        if player:
+            record['player'] = player
+        if faction:
+            record['faction'] = faction
+        gd.append_spawn(record)
 
     def process_turn(self, game: str) -> None:
         g = Game(self._gd(game))

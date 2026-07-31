@@ -7,16 +7,15 @@ from unittest import TestCase
 from arena.admin_ui import appfacade
 from arena.admin_ui.app import app
 from arena.app.players import DIRECTOR, LOGIN_COOKIE, PlayerRegistry
+from arena.app.services import AdminService
 
-SHIPS = '{"name": "McAve", "type": "F2547", "faction": "Three", "player": "Menno", "x": 0, "y": 0}\n'
+SHIPS = [{'name': 'McAve', 'type': 'F2547', 'faction': 'Three', 'player': 'Menno', 'x': 0, 'y': 0}]
 
 
 class TestConsoleGate(TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
-        os.makedirs(os.path.join(self.root, 'mygame'))
-        with open(os.path.join(self.root, 'mygame', 'ships.jsonl'), 'w') as f:
-            f.write(SHIPS)
+        AdminService(self.root).create_game('mygame', SHIPS)
         # The facade reads this when it is built, which is once per request.
         self.original, appfacade.GAME_DATA_DIR = appfacade.GAME_DATA_DIR, self.root
         self.registry = PlayerRegistry(self.root)

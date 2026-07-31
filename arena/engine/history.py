@@ -132,6 +132,9 @@ class History(object):
         super().__init__()
         self.owner = owner
         self.ticks = defaultdict(TickHistory)
+        # Opening the timeline here on purpose, not only to have somewhere to write: `first` is
+        # then the tick this came into being, and that is how a planned arrival knows its moment.
+        # The tick may be in the future, for something built ahead of when it is due.
         self.current: TickHistory = self.ticks[tick]
 
     # ---------------------------------------------------------------------- QUERIES

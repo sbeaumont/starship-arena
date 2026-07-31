@@ -200,6 +200,11 @@ class AppFacade(object):
     def set_player_active(self, name: str, active: bool) -> None:
         self.admin.set_player_active(name, active)
 
+    def spawn_ship(self, game: str, name: str, ship_type: str, player: str, faction: str,
+                   x: int, y: int, heading: int, round_nr: int) -> None:
+        self.admin.spawn_ship(game, name, ship_type, player=player, faction=faction,
+                              x=x, y=y, heading=heading, round_nr=round_nr)
+
     def active_players(self) -> list:
         return [p for p in self.logins() if p.active]
 

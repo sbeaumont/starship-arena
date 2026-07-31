@@ -1,7 +1,7 @@
 """What the game API lets an unknown, a player and the director do.
 
-Only the ships file is needed here: who owns what is read from it, and the access decision is
-taken before any saved round is loaded.
+Who owns what is read from the game's world, and the access decision is taken before any round
+is processed.
 """
 import os
 import shutil
@@ -13,18 +13,16 @@ from fastapi.testclient import TestClient
 from arena.api import game as game_api
 from arena.api.app import app
 from arena.app.players import DIRECTOR
-from arena.app.services import GameService
+from arena.app.services import AdminService, GameService
 
-SHIPS = ('{"name": "McAve", "type": "F2547", "faction": "Three", "player": "Menno", "x": 0, "y": 0}\n'
-         '{"name": "Other", "type": "A2527", "faction": "One", "player": "Rik", "x": 100, "y": 0}\n')
+SHIPS = [{'name': 'McAve', 'type': 'F2547', 'faction': 'Three', 'player': 'Menno', 'x': 0, 'y': 0},
+         {'name': 'Other', 'type': 'A2527', 'faction': 'One', 'player': 'Rik', 'x': 100, 'y': 0}]
 
 
 class TestLogin(TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
-        os.makedirs(os.path.join(self.root, 'mygame'))
-        with open(os.path.join(self.root, 'mygame', 'ships.jsonl'), 'w') as f:
-            f.write(SHIPS)
+        AdminService(self.root).create_game('mygame', SHIPS)
         self.service = GameService(self.root)
         self.original, game_api.service = game_api.service, self.service
         # https, so the client keeps a Secure cookie the way a browser would.

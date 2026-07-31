@@ -65,7 +65,7 @@ class GameSetup(object):
         self._dir: GameDirectory = game_directory
         self.shipfile = ship_file if ship_file else ShipFile(self._dir)
         self.ships: dict = self._init_ships(self.shipfile.ship_lines)
-        self.world = World(self.ships)
+        self.world = World(self._dir, self.ships)
 
     def execute(self):
         self._dir.setup_directories()
@@ -98,7 +98,7 @@ class GameSetup(object):
 
     def save(self):
         """Save the round 0 pickle file and the ships file with coordinates (to ensure idempotency)."""
-        self._dir.save_world(self.world, 0)
+        self.world.save(0)
         self.shipfile.save(self.ships.values())
 
 
