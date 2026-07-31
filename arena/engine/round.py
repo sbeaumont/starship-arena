@@ -6,14 +6,15 @@ import logging
 
 from arena.engine.command import Commandable, CommandSet
 from arena.engine.history import Tick
+from arena.engine.world import World
 
 logger = logging.getLogger('starship-arena.round')
 
 
 class GameRound(object):
     """Takes the correct steps to process a game round."""
-    def __init__(self, objects_in_space: dict, round_nr: int):
-        self.ois = objects_in_space
+    def __init__(self, world: World, round_nr: int):
+        self.world = world
         self.destroyed = dict()
         self.round_nr = round_nr
 
@@ -43,48 +44,51 @@ class GameRound(object):
 
         logger.info(f"Processing tick {tick}")
         # Set up the reporting for the tick
-        for ois in self.ois.values():
+        for ois in self.world.objects.values():
             ois.history.set_tick(tick)
             ois.tick(tick)
 
         # Do everything that has to happen before moving, then move each ship
-        for ois in self.ois.values():
+        for ois in self.world.objects.values():
             ois.generate()
             ois.use_energy()
             if isinstance(ois, Commandable) and ois.commands and (tick_nr in ois.commands):
                 self.pre_move_commands(ois.commands[tick_nr], tick)
-            ois.pre_move(self.ois)
+            ois.pre_move(self.world)
             ois.move()
 
         # All ships perform their post move commands do post-move commands like firing weapons
-        for ois in list(self.ois.values()):
+        for ois in list(self.world.objects.values()):
             if isinstance(ois, Commandable) and ois.commands and (tick_nr in ois.commands):
                 self.post_move_commands(ois.commands[tick_nr], tick)
 
         # All ships scan, "intelligent" objects make decisions (like guided missiles intercepting their target)
-        for ois in list(self.ois.values()):
-            ois.scan(self.ois)
-            ois.decide(self.ois, tick)
+        for ois in list(self.world.objects.values()):
+            ois.scan(self.world)
+            ois.decide(self.world, tick)
 
         # Perform post move steps like commands that perform at post move.
         # and finally update the snapshot
-        for ois in list(self.ois.values()):
-            ois.post_move(self.ois)
+        for ois in list(self.world.objects.values()):
+            ois.post_move(self.world)
             ois.history.update()
 
-        # Remove dead items
-        for ois_name, ois in self.ois.copy().items():
+        # Clear the dead out, keeping the ones whose loss is worth a record.
+        for ois_name, ois in self.world.objects.copy().items():
             if ois.is_destroyed:
                 logger.info(f"{ois_name} destroyed")
-                self.destroyed[ois_name] = self.ois[ois_name]
-                del self.ois[ois_name]
+                self.destroyed[ois_name] = ois
+                if ois.leaves_a_wreck:
+                    self.world.move_to_graveyard(ois)
+                else:
+                    self.world.remove(ois)
 
     def do_round(self, ship_commands: dict):
         """The main execution of the round. Here is where it all happens."""
-        for ois in self.ois.values():
+        for ois in self.world.objects.values():
             ois.round_reset()
 
-        for ship in [s for s in self.ois.values() if isinstance(s, Commandable)]:
+        for ship in [s for s in self.world.objects.values() if isinstance(s, Commandable)]:
             ship.commands = ship_commands[ship.name]
 
         # Do 10 ticks, 1-10
@@ -92,5 +96,5 @@ class GameRound(object):
         for t in round_start.ticks_for_round:
             self.do_tick(t)
 
-        for ois in self.ois.values():
+        for ois in self.world.objects.values():
             ois.post_round_reset()

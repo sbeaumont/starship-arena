@@ -12,6 +12,7 @@ from .event import InternalEvent
 from .objectinspace import ObjectInSpace, Vector
 from .machineinspace import MachineInSpace, MachineType
 from arena.engine.history import Tick, TICK_ZERO
+from arena.engine.world import World
 
 logger = logging.getLogger(__name__)
 
@@ -55,12 +56,12 @@ class Missile(MachineInSpace):
 
     # ---------------------------------------------------------------------- ENGINE HOOKS
 
-    def decide(self, objects_in_space: dict, tick: Tick):
-        self.warhead.decide(objects_in_space, tick)
+    def decide(self, world: World, tick: Tick):
+        self.warhead.decide(world, tick)
         if not self.is_destroyed:
             self._intercept()
 
-    def post_move(self, objects_in_space):
+    def post_move(self, world):
         # Die when battery is dead.
         self.battery -= self.energy_per_move
         if self.is_destroyed and (self.battery <= 0):
@@ -94,10 +95,10 @@ class GuidedMissile(Missile):
             amount = self._type.max_turn
         self.vector = self.vector.turn(amount)
 
-    def scan(self, objects_in_space: dict):
+    def scan(self, world: World):
         """Find the nearest enemy object in the scan cone"""
         self.target = None
-        for ois in [o for o in objects_in_space.values() if (o != self) and (o.owner.faction != self.owner.faction)]:
+        for ois in [o for o in world.objects.values() if (o != self) and (o.owner.faction != self.owner.faction)]:
             if self.can_scan(ois) and self.in_scan_cone(ois):
                 if self.target:
                     if self.distance_to(ois.xy) < self.distance_to(self.target.xy):

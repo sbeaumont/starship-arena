@@ -76,6 +76,11 @@ on.
 records where something was, never its heading, so a contact's course is inferred from its last
 two sightings and single sightings have no course at all.
 
+**World.** Everything an object can ask about the game beyond itself: what is in space, and the
+graveyard. Passed down every engine hook, saved whole once per round, and where anything
+world-spanning goes when it is added later.
+
 **Graveyard.** Destroyed ships and starbases, kept so their score still counts and whoever was
-flying them can look back at their history. Spent ordnance is not kept: a machine says whether it
+flying them can look back at their history. Part of the world, so each round holds the graveyard as
+it stood at the end of that round. Spent ordnance is not kept: a machine says whether it
 `leaves_a_wreck`, and only ships do.

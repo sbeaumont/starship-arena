@@ -27,6 +27,7 @@ from arena.engine.command import parse_commands, CommandSet
 from arena.engine.objects.objectinspace import Point
 from arena.engine.objects.registry.builder import create
 from arena.engine.round import GameRound
+from .ois.ois_fixtures import world_of
 from arena.engine.objects.components.control import Pilot, Gunner, TargetingMode
 
 
@@ -60,10 +61,11 @@ class TestGameOne(unittest.TestCase):
     def setUp(self):
         self.stub = GameDirectoryStub()
         self.objects = self.stub.ships
-        self.game_round = GameRound(self.objects, 1)
+        self.world = world_of(self.objects)
+        self.game_round = GameRound(self.world, 1)
         commands = [line.strip() for line in self.stub.commands().splitlines()]
         self.commands = {
-            'Blaster': parse_commands(commands, self.objects['Blaster'], self.objects),
+            'Blaster': parse_commands(commands, self.objects['Blaster'], self.world),
             'Shaper': {}
         }
 

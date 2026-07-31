@@ -1,6 +1,7 @@
 from enum import Enum, auto
 
 from arena.engine.history import Tick
+from arena.engine.world import World
 from arena.engine.objects.component import Component
 from arena.engine.objects.event import ExplosionEvent, HitEvent
 
@@ -28,20 +29,20 @@ class Warhead(Component):
             'Payload': self.name
         }
 
-    def decide(self, objects_in_space: dict, tick: Tick):
-        contact = self.contact_fraction(objects_in_space)
+    def decide(self, world: World, tick: Tick):
+        contact = self.contact_fraction(world)
         if contact is not None:
             self.container.place_at(self.container.position_at(contact))
-            self.explode(objects_in_space)
+            self.explode(world)
 
-    def contact_fraction(self, objects_in_space: dict) -> float | None:
+    def contact_fraction(self, world: World) -> float | None:
         """How far into this tick something worth exploding on first came within range.
 
         The earliest contact wins, so which object happens to be checked first cannot change
         where the warhead goes off.
         """
         contacts = list()
-        for ois in objects_in_space.values():
+        for ois in world.objects.values():
             if self.triggers_on(ois):
                 fraction = self.container.approach_fraction(ois, self.range)
                 if fraction is not None:
@@ -53,18 +54,18 @@ class Warhead(Component):
         return (ois is not self.container) and \
             (not ois.owner.faction or ois.owner.faction != self.owner.faction)
 
-    def explode(self, objects_in_space):
+    def explode(self, world):
         self.container.hull = 0
 
         # Generate the explosion: first all who can scan it see it.
         expl_event = ExplosionEvent(self.container.pos, self.damage_type, self.container, self.range)
-        for ois in objects_in_space.values():
+        for ois in world.objects.values():
             if ois.distance_to(expl_event.pos) <= ois._type.max_scan_distance:
                 ois.add_event(expl_event)
 
         # The explosion generates hits on ALL in range
         hits = list()
-        for ois in [ob for ob in objects_in_space.values() if ob != self.container]:
+        for ois in [ob for ob in world.objects.values() if ob != self.container]:
             distance = self.container.distance_to(ois.xy)
             if distance <= self.range:
                 damage = self._damage(ois)
@@ -76,7 +77,7 @@ class Warhead(Component):
         # All who can observe the hits see it. Owner has already seen all, so filter out.
         # Urgh, double loop. Not elegant. No performance problems so far.
         for hit in hits:
-            for ois in objects_in_space.values():
+            for ois in world.objects.values():
                 if ois.distance_to(hit.pos) <= ois._type.max_scan_distance:
                     ois.add_event(hit)
 

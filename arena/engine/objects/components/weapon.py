@@ -1,6 +1,7 @@
 from abc import ABC
 
 from arena.engine.history import Tick
+from arena.engine.world import World
 from arena.engine.objects.component import Component
 
 
@@ -22,7 +23,7 @@ class Weapon(Component, ABC):
             assert 0 <= firing_arc[1] <= 360
         self.firing_arc = firing_arc
 
-    def fire(self, params: dict, objects_in_space: dict, tick: Tick):
+    def fire(self, params: dict, world: World, tick: Tick):
         raise NotImplementedError
 
     def in_firing_arc(self, angle):

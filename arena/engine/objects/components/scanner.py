@@ -1,4 +1,5 @@
 from arena.engine.history import Tick
+from arena.engine.world import World
 from arena.engine.objects.components.weapon import Weapon
 from arena.engine.objects.event import ScanEvent
 from arena.engine.objects.component import DirectionParameter, NumberInRangeParameter
@@ -23,7 +24,7 @@ class Gravscan(Weapon):
         return [DirectionParameter('direction', self),
                 NumberInRangeParameter('scan cone', self, (30, 360))]
 
-    def fire(self, params: dict, objects_in_space: dict, tick: Tick):
+    def fire(self, params: dict, world: World, tick: Tick):
         direction = params['direction'].value
         scan_cone = params['scan cone'].value
 
@@ -35,7 +36,7 @@ class Gravscan(Weapon):
             self.add_internal_event(f"Gravscan {self.name} used {self.energy_per_pulse} energy.")
             self.add_internal_event(f"Gravscan {self.name} activated (width {scan_cone}, distance {scan_distance}).")
             pings = 0
-            for ois in objects_in_space.values():
+            for ois in world.objects.values():
                 if self.in_firing_arc(self.container.direction_to(ois.pos)):
                     if ois.modify_scan_range(self.container.distance_to(ois.pos)) <= scan_distance:
                         pings += 1

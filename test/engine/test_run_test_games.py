@@ -28,7 +28,7 @@ class TestGames(unittest.TestCase):
         pays half a point per damage rounded down, so the sum depends on the shot timing.
         """
         game = self._setup_game('test-game')
-        target = game._dir.load_current_status()['Shaper-1']
+        target = game._dir.load_current_world().objects['Shaper-1']
         shield = target.defense[0]
         self.assertGreater(shield.strengths['W'], 0)
         without_shield_damage = shield.shield_break_score + target.hull + target.kill_score
@@ -37,8 +37,9 @@ class TestGames(unittest.TestCase):
         self._run(game, number_of_rounds)
 
         self.assertEqual(number_of_rounds, game._dir.last_round_number)
-        ships_1 = game._dir.load_current_status()
-        wreck = game._dir.load_graveyard()['Shaper-1']
+        final = game._dir.load_current_world()
+        ships_1 = final.objects
+        wreck = final.graveyard['Shaper-1']
 
         self.assertNotIn('Shaper-1', ships_1)
         self.assertEqual(0, wreck.defense[0].strengths['W'])

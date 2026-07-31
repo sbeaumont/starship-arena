@@ -9,7 +9,7 @@ class Parameter(ABC):
     def __init__(self, name):
         self.name = name
         self._input = None
-        self.ois = None
+        self.world = None
         self.feedback = list()
 
     @property
@@ -20,11 +20,11 @@ class Parameter(ABC):
         feedback_list.extend(self.feedback)
 
     @property
-    def needs_ois(self) -> bool:
+    def needs_world(self) -> bool:
         return False
 
-    def set_ois(self, ois):
-        self.ois = ois
+    def set_world(self, world):
+        self.world = world
 
     @property
     @abstractmethod

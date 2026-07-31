@@ -5,6 +5,8 @@ from arena.engine.objects.objectinspace import Point, Vector
 from arena.engine.objects.registry import builder
 from arena.engine.objects.registry.missiles import Rocket
 
+from .ois_fixtures import world_of
+
 
 class TestWarheadTriggersOnItsPath(TestCase):
     """A tick is a jump, so a warhead has to test the path it flew, not where the tick ended.
@@ -19,6 +21,7 @@ class TestWarheadTriggersOnItsPath(TestCase):
         self.target = builder.create("Target", "H2545", (90, 0))
         self.target.faction = 'Two'
         self.ois = {'Shooter': self.shooter, 'Target': self.target}
+        self.world = world_of(self.ois)
 
     def _rocket_heading_east(self):
         rocket = Rocket().create("R", Vector(Point(0, 0), heading=90, speed=0), owner=self.shooter)
@@ -27,7 +30,7 @@ class TestWarheadTriggersOnItsPath(TestCase):
 
     def _tick(self, rocket):
         rocket.move()
-        rocket.decide(self.ois, TICK_ZERO)
+        rocket.decide(self.world, TICK_ZERO)
 
     def test_rocket_explodes_where_it_first_came_into_range(self):
         rocket = self._rocket_heading_east()
@@ -59,14 +62,14 @@ class TestWarheadTriggersOnItsPath(TestCase):
 
         rocket.move()
         self.target.move()
-        rocket.decide(self.ois, TICK_ZERO)
+        rocket.decide(self.world, TICK_ZERO)
 
         # Rocket 0 -> 60, target 200 -> 140: the gap closes from 200 to 80, never within 20.
         self.assertFalse(rocket.is_destroyed)
 
         rocket.move()
         self.target.move()
-        rocket.decide(self.ois, TICK_ZERO)
+        rocket.decide(self.world, TICK_ZERO)
 
         # Both cover 60, so the 80 gap closes at 120 a tick and reaches 20 half way along.
         self.assertTrue(rocket.is_destroyed)

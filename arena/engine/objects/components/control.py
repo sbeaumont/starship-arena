@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 
 from arena.engine.history import Tick
+from arena.engine.world import World
 from arena.engine.objects.component import Component
 from arena.engine.objects.components.laser import Laser
 from arena.engine.objects.missile import Missile
@@ -18,11 +19,11 @@ class Controller(Component, ABC):
         return dict()
 
     @abstractmethod
-    def decide(self, objects_in_space: dict, tick: Tick):
+    def decide(self, world: World, tick: Tick):
         pass
 
-    def add_command(self, tick_nr: int, command: str, objects_in_space):
-        cmd = Command.for_command_line(CommandLine(f"{tick_nr}: {command}"), self.container, objects_in_space)
+    def add_command(self, tick_nr: int, command: str, world):
+        cmd = Command.for_command_line(CommandLine(f"{tick_nr}: {command}"), self.container, world)
         self.add_internal_event(f"{self.name}: adding command '{cmd.command_line.text}'")
         self.container.commands[cmd.tick].add(cmd)
 
@@ -41,14 +42,14 @@ class Pilot(Controller):
             self.target_name = target_name
             self.add_internal_event(f"{self.name}: setting target to {self.target_name}")
 
-    def decide(self, objects_in_space: dict, tick: Tick):
+    def decide(self, world: World, tick: Tick):
         if self.target_name:
             target_scan = [s for s in self.container.scans if s.source.name == self.target_name]
             if target_scan:
                 source = target_scan[0]
                 direction_to_target = round(self.container.direction_to(source.pos))
                 turn_command = f"R{direction_to_target}" if direction_to_target >= 0 else f"L{abs(direction_to_target)}"
-                self.add_command(tick.tick + 1, turn_command, objects_in_space)
+                self.add_command(tick.tick + 1, turn_command, world)
 
 
 class TargetingMode(str, Enum):
@@ -74,19 +75,19 @@ class Gunner(Controller):
     def status(self) -> dict:
         return {'Target Mode': self.target_mode}
 
-    def decide(self, objects_in_space: dict, tick: Tick):
+    def decide(self, world: World, tick: Tick):
         enemies = [s.source for s in self.container.scans_sorted_by('distance') if s.source.faction != self.container.faction]
         for name, laser in self.lasers.items():
             took_a_shot = False
             for enemy in enemies:
                 if (self.target_mode == TargetingMode.Defensive and isinstance(enemy, (Missile, Mine))) or \
                     (self.target_mode == TargetingMode.Offensive and isinstance(enemy, Ship)):
-                    took_a_shot = self.fire_laser(laser, enemy, tick, objects_in_space)
+                    took_a_shot = self.fire_laser(laser, enemy, tick, world)
                     if took_a_shot:
                         break
             if not took_a_shot and enemies:
                 self.add_internal_event(f"{self.name}: Firing at closest enemy.")
-                self.fire_laser(laser, enemies[0], tick, objects_in_space)
+                self.fire_laser(laser, enemies[0], tick, world)
 
     def fire_laser(self, laser, enemy, tick, ois):
         if not enemy.is_destroyed and laser.can_fire_at(enemy):

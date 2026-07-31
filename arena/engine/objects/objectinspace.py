@@ -14,6 +14,7 @@ from dataclasses import dataclass, replace
 
 from .event import InternalEvent, Event
 from arena.engine.history import History, Tick, TICK_ZERO
+from arena.engine.world import World
 
 logger = logging.getLogger(__name__)
 
@@ -269,14 +270,14 @@ class ObjectInSpace(ABC):
     def use_energy(self):
         pass
 
-    def scan(self, objects_in_space: dict):
+    def scan(self, world: World):
         pass
 
-    def pre_move(self, objects_in_space: dict):
+    def pre_move(self, world: World):
         pass
 
-    def decide(self, objects_in_space: dict, tick: Tick):
+    def decide(self, world: World, tick: Tick):
         pass
 
-    def post_move(self, objects_in_space: dict):
+    def post_move(self, world: World):
         pass

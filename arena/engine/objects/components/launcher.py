@@ -1,6 +1,7 @@
 from typing import Protocol, runtime_checkable
 
 from arena.engine.history import Tick, TICK_ZERO
+from arena.engine.world import World
 from arena.engine.objects.components.weapon import Weapon
 from arena.engine.objects.objectinspace import Vector
 from arena.engine.objects.component import DirectionParameter
@@ -37,7 +38,7 @@ class Launcher(Weapon):
     def expected_parameters(self):
         return [DirectionParameter('direction', self)]
 
-    def fire(self, params: dict, objects_in_space: dict, tick: Tick):
+    def fire(self, params: dict, world: World, tick: Tick):
         firing_angle = params['direction'].value
 
         if self.ammo <= 0:

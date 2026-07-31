@@ -6,6 +6,7 @@ import logging
 from .event import InternalEvent, HitEvent
 from .machineinspace import MachineInSpace
 from ..history import Tick
+from arena.engine.world import World
 
 logger = logging.getLogger(__name__)
 
@@ -40,13 +41,13 @@ class Mine(MachineInSpace):
 
     # ---------------------------------------------------------------------- ENGINE HOOKS
 
-    def decide(self, objects_in_space: dict, tick: Tick):
+    def decide(self, world: World, tick: Tick):
         for wh in self.weapons.values():
-            wh.decide(objects_in_space, tick)
+            wh.decide(world, tick)
 
-    def post_move(self, objects_in_space):
+    def post_move(self, world):
         for wh in self.weapons.values():
-            wh.post_move(objects_in_space)
+            wh.post_move(world)
 
         speed = self.speed - self._type.slow_down_rate
         self.vector.speed = speed if speed > 0 else 0

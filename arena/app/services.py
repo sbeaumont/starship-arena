@@ -164,13 +164,13 @@ class GameService(_EngineAccess):
         Destroyed ships are included from the graveyard and marked, both because a score
         earned still counts and because their player can still review their history."""
         gd = self._gd(game)
-        ois = gd.load_current_status()
-        if ois is None:
+        world = gd.load_current_world()
+        if world is None:
             raise FileNotFoundError(f"{game} has no completed rounds yet")
 
         current_round = gd.last_round_number + 1
         by_faction: dict[str, list[ShipSummary]] = {}
-        for pool, alive in ((ois, True), (gd.load_graveyard(), False)):
+        for pool, alive in ((world.objects, True), (world.graveyard, False)):
             for s in pool.values():
                 if not s.is_player_controlled:
                     continue
@@ -208,10 +208,8 @@ class GameService(_EngineAccess):
 
     def check_commands(self, game: str, ship_name: str, lines: list[str]) -> list[CommandCheck]:
         gd = self._gd(game)
-        ois = gd.load_current_status()
-        # Checked against every name the player could know, not only what is still in space,
-        # so an order aimed at something already destroyed does not give that away.
-        parse_result = parse_commands(lines, ois[ship_name], self._known_names(gd, ois, ois[ship_name]))
+        world = gd.load_current_world()
+        parse_result = parse_commands(lines, world.objects[ship_name], world)
         checks = []
         for tick in sorted(parse_result.keys()):
             for c in parse_result[tick].all:
@@ -238,14 +236,15 @@ class GameService(_EngineAccess):
             round_nr = last_round
         if not 0 <= round_nr <= last_round:
             raise KeyError(f"{game} has no round {round_nr}")
-        ois = gd.load_status(round_nr)
+        world = gd.load_world(round_nr)
+        ois = world.objects
         # Every ship a player commands is theirs to plan, even in the unusual case of ships in
         # more than one faction. The graveyard is consulted too, so a player who has lost every
         # ship still has a faction and can look back over earlier rounds.
         factions = {s.faction for s in ois.values()
                     if s.is_player_controlled and s.player == player}
         if not factions:
-            factions = {s.faction for s in gd.load_graveyard().values()
+            factions = {s.faction for s in world.graveyard.values()
                         if s.is_player_controlled and s.player == player}
         if not factions:
             raise KeyError(f"No ships for player '{player}' in {game}")
@@ -256,7 +255,7 @@ class GameService(_EngineAccess):
         alive_names = {s.name for s in faction_ships}
         # A ship destroyed during this round is gone from the saved state but its history is in
         # the graveyard, and its player should be able to read what happened to it.
-        faction_ships += [s for s in gd.load_graveyard().values()
+        faction_ships += [s for s in world.graveyard.values()
                           if s.faction in factions and s.name not in alive_names
                           and round_ticks[0] in s.history]
         own_names = {s.name for s in faction_ships}
@@ -333,22 +332,6 @@ class GameService(_EngineAccess):
 
     # ---------------------------------------------------------------- internals
 
-    @staticmethod
-    def _known_names(gd: GameDirectory, ois: dict, ship) -> dict:
-        """The names a player may legitimately name as a target: whatever is in space now,
-        the ships that have been destroyed, and everything this ship has ever scanned.
-
-        Deliberately wider than what still exists. Validating against existence alone would
-        reject an order aimed at something that has since been destroyed, and thereby tell
-        the player it is gone; the shot is accepted here and simply fails when it is fired.
-        Only validation uses this - the engine executes against the live objects, so a shot
-        at something dead fizzles rather than hitting a corpse."""
-        known = dict(ois)
-        known.update(gd.load_graveyard())
-        for tick_history in ship.history.ticks.values():
-            for scan in tick_history.scans:
-                known.setdefault(scan.name, scan.source)
-        return known
 
     @staticmethod
     def _specs(ship_type) -> dict[str, str]:
@@ -407,10 +390,10 @@ class GameService(_EngineAccess):
 
     @staticmethod
     def _load_ship(gd: GameDirectory, ship_name: str, round_nr: int):
-        graveyard = gd.load_graveyard()
-        if ship_name in graveyard:
-            return graveyard[ship_name]
-        return gd.load_status(round_nr)[ship_name]
+        world = gd.load_world(round_nr)
+        if ship_name in world.graveyard:
+            return world.graveyard[ship_name]
+        return world.objects[ship_name]
 
     def _tick_state(self, ship, tick: Tick) -> TickState | None:
         if tick not in ship.history:

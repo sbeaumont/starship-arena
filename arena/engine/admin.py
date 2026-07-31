@@ -10,6 +10,7 @@ import logging
 
 import arena.engine.objects.registry.builder as builder
 from arena.engine.gamedirectory import GameDirectory, ShipFile
+from arena.engine.world import World
 from arena.engine.game import Game
 from arena.engine.objects.objectinspace import Point
 from arena.engine.history import TICK_ZERO
@@ -64,6 +65,7 @@ class GameSetup(object):
         self._dir: GameDirectory = game_directory
         self.shipfile = ship_file if ship_file else ShipFile(self._dir)
         self.ships: dict = self._init_ships(self.shipfile.ship_lines)
+        self.world = World(self.ships)
 
     def execute(self):
         self._dir.setup_directories()
@@ -79,7 +81,7 @@ class GameSetup(object):
         distribute_factions(self.ships.values(), distance_from_center)
         for ship in self.ships.values():
             ship.history.set_tick(TICK_ZERO)
-            ship.scan(self.ships)
+            ship.scan(self.world)
             ship.history.update()
 
     def _init_ships(self, ship_file: list) -> dict:
@@ -96,7 +98,7 @@ class GameSetup(object):
 
     def save(self):
         """Save the round 0 pickle file and the ships file with coordinates (to ensure idempotency)."""
-        self._dir.save(self.ships, 0)
+        self._dir.save_world(self.world, 0)
         self.shipfile.save(self.ships.values())
 
 
@@ -123,5 +125,5 @@ def setup_game(gd: GameDirectory, ship_file: ShipFile=None) -> Game:
     setup = GameSetup(gd, ship_file)
     logger.info(f"Setup {gd.path} for ship file: {setup.shipfile}")
     setup.execute()
-    logger.info(f"Current status: {gd.load_current_status()}")
+    logger.info(f"Current status: {gd.load_current_world().objects}")
     return Game(gd)

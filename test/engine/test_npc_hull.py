@@ -44,7 +44,7 @@ class TestAHullWithNoPlayer(TestCase):
         game.process_current_round()
 
         self.assertEqual(1, self.gd.last_round_number)
-        self.assertIn('Derelict', self.gd.load_current_status())
+        self.assertIn('Derelict', self.gd.load_current_world().objects)
 
     def test_the_roster_written_back_still_has_no_player_for_it(self):
         roster = {line.name: line for line in ShipFile(self.gd).ship_lines}

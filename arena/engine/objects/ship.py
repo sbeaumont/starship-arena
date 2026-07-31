@@ -18,6 +18,7 @@ from .machineinspace import MachineInSpace, MachineType
 from .objectinspace import ObjectInSpace, Vector
 from .event import ScanEvent, InternalEvent, HitEvent
 from arena.engine.history import Tick, TICK_ZERO
+from arena.engine.world import World
 
 logger = logging.getLogger(__name__)
 

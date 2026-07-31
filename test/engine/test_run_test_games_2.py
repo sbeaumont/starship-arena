@@ -36,9 +36,8 @@ commands = {
 class MockGameDirectory(object):
     def __init__(self):
         self.path = ''
-        self.ships = None
+        self.world = None
         self.round_number = 0
-        self.graveyard = dict()
 
     def setup_directories(self):
         pass
@@ -54,20 +53,15 @@ class MockGameDirectory(object):
     def game_name(self) -> str:
         return 'mock_game_name'
 
-    def save(self, obj, nr):
+    def save_world(self, world, nr):
+        self.world = world
         self.round_number = nr
 
-    def load_current_status(self):
-        return self.ships
+    def load_current_world(self):
+        return self.world
 
-    def load_graveyard(self):
-        return self.graveyard
-
-    def save_graveyard(self, graveyard):
-        self.graveyard = graveyard
-
-    def load_status(self, round_nr: int):
-        return self.ships
+    def load_world(self, round_nr: int):
+        return self.world
 
     def command_file_exists(self, ship_name, round_nr):
         return (ship_name, round_nr) in commands
@@ -94,7 +88,7 @@ class MockShipFile(object):
         return self.sf.ship_lines
 
     def save(self, ships: list):
-        self.gd.ships = {ship.name: ship for ship in ships}
+        """The roster is written back to disk in a real game; nothing to do here."""
 
 
 class TestGames2(unittest.TestCase):
@@ -118,7 +112,7 @@ class TestGames2(unittest.TestCase):
         Scores the shield break and the kill. The total is not one sum: see test_game_1.
         """
         game = self._setup_game()
-        target = game._dir.load_current_status()[ship_2_name]
+        target = game._dir.load_current_world().objects[ship_2_name]
         shield = target.defense[0]
         self.assertGreater(shield.strengths['W'], 0)
         without_shield_damage = shield.shield_break_score + target.hull + target.kill_score
@@ -127,8 +121,9 @@ class TestGames2(unittest.TestCase):
         self._run(game, number_of_rounds)
 
         self.assertEqual(game._dir.last_round_number, number_of_rounds)
-        ships_1 = game._dir.load_current_status()
-        wreck = game._dir.load_graveyard()[ship_2_name]
+        final = game._dir.load_current_world()
+        ships_1 = final.objects
+        wreck = final.graveyard[ship_2_name]
 
         self.assertNotIn(ship_2_name, ships_1)
         self.assertEqual(0, wreck.defense[0].strengths['W'])

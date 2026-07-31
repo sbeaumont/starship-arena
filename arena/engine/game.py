@@ -4,6 +4,7 @@ import logging
 from arena.engine.command import Commandable, parse_commands, CommandSet
 from arena.engine.gamedirectory import GameDirectory
 from .round import GameRound
+from .world import World
 
 logger = logging.getLogger('starship-arena.game')
 
@@ -17,6 +18,8 @@ class Game(object):
     def __init__(self, gd: GameDirectory):
         self._dir = gd
         self.rounds = dict()
+        # The latest world, until a round is initialised and replaces it with that round's.
+        self.world = gd.load_current_world() or World()
 
     def init_round(self, round_nr) -> GameRound:
         """Initialize for the given round number."""
@@ -24,7 +27,8 @@ class Game(object):
             raise ValueError(f"Round number has to be from 0 to {self.current_round_nr}, not {round_nr}.")
         # Initialize the - unprocessed - current round with the data from the previous round.
         round_to_load = round_nr if round_nr < self.current_round_nr else self.current_round_nr - 1
-        return GameRound(self._dir.load_status(round_to_load), round_nr)
+        self.world = self._dir.load_world(round_to_load)
+        return GameRound(self.world, round_nr)
 
     def clear(self):
         self._dir.clean()
@@ -64,7 +68,7 @@ class Game(object):
     @property
     def player_ships(self):
         """Return a list of all player controlled ships."""
-        return [s for s in self.current_round.ois.values() if s.is_player_controlled]
+        return [s for s in self.current_round.world.objects.values() if s.is_player_controlled]
 
     @property
     def factions(self):
@@ -80,7 +84,7 @@ class Game(object):
 
     @property
     def graveyard(self):
-        return self._dir.load_graveyard()
+        return self.world.graveyard
 
     # -------------------------------------------------------------------------------- Commands
 
@@ -94,12 +98,9 @@ class Game(object):
         cr = self.current_round
         cr.do_round(self.load_commands())
 
-        if cr.destroyed:
-            self.update_graveyard(cr.destroyed.values())
-
         # Save the state of the current round.
         logger.debug(f"Saving game {self._dir.game_name} round {cr.round_nr}")
-        self._dir.save(cr.ois, cr.round_nr)
+        self._dir.save_world(cr.world, cr.round_nr)
 
 
     def load_commands(self):
@@ -108,15 +109,8 @@ class Game(object):
         Only a ship with a player has a command file. A hull with nobody at the helm still gets
         an entry, because its own Controller components may add commands as the round runs."""
         ship_commands = dict()
-        for ship in [s for s in self.current_round.ois.values() if isinstance(s, Commandable)]:
+        for ship in [s for s in self.current_round.world.objects.values() if isinstance(s, Commandable)]:
             lines = self._dir.read_command_file(ship.name, self.current_round_nr) \
                 if ship.is_player_controlled else []
-            ship_commands[ship.name] = parse_commands(lines, ship, self.current_round.ois)
+            ship_commands[ship.name] = parse_commands(lines, ship, self.current_round.world)
         return ship_commands
-
-    def update_graveyard(self, destroyed: list):
-        """Update the graveyard with the ships passed as arguments."""
-        graveyard = self.graveyard
-        for dead_ship in [d for d in destroyed if d.leaves_a_wreck]:
-            graveyard[dead_ship.name] = dead_ship
-        self._dir.save_graveyard(graveyard)

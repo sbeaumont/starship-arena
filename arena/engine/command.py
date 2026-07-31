@@ -10,6 +10,7 @@ from typing import Protocol, runtime_checkable
 from abc import ABC, abstractmethod
 
 from arena.engine.history import Tick
+from arena.engine.world import World
 from arena.engine.objects.objectinspace import ObjectInSpace
 from arena.engine.objects.ship import AccelerationParameter, TurnParameter
 from arena.engine.objects.components.defense import Shields
@@ -68,13 +69,13 @@ class Commandable(Protocol):
     def turn(self, angle: int):
         ...
 
-    def fire(self, weapon_name: str, params: dict, objects_in_space: dict, tick: Tick) -> ObjectInSpace:
+    def fire(self, weapon_name: str, params: dict, world: World, tick: Tick) -> ObjectInSpace:
         ...
 
-    def try_replenish(self, objects_in_space: dict):
+    def try_replenish(self, world: World):
         ...
 
-    def scan(self, objects_in_space: dict):
+    def scan(self, world: World):
         ...
 
     def activation(self, name: str, on_off: bool):
@@ -94,17 +95,17 @@ class Command(ABC):
     key = None
 
     @classmethod
-    def for_command_line(cls, command_line: CommandLine, ship: Commandable, objects_in_space):
+    def for_command_line(cls, command_line: CommandLine, ship: Commandable, world):
         word = command_line.name.upper()
         if word not in COMMAND_WORDS:
             logger.warning(f"Unknown command {command_line}")
-            return UnknownCommand(command_line, ship, objects_in_space)
+            return UnknownCommand(command_line, ship, world)
         key, options = COMMAND_WORDS[word]
-        return all_command_types[key](command_line, ship, objects_in_space, **options)
+        return all_command_types[key](command_line, ship, world, **options)
 
-    def __init__(self, command_line: CommandLine, target: Commandable, objects_in_space):
+    def __init__(self, command_line: CommandLine, target: Commandable, world):
         self.command_line = command_line
-        self.ois = objects_in_space
+        self.world = world
         self.params = dict()
         self.feedback: list[str] = list()
         self.target = target
@@ -142,9 +143,9 @@ class Command(ABC):
 
 
 class ComponentCommand(Command):
-    def __init__(self, command_line: CommandLine, target: Commandable, objects_in_space):
+    def __init__(self, command_line: CommandLine, target: Commandable, world):
         self._selector = None
-        super().__init__(command_line, target, objects_in_space)
+        super().__init__(command_line, target, world)
 
     @property
     def feedback_results(self):
@@ -180,8 +181,8 @@ class ComponentCommand(Command):
 
         i = 0
         for p in expected_parms:
-            if p.needs_ois:
-                p.set_ois(self.ois)
+            if p.needs_world:
+                p.set_world(self.world)
             if p.number_of_inputs > 1:
                 p.input(input_params[i:i+p.number_of_inputs])
             else:
@@ -245,9 +246,9 @@ class FireCommand(ComponentCommand):
     def execute(self, tick: Tick):
         super().execute(tick)
         weapon = self.selector.value
-        fired_object = weapon.fire(self.params, self.ois, tick)
+        fired_object = weapon.fire(self.params, self.world, tick)
         if fired_object:
-            self.ois[fired_object.name] = fired_object
+            self.world.add(fired_object)
 
 
 class ReplenishCommand(Command):
@@ -261,18 +262,18 @@ class ReplenishCommand(Command):
 
     def execute(self, tick: Tick):
         super().execute(tick)
-        self.target.try_replenish(self.ois)
+        self.target.try_replenish(self.world)
 
 
 class TurnCommand(Command):
     key = 'turn'
 
-    def __init__(self, command_line: CommandLine, target: Commandable, objects_in_space, sign: int = 1):
+    def __init__(self, command_line: CommandLine, target: Commandable, world, sign: int = 1):
         # Turning to port is a negative turn, which composes with the angle's own sign:
         # L-90 therefore turns the same way as R90. The word that set this sign is the
         # parser's business, so it is passed in rather than read back out of the text.
         self.sign = sign
-        super().__init__(command_line, target, objects_in_space)
+        super().__init__(command_line, target, world)
 
     def _init_params(self, params: list) -> bool:
         if len(params) == 1:
@@ -289,8 +290,8 @@ class TurnCommand(Command):
 
 
 class UnknownCommand(Command):
-    def __init__(self, command_line, target, objects_in_space):
-        super().__init__(command_line, target, objects_in_space)
+    def __init__(self, command_line, target, world):
+        super().__init__(command_line, target, world)
         self.feedback.append("Unknown command.")
 
     def _init_params(self, params: list) -> bool:
@@ -391,18 +392,18 @@ class CommandSet(object):
         return f"CommandSet({', '.join(all_str)})"
 
 
-def read_command_file(command_file_name: str, ship, objects_in_space) -> dict:
+def read_command_file(command_file_name: str, ship, world) -> dict:
     """Read a command file with the commands for a ship."""
     with open(command_file_name) as infile:
         logger.info(f"Reading {command_file_name}")
         lines = [line.strip() for line in infile.readlines() if not line.isspace()]
 
-    commands = parse_commands(lines, ship, objects_in_space)
+    commands = parse_commands(lines, ship, world)
     logger.info(f"Parsed command file {command_file_name}")
     return commands
 
 
-def parse_commands(lines: list[str], ship, objects_in_space):
+def parse_commands(lines: list[str], ship, world):
     commands = defaultdict(CommandSet)
     for line_nr, line in enumerate(lines, start=1):
         try:
@@ -411,7 +412,7 @@ def parse_commands(lines: list[str], ship, objects_in_space):
                 continue
             command_line = CommandLine(line)
             if command_line.is_valid:
-                commands[command_line.tick].add(Command.for_command_line(command_line, ship, objects_in_space))
+                commands[command_line.tick].add(Command.for_command_line(command_line, ship, world))
         except Exception:
             logger.error(f"Error while trying to parse line {line} ({line_nr})")
             raise

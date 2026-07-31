@@ -44,7 +44,6 @@ SITE_URL = os.environ.get('SITE_URL', '')
 if (not SITE_URL) and ('SITE_URL' in dir(secret)):
     SITE_URL = secret.SITE_URL
 
-GRAVEYARD_TEMPLATE = "graveyard.pickle"
 STATUS_FILE_TEMPLATE = "status_round_{}.pickle"
 COMMANDS_DIR = 'commands/'
 READY_DIR = 'ready/'

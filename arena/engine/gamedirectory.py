@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from abc import ABC
 
 from arena.cfg import *
+from arena.engine.world import World
 import logging
 
 logger = logging.getLogger('starship-arena.gamedirectory')
@@ -120,29 +121,19 @@ class GameDirectory(object):
 
     # ---------------------------------------------------------------------- QUERIES - Loading Data
 
-    def load_current_status(self) -> dict | None:
+    def load_current_world(self) -> World | None:
         if self.last_round_number > -1:
-            return self.load_status(self.last_round_number)
+            return self.load_world(self.last_round_number)
         else:
             return None
 
-    def load_status(self, round_nr) -> dict:
+    def load_world(self, round_nr) -> World:
         return StatusFile(self, round_nr).load()
-
-    def load_graveyard(self) -> dict:
-        graveyard = GraveyardFile(self)
-        if graveyard.exists:
-            return graveyard.load()
-        else:
-            return dict()
 
     # ---------------------------------------------------------------------- COMMANDS
 
-    def save(self, obj, nr):
-        StatusFile(self, nr).save(obj)
-
-    def save_graveyard(self, obj: dict):
-        GraveyardFile(self).save(obj)
+    def save_world(self, world: World, nr: int):
+        StatusFile(self, nr).save(world)
 
     def clean(self, keep_pickle_files=False):
         """Clean the game directory of all generated files."""
@@ -272,24 +263,14 @@ class StatusFile(GameFile):
     def round(self) -> int:
         return self.nr
 
-    def load(self) -> dict:
+    def load(self) -> World:
         with open(self.full_name, 'rb') as f:
             return pickle.load(f)
 
-    def save(self, ships):
-        assert isinstance(ships, dict)
+    def save(self, world: World):
+        assert isinstance(world, World)
         with open(self.full_name, 'wb') as status_file:
-            pickle.dump(ships, status_file)
-
-
-class GraveyardFile(StatusFile):
-    """File with dead ships for reporting"""
-    def __init__(self, gd: GameDirectory):
-        super().__init__(gd, -1)
-
-    @property
-    def name(self):
-        return GRAVEYARD_TEMPLATE
+            pickle.dump(world, status_file)
 
 
 class CommandFile(GameFile):

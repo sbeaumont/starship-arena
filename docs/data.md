@@ -11,7 +11,6 @@ the root. There's no database.
         commands/
             <ship>-commands-<round>.txt
         status_round_<n>.pickle
-        graveyard.pickle
 ```
 
 ## What is precious and what is not
@@ -19,9 +18,10 @@ the root. There's no database.
 **The text files are the game.** `ships.jsonl` and the command files are what a player wrote and
 what the director set up. They're tracked in git for the test games, and they're irreplaceable.
 
-**The pickles are derived.** They hold the state at the end of each round, and they can always be
-rebuilt by replaying the command files, because [the game is
-deterministic](architecture.md#processing-a-round). They're gitignored.
+**The pickles are derived.** Each one holds the whole world at the end of a round, the objects
+still in space and the graveyard together, so looking back at round 3 shows the wrecks there were
+by then rather than the ones there are now. They can always be rebuilt by replaying the command
+files, because [the game is deterministic](architecture.md#processing-a-round). They're gitignored.
 
 So when saved state stops matching the code, delete it and regenerate. Never write a compatibility
 shim to read an old shape. The console's **Regenerate** button does exactly this: drop the pickles,

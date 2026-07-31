@@ -123,7 +123,7 @@ flowchart TD
         Snap --> Reap["Remove the destroyed"]
     end
 
-    Tick --> Save["Save the round's state<br/><i>survivors to the pickle,<br/>dead players to the graveyard</i>"]
+    Tick --> Save["Save the round's world<br/><i>what is still in space,<br/>and the graveyard</i>"]
     Save --> Done([Round done])
 ```
 

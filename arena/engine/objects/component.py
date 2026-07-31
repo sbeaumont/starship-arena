@@ -11,6 +11,7 @@ import re
 from abc import ABC
 
 from arena.engine.history import Tick
+from arena.engine.world import World
 from arena.engine.objects.event import InternalEvent
 from arena.engine.parameter import Parameter
 
@@ -58,10 +59,10 @@ class Component(ABC):
     def tick(self, tick: Tick):
         pass
 
-    def post_move(self, objects_in_space: dict):
+    def post_move(self, world: World):
         pass
 
-    def decide(self, objects_in_space: dict, tick: Tick):
+    def decide(self, world: World, tick: Tick):
         pass
 
     def use_energy(self):
@@ -117,25 +118,25 @@ class ObjectByNameParameter(ComponentParameter):
         return 'object_name'
 
     @property
-    def needs_ois(self) -> bool:
+    def needs_world(self) -> bool:
         return True
 
     @property
     def is_valid(self):
         assert self._input is not None
-        assert self.ois is not None
+        assert self.world is not None
         self.feedback.clear()
-        # Membership in whatever world was handed in. Validation is given a wider set than
-        # what is currently in space (see GameService._known_names), so an order aimed at
-        # something already destroyed is accepted and only fails when fired.
-        is_known = self._input in self.ois
+        # Every name the ship could know, not only what is still in space, so an order aimed
+        # at something already destroyed is accepted rather than giving that away.
+        is_known = self._input in self.world.known_to(self.component.container)
         if not is_known:
             self.feedback.append(f"{self._input} is not a known object name.")
         return is_known
 
     @property
     def value(self):
-        return self.ois.get(self._input, None)
+        """Only what is live: a shot at something since destroyed fizzles rather than hitting."""
+        return self.world.objects.get(self._input, None)
 
     @property
     def object_name(self):
