@@ -82,17 +82,26 @@ each section.
       an internal change: readers already ask the machine, and it crosses no seam. See
       [docs/information.md](docs/information.md).
 - [ ] **A malformed Boost command crashes.** Long-standing.
-- [ ] **The CLI cannot take an action and a game name.** `python -m arena.cli.main setup xke` exits
-      with `invalid choice: 'xke'`, because `action` is `nargs="*"` ahead of an optional `gamedir`,
-      so argparse hands both words to `action`. Every form in `CLAUDE.md` and `docs/development.md`
-      is affected. Either make `action` single and drop running two in one go, or move the game
-      name to an option.
+- [x] **The CLI could not take an action and a game name.** `action` was `nargs="*"` ahead of an
+      optional `gamedir`, so argparse handed both words to `action` and every documented form
+      exited with `invalid choice`. One action per call now, which is the only shape that parses;
+      running `setup generate <game>` in one go goes with it, and nothing documented did that.
 - [ ] **`setup_game` before `regenerate_game` replays nothing.** Setup cleans the pickles, so
       `regenerate_game` then reads its target round as 0 and stops. Only bites a script that calls
       both; worth a line in `regenerate_game`'s docstring, or having it take the target round.
 - [ ] **Damage to individual components**, rather than only hull and shields.
-- [ ] **In-game spawning**, and possibly respawning after death. Probably an admin command file,
-      probably tied to scenarios.
+- [x] **In-game spawning, and respawning after death.** Two ways in: the director schedules one
+      into a round through the console, which lands in `spawns.jsonl`; or a starbase's
+      `ShipSpawner` rebuilds a wreck with `Fire SS <wreck> <direction>`, three times a game.
+      Whichever creates it, the object arrives through `World.spawn(tick)`.
+
+      What it opens up: a carrier's hangar is the same component with a different source for what
+      it may put out, and a scenario trigger is a third writer of the spawn plan.
+- [ ] **A wreck can be claimed more than once.** `ShipSpawner` checks the graveyard but nothing
+      records that a wreck's loss has been made good, so the same one can be rebuilt until the
+      base runs out of its three. A flag on the wreck was rejected as too fixed a rule; the
+      thought was to derive it, by finding whether anything in the world was born from that wreck.
+      That needs the replacement to say where it came from, or the name stem to be searched.
 - [ ] **Objects in space that are not machines.** Black holes, asteroids, loot crates, and
       whatever a scenario needs to put in the world. `ObjectInSpace` is already the base for
       "anything in space" rather than "anything built", and `type_name` / `category_name` are
@@ -310,6 +319,16 @@ every route timing out at `504-loadbalancer`.
 
 ## Testing / data
 
+- [ ] **Nothing tests the console's routes.** `test/admin_ui/test_gate.py` checks the director
+      gate and stops there, so `new_game`, `spawn`, `process_turn`, `force_process`, the settings
+      form and the game overview are only ever exercised by hand. A regression in any of them
+      reaches the browser rather than a failing test, which is exactly how the `_roster` change
+      broke the overview page during step 6. Flask's `test_client` makes this cheap: post the
+      form, follow the redirect, assert on what came back.
+
+      The game API has the same hole: `test/api/test_fastapimain.py` covers command validation,
+      and the planning endpoint and the overview are only checked by hand.
+
 - [ ] **The test suite writes into the committed test data.** `test_run_test_games.py` uses a
       cwd-relative `'./test/test-games'` and re-runs `setup_game()` on the real `test-game`, so
       running tests changes which round it is on. Should work on a copy.
@@ -320,9 +339,6 @@ every route timing out at `504-loadbalancer`.
 - [ ] **`test_distribute_ships` is flaky.** It asserts no placed ship has an x or y of exactly
       zero, but `centers_for` places them at a random angle, which occasionally rounds to it.
       Seen twice; 20 runs since have been clean.
-- [ ] There is no test covering the game API beyond command validation
-      (`test/api/test_fastapimain.py`). The planning endpoint and the overview are only checked
-      by hand.
 - [ ] Game pickles are regenerable and gitignored: on schema drift, **delete them** rather than
       adding compatibility shims. Player orders live in `commands/*.txt` and are tracked, so they
       survive. The console's **Regenerate** button replays a game from its ships file and orders.

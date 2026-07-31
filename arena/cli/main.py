@@ -31,7 +31,6 @@ logger = logging.getLogger('starship-arena')
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("action",
-                        nargs="*",
                         choices=['setup', 'generate', 'manual', 'link', 'players', 'process_due'],
                         help="Set a game up, generate its unprocessed rounds, build the manual, "
                              "issue a login link, list who can log in, or process the games due "
@@ -108,25 +107,25 @@ def list_players():
 def main():
     configure_logger(False, ["fontTools"])
     args = parse_args()
-    if 'manual' in args.action:
+    if args.action == 'manual':
         logger.info("Generating manual...")
         generate_manual()
-    if 'link' in args.action:
+    elif args.action == 'link':
         issue_link(args.name, args.director, args.url)
-    if 'players' in args.action:
+    elif args.action == 'players':
         list_players()
-    if 'process_due' in args.action:
+    elif args.action == 'process_due':
         process_due()
-    if {'setup', 'generate'} & set(args.action):
+    else:
         if not args.gamedir:
             sys.exit("Which game? Give its name.")
         game_dir = GameDirectory(GAME_DATA_DIR, args.gamedir)
         game_dir.check_ok()
 
-        if 'setup' in args.action:
+        if args.action == 'setup':
             logger.info("Setting up fresh game...")
             do_setup(game_dir)
-        if 'generate' in args.action:
+        else:
             logger.info("Generating unprocessed rounds...")
             generate(GAME_DATA_DIR, args.gamedir)
 

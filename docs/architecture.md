@@ -113,7 +113,8 @@ flowchart TD
 
     subgraph Tick ["Each tick, 1 to 10"]
         direction TB
-        H["Open the tick's history"] --> E["Generate and spend energy"]
+        Arrive["Anything due this tick arrives"] --> H["Open the tick's history"]
+        H --> E["Generate and spend energy"]
         E --> PreCmd["Pre-move commands<br/><i>turn, accelerate</i>"]
         PreCmd --> Move["<b>Move</b><br/><i>translate by heading and speed</i>"]
         Move --> PostCmd["Post-move commands<br/><i>fire, scan, activate</i>"]
@@ -134,6 +135,22 @@ Each tick every object records a **snapshot** into its history: position, headin
 battery and what every component reports. The values themselves, never the objects holding them:
 the history records what was true at that tick, and a shared object would record how the round
 ended, ten times over.
+
+## The world
+
+Every engine hook takes a `World`: `decide`, `scan`, `pre_move`, `post_move`, `fire`, and the
+`Parameter` that validates an order. It is what an object can ask about the game beyond itself.
+
+It holds three collections, each keyed by name: what is in space, the graveyard, and what is due
+to arrive. A component that needs something world-spanning asks the world for it rather than
+taking a wider argument, which is why adding the graveyard to command validation needed no new
+plumbing.
+
+The whole thing is pickled once per round, so a round's wrecks are the ones that had died by then
+rather than the ones there are now. It carries the game directory to save itself and keeps that
+out of the pickle, since where a world is kept is not part of what it is.
+
+Anything world-spanning added later goes here. Weather, terrain, whatever a scenario needs.
 
 ## Serving a request
 

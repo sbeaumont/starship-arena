@@ -69,7 +69,11 @@ uv run python -m arena.cli.main generate <game>
 ```
 
 Run the CLI as a module. `python arena/cli/main.py` puts `arena/cli` on `sys.path` instead of the
-repository, and the imports fail.
+repository, and the imports fail. One action per call: `setup` first, then `generate`.
+
+`setup` cleans the pickles and writes round 0, so it has to come before `generate` rather than
+after. Calling `regenerate_game` after a `setup` replays nothing, because setup has already taken
+away the rounds it would have counted.
 
 ## Before committing
 

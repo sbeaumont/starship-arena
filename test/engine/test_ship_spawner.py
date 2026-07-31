@@ -8,6 +8,7 @@ from arena.app.services import AdminService
 from arena.engine.admin import regenerate_game
 from arena.engine.game import Game
 from arena.engine.gamedirectory import GameDirectory
+from arena.engine.history import Tick
 from arena.engine.objects.components.spawner import ShipSpawner
 from arena.engine.world import World
 
@@ -18,6 +19,14 @@ ROSTER = [
     {'name': 'Voyager', 'type': 'A2527', 'faction': 'One', 'player': 'Rik', 'x': 120, 'y': 0},
     {'name': 'Enemy', 'type': 'H2552', 'faction': 'Two', 'player': 'Piet', 'x': 600, 'y': 0},
 ]
+
+
+class _Given:
+    """A parameter that has already resolved, for firing a component directly."""
+
+    def __init__(self, value):
+        self.value = value
+        self.object_name = getattr(value, 'name', value)
 
 
 class TestNamingAReplacement(TestCase):
@@ -103,6 +112,20 @@ class TestFiringTheSpawner(TestCase):
         self._run_round_two("1: Fire SS Voyager 90\n")
 
         self.assertIn('Voyager-2', Game(self.gd).missing_command_files)
+
+    def test_the_fourth_replacement_is_refused(self):
+        """Three a game is what stops a game running forever."""
+        base = self.gd.load_current_world().objects['Base']
+        spawner = base.weapons['SS']
+        wreck = self.gd.load_current_world().graveyard['Voyager']
+        params = {'wreck': _Given(wreck), 'direction': _Given(90)}
+        world = self.gd.load_current_world()
+
+        made = [spawner.fire(params, world, Tick(2, 1)) for _ in range(4)]
+
+        self.assertEqual(3, len([s for s in made if s]))
+        self.assertIsNone(made[3])
+        self.assertEqual(0, spawner.ammo)
 
     def test_replenishing_does_not_refill_it(self):
         """A replenish resets every weapon, so spending three has to be for the whole game."""
