@@ -644,7 +644,8 @@
   }
 
   function nodeDown(k, e) {
-    if (!editable || locked.has(selected)) return;
+    // Locked holds off dragging only, in onMove; the press still picks the tick.
+    if (!editable) return;
     dragK = k; movedFar = false;
     lastX = e.clientX; lastY = e.clientY;
     e.stopPropagation();
@@ -689,6 +690,7 @@
     }
 
     if (dragK !== null) {
+      if (locked.has(selected)) return;
       const s = selectedShip, chain = selectedChain, o = selectedOrders;
       if (!s || !chain || !o) return;
       const prev = chain[dragK - 1], w = toWorld(e);
@@ -1224,10 +1226,10 @@
               <button type="button" class="save" disabled={sending} onclick={saveAll}>Save all</button>
             </div>
             <div class="buttons">
-              <button type="button" class="state" class:on={!locked.has(selected)}
+              <button type="button" class="state" class:on={locked.has(selected)}
                       onclick={() => toggleLock(selected)}
-                      title="Stop the course being dragged by accident">
-                {locked.has(selected) ? "Locked" : "Unlocked"}
+                      title="Stop the course being dragged by accident. Weapons stay settable.">
+                {locked.has(selected) ? "Unlock path" : "Lock path"}
               </button>
               <button type="button" class="state" class:on={ready} disabled={settingReady}
                       onclick={toggleReady}
