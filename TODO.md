@@ -38,6 +38,11 @@ each section.
       status file and its track ends. Blast circles are drawn already, but nothing marks *this is
       where something died*. The graveyard holds destroyed player ships, and the killing blow is
       in the witnesses' histories as a `HitEvent`.
+- [ ] **You lose sight of your own ordnance.** Contacts are built purely from scans, so a rocket
+      you fired drops off the map once it outruns your scan range: an H2545 sees 180 and its own
+      rocket is past that by tick 4. Your own ships are already treated as ground truth rather
+      than fog of war (`allies are ground truth` in `get_player_plan`); the argument for ordnance
+      is the same. Decide whether it is everything you own or only what is still flying.
 - [ ] **Spectator view.** Whole game, tick by tick, with short tails (about three ticks) instead
       of a full round's trail. Wants a player-less view keyed on the game rather than a player.
 - [ ] **Boost / Activation / Replenish controls.** All three are now describable through
@@ -50,6 +55,18 @@ each section.
       `MineType.slow_down_rate` (5), but that is not exposed, so the arrow reads ~5 units long.
       Exposing it cleanly needs a home that is not a superclass (see the rejected attempt in
       `MissileType`).
+- [ ] **A launch arrow is drawn a whole tick of travel too long.** `FireCommand` runs in the
+      post-move phase, so a launched thing is created after everything has moved and does not
+      travel until the next tick. At the end of the tick you fire on, a Rocket is 21 units out
+      (its blast radius plus one), not the 60 the arrow draws from `payload_speed`. A Splinter is
+      7, and a mine sits at its offset too.
+
+      The arrow wants the launch offset, and that number only exists on a *created* payload:
+      `Launcher._create_missile` reads `payload.range + 1`, while `_weapon_info` has just the type
+      object. Asking the type means building a throwaway payload to read a number off it, which is
+      the "model constant that reads model parts" shape in
+      [docs/information.md](docs/information.md) and the same defect as
+      `MineType.max_scan_distance`. So decide where the number lives before adding the DTO field.
 - [ ] **Laser with no resolvable target** draws a 20-unit stub instead of a beam. Harmless now
       (a target is always picked from the map) but wrong if an order survives its target.
 - [ ] **Per-ship standing orders** for `Pilot`/`Gunner` once those are live: a target and a
@@ -228,6 +245,21 @@ is what it cost last time" prevents the re-proposal.
 ## Game features
 
 Ideas from the original readme, kept because they are still wanted.
+
+- [ ] **See explosions from far away, or from anywhere.** You would know where the fighting is
+      without knowing what is in it, which gives a fleet a reason to move toward something and
+      makes a big map feel occupied rather than empty.
+
+      Today an explosion is handed to whatever is close enough to scan it (`Warhead.explode`
+      checks `distance_to(pos) <= max_scan_distance`), so a battle two scan ranges away is
+      invisible. Loosening that is a change to what fog of war means, so it wants a decision
+      alongside [ADR 0013](docs/adr/0013-fog-of-war-from-scans.md) rather than a quiet edit.
+
+      What to settle: whether it is truly global or just a much longer range, and whether a
+      distant blast is degraded to a position and nothing else. `ExplosionEvent` carries its
+      source, damage type and radius, so shown as-is it would tell you what kind of warhead went
+      off and roughly whose it was. Hits stay scan-gated either way: seeing a flash is the point,
+      reading the battle is not.
 
 - [ ] **A scanner that reveals internal detail** of a scanned ship: ammo, energy levels.
 - [ ] **Point defence**, possibly as something an NPC gunner runs.
