@@ -172,11 +172,10 @@ class GameService(_EngineAccess):
         by_faction: dict[str, list[ShipSummary]] = {}
         for pool, alive in ((ois, True), (gd.load_graveyard(), False)):
             for s in pool.values():
-                if not getattr(s, 'is_player_controlled', False):
+                if not s.is_player_controlled:
                     continue
                 by_faction.setdefault(s.faction, []).append(ShipSummary(
-                    name=s.name, ship_type=s._type.name,
-                    player=getattr(s, 'player', None),   # an NPC ship has no player
+                    name=s.name, ship_type=s._type.name, player=s.player,
                     score=s.score, alive=alive,
                     orders_in=gd.command_file_exists(s.name, current_round)))
 
@@ -243,16 +242,17 @@ class GameService(_EngineAccess):
         # Every ship a player commands is theirs to plan, even in the unusual case of ships in
         # more than one faction. The graveyard is consulted too, so a player who has lost every
         # ship still has a faction and can look back over earlier rounds.
-        factions = {s.faction for s in ois.values() if getattr(s, 'player', None) == player}
+        factions = {s.faction for s in ois.values()
+                    if s.is_player_controlled and s.player == player}
         if not factions:
             factions = {s.faction for s in gd.load_graveyard().values()
-                        if getattr(s, 'player', None) == player}
+                        if s.is_player_controlled and s.player == player}
         if not factions:
             raise KeyError(f"No ships for player '{player}' in {game}")
 
         round_ticks = Tick.for_start_of_round(round_nr).ticks_for_round
         faction_ships = [s for s in ois.values()
-                         if getattr(s, 'is_player_controlled', False) and s.faction in factions]
+                         if s.is_player_controlled and s.faction in factions]
         alive_names = {s.name for s in faction_ships}
         # A ship destroyed during this round is gone from the saved state but its history is in
         # the graveyard, and its player should be able to read what happened to it.
@@ -261,7 +261,7 @@ class GameService(_EngineAccess):
                           and round_ticks[0] in s.history]
         own_names = {s.name for s in faction_ships}
         readiness = {p: gd.is_ready(p, last_round + 1)
-                     for p in {getattr(s, 'player', None) for s in faction_ships} if p}
+                     for p in {s.player for s in faction_ships} if p}
 
         ships = []
         for s in faction_ships:
@@ -274,9 +274,9 @@ class GameService(_EngineAccess):
                 x=s.pos.x, y=s.pos.y, heading=s.heading, speed=s.speed,
                 hull=final['hull'], max_hull=st.max_hull,
                 battery=final['battery'], max_battery=st.max_battery,
-                player=getattr(s, 'player', None),
-                player_ready=readiness.get(getattr(s, 'player', None), False),
-                owned=(getattr(s, 'player', None) == player),
+                player=s.player,
+                player_ready=readiness.get(s.player, False),
+                owned=(s.player == player),
                 limits=ShipLimits(st.max_turn, st.max_delta_v, st.max_speed),
                 components=self._component_status(s, final),
                 specs=self._specs(st),

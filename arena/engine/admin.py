@@ -89,8 +89,7 @@ class GameSetup(object):
             # position = (int(line.x), int(line.y))
             position = line.xy
             # Always for tick 0 in this case.
-            ois = builder.create(line.name, line.type, position)
-            ois.player = line.player
+            ois = builder.create(line.name, line.type, position, player=line.player)
             ois.faction = line.faction
             objects_in_space[ois.name] = ois
         return objects_in_space

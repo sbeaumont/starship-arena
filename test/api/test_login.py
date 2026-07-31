@@ -15,17 +15,15 @@ from arena.api.app import app
 from arena.app.players import DIRECTOR
 from arena.app.services import GameService
 
-SHIPS = """Name   Type   Faction Player X   Y
-McAve  F2547  Three   Menno  0   0
-Other  A2527  One     Rik    100 0
-"""
+SHIPS = ('{"name": "McAve", "type": "F2547", "faction": "Three", "player": "Menno", "x": 0, "y": 0}\n'
+         '{"name": "Other", "type": "A2527", "faction": "One", "player": "Rik", "x": 100, "y": 0}\n')
 
 
 class TestLogin(TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
         os.makedirs(os.path.join(self.root, 'mygame'))
-        with open(os.path.join(self.root, 'mygame', 'ships.txt'), 'w') as f:
+        with open(os.path.join(self.root, 'mygame', 'ships.jsonl'), 'w') as f:
             f.write(SHIPS)
         self.service = GameService(self.root)
         self.original, game_api.service = game_api.service, self.service

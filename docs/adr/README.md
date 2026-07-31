@@ -6,6 +6,10 @@ never renumbered.
 **An accepted ADR is never edited.** When a decision changes, write a new one that supersedes it
 and mark the old one `Superseded by NNNN`. The trail is the point.
 
+What that protects is the reasoning, not the spelling. A file or path that gets renamed is renamed
+here too, so nobody is sent looking for something that no longer exists. `ships.txt` became
+`ships.jsonl` that way.
+
 | | |
 |---|---|
 | [0001](0001-layered-architecture.md) | Layered architecture with a services seam |

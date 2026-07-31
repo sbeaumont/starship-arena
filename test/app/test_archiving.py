@@ -5,9 +5,7 @@ from unittest import TestCase
 
 from arena.app.services import AdminService, GameService
 
-SHIPS = """Name  Type   Faction Player X Y
-Alpha A2527  One     Serge  0 0
-"""
+SHIPS = '{"name": "Alpha", "type": "A2527", "faction": "One", "player": "Serge", "x": 0, "y": 0}\n'
 
 
 class TestArchiving(TestCase):
@@ -16,7 +14,7 @@ class TestArchiving(TestCase):
         self.games = os.path.join(self.root, 'games')
         for name in ('live', 'old'):
             os.makedirs(os.path.join(self.games, name))
-            with open(os.path.join(self.games, name, 'ships.txt'), 'w') as f:
+            with open(os.path.join(self.games, name, 'ships.jsonl'), 'w') as f:
                 f.write(SHIPS)
         self.admin = AdminService(self.games)
         self.game = GameService(self.games)
@@ -41,7 +39,7 @@ class TestArchiving(TestCase):
 
     def test_nothing_is_lost_in_archiving(self):
         self.admin.archive_game('old')
-        with open(os.path.join(self.root, 'archived', 'old', 'ships.txt')) as f:
+        with open(os.path.join(self.root, 'archived', 'old', 'ships.jsonl')) as f:
             self.assertIn('Alpha', f.read())
 
     def test_unarchiving_puts_it_back(self):

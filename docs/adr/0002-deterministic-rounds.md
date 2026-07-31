@@ -18,7 +18,7 @@ inputs, same game, every time.
 Nothing in round processing reads a clock or draws a random number.
 
 Setup does draw, to spread factions around the origin, and then writes the resulting coordinates
-back into `ships.txt`. So even the placement replays.
+back into `ships.jsonl`. So even the placement replays.
 
 ## Consequences
 

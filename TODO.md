@@ -76,6 +76,14 @@ each section.
       is built on the premise that iteration order never matters, so this is a real defect rather
       than a quirk.
 - [ ] **A malformed Boost command crashes.** Long-standing.
+- [ ] **The CLI cannot take an action and a game name.** `python -m arena.cli.main setup xke` exits
+      with `invalid choice: 'xke'`, because `action` is `nargs="*"` ahead of an optional `gamedir`,
+      so argparse hands both words to `action`. Every form in `CLAUDE.md` and `docs/development.md`
+      is affected. Either make `action` single and drop running two in one go, or move the game
+      name to an option.
+- [ ] **`setup_game` before `regenerate_game` replays nothing.** Setup cleans the pickles, so
+      `regenerate_game` then reads its target round as 0 and stops. Only bites a script that calls
+      both; worth a line in `regenerate_game`'s docstring, or having it take the target round.
 - [ ] **Damage to individual components**, rather than only hull and shields.
 - [ ] **In-game spawning**, and possibly respawning after death. Probably an admin command file,
       probably tied to scenarios.

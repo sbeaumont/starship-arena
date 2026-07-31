@@ -1,0 +1,12 @@
+{"name": "BaseOne", "type": "SB2531", "faction": "One", "player": "TeamOne", "x": 548, "y": 116}
+{"name": "Voyager", "type": "A2527", "faction": "One", "player": "Rik", "x": 479, "y": 121}
+{"name": "TheGalaxy", "type": "A2539", "faction": "One", "player": "Ellen", "x": 474, "y": 56}
+{"name": "Car", "type": "A2539", "faction": "One", "player": "Simon", "x": 525, "y": 45}
+{"name": "BaseTwo", "type": "SB2531", "faction": "Two", "player": "TeamTwo", "x": -372, "y": 399}
+{"name": "PewPew", "type": "I2544", "faction": "Two", "player": "Dennis", "x": -414, "y": 369}
+{"name": "WhereAmI", "type": "I2552", "faction": "Two", "player": "Martijn", "x": -392, "y": 328}
+{"name": "Kartoffel", "type": "I2526", "faction": "Two", "player": "Arjan", "x": -356, "y": 356}
+{"name": "BaseThree", "type": "SB2531", "faction": "Three", "player": "TeamThree", "x": -26, "y": -508}
+{"name": "Pi-tje", "type": "F2551", "faction": "Three", "player": "Pieter", "x": -6, "y": -467}
+{"name": "XXX", "type": "F2547", "faction": "Three", "player": "Peter", "x": -37, "y": -535}
+{"name": "McAve", "type": "F2547", "faction": "Three", "player": "Menno", "x": -5, "y": -563}

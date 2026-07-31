@@ -12,7 +12,7 @@ be rebuilt from the roster and the orders.
 
 ## Decision
 
-Everything lives in files under one data root. A directory per game holding `ships.txt`, a
+Everything lives in files under one data root. A directory per game holding `ships.jsonl`, a
 `commands/` directory, and a pickle per round. One `players.txt` at the root.
 
 The text files are the game and are tracked. The pickles are derived and are gitignored.

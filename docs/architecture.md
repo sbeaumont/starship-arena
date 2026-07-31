@@ -19,7 +19,7 @@ flowchart TD
     API["<b>JSON API</b> · arena/api<br/>routes, status codes, cookies"]
     App["<b>Application services</b> · arena/app<br/>operations in domain terms, returning DTOs"]
     Engine["<b>Engine</b> · arena/engine<br/>ships, rounds, commands, components, history"]
-    Store[("Game data<br/>ships.txt · commands · pickles")]
+    Store[("Game data<br/>ships.jsonl · commands · pickles")]
 
     GameUI -->|HTTP| API
     API --> App
@@ -97,7 +97,7 @@ backlog. The API is already clean.
 state plus the command files. Same inputs, same game, every time.
 
 Nothing in round processing reads a clock or draws a random number. Setup does draw, to place
-factions, and it writes the coordinates back into `ships.txt` so that placement replays too.
+factions, and it writes the coordinates back into `ships.jsonl` so that placement replays too.
 
 That determinism carries weight. Regenerate depends on it, and so does throwing stale saved state
 away instead of migrating it.

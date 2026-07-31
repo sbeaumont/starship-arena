@@ -6,6 +6,7 @@ Abstraction of a directory of a specific game of Space Arena.
 """
 
 import fnmatch
+import json
 import re
 import shutil
 import pickle
@@ -223,7 +224,15 @@ class ShipFile(GameFile):
         return INIT_FILE_NAME
 
     def load(self) -> list[dict]:
-        return self.records_from_columns([line.split() for line in super().load()])
+        records = list()
+        for nr, line in enumerate(super().load(), start=1):
+            if not line or line.startswith('#'):
+                continue
+            try:
+                records.append(json.loads(line))
+            except json.JSONDecodeError as e:
+                raise ValueError(f"{self.full_name} line {nr}: {e.msg}") from e
+        return records
 
     @staticmethod
     def line_from_record(record: dict):
@@ -237,59 +246,16 @@ class ShipFile(GameFile):
         )
 
     def save(self, ships):
-        assert isinstance(ships, list) or isinstance(ships, type(dict().values()))
-        super().save(self.ship_file_with_coordinates(ships))
+        super().save([json.dumps(self.record_for(ship)) for ship in ships])
 
     @staticmethod
-    def records_from_columns(lines: list) -> list[dict]:
-        field_defs = {sl[1]: sl[0] for sl in enumerate(lines[0])}
-        records = list()
-        for line in lines[1:]:
-            try:
-                if line[0].strip().startswith('#'):
-                    continue
-                record = {
-                    'name': line[field_defs['Name']],
-                    'type': line[field_defs['Type']],
-                    'faction': line[field_defs['Faction']],
-                    'player': line[field_defs['Player']],
-                }
-                if 'X' in field_defs and 'Y' in field_defs:
-                    record['x'] = int(line[field_defs['X']])
-                    record['y'] = int(line[field_defs['Y']])
-                records.append(record)
-            except (KeyError, ValueError):
-                logger.error(f"Failed to process <{line}>")
-                raise
-        return records
-
-    @staticmethod
-    def ship_file_with_coordinates(ships: list):
-        fields = ['name', 'type', 'faction', 'player', 'x', 'y']
-        max_lengths = {
-            'name': max(max([len(s.name) for s in ships]), len('name')),
-            'type': max(max([len(s._type.__class__.__name__) for s in ships]), len('type')),
-            'faction': max(max([len(s.faction) for s in ships]), len('faction')),
-            'player': max(max([len(s.player) for s in ships]), len('player')),
-            'x': max(max([len(str(s.pos.x)) for s in ships]), len('x')),
-            'y': max(max([len(str(s.pos.y)) for s in ships]), len('y'))
-        }
-
-        lines = list()
-        header_line = ' '.join([fieldname.capitalize().rjust(max_lengths[fieldname]) for fieldname in fields])
-        lines.append(header_line)
-        for ship in ships:
-            line_values = {
-                'name': ship.name,
-                'type': ship._type.__class__.__name__,
-                'faction': ship.faction,
-                'player': ship.player,
-                'x': ship.pos.x,
-                'y': ship.pos.y
-            }
-            ship_line = ' '.join([str(line_values[fieldname]).rjust(max_lengths[fieldname]) for fieldname in fields])
-            lines.append(ship_line)
-        return lines
+    def record_for(ship) -> dict:
+        record = {'name': ship.name, 'type': ship._type.__class__.__name__, 'faction': ship.faction}
+        if ship.player:
+            record['player'] = ship.player
+        record['x'] = ship.pos.x
+        record['y'] = ship.pos.y
+        return record
 
 
 class StatusFile(GameFile):

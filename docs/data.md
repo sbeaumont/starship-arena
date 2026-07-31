@@ -7,7 +7,7 @@ the root. There's no database.
 <data root>/
     players.txt              who can log in, across all games
     <game name>/
-        ships.txt            the roster: who commands what, and where it started
+        ships.jsonl          the roster: who commands what, and where it started
         commands/
             <ship>-commands-<round>.txt
         status_round_<n>.pickle
@@ -16,7 +16,7 @@ the root. There's no database.
 
 ## What is precious and what is not
 
-**The text files are the game.** `ships.txt` and the command files are what a player wrote and
+**The text files are the game.** `ships.jsonl` and the command files are what a player wrote and
 what the director set up. They're tracked in git for the test games, and they're irreplaceable.
 
 **The pickles are derived.** They hold the state at the end of each round, and they can always be
@@ -30,25 +30,28 @@ re-run setup, replay every round up to where the game was.
 Regenerating a game that has been running against older engine code will produce different combat
 outcomes. Same commands, but the rules have moved.
 
-## ships.txt
+## ships.jsonl
 
-Whitespace separated, a header line naming the columns, `#` starts a comment:
+One JSON object per line, no header. `#` starts a comment.
 
+```jsonl
+{"name": "BaseOne", "type": "SB2531", "faction": "One", "player": "TeamOne", "x": 548, "y": 116}
+{"name": "Voyager", "type": "A2527", "faction": "One", "player": "Rik", "x": 479, "y": 121}
 ```
-     Name   Type Faction    Player    X    Y
-  BaseOne SB2531     One   TeamOne  548  116
-  Voyager  A2527     One       Rik  479  121
-```
 
-`Type` is a type name from the ship registry, `A2527` rather than `A2527 Alligator`.
+`name`, `type` and `faction` are required. `type` is a type name from the ship registry, `A2527`
+rather than `A2527 Alligator`.
 
-`X` and `Y` are optional. Leave them at 0 and setup spreads the factions evenly around the origin,
+`x` and `y` are optional. Leave them out and setup spreads the factions evenly around the origin,
 then writes the coordinates back into this file so the placement replays.
 
-Nothing here may contain a space, since the file is split on whitespace. Names are cleaned with
-underscores rather than rejected.
+`player` is optional, and a ship without one is nobody's: no orders are expected and it is not
+player controlled.
 
-**`Player` is an identity, not a label.** It's the name someone logs in with, so a typo creates a
+An absent field is why this is JSON rather than columns. Positional whitespace has no way to say
+"this ship has no player" without shifting every field after it.
+
+**`player` is an identity, not a label.** It's the name someone logs in with, so a typo creates a
 commander who can never sign in. The new game screen autocompletes it for that reason.
 
 ## settings.txt
@@ -102,7 +105,7 @@ Menno   T7bAvKQEr4tRNMbF-EJ6Rw  player    no
 Serge   Br-A2Ly1XYYF65yHFo2cQA  director  yes
 ```
 
-Same shape as `ships.txt`. Gitignored, because the tokens are secrets.
+Same shape as the old column files. Gitignored, because the tokens are secrets.
 
 Columns are read by position, and a field is split off on whitespace, so an empty one would
 collapse into the gap between its neighbours. Every column is therefore written out: an ordinary
@@ -110,7 +113,7 @@ player has the role `player`, not a blank. A file from before a column existed i
 the missing column taking its default, so adding one costs nothing.
 
 A name holds no spaces, and one typed with them is stored with underscores instead. It is a column
-here, a column in `ships.txt`, and part of a filename (`ready/<player>.txt`), so it has to survive
+here, a field in `ships.jsonl`, and part of a filename (`ready/<player>.txt`), so it has to survive
 all three. Looking a name up accepts either spelling.
 
 `Active` is `no` for someone deactivated: they keep their name, and old games still name them, but

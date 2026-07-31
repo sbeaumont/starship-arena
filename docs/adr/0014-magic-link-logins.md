@@ -10,7 +10,7 @@ asking people to look only at their own ships.
 The players are a handful of friends. Rounds take a week. Nobody wants an account, and nobody wants
 to run a password reset.
 
-A person plays across games and seasons, and their name already appears in every `ships.txt` they
+A person plays across games and seasons, and their name already appears in every `ships.jsonl` they
 command a ship in.
 
 ## Decision
@@ -34,7 +34,7 @@ No passwords, no reset flow, no user management. Issuing a link is one command o
 
 A single link works across every game a person plays, and next season too.
 
-Access follows the game data. A player's games are the ones whose `ships.txt` names them, so there
+Access follows the game data. A player's games are the ones whose `ships.jsonl` names them, so there
 is no separate grant to maintain.
 
 A token in plain text is readable by anyone with the data root, which on this host means the owner.

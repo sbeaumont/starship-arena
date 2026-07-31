@@ -36,12 +36,14 @@ class Ship(MachineInSpace):
 
     kill_score = 100
 
-    def __init__(self, name: str, _type: shipType, vector: Vector, owner = None, tick: Tick = TICK_ZERO):
+    def __init__(self, name: str, _type: shipType, vector: Vector, owner = None,
+                 tick: Tick = TICK_ZERO, player: str = ''):
         assert isinstance(vector, Vector)
         super().__init__(name, _type, vector, owner=self, tick=tick)
         self.generators = _type.generators
         self.score = 0
         self.commands = None
+        self.player = player
 
     # ---------------------------------------------------------------------- QUERIES
 
@@ -51,7 +53,7 @@ class Ship(MachineInSpace):
 
     @property
     def is_player_controlled(self):
-        return True
+        return bool(self.player)
 
     @property
     def is_destroyed(self) -> bool:

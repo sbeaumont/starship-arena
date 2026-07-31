@@ -103,13 +103,15 @@ class Game(object):
 
 
     def load_commands(self):
-        """Load the commands for the current round."""
+        """Load the commands for the current round.
+
+        Only a ship with a player has a command file. A hull with nobody at the helm still gets
+        an entry, because its own Controller components may add commands as the round runs."""
         ship_commands = dict()
         for ship in [s for s in self.current_round.ois.values() if isinstance(s, Commandable)]:
-            ship_commands[ship.name] = parse_commands(self._dir.read_command_file(ship.name,
-                                                                                  self.current_round_nr),
-                                                      ship,
-                                                      self.current_round.ois)
+            lines = self._dir.read_command_file(ship.name, self.current_round_nr) \
+                if ship.is_player_controlled else []
+            ship_commands[ship.name] = parse_commands(lines, ship, self.current_round.ois)
         return ship_commands
 
     def update_graveyard(self, destroyed: list):
