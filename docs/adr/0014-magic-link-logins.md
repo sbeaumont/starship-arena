@@ -20,7 +20,7 @@ One token per **person**, not per game. The name is the identity everywhere.
 A token arrives in a link, is traded once for a long-lived cookie, and the link is then forgotten.
 The URL is cleaned with `replaceState` so a shared view never carries an identity.
 
-Tokens live in `players.txt` in plain text. Issuing again replaces the old one, which is also how a
+Tokens live in `players.jsonl` in plain text. Issuing again replaces the old one, which is also how a
 leaked link is dealt with.
 
 The director is a role in the same file. The console lets in nobody else.

@@ -268,6 +268,30 @@ code { color: var(--cyan); font-size: 12px; }
     font-family: var(--sans); font-size: 12.5px; line-height: 1.6; color: var(--ink-dim);
 }
 
+.forming { grid-template-columns: minmax(140px, 1fr) 1fr 90px 90px 110px; }
+.forming .name a { color: var(--hull); }
+.forming .name a:hover { color: var(--cyan); }
+
+.columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.column { background: var(--panel); border: 1px solid var(--edge); border-radius: 6px;
+          padding: 10px; }
+.chead { color: var(--amber); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+         margin-bottom: 8px; display: flex; justify-content: space-between; }
+.chead .tally { color: var(--ink-faint); letter-spacing: 0; }
+
+.zone { display: flex; flex-direction: column; gap: 6px; min-height: 52px;
+        border: 1px dashed transparent; border-radius: 4px; }
+.zone.over { border-color: var(--cyan); background: rgba(87, 216, 255, .05); }
+.pool { flex-direction: row; flex-wrap: wrap; background: var(--panel); padding: 10px;
+        border: 1px solid var(--edge); border-radius: 6px; margin-bottom: 24px; }
+
+.who { background: var(--bg); border: 1px solid var(--edge); border-radius: 4px;
+       padding: 7px 10px; cursor: grab; }
+.who:hover { border-color: var(--ring); }
+.who.lifted { opacity: .4; }
+.who .nm { display: block; color: var(--hull); font-size: 12.5px; }
+.who .fleet { display: block; color: var(--ink-faint); font-size: 11px; margin-top: 2px; }
+
 .picks { display: flex; flex-wrap: wrap; gap: 6px; }
 .pick {
     margin: 0; padding: 7px 12px; cursor: pointer;

@@ -8,7 +8,8 @@ Backed by the UI-agnostic GameService; returns its DTOs directly (FastAPI serial
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
-from arena.app.dto import GameSummary, ShipRound, PlayerPlan, GameOverview, ShipTypeInfo, Me, Pulse
+from arena.app.dto import (GameSummary, OpenGame, ShipRound, PlayerPlan, GameOverview,
+                           ShipTypeInfo, Me, Pulse)
 from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE, Player
 from arena.app.services import GameService
 
@@ -25,6 +26,10 @@ class LoginBody(BaseModel):
 
 class RegisterBody(BaseModel):
     name: str
+
+
+class RegistrationBody(BaseModel):
+    names: list[str]
 
 
 def logged_in(request: Request) -> Player | None:
@@ -89,6 +94,26 @@ def list_games() -> list[GameSummary]:
 @router.get("/ship-types")
 def list_ship_types() -> list[ShipTypeInfo]:
     return service.list_ship_types()
+
+
+@router.get("/open")
+def open_games(me: Player = Depends(require_login)) -> list[OpenGame]:
+    return service.open_games(me.name)
+
+
+@router.put("/open/{game}")
+def register(game: str, body: RegistrationBody, me: Player = Depends(require_login)) -> OpenGame:
+    try:
+        service.register(game, me.name, [n.strip() for n in body.names if n.strip()])
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return next(g for g in service.open_games(me.name) if g.name == game)
+
+
+@router.delete("/open/{game}")
+def withdraw(game: str, me: Player = Depends(require_login)) -> OpenGame:
+    service.withdraw(game, me.name)
+    return next(g for g in service.open_games(me.name) if g.name == game)
 
 
 @router.get("/{game}/ships")

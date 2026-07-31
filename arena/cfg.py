@@ -53,7 +53,10 @@ COMMAND_FILE_TEMPLATE = COMMANDS_DIR + "{}-commands-{}.txt"
 INIT_FILE_NAME = "ships.jsonl"
 SPAWN_FILE_NAME = "spawns.jsonl"
 ARCHIVE_DIR_NAME = "archived"
-SETTINGS_FILE_NAME = "settings.txt"
+REGISTERING_DIR_NAME = "registering"
+REGISTRATION_FILE_NAME = "registrations.jsonl"
+SETTINGS_FILE_NAME = "settings.jsonl"
+SCENARIO_FILE_NAME = "scenario.json"
 # Who may log in, across every game. Lives at the data root rather than inside a game, because a
 # player's name is their identity everywhere.
 PLAYERS_FILE_NAME = "players.jsonl"

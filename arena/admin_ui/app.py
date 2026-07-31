@@ -15,7 +15,9 @@ from flask import Flask, abort, render_template, request, g, jsonify, send_file,
 
 from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE
 from arena.cfg import WEB_ROOT, GAME_UI_URL
-from arena.admin_ui import scenarios
+from arena.app import scenarios
+from arena.app.registrations import Registration
+from arena.app.naming import as_stored, for_display
 from arena.admin_ui.appfacade import AppFacade, NameValidator
 
 app = Flask('starship-arena', template_folder=f'{WEB_ROOT}/templates', static_folder=f'{WEB_ROOT}/static')
@@ -79,6 +81,15 @@ def save_settings(game: str):
     return redirect(url_for('game_overview', game_name=game))
 
 
+@app.route('/reopen/<game>', methods=['POST'])
+def reopen(game: str):
+    try:
+        facade().reopen_registrations(game)
+    except ValueError as e:
+        return redirect(url_for('game_overview', game_name=game, msg=str(e)))
+    return redirect(url_for('assign', game=game))
+
+
 @app.route('/archive/<game>', methods=['POST'])
 def archive(game: str):
     facade().archive_game(game)
@@ -118,8 +129,9 @@ def ship_records(rows: list[dict], known_types) -> tuple[list[str], list[dict]]:
         if not name_v.is_valid:
             problems.extend(f"Ship {i}: {m}" for m in name_v.messages)
             continue
-        if name_v.cleaned in seen:
-            problems.append(f"Ship {i}: '{name_v.cleaned}' is named twice.")
+        name = as_stored(row['name'])
+        if name in seen:
+            problems.append(f"Ship {i}: '{name}' is named twice.")
             continue
         if row['type'] not in known_types:
             problems.append(f"Ship {i}: '{row['type']}' is not a known ship type.")
@@ -141,20 +153,28 @@ def ship_records(rows: list[dict], known_types) -> tuple[list[str], list[dict]]:
                 coordinates[axis] = int(value)
         if len(coordinates) < 2:
             continue
-        seen.add(name_v.cleaned)
-        ships.append({'name': name_v.cleaned, 'type': row['type'], 'faction': faction.cleaned,
-                      'player': player.cleaned, **coordinates})
+        seen.add(name)
+        ships.append({'name': name, 'type': row['type'],
+                      'faction': as_stored(row['faction']), 'player': as_stored(row['player']),
+                      **coordinates})
     if not ships and not problems:
         problems.append("A game needs at least one ship.")
     return problems, ships
 
 
-def new_game_page(game_name: str, rows: list[dict], messages: list[str]):
-    """The roster screen, reached either empty or filled in by a scenario."""
-    return render_template('new-game.html',
+def roster_page(game_name: str, rows: list[dict], messages: list[str], starting: str = ''):
+    """The roster screen. `starting` names the game being brought out of registration.
+
+    The player list is whoever registered for this game, because those are the only names its
+    ships can belong to. Without registrations it is everyone who could play."""
+    registered = [e.player for e in facade().registrations(starting)] if starting else []
+    return render_template('roster.html',
                            game_name=game_name,
                            rows=rows,
-                           known_players=[p.name for p in facade().active_players()],
+                           starting=starting,
+                           display=for_display(starting or game_name),
+                           settings=facade().settings(starting) if starting else None,
+                           known_players=registered or [p.name for p in facade().active_players()],
                            ship_types=facade().all_ship_types.values(),
                            starbase_types=facade().all_starbase_types.values(),
                            messages=messages)
@@ -162,46 +182,80 @@ def new_game_page(game_name: str, rows: list[dict], messages: list[str]):
 
 @app.route('/new_game', methods=['GET', 'POST'])
 def new_game():
+    """Pick a scenario and name a game. One that registers goes on to collect them; the generic
+    one goes straight to a roster you type yourself."""
     messages = list()
-    game_name = request.form.get('game_name', '')
-    rows = submitted_rows(request.form)
-    known_types = facade().all_ship_types | facade().all_starbase_types
     if request.method == 'POST':
-        name_v = NameValidator(game_name)
-        problems, ships = ship_records(rows, known_types)
+        typed = request.form.get('game_name', '')
+        scenario = scenarios.by_key(request.form['scenario'])
+        name_v = NameValidator(typed)
         if not name_v.is_valid:
             messages = [f"Game name: {m}" for m in name_v.messages]
-        elif name_v.cleaned in facade().all_game_names():
+        elif as_stored(typed) in facade().game_names_in_use():
             messages.append("Game name already exists.")
-        messages.extend(problems)
-        if not messages:
-            facade().create_new_game(name_v.cleaned, ships)
-            return redirect(url_for('game_overview', game_name=name_v.cleaned))
-    return new_game_page(game_name, rows, messages)
+        elif not scenario.registers:
+            return roster_page(as_stored(typed), [], [])
+        else:
+            try:
+                facade().open_registrations(as_stored(typed), scenario.key)
+                return redirect(url_for('assign', game=as_stored(typed)))
+            except (ValueError, KeyError) as e:
+                messages.append(str(e).strip("'"))
+    return render_template('new-game.html', scenarios=scenarios.ALL, messages=messages)
 
 
-@app.route('/scenarios')
-def scenario_list():
-    return render_template('scenarios.html', scenarios=scenarios.ALL)
-
-
-@app.route('/scenario/<key>', methods=['GET', 'POST'])
-def scenario_setup(key: str):
-    try:
-        scenario = scenarios.by_key(key)
-    except KeyError:
-        abort(404)
+@app.route('/roster', methods=['POST'])
+def create_game():
+    """The generic path: a typed roster, created straight away."""
     game_name = request.form.get('game_name', '')
+    rows = submitted_rows(request.form)
+    problems, ships = ship_records(rows, facade().all_ship_types | facade().all_starbase_types)
+    if problems:
+        return roster_page(game_name, rows, problems)
+    facade().create_new_game(as_stored(game_name), ships)
+    return redirect(url_for('game_overview', game_name=as_stored(game_name)))
+
+
+@app.route('/registering')
+def registering():
+    """Every game collecting registrations, and how much has come in."""
+    return render_template('registering.html', forming=facade().forming_games())
+
+
+@app.route('/registering/<game>', methods=['GET', 'POST'])
+def assign(game: str):
+    """Drag each registration into a faction. Whoever is left is spread at random.
+
+    Save keeps the assignment and stays; Next deals it and goes on to the roster."""
+    try:
+        scenario = scenarios.by_key(facade().scenario_of(game))
+    except (KeyError, FileNotFoundError):
+        abort(404)
     messages = list()
     if request.method == 'POST':
-        entries, factions = scenario.choices_from_form(request.form)
-        try:
-            return new_game_page(game_name, scenario.deal(entries, factions, random.Random()), [])
-        except ValueError as e:
-            messages.append(str(e))
-    return render_template(scenario.template, scenario=scenario, game_name=game_name,
-                           known_players=[p.name for p in facade().active_players()],
+        facade().assign(game, {p: f for p, f in zip(request.form.getlist('player'),
+                                                    request.form.getlist('faction')) if f})
+        if 'next' in request.form:
+            try:
+                dealt = scenario.deal(facade().registrations(game), random.Random())
+                return roster_page(game, dealt, [], starting=game)
+            except ValueError as e:
+                messages.append(str(e))
+    return render_template('assign.html', game=game, display=for_display(game),
+                           scenario=scenario, entries=facade().registrations(game),
                            messages=messages)
+
+
+@app.route('/start/<game>', methods=['POST'])
+def start_game(game: str):
+    rows = submitted_rows(request.form)
+    problems, ships = ship_records(rows, facade().all_ship_types | facade().all_starbase_types)
+    if problems:
+        return roster_page(game, rows, problems, starting=game)
+    facade().start_game(game, ships,
+                        on_all_ready=bool(request.form.get('on_all_ready')),
+                        hours=[int(h) for h in request.form.getlist('hour')])
+    return redirect(url_for('game_overview', game_name=game))
 
 
 @app.route('/game_overview/<game_name>')
@@ -214,6 +268,8 @@ def game_overview(game_name: str):
     command_file = game.command_file_status
     ready = {p: facade().is_ready(game.name, p) for p in game.players if p}
     return render_template('game-overview.html',
+                           display=for_display(game.name),
+                           reopenable=facade().is_reopenable(game.name),
                            factions=factions,
                            ready=ready,
                            settings=facade().settings(game.name),
@@ -301,9 +357,9 @@ def players():
 
 @app.route('/players/issue', methods=['POST'])
 def issue_login():
-    name_v = NameValidator(request.form.get('name', ''))
-    if name_v.is_valid:
-        facade().issue_login(name_v.cleaned, director=bool(request.form.get('director')))
+    name = request.form.get('name', '')
+    if NameValidator(name).is_valid:
+        facade().issue_login(as_stored(name), director=bool(request.form.get('director')))
     return redirect(url_for('players'))
 
 

@@ -1,2 +1,0 @@
-process_hours 8 20
-process_on_all_ready yes

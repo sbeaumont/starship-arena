@@ -13,7 +13,7 @@ be rebuilt from the roster and the orders.
 ## Decision
 
 Everything lives in files under one data root. A directory per game holding `ships.jsonl`, a
-`commands/` directory, and a pickle per round. One `players.txt` at the root.
+`commands/` directory, and a pickle per round. One `players.jsonl` at the root.
 
 The text files are the game and are tracked. The pickles are derived and are gitignored.
 
@@ -25,7 +25,7 @@ readable and editable by hand.
 There's no database to run, migrate or back up. Copying a game is `cp -r`.
 
 Hand-editing works, and it's the escape hatch when something is wrong: adding a line to
-`players.txt` is how you let yourself back in when locked out.
+`players.jsonl` is how you let yourself back in when locked out.
 
 Whitespace separation means no value can contain a space. Names get underscores instead.
 

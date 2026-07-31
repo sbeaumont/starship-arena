@@ -12,7 +12,7 @@
     <a class="brand" href="{{ url_for('overview') }}">STARSHIP ARENA<span>director</span></a>
     <nav>
         <a href="{{ url_for('overview') }}" class="{{ 'here' if request.endpoint == 'overview' }}">Games</a>
-        <a href="{{ url_for('scenario_list') }}" class="{{ 'here' if request.endpoint in ('scenario_list', 'scenario_setup') }}">Scenarios</a>
+        <a href="{{ url_for('registering') }}" class="{{ 'here' if request.endpoint in ('registering', 'assign') }}">Registering</a>
         <a href="{{ url_for('new_game') }}" class="{{ 'here' if request.endpoint == 'new_game' }}">New game</a>
         <a href="{{ url_for('players') }}" class="{{ 'here' if request.endpoint == 'players' }}">Players</a>
         <span class="sep"></span>

@@ -8,11 +8,41 @@ storage details such as GameDirectory or file paths.
 
 from dataclasses import dataclass, field
 
+from arena.app.naming import for_display
+
 
 @dataclass
-class GameSummary:
+class Named:
+    """Anything a person reads the name of. `display` is `name` with its underscores back."""
     name: str
-    current_round: int
+    display: str = field(init=False, default='')
+
+    def __post_init__(self):
+        self.display = for_display(self.name)
+
+
+@dataclass
+class GameSummary(Named):
+    current_round: int = 0
+
+
+@dataclass
+class FormingGame(Named):
+    """A game collecting registrations, as the director's list shows it."""
+    scenario: str = ''
+    players: int = 0
+    ships: int = 0
+    assigned: int = 0   # how many of those players the director has put in a faction
+
+
+@dataclass
+class OpenGame(Named):
+    """A game collecting registrations, and what the player asking put down for it."""
+    scenario: str = ''
+    blurb: str = ''
+    max_ships: int = 0
+    players: int = 0       # how many have registered so far
+    my_ships: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -33,11 +63,10 @@ class FactionSummary:
 
 
 @dataclass
-class GameOverview:
+class GameOverview(Named):
     """Who is playing a game and how they are doing, enough to pick whose view to open."""
-    name: str
-    last_round: int
-    factions: list[FactionSummary]
+    last_round: int = 0
+    factions: list[FactionSummary] = field(default_factory=list)
 
 
 @dataclass

@@ -5,14 +5,20 @@ the root. There's no database.
 
 ```
 <data root>/
-    players.txt              who can log in, across all games
+    players.jsonl            who can log in, across all games
     <game name>/
         ships.jsonl          the plan: the roster the game starts from
         spawns.jsonl         the plan: arrivals the director scheduled
+        settings.jsonl       the plan: when this game processes a round
+        registrations.jsonl  the plan: who put themselves down, and for how many ships
         commands/
             <ship>-commands-<round>.txt      the plan: what each player ordered
         status_round_<n>.pickle              the state: the world at the end of a round
 ```
+
+Two sibling directories hold game directories that are not in play. `archived/` is a game that is
+over, `registering/` is one that has been named and is collecting registrations. A game directory
+is the same thing in all three places, and moving between them is a `shutil.move`.
 
 ## Plan and state
 
@@ -92,20 +98,38 @@ The file is absent until something is scheduled.
 A ship arriving in round N takes its first orders in round N+1: it is not in the world when round
 N's readiness is checked, so nothing waits for orders it could not have written.
 
-## settings.txt
+## settings.jsonl
 
-Optional, per game. `key value` per line, `#` starts a comment.
+Optional, per game. One JSON object, on one line.
 
-```
-process_hours 8 20
-process_on_all_ready yes
+```jsonl
+{"process_hours": [8, 20], "process_on_all_ready": true}
 ```
 
 `process_hours` are the hours of the day at which the round is processed whether the orders are in
-or not. `*` means every hour. Absent means the director processes it. The timing comes from cron
-running `arena-cron.sh` on the hour; nothing here measures elapsed time.
+or not. Empty means the director processes it. The timing comes from cron running `arena-cron.sh`
+on the hour; nothing here measures elapsed time.
 
 `process_on_all_ready` processes the moment the last player says they are ready.
+
+## registrations.jsonl, and scenario.json
+
+While a game sits in `registering/`, `scenario.json` says which scenario it is being built from and
+`registrations.jsonl` collects who wants in.
+
+```jsonl
+{"player": "Menno", "names": ["Rocinante"]}
+{"player": "Rik", "names": ["Voyager", "Pathfinder"]}
+```
+
+A name per ship, so the number of names is the number of ships asked for and there is no second
+field to disagree with it. How many you may ask for is the scenario's answer, not this file's.
+
+A ship name has to be free across the whole game, so a clash is refused while the person who typed
+it is still there to change it.
+
+Both files travel with the directory when the game starts. They are a plan: nothing can rebuild
+the record of who asked for what.
 
 ## ready/
 

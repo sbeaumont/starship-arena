@@ -15,7 +15,7 @@
         {% for g in games %}
             <div class="game">
                 <span class="dot {{ 'ready' if g.ready else ('idle' if not g.ships else 'waiting') }}"></span>
-                <span class="name"><a href="{{ url_for('game_overview', game_name=g.name) }}">{{ g.name }}</a></span>
+                <span class="name"><a href="{{ url_for('game_overview', game_name=g.name) }}">{{ g.display }}</a></span>
                 <span class="round">Round {{ g.round_nr }}</span>
                 <span class="orders">
                     <span class="count">{{ g.orders_in }} / {{ g.ships }} orders in</span>
@@ -28,11 +28,11 @@
                         <button class="go" type="submit" {{ 'disabled' if not g.ready }}>Process</button>
                     </form>
                     <form method="POST" action="{{ url_for('force_process', game=g.name) }}"
-                          onsubmit="return confirm('Process round {{ g.round_nr }} of {{ g.name }} now? Anyone without orders gets an empty file and does nothing.')">
+                          onsubmit="return confirm('Process round {{ g.round_nr }} of {{ g.display }} now? Anyone without orders gets an empty file and does nothing.')">
                         <button type="submit" class="quiet">Force</button>
                     </form>
                     <form method="POST" action="{{ url_for('archive', game=g.name) }}"
-                          onsubmit="return confirm('Archive {{ g.name }}? It leaves every list; nothing is deleted.')">
+                          onsubmit="return confirm('Archive {{ g.display }}? It leaves every list; nothing is deleted.')">
                         <button type="submit" class="quiet">Archive</button>
                     </form>
                 </span>
@@ -54,7 +54,7 @@
         {% for g in archived %}
             <div class="game archived">
                 <span class="dot idle"></span>
-                <span class="name">{{ g.name }}</span>
+                <span class="name">{{ g.display }}</span>
                 <span class="round">{{ g.current_round - 1 }} rounds played</span>
                 <span></span>
                 <span class="act">
@@ -62,7 +62,7 @@
                         <button type="submit" class="quiet">Unarchive</button>
                     </form>
                     <form method="POST" action="{{ url_for('delete_archived', game=g.name) }}"
-                          onsubmit="return confirm('Delete {{ g.name }} for good? Its ships file, orders and rounds are gone.')">
+                          onsubmit="return confirm('Delete {{ g.display }} for good? Its ships file, orders and rounds are gone.')">
                         <button type="submit" class="danger">Delete</button>
                     </form>
                 </span>

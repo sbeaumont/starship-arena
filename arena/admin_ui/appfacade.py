@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from arena.app.dto import GameSettings
+from arena.app.naming import for_display
 from arena.app.services import AdminService
 from arena.engine.admin import GameSetup, regenerate_game
 from arena.engine.gamedirectory import GameDirectory
@@ -53,10 +54,6 @@ class NameValidator(object):
         if not self.name or len(self.name.strip()) == 0:
             self.messages.append('Name can not be empty.')
 
-    @property
-    def cleaned(self) -> str:
-        return re.sub(r'\s', '_', self.name)
-
 
 @dataclass
 class GameLine:
@@ -73,6 +70,10 @@ class GameLine:
     players: int
     players_ready: int
     not_ready: list[str]
+
+    @property
+    def display(self) -> str:
+        return for_display(self.name)
 
     @property
     def percent_in(self) -> int:
@@ -120,6 +121,9 @@ class AppFacade(object):
 
     def all_game_names(self) -> list:
         return [os.path.basename(d) for d in self.data_root.iterdir() if d.is_dir()]
+
+    def game_names_in_use(self) -> set:
+        return self.admin.game_names_in_use()
 
     def all_game_objs(self) -> list:
         return [self.game(name) for name in self.all_game_names()]
@@ -171,6 +175,34 @@ class AppFacade(object):
 
     def archived_games(self) -> list:
         return self.admin.list_archived_games()
+
+    def registering_games(self) -> list:
+        return self.admin.list_registering_games()
+
+    def open_registrations(self, name: str, scenario: str) -> None:
+        self.admin.open_registrations(name, scenario)
+
+    def scenario_of(self, game: str) -> str:
+        return self.admin.scenario_of(game)
+
+    def registrations(self, game: str) -> list:
+        return self.admin.registrations(game)
+
+    def assign(self, game: str, factions: dict) -> None:
+        self.admin.assign(game, factions)
+
+    def forming_games(self) -> list:
+        return self.admin.forming_games()
+
+    def start_game(self, game: str, ships: list[dict], on_all_ready: bool, hours: list[int]):
+        self.admin.start_game(game, ships,
+                              GameSettings(on_all_ready=on_all_ready, process_hours=hours))
+
+    def reopen_registrations(self, game: str) -> None:
+        self.admin.reopen_registrations(game)
+
+    def is_reopenable(self, game: str) -> bool:
+        return self.admin.is_reopenable(game)
 
     def archive_game(self, name: str) -> None:
         self.admin.archive_game(name)

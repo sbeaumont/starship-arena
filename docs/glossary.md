@@ -47,7 +47,7 @@ log in with.
 **Fleet.** The ships one player commands in a game. Several ships is normal, and a player's view
 plans all of them together in one map.
 
-**Director.** The person running the games. One role, marked in `players.txt`, and the only one
+**Director.** The person running the games. One role, marked in `players.jsonl`, and the only one
 the console lets in.
 
 **Faction.** A side. Every ship belongs to one, and fog of war is shared across it. A fleet is

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Registering{% endblock %}
+
+{% block content %}
+<h1>Registering</h1>
+<p class="lede">Games taking registrations. Players put themselves down in the game UI; you deal
+    them into factions when enough have.</p>
+
+{% if not forming %}
+    <p class="empty">Nothing open. <a href="{{ url_for('new_game') }}">Open one</a>.</p>
+{% else %}
+<div class="grid forming">
+    <span class="header">Game</span>
+    <span class="header">Scenario</span>
+    <span class="header num">Players</span>
+    <span class="header num">Ships</span>
+    <span class="header">Assigned</span>
+    {% for g in forming %}
+        <span class="name"><a href="{{ url_for('assign', game=g.name) }}">{{ g.display }}</a></span>
+        <span class="games">{{ g.scenario }}</span>
+        <span class="num">{{ g.players }}</span>
+        <span class="num">{{ g.ships }}</span>
+        <span class="{{ 'ok' if g.assigned == g.players and g.players else '' }}">
+            {{- g.assigned }} of {{ g.players }}</span>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock content %}

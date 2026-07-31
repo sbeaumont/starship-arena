@@ -2,112 +2,35 @@
 
 {% block title %}New game{% endblock %}
 
-{#- One <select> definition, used both for the rows already on the page and for the blank row
-    the Add button clones. The registry is the only source of types.
-
-    The submitted value is `type_name` (A2527), which is what a ships file holds and what the
-    registry is keyed by - not `name` (A2527 Alligator), which is for reading. -#}
-{% macro type_select(selected) -%}
-<select name="ship_type">
-    <optgroup label="Ships">
-        {%- for st in ship_types %}
-            <option value="{{ st.type_name }}" {{ 'selected' if st.type_name == selected }}>{{ st.name }} · hull {{ st.max_hull }} · speed {{ st.max_speed }} · turn {{ st.max_turn }}</option>
-        {%- endfor %}
-    </optgroup>
-    <optgroup label="Starbases">
-        {%- for st in starbase_types %}
-            <option value="{{ st.type_name }}" {{ 'selected' if st.type_name == selected }}>{{ st.name }} · hull {{ st.max_hull }} · fixed</option>
-        {%- endfor %}
-    </optgroup>
-</select>
-{%- endmacro %}
-
-{% macro ship_row(row) -%}
-<div class="shiprow">
-    <input type="text" name="ship_name" value="{{ row.name if row else '' }}" placeholder="Ship name">
-    {{ type_select(row.type if row else '') }}
-    <input type="text" name="ship_faction" value="{{ row.faction if row else '' }}" placeholder="Faction">
-    <input type="text" name="ship_player" value="{{ row.player if row else '' }}" placeholder="Player"
-           list="known-players" autocomplete="off">
-    <input type="text" name="ship_x" value="{{ row.x if row else '' }}" placeholder="auto" class="coord">
-    <input type="text" name="ship_y" value="{{ row.y if row else '' }}" placeholder="auto" class="coord">
-    <button type="button" class="drop" title="Remove this ship">&times;</button>
-</div>
-{%- endmacro %}
-
 {% block content %}
-{#- Everyone the game already knows, so a commander's name is picked rather than typed: it is
-    also their login, and a typo makes a player who can never sign in. -#}
-<datalist id="known-players">
-    {% for name in known_players %}<option value="{{ name }}"></option>{% endfor %}
-</datalist>
-
 <h1>New game</h1>
-<p class="lede">Name the game and add its ships. Leave the coordinates blank and the engine
-    scatters the factions evenly around the origin for you.</p>
+<p class="lede">Pick what kind of game it is and name it. A scenario collects registrations from
+    the players first; the generic one goes straight to a roster you type yourself.</p>
 
-<form action="{{ url_for('new_game') }}" method="POST">
-    <div class="panel">
-        <label for="game_name">Game name</label>
-        <input type="text" id="game_name" name="game_name" value="{{ game_name }}"
-               placeholder="letters, numbers and dashes" autofocus>
-    </div>
-
-    <h2>Ships</h2>
-    <div class="shiptable">
-        <div class="shiprow head">
-            <span>Name</span><span>Type</span><span>Faction</span><span>Player</span>
-            <span>X</span><span>Y</span><span></span>
+{% for s in scenarios %}
+<div class="panel">
+    <form method="POST">
+        <input type="hidden" name="scenario" value="{{ s.key }}">
+        <h3>{{ s.name }}</h3>
+        <p class="blurb">{{ s.blurb }}</p>
+        <label for="game_name-{{ s.key }}">Game name</label>
+        <input type="text" id="game_name-{{ s.key }}" name="game_name"
+               placeholder="letters, numbers, dashes and spaces" autocomplete="off">
+        <div class="rowactions">
+            <button class="go" type="submit">
+                {{ 'Open for registration' if s.registers else 'Build the roster' }}</button>
+            <span class="hint">
+                {%- if s.registers %}Up to {{ s.max_ships }} ships each, over
+                    {{ s.factions | length }} factions.
+                {%- else %}Spaces in the name become underscores on disk.{% endif %}</span>
         </div>
-        <div id="rows">
-            {% for row in rows %}{{ ship_row(row) }}{% endfor %}
-            {% if not rows %}{{ ship_row(None) }}{% endif %}
-        </div>
-    </div>
+    </form>
+</div>
+{% endfor %}
 
-    <div class="rowactions">
-        <button type="button" id="add">+ Add ship</button>
-        <span class="hint">Spaces in a name, faction or player become underscores.</span>
-    </div>
-
-    <div class="rowactions">
-        <button class="go" type="submit">Create game</button>
-    </div>
-
-    {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}<li>{{ message }}</li>{% endfor %}
-        </ul>
-    {% endif %}
-</form>
-
-<template id="blank">{{ ship_row(None) }}</template>
-
-<script>
-    const rows = document.getElementById('rows');
-    const blank = document.getElementById('blank');
-
-    function addRow() {
-        const row = blank.content.firstElementChild.cloneNode(true);
-        // Most ships added in a row belong to the faction just entered, so carry it over and
-        // leave the cursor on the one field that is always different.
-        const last = rows.lastElementChild;
-        if (last) {
-            row.querySelector('[name=ship_faction]').value = last.querySelector('[name=ship_faction]').value;
-        }
-        rows.appendChild(row);
-        row.querySelector('[name=ship_name]').focus();
-        return row;
-    }
-
-    document.getElementById('add').addEventListener('click', () => addRow());
-
-    // A row is only removed if it is not the last one: an empty table has nothing to add to.
-    rows.addEventListener('click', (e) => {
-        if (e.target.classList.contains('drop') && rows.children.length > 1) {
-            e.target.closest('.shiprow').remove();
-        }
-    });
-
-</script>
+{% if messages %}
+    <ul class="messages">
+        {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+    </ul>
+{% endif %}
 {% endblock content %}

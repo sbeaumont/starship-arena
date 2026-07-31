@@ -59,23 +59,17 @@ class GameDirectory(object):
         return last_round
 
 
-    def read_settings(self) -> dict[str, str]:
+    def read_settings(self) -> dict:
         path = os.path.join(self._dir, SETTINGS_FILE_NAME)
         if not os.path.exists(path):
             return {}
-        settings = {}
         with open(path) as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    key, _, value = line.partition(' ')
-                    settings[key] = value.strip()
-        return settings
+            lines = [line for line in f if line.strip() and not line.lstrip().startswith('#')]
+        return json.loads(lines[0]) if lines else {}
 
-    def write_settings(self, settings: dict[str, str]) -> None:
+    def write_settings(self, settings: dict) -> None:
         with open(os.path.join(self._dir, SETTINGS_FILE_NAME), 'w') as f:
-            for key, value in sorted(settings.items()):
-                f.write(f"{key} {value}\n")
+            f.write(json.dumps(settings, sort_keys=True) + '\n')
 
     def is_ready(self, player: str, round_nr: int) -> bool:
         path = os.path.join(self._dir, READY_FILE_TEMPLATE.format(player))

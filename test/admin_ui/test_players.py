@@ -135,4 +135,4 @@ class TestPlayersPage(TestCase):
         self.registry.issue('Rik')
         self.one('deactivate', 'Rik')
         self.assertNotIn('value="Rik"',
-                         self.client.get('/scenario/five-race-war').get_data(as_text=True))
+                         self.client.get('/scenario/five-faction-war').get_data(as_text=True))

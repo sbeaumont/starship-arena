@@ -3,11 +3,14 @@
 GameService is player-facing and restricted, AdminService is the director's. Storage stays below
 this line. See docs/adr/0001-layered-architecture.md."""
 
+import json
 import re
 import shutil
 from pathlib import Path
 
-from arena.cfg import ADMIN_UI_URL, ARCHIVE_DIR_NAME, GAME_DATA_DIR
+from arena.cfg import (ADMIN_UI_URL, ARCHIVE_DIR_NAME, COMMANDS_DIR, GAME_DATA_DIR,
+                       INIT_FILE_NAME, REGISTERING_DIR_NAME, REGISTRATION_FILE_NAME,
+                       SCENARIO_FILE_NAME, STATUS_FILE_TEMPLATE)
 from arena.engine.admin import GameSetup
 from arena.engine.command import parse_commands
 from arena.engine.game import Game
@@ -16,9 +19,11 @@ from arena.engine.history import Tick
 from arena.engine.objects.registry.builder import all_ship_types
 from arena.engine.objects.starbase import Starbase
 from arena.engine.objects.event import ExplosionEvent
+from arena.app import scenarios
 from arena.app.players import DIRECTOR, LOGIN_COOKIE, PLAYER, Player, PlayerRegistry
+from arena.app.registrations import Registration, RegistrationFile
 from arena.app.dto import (
-    GameSummary, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
+    FormingGame, GameSummary, OpenGame, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
     WeaponInfo, WeaponInput,
     ShipSummary, FactionSummary, GameOverview, ShipTypeInfo, Me, LoginInfo, GameSettings, Pulse,
@@ -40,11 +45,54 @@ class _EngineAccess:
     def _archive(self) -> Path:
         return Path(self.data_root).parent / ARCHIVE_DIR_NAME
 
+    @property
+    def _registering(self) -> Path:
+        return Path(self.data_root).parent / REGISTERING_DIR_NAME
+
     def list_games(self) -> list[GameSummary]:
         return self._games_in(Path(self.data_root))
 
     def list_archived_games(self) -> list[GameSummary]:
         return self._games_in(self._archive)
+
+    def list_registering_games(self) -> list[GameSummary]:
+        return self._games_in(self._registering)
+
+    def game_names_in_use(self) -> set[str]:
+        """Being played, archived or still collecting registrations. All of them claim the name."""
+        return {g.name for g in (self.list_games() + self.list_archived_games()
+                                 + self.list_registering_games())}
+
+    def scenario_of(self, game: str) -> str:
+        return json.loads((self._registering / game / SCENARIO_FILE_NAME).read_text())['scenario']
+
+    def registrations(self, game: str) -> list[Registration]:
+        """Whoever registered, wherever the game is: still forming, or already started."""
+        forming = self._registering / game
+        return RegistrationFile(forming if forming.exists()
+                                else Path(self.data_root) / game).all()
+
+    def assign(self, game: str, factions: dict[str, str]) -> None:
+        RegistrationFile(self._registering / game).assign(factions)
+
+    def forming_games(self) -> list[FormingGame]:
+        """Every game collecting registrations, with how much has come in."""
+        forming = []
+        for summary in self.list_registering_games():
+            scenario = scenarios.by_key(self.scenario_of(summary.name))
+            entries = self.registrations(summary.name)
+            forming.append(FormingGame(name=summary.name, scenario=scenario.name,
+                                       players=len(entries),
+                                       ships=sum(e.ships for e in entries),
+                                       assigned=sum(1 for e in entries if e.faction)))
+        return forming
+
+    def register(self, game: str, player: str, names: list[str]) -> Registration:
+        scenario = scenarios.by_key(self.scenario_of(game))
+        return RegistrationFile(self._registering / game).put(player, names, scenario.max_ships)
+
+    def withdraw(self, game: str, player: str) -> None:
+        RegistrationFile(self._registering / game).remove(player)
 
     @staticmethod
     def _games_in(root: Path) -> list[GameSummary]:
@@ -63,19 +111,15 @@ class _EngineAccess:
 
     def settings(self, game: str) -> GameSettings:
         raw = self._gd(game).read_settings()
-        hours = raw.get('process_hours', '').strip()
-        return GameSettings(on_all_ready=raw.get('process_on_all_ready', '') == 'yes',
-                            process_hours=list(range(24)) if hours == '*' else
-                                          sorted(int(h) for h in hours.split()))
+        return GameSettings(on_all_ready=raw.get('process_on_all_ready', False),
+                            process_hours=sorted(raw.get('process_hours', [])))
 
     def save_settings(self, game: str, settings: GameSettings) -> None:
         hours = sorted(set(settings.process_hours))
         if any(not 0 <= h <= 23 for h in hours):
             raise ValueError(f"Hours run from 0 to 23: {hours}")
-        self._gd(game).write_settings({
-            'process_on_all_ready': 'yes' if settings.on_all_ready else 'no',
-            'process_hours': '*' if len(hours) == 24 else ' '.join(str(h) for h in hours),
-        })
+        self._gd(game).write_settings({'process_on_all_ready': settings.on_all_ready,
+                                       'process_hours': hours})
 
     def all_ready(self, game: str) -> bool:
         players = {p for p in Game(self._gd(game)).players if p}
@@ -143,6 +187,18 @@ class GameService(_EngineAccess):
 
     def ship_owner(self, game: str, ship: str) -> str | None:
         return self._roster(game).get(ship)
+
+    def open_games(self, player: str) -> list[OpenGame]:
+        """Games taking registrations, with what this player has already asked for."""
+        open_games = []
+        for summary in self.list_registering_games():
+            scenario = scenarios.by_key(self.scenario_of(summary.name))
+            entries = self.registrations(summary.name)
+            mine = next((e for e in entries if e.player == player), None)
+            open_games.append(OpenGame(name=summary.name, scenario=scenario.name,
+                                       blurb=scenario.blurb, max_ships=scenario.max_ships,
+                                       players=len(entries), my_ships=mine.names if mine else []))
+        return open_games
 
     # ---------------------------------------------------------------------- REFERENCE
 
@@ -491,6 +547,48 @@ class AdminService(_EngineAccess):
         gd = GameDirectory(self.data_root, name)
         if not gd.exists or not gd.has_been_setup:
             GameSetup(gd, ShipFile(gd, ships)).execute()
+
+    # ---------------------------------------------------------------------- BEFORE IT STARTS
+
+    def open_registrations(self, name: str, scenario: str) -> None:
+        """Name a game and start collecting registrations for it."""
+        scenarios.by_key(scenario)
+        if name in self.game_names_in_use():
+            raise ValueError(f"A game called '{name}' already exists.")
+        target = self._registering / name
+        target.mkdir(parents=True)
+        (target / SCENARIO_FILE_NAME).write_text(json.dumps({'scenario': scenario}) + '\n')
+
+    def is_reopenable(self, name: str) -> bool:
+        """Built from registrations and no round played yet, so the roster can still be redealt."""
+        gd = GameDirectory(self.data_root, name)
+        return (gd.last_round_number <= 0
+                and (Path(self.data_root) / name / REGISTRATION_FILE_NAME).exists())
+
+    def reopen_registrations(self, name: str) -> None:
+        """Put a started game back into registration, roster and all.
+
+        Only before its first round: after that the roster is what people have been playing."""
+        source = Path(self.data_root) / name
+        gd = GameDirectory(self.data_root, name)
+        if gd.last_round_number > 0:
+            raise ValueError(f"'{name}' has played rounds. Archive it instead.")
+        if not (source / REGISTRATION_FILE_NAME).exists():
+            raise ValueError(f"'{name}' was not built from registrations.")
+        for leftover in (INIT_FILE_NAME, STATUS_FILE_TEMPLATE.format(0)):
+            (source / leftover).unlink(missing_ok=True)
+        shutil.rmtree(source / COMMANDS_DIR, ignore_errors=True)
+        self._registering.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(source), str(self._registering / name))
+
+    def start_game(self, name: str, ships: list[dict], settings: GameSettings) -> None:
+        """Move the directory into play, write the roster, keep the registrations as the record."""
+        target = Path(self.data_root) / name
+        if target.exists():
+            raise ValueError(f"A game called '{name}' is already being played.")
+        shutil.move(str(self._registering / name), str(target))
+        self.create_game(name, ships)
+        self.save_settings(name, settings)
 
     def spawn_ship(self, game: str, name: str, ship_type: str, player: str = '',
                    faction: str = None, x: int = 0, y: int = 0, heading: int = 0,

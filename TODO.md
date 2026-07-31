@@ -206,7 +206,7 @@ stopping AI drift, and the reasoning is the part only a person can confirm.
     docs/README.md         what is here, and which file answers which question
     docs/architecture.md   the layers, what lives where, how a request and a round flow
     docs/glossary.md       round vs tick, faction, contact, commander, director, order
-    docs/data.md           the game directory, ships.txt, commands, pickles, players.txt
+    docs/data.md           the game directory, the roster, commands, pickles, players.jsonl
     docs/deployment.md     the single WSGI app, the host's constraints, the build step
     docs/development.md    running, testing, regenerating, the two scripts
     docs/adr/NNNN-*.md     one decision each
@@ -280,7 +280,7 @@ The lists grow without bound as games pile up, so this is about keeping them mai
 - [x] **Deactivate a player.** The name stays reserved (nobody else can claim it, and old games
       keep naming them), but they cannot log in and are not offered when setting up a new game.
       Distinct from revoking a link, which only takes away the current token. An `Active` column
-      in `players.txt`, and `by_token` refusing them, which closes every interface at once.
+      in `players.jsonl`, and `by_token` refusing them, which closes every interface at once.
 - [ ] **Leaderboard.** Per player: the last ten games and a lifetime total. A game's contribution
       is **total score divided by the number of ships they had in it**, so commanding a fleet is
       not worth more than commanding one ship well.
@@ -293,15 +293,16 @@ The lists grow without bound as games pile up, so this is about keeping them mai
 - [x] **Deal players into a game.** Tick who is playing on a scenario's screen and the roster
       arrives filled in on the new-game screen, ready to edit. `arena/admin_ui/scenarios/`, with
       the wizard at `/scenarios`. See [plans/scenario-setup-plan.md](plans/scenario-setup-plan.md).
-- [ ] **A sign-up page** where people put themselves forward for the next game, so the director
-      starts from a list rather than a memory. Step 2 of the plan above, and what the dealer is
-      waiting for: it already takes a ship count and a name per ship, and nothing collects them.
-- [x] **Predefined factions.** The Five Race War brings its own: five races, each with its own
-      line of hulls, every active one carrying a starbase that one of its players commands. A race
-      stays lore, and the scenario is what says a race flies as a faction.
-- [ ] **More than one ship.** The dealer grants up to what somebody asked for and levels the
-      factions against each other, so a faction is never outgunned by who happened to ask for
-      three. Nothing collects the request yet; that arrives with the sign-up page.
+- [x] **A sign-up page.** The director names a game and opens it, players put themselves down in
+      the game UI with a name per ship, and the console deals them into factions by dragging. A
+      game being formed is a game directory in `registering/`, and starting it moves the directory
+      into play.
+- [x] **Predefined factions.** The Five Faction War brings its own: five of them, each with its own
+      line of hulls, every active one carrying a starbase that one of its players commands. The
+      engine knows nothing about any of it; a scenario is what says which hulls a faction flies.
+- [x] **More than one ship.** Up to what the scenario allows, asked for at sign-up by naming that
+      many ships. The dealer levels the factions against each other, so a faction is never
+      outgunned by who happened to ask for three, and nobody is promised a ship they lose later.
 - [ ] **Tooling for large rosters.** A row per ship and a paste box stop scaling somewhere above
       twenty ships, and a scenario wants more than a roster: sides, objectives, world objects. A
       formal roster file format is the groundwork; the tools come with the scenario builder.

@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ game }}{% endblock %}
+{% block title %}{{ display }}{% endblock %}
 
 {% block content %}
-<h1>{{ game }}</h1>
+<h1>{{ display }}</h1>
 <p class="lede">Round {{ round_nr }}, <span id="orders-in">{{ orders_in }}</span> of {{ ships }} ships have orders in.</p>
 
 {% if request.args.get('msg') %}
@@ -21,9 +21,15 @@
         <button type="submit">Force it</button>
     </form>
     <form method="POST" action="{{ url_for('regenerate', game=game) }}"
-          onsubmit="return confirm('Replay {{ game }} from its ships file and orders? Its saved rounds are rebuilt.')">
+          onsubmit="return confirm('Replay {{ display }} from its ships file and orders? Its saved rounds are rebuilt.')">
         <button type="submit">Regenerate</button>
     </form>
+    {% if reopenable %}
+        <form method="POST" action="{{ url_for('reopen', game=game) }}"
+              onsubmit="return confirm('Put {{ display }} back into registration? The roster is thrown away; who registered is not.')">
+            <button type="submit">Back to registration</button>
+        </form>
+    {% endif %}
     <span class="hint">Regenerating replays every round, so saved state is rebuilt with the current engine.</span>
 </div>
 

@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ display }}{% endblock %}
+
+{% block content %}
+<h1>{{ display }}</h1>
+<p class="lede">{{ scenario.name }}. Drag anyone into a faction. Whoever is left in the pool is
+    spread at random, evening out the numbers. A faction nobody lands in is not in the game.</p>
+
+{% if not entries %}
+    <p class="empty">Nobody has registered yet. They put themselves down in the game UI.</p>
+{% else %}
+{% macro block(e) -%}
+<div class="who" draggable="true" data-player="{{ e.player }}">
+    <span class="nm">{{ e.player }}</span>
+    <span class="fleet">{{ e.names | join(' · ') }}</span>
+</div>
+{%- endmacro %}
+
+<form method="POST" id="assign">
+    <h2>Not assigned <span class="when">{{ entries | rejectattr('faction') | list | length }}</span></h2>
+    <div class="pool zone" data-faction="">
+        {% for e in entries if not e.faction %}{{ block(e) }}{% endfor %}
+    </div>
+
+    <h2>Factions</h2>
+    <div class="columns">
+        {% for faction in scenario.factions %}
+        {% set crew = entries | selectattr('faction', 'equalto', faction) | list %}
+        <div class="column">
+            <div class="chead">{{ faction }} <span class="tally">{{ crew | length }}</span></div>
+            <div class="zone" data-faction="{{ faction }}">
+                {% for e in crew %}{{ block(e) }}{% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="rowactions">
+        <button class="go" type="submit" name="next" value="1">Next</button>
+        <button type="submit">Save</button>
+        <span class="hint">Save keeps what you have dragged and stays here. Next deals the rest
+            and goes on to the roster.</span>
+    </div>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+        </ul>
+    {% endif %}
+</form>
+
+<script>
+    const form = document.getElementById('assign');
+    let dragged = null;
+
+    document.querySelectorAll('.who').forEach((who) => {
+        who.addEventListener('dragstart', () => { dragged = who; who.classList.add('lifted'); });
+        who.addEventListener('dragend', () => { dragged = null; who.classList.remove('lifted'); });
+    });
+
+    document.querySelectorAll('.zone').forEach((zone) => {
+        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('over'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+        zone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            zone.classList.remove('over');
+            if (dragged) zone.appendChild(dragged);
+            tally();
+        });
+    });
+
+    function tally() {
+        document.querySelectorAll('.column').forEach((column) => {
+            column.querySelector('.tally').textContent = column.querySelectorAll('.who').length;
+        });
+        const pool = document.querySelectorAll('.pool .who').length;
+        document.querySelector('h2 .when').textContent = pool;
+    }
+
+    // Only the assigned are submitted. Anybody still in the pool is absent, which is what the
+    // deal reads as "put them wherever the numbers need them".
+    form.addEventListener('submit', () => {
+        document.querySelectorAll('.column .zone').forEach((zone) => {
+            zone.querySelectorAll('.who').forEach((who) => {
+                for (const [name, value] of [['player', who.dataset.player],
+                                             ['faction', zone.dataset.faction]]) {
+                    const field = document.createElement('input');
+                    field.type = 'hidden';
+                    field.name = name;
+                    field.value = value;
+                    form.appendChild(field);
+                }
+            });
+        });
+    });
+</script>
+{% endif %}
+{% endblock content %}

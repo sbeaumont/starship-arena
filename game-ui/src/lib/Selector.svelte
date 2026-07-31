@@ -1,4 +1,6 @@
 <script>
+  import OpenGames from "./OpenGames.svelte";
+
   let { me, onPick, onPage, onSignOut } = $props();
 
   let allGames = $state([]);
@@ -96,6 +98,8 @@
       <button type="button" onclick={onSignOut}>Sign out</button>
     </nav>
   </header>
+
+  <OpenGames />
 
   {#if loading}
     <p class="msg">Loading games…</p>
