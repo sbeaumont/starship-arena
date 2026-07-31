@@ -16,8 +16,16 @@
 <span class="games">{{ p.games | join(', ') or '—' }}</span>
 <span class="link">
     {% if p.token %}
-        <input type="text" readonly value="{{ game_ui_url }}/?login={{ p.token }}"
+        <input type="text" readonly value="{{ play_url }}/?login={{ p.token }}"
                onclick="this.select()">
+        <button type="button" class="copy" title="Copy link" aria-label="Copy link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 17H7A5 5 0 0 1 7 7h2"></path>
+                <path d="M15 7h2a5 5 0 0 1 0 10h-2"></path>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
+        </button>
         <button type="submit" name="new_link" value="{{ p.name }}" class="quiet">New link</button>
         <button type="submit" name="remove_link" value="{{ p.name }}" class="quiet">Remove link</button>
     {% else %}
@@ -111,6 +119,14 @@
 </div>
 
 <script>
+    document.querySelectorAll('.logins .link .copy').forEach((copy) => {
+        copy.addEventListener('click', async () => {
+            await navigator.clipboard.writeText(copy.previousElementSibling.value);
+            copy.classList.add('copied');
+            setTimeout(() => copy.classList.remove('copied'), 1200);
+        });
+    });
+
     document.querySelectorAll('.tickall').forEach((all) => {
         const grid = all.closest('.grid');
         all.addEventListener('change', () => {

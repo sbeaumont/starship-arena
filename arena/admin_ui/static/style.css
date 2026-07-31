@@ -325,7 +325,7 @@ h2 button.quiet { margin-left: 8px; vertical-align: middle; }
            letter-spacing: .14em; text-transform: uppercase; }
 
 .ships { grid-template-columns: 1fr 80px 1fr 100px 100px; }
-.logins { grid-template-columns: 30px minmax(110px, 1fr) 1fr minmax(280px, 2fr) 190px; }
+.logins { grid-template-columns: 30px minmax(110px, 1fr) 1fr minmax(320px, 2fr) 190px; }
 .logins .tick { display: flex; align-items: center; justify-content: center; }
 .logins .tick input { width: auto; margin: 0; }
 .logins .link { display: flex; align-items: center; gap: 6px; }
@@ -342,6 +342,11 @@ h2 button.quiet { margin-left: 8px; vertical-align: middle; }
     background: var(--bg); border: 1px solid var(--edge); border-radius: 3px;
 }
 .logins .link input:focus { color: var(--ink); border-color: var(--cyan); outline: none; }
+.logins .link .copy { border-color: var(--edge); color: var(--ink-dim); padding: 4px 6px;
+                      display: flex; align-items: center; }
+.logins .link .copy svg { width: 14px; height: 14px; }
+.logins .link .copy:hover { border-color: var(--ring); color: var(--ink); }
+.logins .link .copy.copied { border-color: var(--green); color: var(--green); }
 .logins .act { display: flex; gap: 6px; align-items: center; }
 .logins .act form { display: inline; }
 .logins .act button { font-size: 10px; padding: 4px 8px; }

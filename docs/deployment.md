@@ -91,8 +91,9 @@ SITE_URL = 'https://starship-arena-agfx.pythonanywhere.com'    # the address pla
 `GAME_DATA_DIR` must never use `os.path.abspath()`. That resolves against the working directory,
 which the host picks for itself, and a relative value is already anchored to the repository.
 
-`SITE_URL` is only read by the CLI, for printing login links. It's the address a link is *for*,
-not where this machine serves from, so the same value belongs in both copies.
+`SITE_URL` is read only where a login link is made whole: the CLI printing one, and the console's
+player page. It's the address a link is *for*, not where this machine serves from, so the same
+value belongs in both copies.
 
 ## Rolling out logins
 

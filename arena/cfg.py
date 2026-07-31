@@ -39,10 +39,14 @@ logger.info(f"cfg.py: Loading game data from {GAME_DATA_DIR}")
 
 # The address players use, so login links can be printed whole. Not "where this machine serves
 # from": a link is handed to somebody else, so it has to point at the game they play, wherever
-# it is issued from. Only the CLI wants this; the web app never has to know its own name.
+# it is issued from. Only login links want this; no page has to know its own name.
 SITE_URL = os.environ.get('SITE_URL', '')
 if (not SITE_URL) and ('SITE_URL' in dir(secret)):
     SITE_URL = secret.SITE_URL
+
+# Where a login link points. A GAME_UI_URL that already names a host - the dev runner's Vite
+# server - is whole as it stands; otherwise the site's address goes in front of the path.
+PLAY_URL = GAME_UI_URL if '://' in GAME_UI_URL else SITE_URL.rstrip('/') + GAME_UI_URL
 
 STATUS_FILE_TEMPLATE = "status_round_{}.pickle"
 COMMANDS_DIR = 'commands/'

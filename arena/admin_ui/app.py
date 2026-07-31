@@ -14,7 +14,7 @@ from dataclasses import asdict
 from flask import Flask, abort, render_template, request, g, jsonify, send_file, redirect, url_for
 
 from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE
-from arena.cfg import WEB_ROOT, GAME_UI_URL
+from arena.cfg import WEB_ROOT, GAME_UI_URL, PLAY_URL
 from arena.app import scenarios
 from arena.app.registrations import Registration
 from arena.app.naming import as_stored, for_display
@@ -22,8 +22,10 @@ from arena.admin_ui.appfacade import AppFacade, NameValidator
 
 app = Flask('starship-arena', template_folder=f'{WEB_ROOT}/templates', static_folder=f'{WEB_ROOT}/static')
 app.logger.setLevel(logging.DEBUG)
-# Player-facing pages live in the game UI; the console links out to them.
+# Player-facing pages live in the game UI; the console links out to them. A login link is copied
+# out of the console and sent to somebody else, so that one is whole.
 app.jinja_env.globals['game_ui_url'] = GAME_UI_URL
+app.jinja_env.globals['play_url'] = PLAY_URL
 
 
 # ---------------------------------------------------------------------- HELPERS

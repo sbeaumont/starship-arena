@@ -15,7 +15,7 @@ import sys
 import os
 from datetime import datetime
 
-from arena.cfg import GAME_DATA_DIR, GAME_UI_URL, SITE_URL
+from arena.cfg import GAME_DATA_DIR, PLAY_URL
 from arena.log import configure_logger
 
 from arena.app.players import PlayerRegistry, DIRECTOR, PLAYER
@@ -76,10 +76,10 @@ def issue_link(name: str, director: bool, url: str):
     player = PlayerRegistry(GAME_DATA_DIR).issue(name, role=DIRECTOR if director else PLAYER)
     # The address given is the game UI's own, wherever that is: the Vite server answers at its
     # root, a deployed site under /play. A host that knows its own address says so in secret.py.
-    where = url.rstrip('/') if url else (SITE_URL.rstrip('/') + GAME_UI_URL if SITE_URL else '')
+    where = url.rstrip('/') if url else PLAY_URL
     print(f"{player.name}{' (director)' if player.is_director else ''}")
-    print(f"  {where or GAME_UI_URL}/?login={player.token}")
-    if not where:
+    print(f"  {where}/?login={player.token}")
+    if '://' not in where:
         print("  ^ a path, not a link. Give the address as the second argument, or set "
               "SITE_URL in secret.py.")
 
