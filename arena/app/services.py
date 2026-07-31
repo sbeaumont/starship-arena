@@ -277,7 +277,7 @@ class GameService(_EngineAccess):
                 limits=ShipLimits(st.max_turn, st.max_delta_v, st.max_speed),
                 components=self._component_status(s, final),
                 specs=self._specs(st),
-                weapons=[self._weapon_info(w, pristine_weapons[w.name])
+                weapons=[self._weapon_info(w, pristine_weapons[w.name], world)
                          for w in s.weapons.values()],
                 track=[TrackPoint(tick=t.tick, x=s.history[t]['pos'].x, y=s.history[t]['pos'].y)
                        for t in recorded],
@@ -370,14 +370,17 @@ class GameService(_EngineAccess):
                 for name, status in snapshot['components'].items() if status]
 
     @staticmethod
-    def _weapon_info(weapon, pristine) -> WeaponInfo:
+    def _weapon_info(weapon, pristine, world) -> WeaponInfo:
         """Describe a weapon well enough for an interface to offer the right controls.
         The inputs come from the weapon itself, so a new kind of weapon needs no changes here.
         `pristine` is the same weapon on the type object, which carries the full load."""
         inputs = []
         for p in weapon.expected_parameters:
+            if p.needs_world:
+                p.set_world(world)
             lo, hi = p.range if p.kind == 'number_in_range' else (None, None)
-            inputs.append(WeaponInput(name=p.name, kind=p.kind, min=lo, max=hi))
+            inputs.append(WeaponInput(name=p.name, kind=p.kind, min=lo, max=hi,
+                                      choices=p.choices))
         payload = weapon.payload_type
         return WeaponInfo(name=weapon.name, description=weapon.description,
                           firing_arc=weapon.firing_arc,

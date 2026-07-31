@@ -9,10 +9,9 @@ docs/adr/0019-machines-drive-components-through-one-vocabulary.md."""
 
 import re
 from abc import ABC
-from enum import Enum
 
 from arena.engine.history import Tick
-from arena.engine.world import World
+from arena.engine.world import Whereabouts, World
 from arena.engine.objects.event import InternalEvent
 from arena.engine.parameter import Parameter
 
@@ -111,26 +110,17 @@ class ComponentSelectorParameter(Parameter):
         return self.owner.all_components[self._input]
 
 
-class Whereabouts(str, Enum):
-    """One of the world's collections, named after it, to say where an order looks for a name."""
-    Objects = 'objects'
-    Graveyard = 'graveyard'
-    Spawns = 'spawns'
-
-    def __str__(self):
-        return self.value
-
-
-ANYWHERE = frozenset(Whereabouts)
-
-
 class ObjectByNameParameter(ComponentParameter):
     """Identifies a named object. A laser names what it shoots at, a spawner names a wreck."""
 
     def __init__(self, name: str, component: Component,
-                 whereabouts=frozenset({Whereabouts.Objects})):
+                 where=frozenset({Whereabouts.Objects}),
+                 with_tags=frozenset(), without_tags=frozenset(), own_faction=False):
         super().__init__(name, component)
-        self.whereabouts = whereabouts
+        self.where = where
+        self.with_tags = with_tags
+        self.without_tags = without_tags
+        self.own_faction = own_faction
 
     @property
     def kind(self) -> str:
@@ -153,20 +143,18 @@ class ObjectByNameParameter(ComponentParameter):
         return is_known
 
     @property
-    def value(self):
-        """Whatever carries the name, in the parts of the world this order looks in.
+    def choices(self) -> list:
+        """What to offer. Narrower than what `value` resolves, so a name off the list is still
+        accepted and refused with a reason."""
+        return sorted(self.world.find_objects(
+            where=self.where, with_tags=self.with_tags, without_tags=self.without_tags,
+            faction=self.component.container.faction if self.own_faction else None))
 
-        A laser looks in space only, so a shot at something since destroyed fizzles rather than
-        hitting a corpse. Names are unique across the world, so the order of the search does not
-        decide the answer."""
-        collections = {Whereabouts.Objects: self.world.objects,
-                       Whereabouts.Graveyard: self.world.graveyard,
-                       Whereabouts.Spawns: self.world.spawns}
-        for part in self.whereabouts:
-            found = collections[part].get(self._input)
-            if found:
-                return found
-        return None
+    @property
+    def value(self):
+        """A laser looks in space only, so a shot at something since destroyed fizzles rather
+        than hitting a corpse."""
+        return self.world.find_objects(where=self.where).get(self._input)
 
     @property
     def object_name(self):

@@ -9,7 +9,8 @@ from arena.engine.admin import regenerate_game
 from arena.engine.game import Game
 from arena.engine.gamedirectory import GameDirectory
 from arena.engine.history import Tick
-from arena.engine.objects.components.spawner import ShipSpawner
+from arena.engine.objects.components.spawner import CLAIMED, ShipSpawner
+from arena.engine.objects.registry import builder
 from arena.engine.world import World
 
 # Placed away from the origin, because setup scatters anything still sitting on it. Voyager is
@@ -33,7 +34,7 @@ class TestNamingAReplacement(TestCase):
     """The stem is kept and the number climbs, so no name is ever handed out twice."""
 
     def _world(self, *names) -> World:
-        return World(None, {n: None for n in names})
+        return World(None, {n: builder.create(n, 'A2527', (0, 0)) for n in names})
 
     def test_the_first_replacement_is_two(self):
         self.assertEqual('Voyager-2', ShipSpawner.replacement_name('Voyager', self._world('Voyager')))
@@ -113,15 +114,61 @@ class TestFiringTheSpawner(TestCase):
 
         self.assertIn('Voyager-2', Game(self.gd).missing_command_files)
 
-    def test_the_fourth_replacement_is_refused(self):
-        """Three a game is what stops a game running forever."""
-        base = self.gd.load_current_world().objects['Base']
-        spawner = base.weapons['SS']
-        wreck = self.gd.load_current_world().graveyard['Voyager']
-        params = {'wreck': _Given(wreck), 'direction': _Given(90)}
-        world = self.gd.load_current_world()
+    def test_a_wreck_can_only_be_claimed_once(self):
+        world = self._run_round_two("1: Fire SS Voyager 90\n2: Fire SS Voyager 180\n")
 
-        made = [spawner.fire(params, world, Tick(2, 1)) for _ in range(4)]
+        self.assertIn(CLAIMED, world.graveyard['Voyager'].tags)
+        self.assertIn('Voyager-2', world.objects)
+        self.assertNotIn('Voyager-3', world.objects)
+        self.assertEqual(2, world.objects['Base'].weapons['SS'].ammo, "the refusal costs nothing")
+
+    def test_the_refusal_is_told_to_the_player(self):
+        world = self._run_round_two("1: Fire SS Voyager 90\n2: Fire SS Voyager 180\n")
+
+        said = [str(e) for th in world.objects['Base'].history.ticks.values() for e in th.events]
+        self.assertTrue(any('already been replaced' in s for s in said), said)
+
+    def test_another_faction_s_wreck_is_refused(self):
+        world = self.gd.load_current_world()
+        theirs = builder.create('TheirLoss', 'A2527', (0, 0), player='Piet')
+        theirs.faction = 'Two'
+        world.add_to_graveyard(theirs)
+        spawner = world.objects['Base'].weapons['SS']
+
+        made = spawner.fire({'wreck': _Given(theirs), 'direction': _Given(90)}, world, Tick(2, 1))
+
+        self.assertIsNone(made)
+        self.assertEqual(3, spawner.ammo, "a refusal costs nothing")
+
+    def test_only_our_own_unclaimed_wrecks_are_offered(self):
+        world = self._run_round_two("1: Fire SS Voyager 90\n")
+        theirs = builder.create('TheirLoss', 'A2527', (0, 0), player='Piet')
+        theirs.faction = 'Two'
+        world.add_to_graveyard(theirs)
+        wreck_input = world.objects['Base'].weapons['SS'].expected_parameters[0]
+        wreck_input.set_world(world)
+
+        self.assertEqual([], wreck_input.choices, "Voyager is claimed, TheirLoss is not ours")
+
+    def test_the_claim_survives_a_regenerate(self):
+        self._run_round_two("1: Fire SS Voyager 90\n")
+
+        regenerate_game(self.gd)
+
+        self.assertIn(CLAIMED, self.gd.load_current_world().graveyard['Voyager'].tags)
+
+    def test_the_fourth_replacement_is_refused(self):
+        """Three a game is what stops a game running forever. Four wrecks, so the claim rule
+        is not what does the refusing."""
+        world = self.gd.load_current_world()
+        spawner = world.objects['Base'].weapons['SS']
+        wrecks = [builder.create(f"Lost{n}", 'A2527', (0, 0), player='Rik') for n in range(4)]
+        for wreck in wrecks:
+            wreck.faction = 'One'
+            world.add_to_graveyard(wreck)
+
+        made = [spawner.fire({'wreck': _Given(w), 'direction': _Given(90)}, world, Tick(2, 1))
+                for w in wrecks]
 
         self.assertEqual(3, len([s for s in made if s]))
         self.assertIsNone(made[3])

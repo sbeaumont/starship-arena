@@ -96,6 +96,7 @@ class ObjectInSpace(ABC):
         self.faction = None
         self.history = History(self, tick)
         self.visibility = visibility
+        self.tags = set()
 
     # ---------------------------------------------------------------------- QUERIES
 

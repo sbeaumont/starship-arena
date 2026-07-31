@@ -200,6 +200,8 @@ class WeaponInput:
     kind: str
     min: float | None = None
     max: float | None = None
+    # The names this input may take, when it is a short list rather than anything on the map.
+    choices: list[str] | None = None
 
 
 @dataclass

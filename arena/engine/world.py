@@ -4,6 +4,21 @@ Passed down every engine hook in place of a bare dict of objects, so a component
 know something world-spanning has somewhere to ask. Saved whole, once per round, which is what
 keeps a round's wrecks the ones that had died by then."""
 
+from enum import Enum
+
+
+class Whereabouts(str, Enum):
+    """One of the world's collections, named after it."""
+    Objects = 'objects'
+    Graveyard = 'graveyard'
+    Spawns = 'spawns'
+
+    def __str__(self):
+        return self.value
+
+
+EVERYWHERE = frozenset(Whereabouts)
+
 
 class World(object):
     def __init__(self, gd, objects: dict = None, graveyard: dict = None, spawns: dict = None):
@@ -59,7 +74,7 @@ class World(object):
         """Everything this world holds, by name: in space, in the graveyard, due to arrive.
 
         One that has arrived is in two of them, and is the same object either way."""
-        return {**self.spawns, **self.graveyard, **self.objects}
+        return self.find_objects()
 
     @property
     def player_objects(self) -> dict:
@@ -75,6 +90,20 @@ class World(object):
         Command files are named after their ship, so a reused name would inherit a dead one's
         orders."""
         return set(self.all_objects)
+
+    def find_objects(self, where=EVERYWHERE, with_tags=frozenset(), without_tags=frozenset(),
+                     faction=None) -> dict:
+        """Everything matching, by name. Every filter is optional."""
+        collections = {Whereabouts.Objects: self.objects,
+                       Whereabouts.Graveyard: self.graveyard,
+                       Whereabouts.Spawns: self.spawns}
+        found = {}
+        for part in where:
+            found.update(collections[part])
+        return {name: o for name, o in found.items()
+                if with_tags <= o.tags
+                and not (without_tags & o.tags)
+                and (faction is None or o.faction == faction)}
 
     def known_to(self, ship) -> dict:
         """Every name this ship may legitimately use in an order.

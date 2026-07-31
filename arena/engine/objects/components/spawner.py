@@ -5,12 +5,15 @@ import re
 
 import arena.engine.objects.registry.builder as builder
 from arena.engine.history import Tick
-from arena.engine.objects.component import DirectionParameter, ObjectByNameParameter, Whereabouts
+from arena.engine.objects.component import DirectionParameter, ObjectByNameParameter
 from arena.engine.objects.components.weapon import Weapon
 from arena.engine.objects.objectinspace import Vector
-from arena.engine.world import World
+from arena.engine.world import Whereabouts, World
 
 logger = logging.getLogger(__name__)
+
+# Tags this component sets and reads. A wreck carries it once its loss has been made good.
+CLAIMED = 'claimed'
 
 
 class ShipSpawner(Weapon):
@@ -29,7 +32,8 @@ class ShipSpawner(Weapon):
 
     @property
     def expected_parameters(self):
-        return [ObjectByNameParameter('wreck', self, frozenset({Whereabouts.Graveyard})),
+        return [ObjectByNameParameter('wreck', self, where=frozenset({Whereabouts.Graveyard}),
+                                      without_tags=frozenset({CLAIMED}), own_faction=True),
                 DirectionParameter('direction', self)]
 
     def fire(self, params: dict, world: World, tick: Tick):
@@ -39,6 +43,12 @@ class ShipSpawner(Weapon):
         if not wreck:
             self.add_internal_event(
                 f"{self.name}: {params['wreck'].object_name} is not a wreck in this game.")
+            return None
+        if wreck.faction != self.owner.faction:
+            self.add_internal_event(f"{self.name}: {wreck.name} was not ours to replace.")
+            return None
+        if CLAIMED in wreck.tags:
+            self.add_internal_event(f"{self.name}: {wreck.name} has already been replaced.")
             return None
         if self.ammo <= 0:
             self.add_internal_event(f"{self.name} has no replacements left.")
@@ -54,6 +64,7 @@ class ShipSpawner(Weapon):
         replacement = builder.spawn(wreck.type_name, self.replacement_name(wreck.name, world),
                                     vector, tick=tick, player=wreck.player)
         replacement.faction = wreck.faction
+        wreck.tags.add(CLAIMED)
         self.add_internal_event(
             f"{self.name} replaced {wreck.name} with {replacement.name} for {wreck.player}.")
         return replacement

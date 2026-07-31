@@ -120,15 +120,39 @@ def status(self):
 Choose this for anything a person reads. A new weapon appears in the condition panel and the
 manual without either being told.
 
+## Tags, and the line they must not cross
+
+Some facts are too small to earn a field. Every object in space carries `tags`, a set of strings,
+and something true of one object gets marked there instead:
+
+```python
+CLAIMED = 'claimed'          # in the module of the rule that sets and reads it
+
+wreck.tags.add(CLAIMED)
+if CLAIMED in wreck.tags: ...
+```
+
+Plain strings, so a new tag needs no central list edited and no ceremony. The well-known ones get
+a constant next to the rule that uses them, so the name exists in one place and a typo is a
+`NameError` rather than a condition that is quietly never true.
+
+**A tag is a marker. It is there or it is not, and nothing reads a value off it. The moment you
+want a value, it is instance state with a name.**
+
+That line is what stops this from voiding the six above. A bag that takes anything is a bag
+nobody has to think about, and then no fact ever gets asked which home it belongs in. Tags are
+pickled with the world like any other state, so they are durable, not scratch.
+
 ## Picking one
 
 In order, stopping at the first yes:
 
 1. Can it be worked out from what is already there? **Derived answer**.
 2. Is it how an interface tells one kind of thing from another? **Self-description**.
-3. Can two of the same model differ? **Instance state**.
-4. Is it a part rather than a value? **Model parts**.
-5. Otherwise **model constant**, on the type object for a machine and on the class for a component.
+3. Is it a marker with no value, true of one object? **Tag**.
+4. Can two of the same model differ? **Instance state**.
+5. Is it a part rather than a value? **Model parts**.
+6. Otherwise **model constant**, on the type object for a machine and on the class for a component.
 
 Then, separately: does a person need to see it? If so it also goes in a **reported dict**, and
 that is an addition rather than an alternative.

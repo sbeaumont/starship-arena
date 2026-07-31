@@ -48,3 +48,8 @@ class Parameter(ABC):
     @property
     def value(self):
         return self._input
+
+    @property
+    def choices(self) -> list | None:
+        """The values an interface may offer, or None when this is not a list to pick from."""
+        return None
