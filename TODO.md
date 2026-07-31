@@ -5,9 +5,10 @@ each section.
 
 ## Next, in order
 
-1. **Player management**: archiving, deactivating, the leaderboard.
-2. **Large objects**: solid bodies and crossing them (see Engine).
-3. **Scenario builder.**
+1. **The leaderboard**, the last piece of player management still open.
+2. **Relative power of the ship types**, before a Five Faction War is played for real.
+3. **Large objects**: solid bodies and crossing them (see Engine).
+4. **Scenario builder**, now that a scenario is a real thing with a home.
 
 ## Game UI (`game-ui/`)
 
@@ -290,9 +291,10 @@ The lists grow without bound as games pile up, so this is about keeping them mai
 
 ## Making a game easily
 
-- [x] **Deal players into a game.** Tick who is playing on a scenario's screen and the roster
-      arrives filled in on the new-game screen, ready to edit. `arena/admin_ui/scenarios/`, with
-      the wizard at `/scenarios`. See [plans/scenario-setup-plan.md](plans/scenario-setup-plan.md).
+- [x] **Deal players into a game.** Drag registrations into faction columns, and whoever is left
+      is spread at random to even the numbers. `arena/app/scenarios/`, screens at `/new_game`,
+      `/registering` and `/registering/<game>`. See
+      [plans/scenario-setup-plan.md](plans/scenario-setup-plan.md).
 - [x] **A sign-up page.** The director names a game and opens it, players put themselves down in
       the game UI with a name per ship, and the console deals them into factions by dragging. A
       game being formed is a game directory in `registering/`, and starting it moves the directory
@@ -303,9 +305,24 @@ The lists grow without bound as games pile up, so this is about keeping them mai
 - [x] **More than one ship.** Up to what the scenario allows, asked for at sign-up by naming that
       many ships. The dealer levels the factions against each other, so a faction is never
       outgunned by who happened to ask for three, and nobody is promised a ship they lose later.
-- [ ] **Tooling for large rosters.** A row per ship and a paste box stop scaling somewhere above
-      twenty ships, and a scenario wants more than a roster: sides, objectives, world objects. A
-      formal roster file format is the groundwork; the tools come with the scenario builder.
+- [ ] **Tooling for large rosters.** A row per ship stops scaling somewhere above twenty ships, and
+      a full Five Faction War is five sides of twenty people flying up to three hulls each. The
+      roster screen will render 300 rows; finding the one ship you want to rename is the problem.
+      The assignment screen has the same shape at that size, and wants a "spread the rest" button
+      that fills the columns in front of you rather than at submit time, so you can see what you
+      got and move a few.
+- [ ] **Relative power of the ship types.** A faction must not be handed the beginner hulls by
+      accident. The table in `arena/app/scenarios/five_faction_war.py` is where the answer lands,
+      and possibly a per-faction ordering, so the first ship dealt to one side is comparable to
+      the first ship dealt to every other. Note Insectoid has three hulls where the rest have four.
+      Wants every type side by side: hull, shields per quadrant, speed, turn, delta-v, battery,
+      generators, scan range, and what each launcher carries.
+- [ ] **The game UI still shows raw game names.** `display` is already on the DTOs it fetches, so
+      this is reading a different field in `Selector.svelte` and `OpenGames.svelte`.
+- [ ] **A scenario cannot bring its own setup screen.** The assignment screen is generic across
+      scenarios, which is right for anything shaped like factions and registrations. The first
+      scenario that wants something else needs a way to say so; deriving a template name from the
+      key was tried and thrown away as premature.
 
 ## Admin / director UI (`arena/admin_ui/`)
 
@@ -357,12 +374,11 @@ every route timing out at `504-loadbalancer`.
 
 ## Testing / data
 
-- [ ] **Nothing tests the console's routes.** `test/admin_ui/test_gate.py` checks the director
-      gate and stops there, so `new_game`, `spawn`, `process_turn`, `force_process`, the settings
-      form and the game overview are only ever exercised by hand. A regression in any of them
-      reaches the browser rather than a failing test, which is exactly how the `_roster` change
-      broke the overview page during step 6. Flask's `test_client` makes this cheap: post the
-      form, follow the redirect, assert on what came back.
+- [ ] **Half the console's routes are still untested.** The setup flow and the players page have
+      tests now (`test/admin_ui/test_scenarios.py`, `test_players.py`), which caught the roster
+      screen offering the wrong players. Still only exercised by hand: `spawn`, `process_turn`,
+      `force_process`, `regenerate`, the settings form and the game overview. The pattern is
+      established: post the form, follow the redirect, assert on what came back.
 
       The game API has the same hole: `test/api/test_fastapimain.py` covers command validation,
       and the planning endpoint and the overview are only checked by hand.

@@ -32,6 +32,8 @@ here too, so nobody is sent looking for something that no longer exists. `ships.
 | [0018](0018-planning-as-a-jointed-chain.md) | A course is planned by dragging a jointed chain |
 | [0019](0019-machines-drive-components-through-one-vocabulary.md) | Machines drive their components through one vocabulary |
 | [0020](0020-explosions-do-not-take-sides.md) | An explosion damages everything in range |
+| [0021](0021-scenarios-sit-in-the-services-layer.md) | Scenarios sit in the services layer |
+| [0022](0022-a-game-directory-moves-between-three-places.md) | A game directory moves between three places |
 
 ## Template
 

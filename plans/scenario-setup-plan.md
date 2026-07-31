@@ -1,6 +1,19 @@
 # Setting a game up from a scenario
 
-Working document. Edit it directly; this is what we iterate on.
+**Built, and the durable parts have moved out.** The decisions live in
+[ADR 0021](../docs/adr/0021-scenarios-sit-in-the-services-layer.md) and
+[ADR 0022](../docs/adr/0022-a-game-directory-moves-between-three-places.md), the file formats in
+[docs/data.md](../docs/data.md), and what is left in [TODO.md](../TODO.md). What is kept here is
+the reasoning that was worked out along the way and would be tedious to reconstruct.
+
+Three things this plan got wrong, which is the useful part:
+
+- **Scenarios were put in the console** on the argument that the storyteller may know things no
+  other interface does. They lasted until players registered through the API. Now ADR 0021.
+- **The signup was keyed by scenario**, with the game named at the end. A game directory named up
+  front and moved when it starts is one mechanism instead of two. Now ADR 0022.
+- **Each scenario was to bring its own setup screen.** Once assignment became columns and a pool,
+  one screen served every scenario, and the per-scenario template was deleted unused.
 
 ## Decided
 

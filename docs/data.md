@@ -11,6 +11,7 @@ the root. There's no database.
         spawns.jsonl         the plan: arrivals the director scheduled
         settings.jsonl       the plan: when this game processes a round
         registrations.jsonl  the plan: who put themselves down, and for how many ships
+        scenario.json        the plan: which scenario it is being built from
         commands/
             <ship>-commands-<round>.txt      the plan: what each player ordered
         status_round_<n>.pickle              the state: the world at the end of a round
@@ -19,6 +20,7 @@ the root. There's no database.
 Two sibling directories hold game directories that are not in play. `archived/` is a game that is
 over, `registering/` is one that has been named and is collecting registrations. A game directory
 is the same thing in all three places, and moving between them is a `shutil.move`.
+[ADR 0022](adr/0022-a-game-directory-moves-between-three-places.md).
 
 ## Plan and state
 
@@ -119,7 +121,7 @@ While a game sits in `registering/`, `scenario.json` says which scenario it is b
 
 ```jsonl
 {"player": "Menno", "names": ["Rocinante"]}
-{"player": "Rik", "names": ["Voyager", "Pathfinder"]}
+{"player": "Rik", "names": ["Voyager", "Pathfinder"], "faction": "Feline"}
 ```
 
 A name per ship, so the number of names is the number of ships asked for and there is no second
@@ -128,8 +130,24 @@ field to disagree with it. How many you may ask for is the scenario's answer, no
 A ship name has to be free across the whole game, so a clash is refused while the person who typed
 it is still there to change it.
 
+`faction` is where the director dragged them on the assignment screen. Absent means still in the
+pool, and the deal places them. It is written every time the screen is saved, so leaving the screen
+and coming back shows the columns as they were.
+
 Both files travel with the directory when the game starts. They are a plan: nothing can rebuild
-the record of who asked for what.
+the record of who asked for what, and the roster screen reads the registrations to know which names
+a ship may belong to.
+
+## The name on disk, and the name you read
+
+A game is named by a person and stored as a directory, so `Faction War  2` becomes
+`Faction_War_2`. Runs of whitespace collapse to one underscore, and the name shown anywhere is that
+name with the underscores turned back into spaces.
+
+The display name is therefore derived and never stored. Two fields for one name is two things that
+can disagree, and the one on disk has to win because it is the directory.
+
+`arena/app/naming.py` holds both halves. Nothing else transforms a game name.
 
 ## ready/
 
