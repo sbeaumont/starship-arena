@@ -41,7 +41,7 @@ def parse_args():
     parser.add_argument("-d", "--director", action="store_true",
                         help="Issue the link with director rights.")
     parser.add_argument("-u", "--url", default="",
-                        help="Where the game UI is, e.g. https://example.com/play. Left out, the "
+                        help="Where the game UI is, e.g. https://example.com. Left out, the "
                              "link is printed as a path.")
     return parser.parse_args()
 
@@ -74,8 +74,8 @@ def issue_link(name: str, director: bool, url: str):
     if not name:
         sys.exit("Who for? Use --name.")
     player = PlayerRegistry(GAME_DATA_DIR).issue(name, role=DIRECTOR if director else PLAYER)
-    # The address given is the game UI's own, wherever that is: the Vite server answers at its
-    # root, a deployed site under /play. A host that knows its own address says so in secret.py.
+    # The address given is the game UI's own, wherever that is, and it answers at the root of it.
+    # A host that knows its own address says so in secret.py.
     where = url.rstrip('/') if url else PLAY_URL
     print(f"{player.name}{' (director)' if player.is_director else ''}")
     print(f"  {where}/?login={player.token}")

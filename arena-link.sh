@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Login links. The address is the game UI's own, wherever you are running it:
 #
-#     ./arena-link.sh                                                who can log in
-#     ./arena-link.sh Serge https://your.site/play --director        the director, deployed
-#     ./arena-link.sh Menno http://localhost:5173                    arena-dev.sh (Vite)
-#     ./arena-link.sh Menno http://localhost:8080/play               arena-serve.sh
+#     ./arena-link.sh                                            who can log in
+#     ./arena-link.sh Serge https://your.site --director         the director, deployed
+#     ./arena-link.sh Menno http://localhost:5173                arena-dev.sh (Vite)
+#     ./arena-link.sh Menno http://localhost:8080                arena-serve.sh
 #
 # Set the address players use once, in secret.py, and leave it off from then on:
 #

@@ -83,5 +83,5 @@ Done here. Three things left, on the Web tab:
                   (make sure project_home reads $PROJECT_DIR)
   3. Reload the web app.
 
-Then: admin at /, the game UI at /play/ and the API at /api/health
+Then: the game UI at /, the admin pages at /director/ and the API at /api/health
 EOF

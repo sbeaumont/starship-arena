@@ -11,12 +11,17 @@ directory.
 
 ```mermaid
 flowchart TD
-    Req(["Request"]) --> Static{"path starts<br/>with /play ?"}
-    Static -->|yes| Files["SharedDataMiddleware<br/><i>game-ui/dist</i>"]
-    Static -->|no| Api{"path starts<br/>with /api/ ?"}
+    Req(["Request"]) --> Static{"a file in<br/>game-ui/dist ?"}
+    Static -->|yes| Files["SharedDataMiddleware<br/><i>the game UI, at the root</i>"]
+    Static -->|no| Dir{"path starts<br/>with /director ?"}
+    Dir -->|yes| Flask["Flask console<br/><i>mounted</i>"]
+    Dir -->|no| Api{"path starts<br/>with /api/ ?"}
     Api -->|yes| Fast["FastAPI<br/><i>through a2wsgi</i>"]
-    Api -->|no| Flask["Flask console"]
+    Api -->|no| NF["404"]
 ```
+
+The game is the site: it answers at the root. The console lives under `/director` and the API
+under `/api`.
 
 Development runs the same three parts as separate servers, which is what gives hot reloading:
 
@@ -38,14 +43,18 @@ flowchart TD
 The browser sees one origin either way, because Vite proxies `/api`. Cookies ignore ports, so
 signing in on 5173 also signs you in on 8080.
 
-Two details in that file exist for reasons that aren't obvious from the code:
+Three details in that file exist for reasons that aren't obvious from the code:
 
 **The API is matched, not mounted.** Its routes already carry their own `/api` prefix. Mounting it
 under one would strip the prefix and leave every route unreachable.
 
-**`/play` without the trailing slash gets a 301.** The built page links its assets relatively, so
-a browser at `/play` resolves them against the site root, asks for `/assets/...`, finds nothing,
-and shows a blank page.
+**The console is mounted, not matched.** Mounting sets `SCRIPT_NAME`, and that is what makes Flask
+write `/director` in front of every URL it builds. No route in the console names its own prefix,
+so moving it stays one line here.
+
+**The root is rewritten to `/index.html`.** Static file serving has no notion of a directory
+index, so the page has to be named. Vite builds with `base: './'`, which keeps the asset links
+relative and the bundle servable from wherever it is put.
 
 ## The host preforks, with threads disabled
 
@@ -100,7 +109,7 @@ value belongs in both copies.
 The console refuses everyone until a director exists, so the order matters:
 
 1. `git pull`
-2. `./arena-link.sh <you> https://your.site/play --director` in a Bash console on the host
+2. `./arena-link.sh <you> https://your.site --director` in a Bash console on the host
 3. Open that link once
 
 Reload before step 2 and the console shows its 403 page until you go back to the shell.

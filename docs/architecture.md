@@ -156,9 +156,9 @@ Anything world-spanning added later goes here. Weather, terrain, whatever a scen
 
 In production one WSGI application serves everything (`arena/serve.py`):
 
+- the root → the built game UI, static files from `game-ui/dist`, no Node at runtime
+- `/director/...` → the Flask console, mounted so Flask writes the prefix itself
 - `/api/...` → the FastAPI app, run inside WSGI through `a2wsgi`
-- `/play/...` → the built game UI, static files from `game-ui/dist`, no Node at runtime
-- everything else → the Flask console
 
 One origin, so the UI's relative `/api/...` calls need no configuration and there is no CORS.
 

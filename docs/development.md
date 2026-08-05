@@ -24,8 +24,8 @@ npm run build --prefix game-ui
 bash arena-serve.sh
 ```
 
-One WSGI application on 8080, the way the host runs it: console at `/`, game at `/play/`, API at
-`/api/`. No hot reload. Worth using before deploying, since it's the only way to see the merged
+One WSGI application on 8080, the way the host runs it: game at `/`, console at `/director/`, API
+at `/api/`. No hot reload. Worth using before deploying, since it's the only way to see the merged
 shape locally.
 
 Cookies ignore ports, so signing in on 5173 also signs you in on 8080.
@@ -38,7 +38,8 @@ Cookies ignore ports, so signing in on 5173 also signs you in on 8080.
 ./arena-link.sh Menno http://localhost:5173
 ```
 
-The address is where the game UI is: Vite answers at its root, the merged app under `/play`. Set
+The address is where the game UI is, and both answer at their root: Vite on 5173, the merged app
+on 8080. Set
 `SITE_URL` in `secret.py` and you can leave it off, but that address is the one players use, so
 pass a local one explicitly when testing.
 

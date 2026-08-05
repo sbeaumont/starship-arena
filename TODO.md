@@ -337,9 +337,9 @@ The lists grow without bound as games pile up, so this is about keeping them mai
 
 ## Hosting
 
-Deployed on PythonAnywhere as a single WSGI app: `arena/serve.py` sends `/api/...` to the FastAPI
-app through `a2wsgi`, `/play/...` to the built UI as static files, and everything else to the
-Flask console. No Node at runtime; `npm run build --prefix game-ui` is a build step. Deploying is
+Deployed on PythonAnywhere as a single WSGI app: `arena/serve.py` serves the built UI as static
+files from the root, mounts the Flask console under `/director` and sends `/api/...` to the
+FastAPI app through `a2wsgi`. No Node at runtime; `npm run build --prefix game-ui` is a build step. Deploying is
 `git pull` and a reload; every default in `arena/cfg.py` is the deployed one and all paths are
 anchored to the repository rather than the working directory.
 
@@ -350,7 +350,7 @@ import. `arena/serve.py` builds the ASGI adapter that way; the symptom of gettin
 every route timing out at `504-loadbalancer`.
 
 - [ ] **Deploying the logins is order-sensitive.** The console refuses everyone until a director
-      exists, so: `git pull`, then `./arena-link.sh <you> https://your.site/play --director` in a Bash
+      exists, so: `git pull`, then `./arena-link.sh <you> https://your.site --director` in a Bash
       console there, then open that link once. Deploy first and reload and you get the 403 page
       until you do - recoverable, but only through the shell.
 - [ ] **Set `SITE_URL` in the host's `secret.py`** (e.g.

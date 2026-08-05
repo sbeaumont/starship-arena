@@ -15,14 +15,14 @@ MANUAL_TEMPLATE_DIR = TEMPLATE_DIR
 MANUAL_TEMPLATE = 'manual.html'
 
 # Where the interactive game UI lives, so the admin pages can link a player straight to their
-# map. Defaults to how a deployed game serves it (arena/serve.py puts it at /play), so a host
-# needs no configuring; the dev runners override it to point at the Vite dev server instead.
-GAME_UI_URL = os.environ.get('GAME_UI_URL', '/play')
+# map. A prefix without its trailing slash, empty at the root: that is how a deployed game serves
+# it, so a host needs no configuring. The dev runners point it at the Vite server instead.
+GAME_UI_URL = os.environ.get('GAME_UI_URL', '')
 
 # And back the other way, so a director can step from the game to the console. Defaults to how a
-# deployed game serves it - one application, console at the root; the dev runner points it at the
-# separate Flask server.
-ADMIN_UI_URL = os.environ.get('ADMIN_UI_URL', '/')
+# deployed game serves it - one application, console under /director; the dev runner points it at
+# the separate Flask server.
+ADMIN_UI_URL = os.environ.get('ADMIN_UI_URL', '/director')
 
 # The built game UI. `npm run build --prefix game-ui` writes it here; it is plain static files,
 # so no Node is involved in serving it. Anchored to the repository rather than the working

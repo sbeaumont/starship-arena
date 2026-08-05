@@ -2,9 +2,9 @@
 # own copy in the web app's dashboard; paste the contents below into it.
 #
 # `arena.serve` serves everything from this one application:
-#   /api/...   the JSON API
-#   /play/...  the built game UI (static files from game-ui/dist, committed to the repo)
-#   the rest,  the Flask admin and director pages
+#   /              the built game UI (static files from game-ui/dist, committed to the repo)
+#   /director/...  the Flask admin and director pages
+#   /api/...       the JSON API
 #
 # Nothing else needs configuring on the host: every default in arena/cfg.py is the deployed one
 # and all paths are anchored to the repository rather than the working directory.
