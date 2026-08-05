@@ -117,7 +117,7 @@
             <li>
               <button type="button" class="pick" class:on={g.name === game}
                       onclick={() => chooseGame(g.name)}>
-                <span class="nm">{g.name}</span>
+                <span class="nm">{g.display}</span>
                 <span class="meta">
                   {g.current_round === 1 ? "not played yet" : `${g.current_round - 1} rounds played`}
                 </span>

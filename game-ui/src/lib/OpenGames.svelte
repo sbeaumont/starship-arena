@@ -53,7 +53,7 @@
     {#each games as g (g.name)}
       <div class="card">
         <div class="head">
-          <span class="nm">{g.name}</span>
+          <span class="nm">{g.display}</span>
           <span class="sc">{g.scenario}</span>
           <span class="count">{g.players} registered</span>
         </div>
