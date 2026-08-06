@@ -254,6 +254,36 @@ class ShipFile(JsonLinesFile):
         return record
 
 
+class BodyFile(JsonLinesFile):
+    """The terrain a game is played over: what is solid, and where it sits.
+
+    Optional, because a game without any is a game on empty space. Nothing writes coordinates
+    back the way ships do, since a body never moves off the ones it was given."""
+
+    @dataclass
+    class BodyFileLine:
+        name: str
+        type: str
+        x: float = 0
+        y: float = 0
+
+        @property
+        def xy(self):
+            return self.x, self.y
+
+    def __init__(self, gd: GameDirectory, bodies: list[dict] = None):
+        super().__init__(gd, BODIES_FILE_NAME)
+        records = bodies if bodies is not None else self.load()
+        self.body_lines = [self.BodyFileLine(**r) for r in records]
+
+    def load(self) -> list[dict]:
+        return super().load() if self.exists else list()
+
+    def save(self, bodies=None):
+        super().save([json.dumps({'name': b.name, 'type': b.type, 'x': b.x, 'y': b.y})
+                      for b in self.body_lines])
+
+
 class SpawnFile(JsonLinesFile):
     """The plan for arrivals: what a director scheduled, and later what a scenario triggers.
 

@@ -59,6 +59,10 @@ class Component(ABC):
     def tick(self, tick: Tick):
         pass
 
+    def encounter(self, world: World):
+        """Nothing a component reaches ends its machine's leg, unless it says otherwise."""
+        return None
+
     def post_move(self, world: World):
         pass
 
@@ -71,9 +75,12 @@ class Component(ABC):
     def activation(self, on_off: bool):
         self.owner.add_event(InternalEvent(f"Component {self.name} can not be activated/deactivated."))
 
+    def power_up(self, amount: int):
+        self.owner.add_event(InternalEvent(f"Component {self.name} can not be powered."))
+
     @property
     def expected_parameters(self):
-        return None
+        return []
 
 
 class ComponentParameter(Parameter):
@@ -216,7 +223,7 @@ class NumberInRangeParameter(ComponentParameter):
 
 
 class OnOffParameter(ComponentParameter):
-    """Represents a binary on/off state. Example is the activation state of a cloak."""
+    """Represents a binary on/off state, for a component that is switched rather than set."""
 
     valid_inputs = ['yes', 'no', 'true', 'false', 'on', 'off', '1', '0']
     on_inputs = ['yes', 'true', 'on', '1']

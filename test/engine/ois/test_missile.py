@@ -1,23 +1,28 @@
 from unittest import TestCase
-from .ois_fixtures import create_ship_fixture, world_of
-from arena.engine.objects.objectinspace import Vector, Point
-from arena.engine.history import TICK_ZERO
+
+from arena.engine.history import TICK_ZERO, Tick
+from arena.engine.objects.objectinspace import Point, Vector
 from arena.engine.objects.registry import builder
 from arena.engine.objects.registry.missiles import Splinter
+
+from .ois_fixtures import create_ship_fixture, run_ticks, world_of
 
 
 class TestMissile(TestCase):
     def setUp(self) -> None:
         self.ois = create_ship_fixture()
+        self.missile = Splinter().create('TestSplinter', Vector(Point(0, 9), 0, 0),
+                                         self.ois['OwnerShip'])
+        self.ois['TestSplinter'] = self.missile
         self.world = world_of(self.ois)
-        self.missile = Splinter().create('TestSplinter', Vector(Point(0, 9), 0, 0), self.ois['OwnerShip'])
 
-    def test_decide(self):
-        tg = self.ois['TargetShip']
-        self.missile.decide(self.world, TICK_ZERO)
+    def test_it_goes_off_on_what_it_reaches(self):
+        """Launched a unit off TargetShip at (0, 10), inside a SplinterWarhead's 6."""
+        run_ticks(self.world)
+
         self.assertTrue(self.missile.is_destroyed)
-        events = tg.history[TICK_ZERO].events
-        self.assertEqual(len(events), 3)
+        target = self.ois['TargetShip']
+        self.assertTrue(any(e.kind == 'explosion' for e in target.history[Tick(1, 1)].events))
 
 
 class TestGuidedMissileIntercepts(TestCase):
@@ -33,12 +38,6 @@ class TestGuidedMissileIntercepts(TestCase):
         self.ois = {'Shooter': self.shooter, 'Target': self.target, 'S': self.missile}
         self.world = world_of(self.ois)
 
-    def _tick(self):
-        """The order GameRound.do_tick uses: everything moves, then scans, then decides."""
-        self.missile.move()
-        self.missile.scan(self.world)
-        self.missile.decide(self.world, TICK_ZERO)
-
     def test_it_turns_onto_a_target_it_has_scanned(self):
         self.assertEqual(0, self.missile.heading)
 
@@ -50,10 +49,7 @@ class TestGuidedMissileIntercepts(TestCase):
 
     def test_it_closes_on_a_target_it_would_otherwise_fly_past(self):
         """Straight ahead the closest it ever gets is 20, well outside a Splinter's 6."""
-        for _ in range(4):
-            if self.missile.is_destroyed:
-                break
-            self._tick()
+        run_ticks(self.world, 4)
 
         self.assertTrue(self.missile.is_destroyed, "should have reached its target and gone off")
         self.assertLessEqual(self.missile.distance_to(self.target.xy), self.missile.range)

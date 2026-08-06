@@ -1,6 +1,5 @@
-from arena.engine.objects.ship import ShipType
 from arena.cfg import max_scan
-from arena.engine.objects.starbase import Starbase
+from arena.engine.objects.starbase import StarbaseType
 from arena.engine.objects.registry.missiles import Rocket, Splinter
 from arena.engine.objects.components.defense import Shields
 from arena.engine.objects.components.launcher import Launcher
@@ -9,9 +8,8 @@ from arena.engine.objects.components.scanner import Gravscan
 from arena.engine.objects.components.spawner import ShipSpawner
 
 
-class SB2531(ShipType):
+class SB2531(StarbaseType):
     """Default starbase"""
-    base_type = Starbase
     max_delta_v = 0
     max_speed = 0
     max_turn = 0
@@ -32,8 +30,8 @@ class SB2531(ShipType):
     @property
     def weapons(self):
         return [
-            Laser('L1', 300),
-            Laser('L2', 300),
+            Laser('L1', 300, 60),
+            Laser('L2', 300, 60),
             Launcher('S1', Splinter(), 5),
             Launcher('S2', Splinter(), 5),
             Launcher('R1', Rocket(), 5),

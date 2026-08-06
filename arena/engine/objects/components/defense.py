@@ -1,40 +1,27 @@
-from arena.engine.objects.component import Component, ComponentParameter
+from arena.engine.objects.component import Component, ComponentParameter, NumberInRangeParameter
 from arena.engine.objects.objectinspace import Point
 from arena.engine.objects.machineinspace import MachineInSpace
 from arena.engine.objects.event import HitEvent
-from .warhead import DamageType
+from ..event import DamageType
 
 
-class BoostQuadrantParameter(ComponentParameter):
-    """Represents the two boost parameters (quadrant and amount) in one because they're so strongly related."""
+class QuadrantParameter(ComponentParameter):
+    """Which face of the shield an order is about."""
 
     @property
     def kind(self) -> str:
-        return 'shield_boost'
+        return 'quadrant'
 
     @property
-    def number_of_inputs(self) -> int:
-        return 2
+    def choices(self) -> list:
+        return list(self.component.max_strengths)
 
     @property
     def is_valid(self):
         assert self._input is not None
-        assert isinstance(self._input, list)
         self.feedback.clear()
-        if len(self._input) != 2:
-            self.feedback.append(f"Expected parameters (quadrant) (boost amount) but got {self._input}")
-            return False
-        quadrant, amount = self._input
-        assert isinstance(amount, str)
-        assert isinstance(quadrant, str)
-        if quadrant not in ['N', 'E', 'S', 'W']:
-            self.feedback.append(f"{quadrant} is not one of (N, E, S, W).")
-            return False
-        if not amount.isnumeric():
-            self.feedback.append(f"{amount} is not a number.")
-            return False
-        if int(amount) > (2 * self.component.max_strength[quadrant]):
-            self.feedback.append(f"Can not boost quadrant {quadrant} beyond twice its strength")
+        if self._input not in self.choices:
+            self.feedback.append(f"{self._input} is not one of ({', '.join(self.choices)}).")
             return False
         return True
 
@@ -79,7 +66,8 @@ class Shields(Component):
 
     @property
     def expected_parameters(self):
-        return [BoostQuadrantParameter('boost', self)]
+        return [QuadrantParameter('quadrant', self),
+                NumberInRangeParameter('amount', self, (0, 2 * max(self.max_strengths.values())))]
 
     # ---------------------------------------------------------------------- COMMANDS
 
@@ -145,6 +133,9 @@ class Shields(Component):
             return breakthrough_damage
 
     # ---------------------------------------------------------------------- ENGINE HANDLERS
+
+    def reset(self):
+        self.strengths = self.max_strengths.copy()
 
     def post_round_reset(self):
         super().post_round_reset()

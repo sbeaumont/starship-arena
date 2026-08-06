@@ -1,27 +1,39 @@
+from dataclasses import dataclass
 from enum import Enum, auto
 
 from arena.engine.history import Tick
 from arena.engine.world import World
 from arena.engine.objects.component import Component
-from arena.engine.objects.event import ExplosionEvent, HitEvent
+from arena.engine.objects.event import DamageType, ExplosionEvent, HitEvent
+from arena.engine.objects.objectinspace import Encounter, Stance
 
 
 class DamageFalloff(Enum):
+    """How a warhead's damage thins out with distance."""
     Linear = auto()
     Flat = auto()
 
 
-class DamageType(Enum):
-    Explosion = 'Explosion'
-    Nanocyte = 'Nanocyte'
-    EMP = 'EMP'
+@dataclass
+class Trigger(Encounter):
+    """A warhead reaching what it goes off on."""
+    warhead: 'Warhead' = None
 
-    def __str__(self):
-        return f"{self.value}"
+    @property
+    def subject(self):
+        return self.warhead.container
+
+    def act(self, world: World):
+        self.warhead.explode(world, self.fraction)
 
 
 class Warhead(Component):
     """Component that goes BOOM. Centralizes explode code into one component, like for missiles and mines."""
+
+    def __init__(self, name: str, container=None):
+        super().__init__(name, container)
+        self.spent = False
+
     @property
     def status(self) -> dict:
         return {
@@ -30,32 +42,37 @@ class Warhead(Component):
         }
 
     def decide(self, world: World, tick: Tick):
-        contact = self.contact_fraction(world)
-        if contact is not None:
-            self.container.place_at(self.container.position_at(contact))
-            self.explode(world)
+        if self.container.is_destroyed and not self.spent:
+            # Whatever killed it set it off, which is what makes one blast carry to the next.
+            self.explode(world, self.container.tick_fraction)
 
-    def contact_fraction(self, world: World) -> float | None:
-        """How far into this tick something worth exploding on first came within range.
+    def encounter(self, world: World) -> Trigger | None:
+        """Where in the tick it passes closest to something worth going off on.
 
-        The earliest contact wins, so which object happens to be checked first cannot change
-        where the warhead goes off.
-        """
-        contacts = list()
-        for ois in world.objects.values():
-            if self.triggers_on(ois):
-                fraction = self.container.approach_fraction(ois, self.range)
-                if fraction is not None:
-                    contacts.append(fraction)
-        return min(contacts) if contacts else None
+        The earliest wins, so which object happens to be checked first cannot change where it
+        goes off."""
+        if self.spent:
+            return None
+        fractions = list()
+        for ois in [o for o in world.objects.values() if self.triggers_on(o)]:
+            from_fraction = max(self.container.tick_fraction, ois.tick_fraction)
+            span = 1 - from_fraction
+            closest = self.container.leg_from(from_fraction).closest_fraction(
+                ois.leg_from(from_fraction), self.range)
+            if closest is not None:
+                fractions.append(from_fraction + closest * span)
+        return Trigger(min(fractions), self) if fractions else None
 
     def triggers_on(self, ois) -> bool:
-        """Anything that is not itself and not of its owner's faction."""
-        return (ois is not self.container) and \
-            (not ois.owner.faction or ois.owner.faction != self.owner.faction)
+        """Anything hostile. Terrain is nobody's enemy, and is run into rather than set off on."""
+        return ois.stance_towards(self.container) == Stance.Foe
 
-    def explode(self, world):
+    def explode(self, world, at_fraction: float = 1):
+        """Go off, against everything where it was that far into the tick."""
+        self.spent = True
         self.container.hull = 0
+        # It goes no further than where it went off, and it does not go off twice.
+        self.container.end_tick()
 
         # Generate the explosion: first all who can scan it see it.
         expl_event = ExplosionEvent(self.container.pos, self.damage_type, self.container, self.range)
@@ -66,11 +83,15 @@ class Warhead(Component):
         # The explosion generates hits on ALL in range
         hits = list()
         for ois in [ob for ob in world.objects.values() if ob != self.container]:
-            distance = self.container.distance_to(ois.xy)
+            distance = self.container.distance_to(ois.position_at(at_fraction))
             if distance <= self.range:
-                damage = self._damage(ois)
+                damage = self._damage(distance)
                 hit_event = HitEvent(self.container.pos, self.damage_type, self.container, ois, damage)
                 ois.take_damage_from(hit_event)
+                if ois.is_destroyed:
+                    # Its leg ended here, so it goes no further than where the blast caught it.
+                    ois.move(at_fraction)
+                    ois.end_tick()
                 self.owner.add_event(hit_event)
                 hits.append(hit_event)
 
@@ -81,13 +102,12 @@ class Warhead(Component):
                 if ois.distance_to(hit.pos) <= ois._type.max_scan_distance:
                     ois.add_event(hit)
 
-    def _damage(self, ois):
+    def _damage(self, distance: float):
         match self.falloff:
             case DamageFalloff.Flat:
                 return self.damage
             case DamageFalloff.Linear:
-                dist = self.container.distance_to(ois.xy)
-                return self.damage - (dist if dist >= 0 else 0)
+                return self.damage - (distance if distance >= 0 else 0)
 
 
 class SplinterWarhead(Warhead):

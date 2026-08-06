@@ -200,8 +200,10 @@ Every information element in the engine, classified.
 
 | element | kind | where |
 |---|---|---|
-| `base_type`, `max_hull`, `start_battery` | model constant | `MachineType` |
+| `base_type`, `max_hull`, `start_battery`, `mass` | model constant | `MachineType` |
 | `max_speed`, `max_turn`, `max_delta_v`, `generators`, `max_battery`, `max_scan_distance` | model constant | `ShipType` |
+| `mass`, `radius`, `is_immovable` | model constant, neutral default | `ObjectInSpace` |
+| `radius`, `visibility`, `max_scan_distance` | model constant | `BodyType` |
 | `energy_per_move`, `max_speed`, `max_turn`, `scan_cone` | model constant | `MissileType` |
 | `slow_down_rate`, `energy_per_tick` | model constant | `MineType` |
 | `damage`, `damage_type`, `falloff`, `range` | model constant | `Warhead` subclasses |
@@ -221,7 +223,7 @@ Every information element in the engine, classified.
 | `pos`, `xy`, `heading`, `speed` | derived answer | `ObjectInSpace`, from `vector` |
 | `is_player_controlled` | derived answer | `Ship`, from `player` |
 | `range` | derived answer | `MachineInSpace`, from its components |
-| `class_name`, `type_name` | derived answer | `MachineInSpace`, from its type |
+| `class_name`, `type_name`, `mass` | derived answer | `MachineInSpace`, from its type |
 | `outer_defense`, `scans` | derived answer | `Ship` |
 | `is_destroyed` | derived answer | every machine, from `hull` and `battery` |
 | `type_name`, `category_name` | self-description | `ObjectInSpace`, abstract |

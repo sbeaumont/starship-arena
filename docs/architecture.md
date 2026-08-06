@@ -116,7 +116,8 @@ flowchart TD
         Arrive["Anything due this tick arrives"] --> H["Open the tick's history"]
         H --> E["Generate and spend energy"]
         E --> PreCmd["Pre-move commands<br/><i>turn, accelerate</i>"]
-        PreCmd --> Move["<b>Move</b><br/><i>translate by heading and speed</i>"]
+        PreCmd --> Detect["<b>Detect collisions</b><br/><i>every leg is settled, nothing has moved</i>"]
+        Detect --> Move["<b>Move</b><br/><i>as far as the leg allows, then the shove</i>"]
         Move --> PostCmd["Post-move commands<br/><i>fire, scan, activate</i>"]
         PostCmd --> Scan["Scan"]
         Scan --> Decide["Decide<br/><i>missiles intercept, warheads trigger</i>"]
@@ -130,6 +131,17 @@ flowchart TD
 
 `GameRound.do_tick` holds that order, and it is the heart of the engine. Changing it changes the
 game.
+
+**Detection is a pass of its own, and it has to be.** It runs after everything that can still
+change a vector, because `use_energy` slows a ship that cannot power its speed and the pre-move
+commands set heading and speed. It runs before anything moves, because an object that has not had
+its turn yet still sits at the start of its leg, and a detection that read those would answer
+differently depending on who was asked first. Between the two, every leg is known and no position
+has changed, which is the only moment where what meets what is a fact rather than an accident of
+iteration order. [ADR 0023](adr/0023-a-collision-transmits-an-impulse.md)
+
+`ObjectInSpace.pre_move` is an empty extension point today. It is the last thing before the leg is
+fixed, so anything added there may still change a vector; anything that must not is a phase later.
 
 Each tick every object records a **snapshot** into its history: position, heading, speed, hull,
 battery and what every component reports. The values themselves, never the objects holding them:

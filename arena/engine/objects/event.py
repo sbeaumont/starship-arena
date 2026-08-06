@@ -14,6 +14,18 @@ class DrawType(Enum):
     Line = 'Line'
 
 
+class DamageType(Enum):
+    """What kind of harm a HitEvent carries, which is what decides how a target answers it."""
+    Explosion = 'Explosion'
+    Nanocyte = 'Nanocyte'
+    EMP = 'EMP'
+    Impact = 'Impact'
+    Laser = 'Laser'
+
+    def __str__(self):
+        return f"{self.value}"
+
+
 class EventLocation(Protocol):
     x: float
     y: float

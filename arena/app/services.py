@@ -14,18 +14,18 @@ from arena.cfg import (ADMIN_UI_URL, ARCHIVE_DIR_NAME, COMMANDS_DIR, GAME_DATA_D
 from arena.engine.admin import GameSetup
 from arena.engine.command import parse_commands
 from arena.engine.game import Game
-from arena.engine.gamedirectory import GameDirectory, ShipFile
+from arena.engine.gamedirectory import BodyFile, GameDirectory, ShipFile
 from arena.engine.history import Tick
-from arena.engine.objects.registry.builder import all_ship_types
-from arena.engine.objects.starbase import Starbase
+from arena.engine.objects.registry.builder import all_fielded_types
 from arena.engine.objects.event import ExplosionEvent
+from arena.engine.objects.objectinspace import Stance
 from arena.app import scenarios
 from arena.app.players import DIRECTOR, LOGIN_COOKIE, PLAYER, Player, PlayerRegistry
 from arena.app.registrations import Registration, RegistrationFile
 from arena.app.dto import (
     FormingGame, GameSummary, OpenGame, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
-    WeaponInfo, WeaponInput,
+    WeaponInfo, ComponentInput,
     ShipSummary, FactionSummary, GameOverview, ShipTypeInfo, Me, LoginInfo, GameSettings, Pulse,
     GamePulse,
 )
@@ -204,10 +204,9 @@ class GameService(_EngineAccess):
 
     def list_ship_types(self) -> list[ShipTypeInfo]:
         """Every model in the registry. Reflection, so a new type needs no change here."""
-        return [ShipTypeInfo(type_name=st.type_name, name=st.name,
-                             category='Starbase' if issubclass(st.base_type, Starbase) else 'Ship',
+        return [ShipTypeInfo(type_name=st.type_name, name=st.name, category=st.category,
                              specs=self._specs(st))
-                for st in sorted(all_ship_types.values(), key=lambda t: t.name)]
+                for st in sorted(all_fielded_types.values(), key=lambda t: t.name)]
 
     def list_ships(self, game: str) -> list[str]:
         return [s.name for s in Game(self._gd(game)).player_ships]
@@ -325,13 +324,13 @@ class GameService(_EngineAccess):
             ships.append(ShipPlan(
                 name=s.name, ship_type=st.name, category_name=s.category_name,
                 x=s.pos.x, y=s.pos.y, heading=s.heading, speed=s.speed,
-                hull=final['hull'], max_hull=st.max_hull,
-                battery=final['battery'], max_battery=st.max_battery,
+                hull=round(final['hull'], 1), max_hull=st.max_hull,
+                battery=round(final['battery'], 1), max_battery=st.max_battery,
                 player=s.player,
                 player_ready=readiness.get(s.player, False),
                 owned=(s.player == player),
                 limits=ShipLimits(st.max_turn, st.max_delta_v, st.max_speed),
-                components=self._component_status(s, final),
+                components=self._component_status(s, final, world),
                 specs=self._specs(st),
                 weapons=[self._weapon_info(w, pristine_weapons[w.name], world)
                          for w in s.weapons.values()],
@@ -359,12 +358,14 @@ class GameService(_EngineAccess):
                             acc = seen[scan.name] = {
                                 'type_name': src.type_name,
                                 'category_name': src.category_name,
-                                'friendly': src.owner.faction in factions,
+                                'stance': self._stance(src, factions),
+                                'radius': src.radius,
                                 'pts': {},
                             }
                         acc['pts'].setdefault(t.tick, TrackPoint(tick=t.tick, x=scan.pos.x, y=scan.pos.y))
         contacts = [Contact(name=name, type_name=a['type_name'], category_name=a['category_name'],
-                            friendly=a['friendly'], track=[a['pts'][k] for k in sorted(a['pts'])])
+                            stance=a['stance'], radius=a['radius'],
+                            track=[a['pts'][k] for k in sorted(a['pts'])])
                     for name, a in seen.items()]
 
         # Explosions the faction witnessed. The engine hands an ExplosionEvent to every
@@ -388,6 +389,16 @@ class GameService(_EngineAccess):
 
 
     @staticmethod
+    def _stance(src, factions: set) -> str:
+        """How a contact stands to the fleet being planned for.
+
+        The engine answers this between two objects; here it is against every faction a player is
+        flying, so the three cases are spelled out once rather than at each reader."""
+        if not src.owner.faction:
+            return str(Stance.Neutral)
+        return str(Stance.Friend if src.owner.faction in factions else Stance.Foe)
+
+    @staticmethod
     def _specs(ship_type) -> dict[str, str]:
         """What the type object says this model is. Each component describes itself."""
         specs = {
@@ -409,41 +420,48 @@ class GameService(_EngineAccess):
         needs to know what a shield is called."""
         snap = ship.history[tick]
         defence = next((c.name for c in ship._type.defense), None)
-        return TickCondition(tick=tick.tick, hull=snap['hull'], battery=snap['battery'],
+        return TickCondition(tick=tick.tick, hull=round(snap['hull'], 1),
+                             battery=round(snap['battery'], 1),
                              shields={k: str(v) for k, v in
                                       snap['components'].get(defence, {}).items()})
 
-    @staticmethod
-    def _component_status(ship, snapshot: dict) -> list[ComponentStatus]:
+    def _component_status(self, ship, snapshot: dict, world) -> list[ComponentStatus]:
         """Component state at the tick of that snapshot, with the type object's for comparison.
 
-        Components with nothing to report are left out."""
-        on_type = (ship._type.defense + ship._type.weapons + ship._type.ecm + ship._type.control)
-        full = {c.name: {k: str(v) for k, v in c.status.items()} for c in on_type}
-        return [ComponentStatus(name=name,
+        Components with nothing to report are left out. The inputs come off the live component,
+        since a cloak's ceiling and a shield's headroom are answered from the ship it is on."""
+        st = ship._type
+        collections = {'defense': st.defense, 'weapons': st.weapons,
+                       'ecm': st.ecm, 'control': st.control}
+        pristine = {c.name: (group, c) for group, comps in collections.items() for c in comps}
+        return [ComponentStatus(name=name, group=pristine[name][0],
                                 status={k: str(v) for k, v in status.items()},
-                                full=full[name])
+                                full={k: str(v) for k, v in pristine[name][1].status.items()},
+                                inputs=self._inputs(ship.all_components[name], world))
                 for name, status in snapshot['components'].items() if status]
 
     @staticmethod
-    def _weapon_info(weapon, pristine, world) -> WeaponInfo:
-        """Describe a weapon well enough for an interface to offer the right controls.
-        The inputs come from the weapon itself, so a new kind of weapon needs no changes here.
-        `pristine` is the same weapon on the type object, which carries the full load."""
+    def _inputs(component, world) -> list[ComponentInput]:
+        """What an order to this component needs, as controls an interface can offer."""
         inputs = []
-        for p in weapon.expected_parameters:
+        for p in component.expected_parameters:
             if p.needs_world:
                 p.set_world(world)
             lo, hi = p.range if p.kind == 'number_in_range' else (None, None)
-            inputs.append(WeaponInput(name=p.name, kind=p.kind, min=lo, max=hi,
-                                      choices=p.choices))
+            inputs.append(ComponentInput(name=p.name, kind=p.kind, min=lo, max=hi,
+                                         choices=p.choices))
+        return inputs
+
+    def _weapon_info(self, weapon, pristine, world) -> WeaponInfo:
+        """What the map needs to draw this weapon's shot, beyond what its component row says.
+        `pristine` is the same weapon on the type object, which carries the full load."""
         payload = weapon.payload_type
         return WeaponInfo(name=weapon.name, description=weapon.description,
                           firing_arc=weapon.firing_arc,
                           ammo=weapon.ammo, max_ammo=pristine.ammo,
                           payload=payload.name if payload else None,
                           payload_speed=(payload.max_speed or None) if payload else None,
-                          inputs=inputs)
+                          inputs=self._inputs(weapon, world))
 
     @staticmethod
     def _load_ship(gd: GameDirectory, ship_name: str, round_nr: int):
@@ -543,10 +561,10 @@ class AdminService(_EngineAccess):
     def set_player_active(self, name: str, active: bool) -> None:
         self.players.set_active(name, active)
 
-    def create_game(self, name: str, ships: list[dict]) -> None:
+    def create_game(self, name: str, ships: list[dict], bodies: list[dict] = None) -> None:
         gd = GameDirectory(self.data_root, name)
         if not gd.exists or not gd.has_been_setup:
-            GameSetup(gd, ShipFile(gd, ships)).execute()
+            GameSetup(gd, ShipFile(gd, ships), BodyFile(gd, bodies or [])).execute()
 
     # ---------------------------------------------------------------------- BEFORE IT STARTS
 
@@ -586,8 +604,10 @@ class AdminService(_EngineAccess):
         target = Path(self.data_root) / name
         if target.exists():
             raise ValueError(f"A game called '{name}' is already being played.")
+        # Asked before the move, because the scenario is read from where the game is registering.
+        terrain = scenarios.by_key(self.scenario_of(name)).bodies()
         shutil.move(str(self._registering / name), str(target))
-        self.create_game(name, ships)
+        self.create_game(name, ships, terrain)
         self.save_settings(name, settings)
 
     def spawn_ship(self, game: str, name: str, ship_type: str, player: str = '',
@@ -606,7 +626,7 @@ class AdminService(_EngineAccess):
             raise ValueError(f"Round {round_nr} has been played. The earliest is {g.current_round_nr}.")
         if name in g.world.all_names:
             raise ValueError(f"'{name}' has been used in this game already.")
-        if ship_type not in all_ship_types:
+        if ship_type not in all_fielded_types:
             raise ValueError(f"'{ship_type}' is not a known ship type.")
         if player and not self.players.by_name(player):
             raise ValueError(f"'{player}' has no login. Issue one first.")

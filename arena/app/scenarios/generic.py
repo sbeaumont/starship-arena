@@ -12,3 +12,6 @@ class GenericGame:
 
     def deal(self, entries, rng) -> list[dict]:
         return []
+
+    def bodies(self) -> list[dict]:
+        return []

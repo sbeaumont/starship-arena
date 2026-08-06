@@ -6,7 +6,7 @@ Starbase based on Ship:
 
 import logging
 
-from .ship import Ship
+from .ship import Ship, ShipType
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,11 @@ class Starbase(Ship):
     def category_name(self) -> str:
         return 'Starbase'
 
+    @property
+    def is_immovable(self) -> bool:
+        """Bolted down, the way a planet is."""
+        return True
+
     def turn(self, angle):
         """Starbases don't turn. Nice try."""
         pass
@@ -26,7 +31,7 @@ class Starbase(Ship):
         """Starbases don't accelerate. Nice try."""
         pass
 
-    def move(self):
+    def move(self, fraction: float = 1, impulse=None):
         """Starbases do not move."""
         pass
 
@@ -35,7 +40,15 @@ class Starbase(Ship):
                 (ship.speed <= self._type.max_replenish_speed):
             ship.hull = ship._type.max_hull
             ship.battery = ship._type.max_battery
-            for weapon in ship.weapons.values():
-                weapon.reset()
+            for component in ship.all_components.values():
+                component.reset()
             self.add_internal_event(f"Replenished {ship.name}")
             ship.add_internal_event(f"Replenished by {self.name}")
+
+
+class StarbaseType(ShipType):
+    base_type = Starbase
+    category = 'Starbase'
+
+    max_replenish_distance = None
+    max_replenish_speed = None

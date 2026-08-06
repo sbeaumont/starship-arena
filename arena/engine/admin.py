@@ -9,7 +9,7 @@ from random import randint
 import logging
 
 import arena.engine.objects.registry.builder as builder
-from arena.engine.gamedirectory import GameDirectory, ShipFile
+from arena.engine.gamedirectory import BodyFile, GameDirectory, ShipFile
 from arena.engine.world import World
 from arena.engine.game import Game
 from arena.engine.objects.objectinspace import Point
@@ -61,11 +61,14 @@ def distribute_factions(ships, distance) -> None:
 
 
 class GameSetup(object):
-    def __init__(self, game_directory: GameDirectory, ship_file: ShipFile=None):
+    def __init__(self, game_directory: GameDirectory, ship_file: ShipFile=None,
+                 body_file: BodyFile=None):
         self._dir: GameDirectory = game_directory
         self.shipfile = ship_file if ship_file else ShipFile(self._dir)
+        self.bodyfile = body_file if body_file else BodyFile(self._dir)
         self.ships: dict = self._init_ships(self.shipfile.ship_lines)
-        self.world = World(self._dir, self.ships)
+        self.bodies: dict = self._init_bodies(self.bodyfile.body_lines)
+        self.world = World(self._dir, self.ships | self.bodies)
 
     def execute(self):
         self._dir.setup_directories()
@@ -79,10 +82,18 @@ class GameSetup(object):
 
     def run_tick_zero(self, distance_from_center=500):
         distribute_factions(self.ships.values(), distance_from_center)
-        for ship in self.ships.values():
-            ship.history.set_tick(TICK_ZERO)
-            ship.scan(self.world)
-            ship.history.update()
+        for ois in self.world.objects.values():
+            ois.history.set_tick(TICK_ZERO)
+            ois.scan(self.world)
+            ois.history.update()
+
+    def _init_bodies(self, body_file: list) -> dict:
+        """Terrain, placed exactly where it was written. Nothing scatters a body."""
+        bodies = dict()
+        for line in body_file:
+            body = builder.create(line.name, line.type, line.xy)
+            bodies[body.name] = body
+        return bodies
 
     def _init_ships(self, ship_file: list) -> dict:
         """Load and initialize all the ships to their status at the start of a round."""
@@ -100,6 +111,8 @@ class GameSetup(object):
         """Save the round 0 pickle file and the ships file with coordinates (to ensure idempotency)."""
         self.world.save(0)
         self.shipfile.save(self.ships.values())
+        if self.bodyfile.body_lines:
+            self.bodyfile.save()
 
 
 def regenerate_game(gd: GameDirectory) -> int:

@@ -34,6 +34,32 @@ class GameRound(object):
         for other_cmd in cs.post_move:
             other_cmd.execute(tick)
 
+    def resolve_encounters(self):
+        """Advance the tick by whatever comes within a range that matters.
+
+        Only the earliest fraction resolves each time round: a later encounter is a prediction
+        against a world the earlier one is about to change. Nothing moves past a fraction while
+        anything is pending at or before it, which is what lets an object that has not moved
+        answer where it was, without keeping a history of its own tick.
+        See docs/adr/0024-a-tick-advances-by-encounters.md."""
+        while True:
+            found = [e for e in (ois.encounter(self.world)
+                                 for ois in list(self.world.objects.values())) if e is not None]
+            if not found:
+                return
+            earliest = min(e.fraction for e in found)
+            # Name settles the order within one fraction, so which the world lists first cannot
+            # decide it.
+            due = sorted([e for e in found if e.fraction == earliest], key=lambda e: e.subject.name)
+            arrived = [(e.subject, e.subject.tick_fraction) for e in due]
+            for encounter in due:
+                encounter.resolve(self.world)
+            # Something that could not get past its own fraction is wedged, and spends what is
+            # left of the tick there.
+            for ois, was in arrived:
+                if ois.tick_fraction == was:
+                    ois.end_tick()
+
     def do_tick(self, tick: Tick):
         """Perform a single tick. This is where all hooks are called in the right order."""
         logger.debug(f"Starting tick: {tick}")
@@ -51,13 +77,20 @@ class GameRound(object):
             ois.history.set_tick(tick)
             ois.tick(tick)
 
-        # Do everything that has to happen before moving, then move each ship
+        # Do everything that has to happen before moving.
         for ois in self.world.objects.values():
             ois.generate()
             ois.use_energy()
             if isinstance(ois, Commandable) and ois.commands and (tick_nr in ois.commands):
                 self.pre_move_commands(ois.commands[tick_nr], tick)
             ois.pre_move(self.world)
+
+        # Every vector is settled by now and nothing has moved, so the tick can be advanced by
+        # whatever comes within a range that matters.
+        self.resolve_encounters()
+
+        # Then everything travels what is left of its leg.
+        for ois in self.world.objects.values():
             ois.move()
 
         # All ships perform their post move commands do post-move commands like firing weapons

@@ -1,6 +1,13 @@
 """Five factions, one war. Everybody who plays is dealt into one of them."""
 
+from math import cos, radians, sin
+
 from arena.app.registrations import Registration
+
+# Factions start on a circle of radius 500, so a ring half way in leaves everyone the same choice:
+# go around the outside, or cut through the middle and thread the gaps.
+RING_RADIUS = 250
+RING_BODIES = 5
 
 FACTIONS = {
     'Human': ['H2545', 'H2552', 'H2535', 'H2527'],
@@ -21,6 +28,13 @@ class FiveFactionWar:
     factions = list(FACTIONS)
     max_ships = 3
     registers = True
+
+    def bodies(self) -> list[dict]:
+        """A ring of asteroids between the factions and the middle."""
+        return [{'name': f"Asteroid-{n + 1}", 'type': 'Asteroid',
+                 'x': round(RING_RADIUS * sin(radians(n * 360 / RING_BODIES))),
+                 'y': round(RING_RADIUS * cos(radians(n * 360 / RING_BODIES)))}
+                for n in range(RING_BODIES)]
 
     def deal(self, entries: list[Registration], rng) -> list[dict]:
         """Ship records for everyone, each in the faction they were assigned to or dealt into."""

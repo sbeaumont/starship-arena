@@ -12,11 +12,11 @@ import logging
 from abc import ABC
 from typing import Protocol, runtime_checkable, NewType
 
-from arena.engine.objects.components.warhead import DamageType
+
 from arena.engine.parameter import Parameter
 from .machineinspace import MachineInSpace, MachineType
-from .objectinspace import ObjectInSpace, Vector
-from .event import ScanEvent, InternalEvent, HitEvent
+from .objectinspace import Impulse, ObjectInSpace, Vector
+from .event import DamageType, ScanEvent, InternalEvent, HitEvent
 from arena.engine.history import Tick, TICK_ZERO
 from arena.engine.world import World
 
@@ -98,18 +98,6 @@ class Ship(MachineInSpace):
         if old_speed != self.speed:
             self.add_internal_event(f"Changed speed from {old_speed} to {self.speed}")
 
-    def fire(self, weapon_name: str, params, world, tick: Tick):
-        if weapon_name in self.weapons:
-            return self.weapons[weapon_name].fire(params, world, tick)
-        else:
-            self.add_event(InternalEvent(f"No weapon named {weapon_name} found"))
-
-    def activation(self, name: str, on_off: bool):
-        if name in self.all_components:
-            self.all_components[name].activation(on_off)
-        else:
-            self.add_internal_event(f"Can not activate/deactivate unknown component: {name}")
-
     def try_replenish(self, world: World):
         for replenisher in [ois for ois in world.objects.values() if isinstance(ois, Replenisher)]:
             replenisher.replenish(self)
@@ -117,7 +105,7 @@ class Ship(MachineInSpace):
         self.add_internal_event("Failed to replenish.")
 
     def turn(self, angle):
-        if (self.speed > 0) and (abs(angle) > self._type.max_turn):
+        if abs(angle) > self._type.max_turn:
             self.add_event(InternalEvent(f"Limiting turn {angle} to max turn |{self._type.max_turn}|"))
             angle = self._type.max_turn if (angle > 0) else -self._type.max_turn
         self.vector.heading = (self.heading + angle) % 360
@@ -135,6 +123,23 @@ class Ship(MachineInSpace):
     def scan(self, world: World):
         for ois in [ob for ob in world.objects.values() if self.can_scan(ob)]:
             self.add_event(ScanEvent.create_scan(self, ois))
+
+    def take_impulse_from(self, impulse: Impulse):
+        """Bounce off it, and pay for the arrival in hull.
+
+        Heading here is the direction of travel, so a bounce turns the ship with no regard for
+        max_turn. Nobody ordered the turn, and coming out of it pointing somewhere else is most
+        of what hitting a rock costs."""
+        arrival = -self.vector.component_along(impulse.direction)
+        # Damage first: a shield quadrant is read off the heading, and the bounce is about to
+        # change it. What hit the bow struck the bow, however the ship ends up pointing.
+        self.take_damage_from(HitEvent(self.pos, DamageType.Impact, impulse.source, self,
+                                       self.mass * arrival))
+        dx, dy = self.vector.delta
+        mx, my = impulse.momentum
+        self.vector = self.vector.with_delta(dx + mx / self.mass, dy + my / self.mass)
+        self.add_internal_event(f"Struck {impulse.source.name} at {round(arrival)}: "
+                                f"heading {self.heading} at {self.speed}")
 
     def _damage_hull(self, amount: int) -> int:
         """Take the damage, and score for the hull that was actually there to remove.
@@ -194,6 +199,7 @@ class Ship(MachineInSpace):
             self.add_internal_event(f"You were destroyed. Killing blow by {hit_event.source.name}.")
 
     def tick(self, tick: Tick):
+        super().tick(tick)
         logger.debug(f"{self.name} starting tick {tick}")
         for comp in self.all_components.values():
             comp.tick(tick)
@@ -233,6 +239,8 @@ class Ship(MachineInSpace):
 class ShipType(MachineType):
     base_type = Ship
     leaves_a_wreck = True
+    mass = 1
+    category = 'Ship'
 
     max_speed = None
     max_turn = None
@@ -286,7 +294,8 @@ class TurnParameter(ShipParameter):
         self.feedback.clear()
         if re.match(r"-?[0-9]+", self._input):
             if abs(self.value) > self.ship._type.max_turn:
-                self.feedback.append(f"{self._input} is outside max turn, but possible at speed 0.")
+                self.feedback.append(
+                    f"{self._input} is outside max turn: limited to |{self.ship._type.max_turn}|.")
             result = True
         else:
             self.feedback.append(f"{self._input} is not a valid number.")

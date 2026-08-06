@@ -14,7 +14,8 @@ from arena.engine.objects.registry import builder
 from arena.engine.world import World
 
 # Placed away from the origin, because setup scatters anything still sitting on it. Voyager is
-# 20 off the base, so one 300 laser does 280: through a 100 shield and into 100 of hull.
+# 20 off the base, where a 300 laser reaching 60 does 133. The first shot breaks a 100 shield and
+# takes 33 hull, the second lands whole on 100 of hull, so it takes both of the base's lasers.
 ROSTER = [
     {'name': 'Base', 'type': 'SB2531', 'faction': 'One', 'player': 'Rik', 'x': 100, 'y': 0},
     {'name': 'Voyager', 'type': 'A2527', 'faction': 'One', 'player': 'Rik', 'x': 120, 'y': 0},
@@ -59,7 +60,7 @@ class TestFiringTheSpawner(TestCase):
         self.gd = GameDirectory(games, 'spawner')
         self.games = games
         # Round 1 kills Voyager, so round 2 has a wreck to claim.
-        self._orders('Base', "1: Fire L1 Voyager\n")
+        self._orders('Base', "1: Fire L1 Voyager\n1: Fire L2 Voyager\n")
         self._orders('Voyager', "")
         self._orders('Enemy', "")
         Game(self.gd).process_current_round()

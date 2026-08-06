@@ -4,9 +4,11 @@ A machine holds hull, battery and components, and asks its MachineType for anyth
 model. See docs/adr/0003-type-objects-for-machines.md."""
 
 from abc import ABC
-from .objectinspace import ObjectInSpace, Vector
+from .objectinspace import Encounter, Impulse, ObjectInSpace, Stance, Vector
+from .event import DamageType, HitEvent
 from arena.engine.objects.component import Component
 from arena.engine.history import Tick, TICK_ZERO
+from arena.engine.world import World
 
 
 class MachineType(object):
@@ -15,6 +17,7 @@ class MachineType(object):
     max_hull = 0
     start_battery = 0
     leaves_a_wreck = False
+    mass = 0
 
     def create(self, name: str, vector: Vector, owner=None, tick: Tick = TICK_ZERO):
         assert self.base_type, f"{self.name} does not have a base_type defined"
@@ -97,6 +100,36 @@ class MachineInSpace(ObjectInSpace, ABC):
     @property
     def type_name(self):
         return self._type.type_name
+
+    @property
+    def mass(self) -> float:
+        return self._type.mass
+
+    def take_impulse_from(self, impulse: Impulse):
+        """Stop dead where it arrived, and wear the arrival.
+
+        Whether that is survivable is a question for the hull, which is where a mine that drifts
+        into something differs from a missile that flies into it."""
+        arrival = -self.vector.component_along(impulse.direction)
+        self.speed = 0
+        self.take_damage_from(HitEvent(self.pos, DamageType.Impact, impulse.source, self,
+                                       self.mass * arrival))
+
+    def encounter(self, world: World) -> Encounter | None:
+        """The earliest of what it runs into and what any of its components names."""
+        if self.is_destroyed or self.tick_ended:
+            return None
+        found = [e for e in
+                 [super().encounter(world)] + [c.encounter(world) for c in self.all_components.values()]
+                 if e is not None]
+        return min(found, key=lambda e: e.fraction) if found else None
+
+    def stance_towards(self, other: ObjectInSpace) -> Stance:
+        """Asked of the owner, because a machine fights for whoever owns it."""
+        mine, theirs = self.owner.faction, other.owner.faction
+        if not mine or not theirs:
+            return Stance.Neutral
+        return Stance.Friend if mine == theirs else Stance.Foe
 
     @property
     def range(self) -> int:

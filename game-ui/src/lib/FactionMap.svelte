@@ -80,10 +80,20 @@
   // ===== Orders <-> command lines =====
   const MOVE_RE = /^\s*(\d+)\s*:\s*([RLA])\s*(-?\d+)\s*$/i;
   const FIRE_RE = /^\s*(\d+)\s*:\s*(?:F|FIRE|SCAN)\s+(\S+)\s*(.*)$/i;
+  const COMP_RE = /^\s*(\d+)\s*:\s*([A-Za-z]+)\s+(\S+)\s*(.*)$/;
 
-  function parseOrders(lines) {
+  // Which order a component takes, by the collection its machine carries it in. Shields are
+  // boosted, ECM is powered; weapons are aimed on the map and have their own panel.
+  const ORDER_VERB = { defense: "Boost", ecm: "Power" };
+  const orderable = (ship) =>
+    ship.components.filter((c) => ORDER_VERB[c.group] && c.inputs.length);
+
+  function parseOrders(lines, ship) {
     const turn = Array(N + 1).fill(0), accel = Array(N + 1).fill(0);
-    const fire = {}, other = [];
+    const fire = {}, comp = {}, other = [];
+    // Recognised by the selector rather than by the verb, so the words a player may type stay
+    // the server's business. Whatever they wrote is kept and written back unchanged.
+    const takesOrders = new Set(orderable(ship).map((c) => c.name));
     for (const line of lines) {
       const text = line.trim();
       if (!text) continue;
@@ -100,9 +110,16 @@
         fire[t][fr[2]] = fr[3].split(/\s+/).filter(Boolean);
         continue;
       }
+      const cr = text.match(COMP_RE);
+      if (cr && Number(cr[1]) >= 1 && Number(cr[1]) <= N && takesOrders.has(cr[3])) {
+        const t = Number(cr[1]);
+        if (!comp[t]) comp[t] = {};
+        comp[t][cr[3]] = { verb: cr[2], params: cr[4].split(/\s+/).filter(Boolean) };
+        continue;
+      }
       other.push(text);
     }
-    return { turn, accel, fire, other };
+    return { turn, accel, fire, comp, other };
   }
 
   function orderLines(o) {
@@ -112,6 +129,9 @@
       if (o.accel[t]) rows.push([t, `${t}: A${o.accel[t]}`]);
       for (const [wpn, params] of Object.entries(o.fire[t] ?? {})) {
         rows.push([t, `${t}: Fire ${wpn} ${params.join(" ")}`.trim()]);
+      }
+      for (const [name, c] of Object.entries(o.comp[t] ?? {})) {
+        rows.push([t, `${t}: ${c.verb} ${name} ${c.params.join(" ")}`.trim()]);
       }
     }
     for (const line of o.other) {
@@ -136,7 +156,7 @@
         if (cancelled) return;
         plan = data;
         const o = {}, b = {};
-        for (const s of data.ships) if (s.owned) { o[s.name] = parseOrders(s.commands); b[s.name] = s.commands; }
+        for (const s of data.ships) if (s.owned) { o[s.name] = parseOrders(s.commands, s); b[s.name] = s.commands; }
         orders = o;
         baseline = b;
         const own = data.ships.filter((s) => s.owned);
@@ -270,20 +290,25 @@
   const contacts = $derived.by(() => {
     if (!plan) return [];
     return plan.contacts.filter((c) => {
+      if (c.radius) return false;
       if (NAMED.has(c.category_name)) return true;
-      return c.friendly ? showFriendlyOrdnance : showEnemyOrdnance;
+      return c.stance === "Friend" ? showFriendlyOrdnance : showEnemyOrdnance;
     });
   });
 
+  // Anything with a size is terrain: drawn true to scale rather than as a marker, because a
+  // player plots around it. The radius comes from the API, never from a number kept here.
+  const terrain = $derived(plan ? plan.contacts.filter((c) => c.radius) : []);
+
   const counts = $derived.by(() => {
     if (!plan) return { ships: 0, enemyOrd: 0, friendlyOrd: 0, enemyShips: 0 };
-    const cs = plan.contacts;
+    const cs = plan.contacts.filter((c) => !c.radius);
     const ord = cs.filter((c) => !NAMED.has(c.category_name));
     return {
       ships: cs.filter((c) => NAMED.has(c.category_name)).length,
-      enemyOrd: ord.filter((c) => !c.friendly).length,
-      friendlyOrd: ord.filter((c) => c.friendly).length,
-      enemyShips: cs.filter((c) => NAMED.has(c.category_name) && !c.friendly).length,
+      enemyOrd: ord.filter((c) => c.stance === "Foe").length,
+      friendlyOrd: ord.filter((c) => c.stance === "Friend").length,
+      enemyShips: cs.filter((c) => NAMED.has(c.category_name) && c.stance === "Foe").length,
     };
   });
 
@@ -331,6 +356,26 @@
 
   const orderAt = (tick, weaponName) =>
     (selectedOrders && tick ? selectedOrders.fire[tick]?.[weaponName] : undefined);
+
+  // ===== Components that take an order without being aimed: shields, ECM =====
+  const orderableComponents = $derived(selectedShip ? orderable(selectedShip) : []);
+
+  const compOrderAt = (tick, name) =>
+    (selectedOrders && tick ? selectedOrders.comp[tick]?.[name] : undefined);
+
+  function armComponent(c) {
+    if (!selectedTick || !selectedOrders) return;
+    // Starts at nothing so the order does not spend energy the player never asked for.
+    const params = c.inputs.map((i) => (i.choices ? i.choices[0] : String(Math.round(i.min))));
+    if (!selectedOrders.comp[selectedTick]) selectedOrders.comp[selectedTick] = {};
+    selectedOrders.comp[selectedTick][c.name] = { verb: ORDER_VERB[c.group], params };
+  }
+
+  function unarmComponent(tick, name) {
+    if (!selectedOrders?.comp[tick]) return;
+    delete selectedOrders.comp[tick][name];
+    if (!Object.keys(selectedOrders.comp[tick]).length) delete selectedOrders.comp[tick];
+  }
 
   // A weapon's arc is relative to where the ship is pointing at that tick, so a shot's
   // absolute bearing follows the course you drew.
@@ -572,7 +617,7 @@
       if (!NAMED.has(c.category_name)) continue;
       const v = lastOf(c);
       items.push({ key: `c:${c.name}`, x: sx(v.vx), y: sy(v.vy), text: c.name,
-                   cls: c.friendly ? "ally" : "enemy" });
+                   cls: c.stance === "Foe" ? "enemy" : "ally" });
     }
     const OFF = 12;
     const placed = [], out = [];
@@ -591,7 +636,7 @@
     contacts.filter((c) => !NAMED.has(c.category_name)).map((c) => {
       const v = lastOf(c);
       return { key: c.name, x: sx(v.vx), y: sy(v.vy), letter: c.type_name[0],
-               enemy: !c.friendly, title: `${c.name} · ${c.type_name}` };
+               enemy: c.stance === "Foe", title: `${c.name} · ${c.type_name}` };
     })
   );
 
@@ -755,7 +800,7 @@
 
   function resetCourse(name) {
     if (!baseline[name]) return;
-    orders[name] = parseOrders(baseline[name]);
+    orders[name] = parseOrders(baseline[name], ownShips.find((s) => s.name === name));
     saveMsg = "";
   }
 
@@ -940,6 +985,12 @@
            role="img" aria-label="Faction tactical map. Drag to pan, scroll to zoom."
            onpointerdown={onDown} onpointermove={onMove} onpointerup={onUp}
            onpointercancel={onUp} onwheel={onWheel} onpointerleave={() => (cursor = null)}>
+        <!-- Terrain first, so everything else is read against it rather than through it. -->
+        {#each terrain as body (body.name)}
+          {@const v = lastOf(body)}
+          <circle class="body" cx={v.vx} cy={v.vy} r={body.radius} stroke-width={cam.upp} />
+        {/each}
+
         {#if showGrid}
           {#each grid.xs as x (x)}
             <line class="grid" class:axis={x === 0} x1={x} y1={vb.y} x2={x} y2={vb.y + vb.h}
@@ -969,15 +1020,15 @@
 
           {#each contacts as c (c.name)}
             {#if showTracks && c.track.length > 1}
-              <polyline class="track" class:enemy={!c.friendly}
+              <polyline class="track" class:enemy={c.stance === "Foe"}
                         points={trackPoints(c)} stroke-width={1.2 * cam.upp} />
               {#each c.track.slice(0, -1) as t (t.tick)}
                 {@const v = w2v(t.x, t.y)}
-                <circle class="mark" class:enemy={!c.friendly} cx={v.vx} cy={v.vy} r={1.6 * cam.upp} />
+                <circle class="mark" class:enemy={c.stance === "Foe"} cx={v.vx} cy={v.vy} r={1.6 * cam.upp} />
               {/each}
             {/if}
             {@const v = lastOf(c)}
-            <polygon class="blip" class:enemy={!c.friendly}
+            <polygon class="blip" class:enemy={c.stance === "Foe"}
                      points={markerFor(c.category_name, v.vx, v.vy, courseOf(c))} />
             {#if aimingWeapon}
               <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -1198,10 +1249,11 @@
         <section>
           <h2>{selectedShip.name} · course</h2>
           <table>
-            <thead><tr><th class="t">Tick</th><th>Turn</th><th>Throttle</th><th>Speed</th><th>Fire</th></tr></thead>
+            <thead><tr><th class="t">Tick</th><th>Turn</th><th>Throttle</th><th>Speed</th><th>Orders</th></tr></thead>
             <tbody>
               {#each selectedChain.slice(1) as n (n.t)}
-                {@const fired = Object.keys(selectedOrders.fire[n.t] ?? {})}
+                {@const fired = [...Object.keys(selectedOrders.fire[n.t] ?? {}),
+                                 ...Object.keys(selectedOrders.comp[n.t] ?? {})]}
                 <tr class:idle={!selectedOrders.turn[n.t] && !selectedOrders.accel[n.t] && !fired.length}
                     class:cur={n.t === selectedTick}>
                   <td class="t">
@@ -1248,11 +1300,11 @@
 
         <section class="grow">
           {#if !selectedTick}
-            <h2>Weapons</h2>
+            <h2>Orders</h2>
             <p class="hint">Click a joint on the course, or a tick number above, to give
-              {selectedShip.name} weapon orders for that tick.</p>
+              {selectedShip.name} orders for that tick.</p>
           {:else}
-            <h2>Tick {selectedTick} · weapons</h2>
+            <h2>Tick {selectedTick} · orders</h2>
             <ul class="weapons">
               {#each selectedShip.weapons as w (w.name)}
                 {@const existing = orderAt(selectedTick, w.name)}
@@ -1322,6 +1374,48 @@
                 </li>
               {/each}
             </ul>
+            {#if orderableComponents.length}
+              <ul class="weapons">
+                {#each orderableComponents as c (c.name)}
+                  {@const existing = compOrderAt(selectedTick, c.name)}
+                  <li class:armed={existing}>
+                    <div class="wrow">
+                      <span class="wname">{c.name}</span>
+                      {#if !editable}
+                        <span></span>
+                      {:else if existing}
+                        <button type="button" class="wfire on"
+                                onclick={() => unarmComponent(selectedTick, c.name)}>clear</button>
+                      {:else}
+                        <button type="button" class="wfire"
+                                onclick={() => armComponent(c)}>{ORDER_VERB[c.group].toLowerCase()}</button>
+                      {/if}
+                      <span class="wammo"></span>
+                    </div>
+                    {#if existing}
+                      <div class="worder">
+                        {#each c.inputs as inp, i (inp.name)}
+                          <label class="slider">
+                            {inp.name}
+                            {#if inp.choices}
+                              <select value={existing.params[i]}
+                                      onchange={(e) => (selectedOrders.comp[selectedTick][c.name].params[i] = e.currentTarget.value)}>
+                                {#each inp.choices as ch (ch)}<option value={ch}>{ch}</option>{/each}
+                              </select>
+                            {:else}
+                              <input type="range" min={inp.min} max={inp.max} step="1"
+                                     value={existing.params[i]}
+                                     oninput={(e) => (selectedOrders.comp[selectedTick][c.name].params[i] = e.currentTarget.value)} />
+                              <b>{existing.params[i]}</b>
+                            {/if}
+                          </label>
+                        {/each}
+                      </div>
+                    {/if}
+                  </li>
+                {/each}
+              </ul>
+            {/if}
             <p class="note">One order per weapon per tick. Drag a shot's handle on the map to
               re-aim it; the arc turns with the course you plotted.</p>
           {/if}
@@ -1457,6 +1551,8 @@
   .grid.axis { stroke: #26375e; }
   .origin { fill: none; stroke: #3d5384; }
   .blast { fill-opacity: 0.13; stroke: #04070d; }
+  /* Terrain is something to fly around, not something to read. Muted on purpose. */
+  .body { fill: #1a2130; stroke: #2b3648; }
   .wreck { stroke: var(--warn); fill: none; stroke-linecap: round; opacity: 0.9; }
   .wreck-core { fill: #ffd2d6; }
   .track { fill: none; stroke: var(--ghost); opacity: 0.75; }
@@ -1598,7 +1694,9 @@
   .weapons { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   .weapons li { border: 1px solid var(--edge); border-radius: 3px; padding: 7px 9px; background: #0d1320; }
   .weapons li.armed { border-color: #ff7b7b; }
-  .wrow { display: grid; grid-template-columns: 30px 74px 1fr; align-items: center;
+  /* A name is the selector a player types, so it is never shortened: short codes like R1 hold
+     the column at 30px and keep the buttons in line, a Shields or a Cloak pushes it out. */
+  .wrow { display: grid; grid-template-columns: minmax(30px, auto) 74px 1fr; align-items: center;
           gap: 8px; font-size: 12.5px; }
   .wname { color: var(--hull); font-weight: 600; }
   .wammo { font-variant-numeric: tabular-nums; color: var(--cyan); font-size: 11.5px; }

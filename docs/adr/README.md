@@ -34,6 +34,8 @@ here too, so nobody is sent looking for something that no longer exists. `ships.
 | [0020](0020-explosions-do-not-take-sides.md) | An explosion damages everything in range |
 | [0021](0021-scenarios-sit-in-the-services-layer.md) | Scenarios sit in the services layer |
 | [0022](0022-a-game-directory-moves-between-three-places.md) | A game directory moves between three places |
+| [0023](0023-a-collision-transmits-an-impulse.md) | A collision transmits an impulse |
+| [0024](0024-a-tick-advances-by-encounters.md) | A tick advances by encounters (proposed) |
 
 ## Template
 

@@ -9,7 +9,7 @@ import logging
 from dataclasses import replace
 
 from .event import InternalEvent
-from .objectinspace import ObjectInSpace, Vector
+from .objectinspace import ObjectInSpace, Stance, Vector
 from .machineinspace import MachineInSpace, MachineType
 from arena.engine.history import Tick, TICK_ZERO
 from arena.engine.world import World
@@ -98,7 +98,7 @@ class GuidedMissile(Missile):
     def scan(self, world: World):
         """Find the nearest enemy object in the scan cone"""
         self.target = None
-        for ois in [o for o in world.objects.values() if (o != self) and (o.owner.faction != self.owner.faction)]:
+        for ois in [o for o in world.objects.values() if o.stance_towards(self) == Stance.Foe]:
             if self.can_scan(ois) and self.in_scan_cone(ois):
                 if self.target:
                     if self.distance_to(ois.xy) < self.distance_to(self.target.xy):
@@ -121,6 +121,8 @@ class MissileType(MachineType):
     energy_per_move: int = 5
     max_speed = 0
     max_turn = 45
+    # Light, and flying fast enough that running into anything is the end of it.
+    mass = 0.1
 
     def create(self, name: str, vector: Vector, owner=None, tick: Tick = TICK_ZERO):
         vector = replace(vector, speed=self.max_speed)

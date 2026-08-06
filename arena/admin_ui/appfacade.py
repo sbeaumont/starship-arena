@@ -18,8 +18,7 @@ from arena.engine.admin import GameSetup, regenerate_game
 from arena.engine.gamedirectory import GameDirectory
 from arena.engine.game import Game
 from arena.cfg import GAME_DATA_DIR, MANUAL_FILENAME
-from arena.engine.objects.registry.builder import all_ship_types
-from arena.engine.objects.starbase import Starbase
+from arena.engine.objects.registry import builder
 
 logger = logging.getLogger('starship-arena.facade')
 
@@ -107,15 +106,13 @@ class AppFacade(object):
     def get_manual_pdf(self) -> str:
         return MANUAL_FILENAME
 
-    # The registry holds ready-made type instances, keyed by type name. Which of them are
-    # starbases is decided by the type itself, not by naming the one we happen to have.
     @property
     def all_ship_types(self) -> dict:
-        return {name: st for name, st in all_ship_types.items() if not issubclass(st.base_type, Starbase)}
+        return builder.all_ship_types
 
     @property
     def all_starbase_types(self) -> dict:
-        return {name: st for name, st in all_ship_types.items() if issubclass(st.base_type, Starbase)}
+        return builder.all_starbase_types
 
     # ---------------------------------------------------------------------- QUERIES - Game
 

@@ -8,19 +8,16 @@ from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
 
 from arena.cfg import MANUAL_TEMPLATE, MANUAL_TEMPLATE_DIR, MANUAL_FILENAME, WEB_ROOT
-from arena.engine.objects.registry.builder import all_ship_types
-from arena.engine.objects.starbase import Starbase
+from arena.engine.objects.registry.builder import all_ship_types, all_starbase_types
 
 
 def generate_manual():
     env = Environment(loader=FileSystemLoader(MANUAL_TEMPLATE_DIR))
     template = env.get_template(MANUAL_TEMPLATE)
 
-    # The registry holds ready-made type instances; a type says for itself whether it is a
-    # starbase.
     template_data = {
-        "starbase_types": [st for st in all_ship_types.values() if issubclass(st.base_type, Starbase)],
-        "ship_types": [st for st in all_ship_types.values() if not issubclass(st.base_type, Starbase)],
+        "starbase_types": list(all_starbase_types.values()),
+        "ship_types": list(all_ship_types.values()),
         "date": datetime.date.today().strftime('%d %b %Y'),
     }
 

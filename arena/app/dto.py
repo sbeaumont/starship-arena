@@ -179,22 +179,41 @@ class ShipTypeInfo:
 
 
 @dataclass
+class ComponentInput:
+    """One input a component needs before it can be given an order. `kind` tells an interface
+    which control to offer; min/max are filled in when the input is a bounded number."""
+    name: str
+    kind: str
+    min: float | None = None
+    max: float | None = None
+    # The names this input may take, when it is a short list rather than anything on the map.
+    choices: list[str] | None = None
+
+
+@dataclass
 class ComponentStatus:
     """What a component reports, next to what the type object reports for a pristine one.
 
     The pairs are the component's own, so a reader renders what it is handed. Ordered as the
-    machine carries them: defense, weapons, ECM."""
+    machine carries them: defense, weapons, ECM. `name` is the selector an order addresses it
+    by, and `group` is the machine's own collection, which is what tells an interface which
+    order the component takes."""
     name: str
+    group: str   # 'defense' | 'weapons' | 'ecm' | 'control'
     status: dict[str, str]
     full: dict[str, str]
+    inputs: list[ComponentInput]   # empty for a component that takes no orders
 
 
 @dataclass
 class TickCondition:
-    """What a ship was down to at the end of a tick. The map already shows where it was."""
+    """What a ship was down to at the end of a tick. The map already shows where it was.
+
+    Hull and battery are fractional because an impact is: the damage is a mass times the speed
+    it arrived at, and movement costs a tenth of a speed a collision left fractional."""
     tick: int
-    hull: int
-    battery: int
+    hull: float
+    battery: float
     shields: dict[str, str]
 
 
@@ -217,24 +236,14 @@ class Contact:
     name: str
     type_name: str      # the object's model: 'H2545', 'Rocket', 'SplinterMine', ...
     category_name: str  # the family it belongs to: 'Ship', 'Starbase', 'Missile', 'Mine'
-    friendly: bool      # owner's faction == the planning faction
+    stance: str         # 'Friend', 'Foe' or 'Neutral' towards the faction being planned for
     track: list[TrackPoint]
-
-
-@dataclass
-class WeaponInput:
-    """One input a weapon needs before it can be given an order. `kind` tells an interface
-    which control to offer; min/max are filled in when the input is a bounded number."""
-    name: str
-    kind: str
-    min: float | None = None
-    max: float | None = None
-    # The names this input may take, when it is a short list rather than anything on the map.
-    choices: list[str] | None = None
+    radius: float = 0   # above 0 is something solid, and drawn at its true size
 
 
 @dataclass
 class WeaponInfo:
+    """What the map needs to draw a weapon's shot, on top of what every component reports."""
     name: str
     description: str
     firing_arc: tuple[float, float] | None   # relative to the ship's heading; None = all round
@@ -245,7 +254,7 @@ class WeaponInfo:
     # covers in a tick. None when the payload has no speed of its own: a mine leaves at the
     # ship's speed and slows to a stop, which is not a single figure worth drawing to scale.
     payload_speed: float | None
-    inputs: list[WeaponInput]
+    inputs: list[ComponentInput]
 
 
 @dataclass
@@ -257,9 +266,9 @@ class ShipPlan:
     y: float
     heading: float
     speed: float
-    hull: int
+    hull: float          # fractional after an impact; see TickCondition
     max_hull: int
-    battery: int
+    battery: float
     max_battery: int
     player: str | None   # who commands it
     player_ready: bool   # whether they have said they are done with the round being planned

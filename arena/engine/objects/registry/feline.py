@@ -31,8 +31,8 @@ class F2551(ShipType):
     @property
     def weapons(self):
         return [
-            Laser('L1', 150),
-            Laser('L2', 150),
+            Laser('L1', 150, 60),
+            Laser('L2', 150, 60),
             Launcher('R1', Rocket(), 10),
             Launcher('R2', Rocket(), 10),
             Launcher('M1', SplinterMine(), 10),
@@ -42,7 +42,7 @@ class F2551(ShipType):
     @property
     def ecm(self):
         return [
-            Cloak('Cloak', 0.25, 4),
+            Cloak('Cloak', 4),
         ]
 
 
@@ -68,7 +68,7 @@ class F2547(ShipType):
     @property
     def weapons(self):
         return [
-            Laser('L1', 130),
+            Laser('L1', 130, 60),
             Launcher('S1', Splinter(), 3, (270, 90)),
             Launcher('N1', NanoMissile(), 3, (270, 90)),
             Launcher('R1', Rocket(), 10),
@@ -80,7 +80,7 @@ class F2547(ShipType):
     @property
     def ecm(self):
         return [
-            Cloak('Cloak', 0.25),
+            Cloak('Cloak', 4),
         ]
 
 
@@ -106,7 +106,7 @@ class F2534(ShipType):
     @property
     def weapons(self):
         return [
-            Laser('L1', 100),
+            Laser('L1', 100, 60),
             Launcher('S1', Splinter(), 5),
             Launcher('N1', NanoMissile(), 5),
             Launcher('R1', Rocket(), 20),
@@ -117,7 +117,7 @@ class F2534(ShipType):
     @property
     def ecm(self):
         return [
-            Cloak('Cloak', 0.25),
+            Cloak('Cloak', 4),
         ]
 
 
@@ -143,7 +143,7 @@ class F2533(ShipType):
     @property
     def weapons(self):
         return [
-            Laser('L1', 50),
+            Laser('L1', 50, 60),
             Launcher('S1', Splinter(), 4),
             Launcher('S2', Splinter(), 3, (315, 45)),
             Launcher('N1', NanoMissile(), 7, (315, 45)),
@@ -155,5 +155,5 @@ class F2533(ShipType):
     @property
     def ecm(self):
         return [
-            Cloak('Cloak', 0.25),
+            Cloak('Cloak', 4),
         ]

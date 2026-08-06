@@ -1,11 +1,38 @@
 # CLAUDE.md
 
-Constraints for working in this repository. The reasoning lives in [`docs/`](docs/); read the
-relevant page before changing that area. Directories have their own `CLAUDE.md` with the rules
+Constraints for working in this repository. Directories have their own `CLAUDE.md` with the rules
 that bind only them.
 
 Starship Arena recreates a 1991 play-by-mail space combat game. Players command starships, a round
 is 10 ticks, and one engine is played through three interfaces.
+
+## Read these three first
+
+Before the first answer about this codebase, not when you reach the area. 24kB together.
+
+| | |
+|---|---|
+| [docs/architecture.md](docs/architecture.md) | The layers, the phases of a tick, and the ten invariants |
+| [docs/information.md](docs/information.md) | The six places a fact can live, and how to pick one |
+| [docs/glossary.md](docs/glossary.md) | The words. Different ones is how vocabulary drifts |
+
+Then the ADR that governs what you are about to touch.
+[docs/adr/README.md](docs/adr/README.md) indexes them; these are the ones that bite:
+
+| touching | read |
+|---|---|
+| a component, or anything a machine asks its parts | [0019](docs/adr/0019-machines-drive-components-through-one-vocabulary.md) |
+| the tick's order, or anything timing-dependent | [0002](docs/adr/0002-deterministic-rounds.md), and invariant 1 |
+| damage, warheads, collisions | [0020](docs/adr/0020-explosions-do-not-take-sides.md), [0023](docs/adr/0023-a-collision-transmits-an-impulse.md) |
+| orders, validation, what a weapon asks for | [0005](docs/adr/0005-commands-validated-before-execution.md), [0004](docs/adr/0004-components-own-their-parameters.md) |
+| history, snapshots, the map | [0011](docs/adr/0011-snapshots-hold-values.md), [0013](docs/adr/0013-fog-of-war-from-scans.md) |
+| races, factions, who flies what | [0021](docs/adr/0021-scenarios-sit-in-the-services-layer.md) |
+
+**Say which ones you read when proposing an engine change.** Naming none means the proposal was
+reconstructed from implementation, which gets the mechanism right and the intent wrong.
+
+The code cannot tell you why. A number that looks too strong may be compensating for something
+already tried and abandoned. Ask before rebalancing anything.
 
 ## Never break these
 

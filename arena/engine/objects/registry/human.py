@@ -31,7 +31,7 @@ class H2545(ShipType):
     @property
     def weapons(self) -> list:
         return [
-            Laser('L1', 180),
+            Laser('L1', 180, 60),
             Launcher('S1', Splinter(), 4, (270, 90)),
             Launcher('R1', Rocket(), 10),
             Launcher('R2', Rocket(), 10),
@@ -57,7 +57,7 @@ class H2552(ShipType):
     @property
     def weapons(self):
         return [
-            Laser('L1', 180, (270, 90)),
+            Laser('L1', 180, 60, (270, 90)),
             Launcher('S1', Splinter(), 10, (90, 270)),
             Launcher('R1', Rocket(), 15),
             Launcher('N1', NanocyteMine(), 10),
@@ -73,7 +73,7 @@ class H2552(ShipType):
     @property
     def ecm(self):
         return [
-            Cloak('C1', 0.2),
+            Cloak('C1', 4),
         ]
 
 
@@ -111,7 +111,7 @@ class H2535(ShipType):
     @property
     def ecm(self):
         return [
-            Cloak('Cloak', 0.2),
+            Cloak('Cloak', 4),
         ]
 
 
@@ -131,8 +131,8 @@ class H2527(ShipType):
     @property
     def weapons(self):
         return [
-            Laser('L1', 180),
-            Laser('L2', 180),
+            Laser('L1', 180, 60),
+            Laser('L2', 180, 60),
             Launcher('R1', Rocket(), 8),
             Launcher('R2', Rocket(), 8),
             Gravscan('G')
@@ -147,7 +147,7 @@ class H2527(ShipType):
     @property
     def ecm(self):
         return [
-            Cloak('Cloak', 0.2),
+            Cloak('Cloak', 4),
         ]
 
 

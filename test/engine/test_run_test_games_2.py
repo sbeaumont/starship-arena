@@ -45,6 +45,10 @@ class MockGameDirectory(object):
     def clean(self):
         pass
 
+    def file_exists(self, name) -> bool:
+        """Nothing is on disk here, so there is no terrain file either."""
+        return False
+
     @property
     def init_file(self) -> str:
         return 'mock_init_file_name'

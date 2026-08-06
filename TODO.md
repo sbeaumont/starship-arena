@@ -6,11 +6,25 @@ each section.
 ## Next, in order
 
 1. **The leaderboard**, the last piece of player management still open.
-2. **Relative power of the ship types**, before a Five Faction War is played for real.
+2. **Ship balance**, before a Five Faction War is played for real. Assessed in
+   [docs/ship-balance.md](docs/ship-balance.md), planned in
+   [plans/ship-balance-plan.md](plans/ship-balance-plan.md). Steps 1 to 6 and 8 are done. What is
+   left, in order: the Gunner, disabling, then the registry rewrite.
 3. **Large objects**: solid bodies and crossing them (see Engine).
 4. **Scenario builder**, now that a scenario is a real thing with a home.
 
 ## Game UI (`game-ui/`)
+
+- [x] **Boost and Power have controls**, in the tick panel under the weapons. `ComponentStatus`
+      now carries the collection the machine keeps a component in and the inputs an order to it
+      needs, so the row that already showed shield strengths can be ordered from.
+
+      The verb stayed out of the engine and out of the DTO. A component says what an order needs,
+      never which order it is ([ADR 0004](docs/adr/0004-components-own-their-parameters.md)), and
+      the selector already addresses it exactly, so nothing in the engine was missing. The browser
+      maps `defense` to Boost and `ecm` to Power, which is the game's language a player types
+      anyway. Reading a plan back matches on the selector rather than the verb, so a hand-written
+      `B Shields W 50` keeps its spelling.
 
 - [x] **Players are told when a round has been processed**, by polling `/pulse` every 20 seconds
       while the tab is visible. Push stays out on this host: SSE or a WebSocket holds a worker
@@ -30,8 +44,24 @@ each section.
       anyone who did not send one, which reads as "no orders arrived in time".
 - [x] **Rename "Send all" to "Save all".** It saves orders; it does not send them anywhere. With
       Ready as a separate flag the distinction starts to matter.
-- [ ] **A new manual.** The current one is generated from `manual.html` and badly out of date.
-      Decide whether it stays a PDF or becomes a page in the game UI.
+- [ ] **Draw solid bodies.** Circles to start with, in muted colours: terrain should read as
+      something to fly around rather than compete with contacts and blast circles for attention.
+      A body's radius is a real distance, so it belongs in the world layer and scales with zoom,
+      the way `plan.explosions` already draws with `r={e.radius}` and `stroke-width={cam.upp}`.
+      More complicated shapes are coming (a large station, a boss), so the radius comes from the
+      API and never from a constant in the browser, and the day a body stops being round it
+      describes its own outline rather than the map learning a list of them.
+      Bodies are terrain and probably public (see Engine), so they are not contacts built from
+      scans and want their own collection on `PlayerPlan`, present every round whether anything
+      scanned them or not.
+- [ ] **A new manual.** `manual.html` describes the old UI and is out of date throughout, so it
+      wants rewriting rather than correcting. Decide whether it stays a PDF or becomes a page in
+      the game UI.
+
+      Two parts of it should not be prose at all. The order language is written down in
+      [docs/orders.md](docs/orders.md) and the verbs are in `COMMAND_WORDS`, so the command
+      reference can be generated the way the ships reference already is. What is left is the
+      part that has to be written: what a round is, how planning works, and what wins a fight.
 - [ ] **Time-scrubbing within a round.** Round-by-round works; stepping tick by tick does not.
       Snapshots now hold per-tick component state as well as position, so a slider over
       `TickState` would show shields dropping and ammo going down, not just movement.
@@ -46,10 +76,12 @@ each section.
       is the same. Decide whether it is everything you own or only what is still flying.
 - [ ] **Spectator view.** Whole game, tick by tick, with short tails (about three ticks) instead
       of a full round's trail. Wants a player-less view keyed on the game rather than a player.
-- [ ] **Boost / Activation / Replenish controls.** All three are now describable through
-      `Parameter.kind` (`shield_boost`, `on_off`, no inputs), so they can follow the same
-      pattern as firing: click a tick, pick the component, get the right control. Shields are
-      **ship-relative** (N is the front ±45), so draw the quadrants rotated to the heading.
+- [ ] **Replenish has no control.** It addresses the ship rather than a component, so it takes
+      neither a selector nor parameters and none of the component machinery fits it. It belongs
+      with turn and throttle, not in the tick panel's component list.
+- [ ] **Shield quadrants are not drawn.** Boost is orderable now, but a player picks N/E/S/W off
+      a list. Shields are **ship-relative** (N is the front ±45), so the map could draw the four
+      faces rotated to the heading at that tick and let the quadrant be clicked.
 - [ ] **Speed/throttle drag feel.** Dragging a node sets turn *and* speed at once; the speed
       half still feels rough. Oldest outstanding UI note.
 - [ ] **Mine vectors are approximate.** A mine launches at the ship's speed *less*
@@ -76,16 +108,69 @@ each section.
 
 ## Engine
 
+- [ ] **A Gunner, and the Engage standing order.** Lasers are unaimable, not weak. Orders are
+      plotted ten ticks ahead against a captain choosing their own course, so nobody can know they
+      will be 15 units away on tick 7. A missile forgives a bad prediction because it steers; a
+      laser does not. Steep falloff was tried before and the fix was to raise the numbers, which
+      is how one number came to mean both damage and reach.
+
+      The answer is a crewman. A `Gunner` acts in `decide`, after everything has scanned, so it
+      fires on where things actually are. `Engage <gunner> <weapon> <target> <within> <shots>`
+      holds until changed, and the player's job becomes positioning rather than tick-prediction.
+
+      `Gunner` and `Pilot` exist and no ship type carries either: `control` is empty everywhere.
+      Three things to fix on the way. It queues for `tick.tick + 1`, which reintroduces the lag
+      this is meant to remove. And it has both ADR 0019 violations that ADR names: `isinstance`
+      to find its lasers, and `isinstance` to sort targets, where `category_name` already answers
+      the second.
+
+      Open: whether the gunner holds one engagement or one per gun. One per gunner makes the
+      number of fire-control stations a hull stat, which is free variety.
+
+- [ ] **A disabling hit.** A hit either takes something apart or stops it working.
+      `Component.status_effects`, a set, with `DISABLED` its first member. On the component so
+      parts go out one at a time, mirroring `ObjectInSpace.tags`. Not `conditions`:
+      `TickCondition` already means a ship's readouts and the UI renders it as `hull 90 · bat 40`.
+
+      `DamageType.Laser` exists now, so ordnance can answer a laser hit by disabling itself as
+      well as dying, and its warhead does not fire. A ship answers the same hit as plain damage.
+      Nothing models "disabling" as a kind of harm: it is what a missile decides a laser means.
+      Disabled ordnance disappears rather than drifting, because clutter costs more than the fog
+      of war would buy.
+
+      This is what lets point defence be short-ranged. Hits land simultaneously and kills resolve
+      at the end of a tick, so shooting a missile in the tick it detonates does not stop it.
+      Without disabling an intercept must happen a tick early, which puts a floor of 40 to 80
+      under a defensive mount and makes it the longest gun on the ship.
+
+      Costs: detonation has to leave `decide` for a resolution pass, following
+      `GameRound.detect_collision`'s detect-then-apply shape, and that pass must loop or chain
+      detonation stops at one link. No duration on effects yet; the first that needs one is EMP
+      disabling a ship's components, and a duration is a value, so it stops being a marker.
+      Reasoning in [plans/ship-balance-plan.md](plans/ship-balance-plan.md).
+
+- [ ] **`number_of_inputs` is dead machinery.** `BoostQuadrantParameter` was the only parameter
+      consuming more than one word, and splitting it into a quadrant and an amount removed the
+      last user. Four lines in `ComponentCommand._init_params` and a property on `Parameter` now
+      serve a case that cannot arise. Delete, or keep deliberately as an extension point.
+
 - [ ] **Large objects, and crossing them.** Solid bodies with a radius, and movement that notices
       them. A tick is a teleport: `move()` translates the whole speed at once, so nothing between
       the endpoints exists. The primitive already exists: `ObjectInSpace.approach_fraction` answers
-      how far into the tick two paths closed to a given distance, and `position_at` turns that back
-      into a point. Warheads use both.
-      Static bodies first: everything moves in one loop, so ship-versus-ship collision would
-      depend on iteration order. Open: what a hit does (stop at the surface with damage by speed,
-      or worse), whether bodies are public knowledge (probably - terrain, not fog of war),
-      whether they block line of sight (big, separate), and where they are placed (`bodies.txt`
-      until the scenario builder owns world objects). Gravity is a different feature; park it.
+      how far into the tick two legs first closed to a given distance, which is a body's surface,
+      and `position_at` turns that back into a point. Warheads ask the other question,
+      `closest_fraction`, because a proximity fuse wants the shortest gap rather than the first
+      contact.
+      What a hit does is settled in [ADR 0023](docs/adr/0023-a-collision-transmits-an-impulse.md):
+      a collision transmits an impulse and the object receiving it decides. Static bodies first:
+      everything moves in one loop, so ship-versus-ship collision would depend on iteration order.
+      Still open: whether bodies are public knowledge (probably - terrain, not fog of war), and
+      where they are placed (`bodies.txt` until the scenario builder owns world objects). Gravity
+      is a different feature; park it.
+- [ ] **Solid bodies block line of sight.** Deliberately left out of ADR 0023 so the first cut
+      stays movement only. A planet you can shoot straight through is wrong, and hiding behind one
+      is worth having. Touches scanning, lasers and the blast loop in `Warhead.explode`, and the
+      game UI has to draw the shadow or players cannot plan around it.
 - [ ] **Processing order must not affect the outcome, and today it can.** Weapons fire in the
       post-move phase, so a missile launched this tick may or may not already be "in space" when
       something explodes, depending on where its launcher sat in the iteration. The common symptom:
@@ -246,6 +331,27 @@ is what it cost last time" prevents the re-proposal.
 ## Game features
 
 Ideas from the original readme, kept because they are still wanted.
+
+- [ ] **The registry rewrite: arcs, and what each race is for.** Two thirds of the fleet's weapons
+      and 64% of its round damage sit on 360 degree arcs, and only three widths exist in the whole
+      registry. Narrowing them is the largest source of variety available, and it makes `max_turn`
+      decide fights: bringing a 30 degree arc to bear is 9 ticks for a Swarm and 4 for a Tiger.
+
+      The races are settled. Reptilian ambushes with the best cloak and lasers as the alpha
+      strike, and lays no mines. Feline raids, fast and agile, cloaked but less so, carrying a few
+      mines to place. Insectoid holds ground with broadsides and fields, because at 20 to 30 turn
+      it cannot have narrow arcs at all. Human does attrition, owning EMP and nanocyte mines.
+      Amphibian is standoff, which needs the payload airframe to vary: every missile in the game
+      currently dies at 900 units. Every hull keeps a mine tube and a rocket tube.
+
+      Placeholder values to replace, all uniform where they should differ: every laser on reach
+      60, every cloak on `half_power` 4 where Reptilian wants 3 and Feline 6, and `heat_per_shot`
+      a class attribute so every laser in the game fires 8 times a round.
+
+      Wants an `arc(centre, width)` helper next to `in_firing_arc`, so a broadside reads as
+      `arc(90, 60)` rather than `(60, 120)`. Do it after the Gunner: how hard a laser hits can
+      only be judged once it is known how often it gets to hit at all.
+      Detail in [plans/ship-balance-plan.md](plans/ship-balance-plan.md).
 
 - [ ] **See explosions from far away, or from anywhere.** You would know where the fighting is
       without knowing what is in it, which gives a fleet a reason to move toward something and

@@ -9,8 +9,10 @@ the same thing: what the pieces are, and why they're that way rather than some o
 | [glossary.md](glossary.md) | Round, tick, faction, contact, commander, director, order |
 | [information.md](information.md) | The six places a fact can live, how to pick one, and every element classified |
 | [data.md](data.md) | The game directory, plan files versus saved state, and every file's format |
+| [orders.md](orders.md) | The order language: its grammar, who owns which part, what is checked |
 | [deployment.md](deployment.md) | One WSGI application, the host's constraints, the build step |
 | [development.md](development.md) | Running, testing, regenerating game data |
+| [ship-balance.md](ship-balance.md) | What the hulls are worth against each other, and which mechanics decide fights |
 | [writing.md](writing.md) | Prose style, and how sparse comments in code should be |
 | [adr/](adr/) | One architecture decision per file, including what was rejected |
 

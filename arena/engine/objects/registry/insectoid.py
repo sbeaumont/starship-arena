@@ -30,7 +30,7 @@ class I2544(ShipType):
     @property
     def weapons(self):
         return [
-            Laser('L1', 100),
+            Laser('L1', 100, 60),
             Launcher('SA1', Splinter(), 5),
             Launcher('SF1', Splinter(), 5, (270, 90)),
             Launcher('SF2', Splinter(), 5, (270, 90)),
@@ -63,7 +63,7 @@ class I2552(ShipType):
     @property
     def weapons(self):
         return [
-            Laser('L1', 110),
+            Laser('L1', 110, 60),
             Launcher('S1', Splinter(), 10),
             Launcher('SF1', Splinter(), 10, (315, 45)),
             Launcher('SF2', Splinter(), 5, (270, 90)),
@@ -97,7 +97,7 @@ class I2526(ShipType):
     @property
     def weapons(self):
         return [
-            Laser('L1', 150, (315, 45)),
+            Laser('L1', 150, 60, (315, 45)),
             Launcher('S1', Splinter(), 6, (315, 45)),
             Launcher('S2', Splinter(), 6, (315, 45)),
             Launcher('S3', Splinter(), 6, (315, 45)),

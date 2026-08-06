@@ -11,9 +11,7 @@ from abc import ABC, abstractmethod
 
 from arena.engine.history import Tick
 from arena.engine.world import World
-from arena.engine.objects.objectinspace import ObjectInSpace
 from arena.engine.objects.ship import AccelerationParameter, TurnParameter
-from arena.engine.objects.components.defense import Shields
 from arena.engine.objects.component import ComponentSelectorParameter
 from arena.engine.objects.event import InternalEvent
 
@@ -69,16 +67,10 @@ class Commandable(Protocol):
     def turn(self, angle: int):
         ...
 
-    def fire(self, weapon_name: str, params: dict, world: World, tick: Tick) -> ObjectInSpace:
-        ...
-
     def try_replenish(self, world: World):
         ...
 
     def scan(self, world: World):
-        ...
-
-    def activation(self, name: str, on_off: bool):
         ...
 
     def add_event(self, event):
@@ -175,7 +167,7 @@ class ComponentCommand(Command):
         nr_expected_parms = sum(p.number_of_inputs for p in expected_parms)
         input_params = params[1:]
 
-        if len(input_params) != len(expected_parms):
+        if len(input_params) != nr_expected_parms:
             self.feedback.append(f"Expected {nr_expected_parms} parameters, got {len(input_params)}")
             return False
 
@@ -215,29 +207,18 @@ class ActivationCommand(ComponentCommand):
 
     def execute(self, tick: Tick):
         super().execute(tick)
-        self.target.activation(self.selector, self.params['on/off'].value)
+        on_off, = (p.value for p in self.params.values())
+        self.selector.value.activation(on_off)
 
 
-class BoostCommand(Command):
+class BoostCommand(ComponentCommand):
+    """Hands over energy once, where Power sets a draw that holds."""
     key = 'boost'
-
-    def _init_params(self, params: list) -> bool:
-        for d in self.target.defense:
-            if isinstance(d, Shields):
-                self.component = d
-                p = d.expected_parameters[0]
-                p.input(params)
-                self.params['boost'] = p
-                break
-        if 'boost' not in self.params:
-            self.feedback.append(f"Can not find a Shield component.")
-            return False
-        return True
 
     def execute(self, tick: Tick):
         super().execute(tick)
-        quadrant, amount = self.params['boost'].value
-        self.component.boost(quadrant, int(amount))
+        quadrant, amount = (p.value for p in self.params.values())
+        self.selector.value.boost(quadrant, amount)
 
 
 class FireCommand(ComponentCommand):
@@ -249,6 +230,16 @@ class FireCommand(ComponentCommand):
         fired_object = weapon.fire(self.params, self.world, tick)
         if fired_object:
             self.world.add(fired_object)
+
+
+class PowerCommand(ComponentCommand):
+    """Sets a draw that holds until changed, where Boost hands over energy once."""
+    key = 'power'
+
+    def execute(self, tick: Tick):
+        super().execute(tick)
+        power, = (p.value for p in self.params.values())
+        self.selector.value.power_up(power)
 
 
 class ReplenishCommand(Command):
@@ -332,6 +323,8 @@ COMMAND_WORDS = {
     'REPLENISH': ('replenish', {}),
     'B': ('boost', {}),
     'BOOST': ('boost', {}),
+    'P': ('power', {}),
+    'POWER': ('power', {}),
     'ACT': ('activation', {}),
     'ACTIVATE': ('activation', {}),
     'ACTIVATION': ('activation', {}),
@@ -376,7 +369,7 @@ class CommandSet(object):
                 self.turning = cmd
             case 'fire':
                 self.weapons[cmd.selector.value] = cmd
-            case 'activation':
+            case 'activation' | 'power':
                 self.pre_move.append(cmd)
             case 'replenish' | 'boost':
                 self.post_move.append(cmd)

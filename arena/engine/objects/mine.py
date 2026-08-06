@@ -31,9 +31,8 @@ class Mine(MachineInSpace):
     # ---------------------------------------------------------------------- COMMANDS
 
     def take_damage_from(self, hitevent: HitEvent):
-        # Any damage will destroy a mine
-        if hitevent.amount > 0:
-            self.hull = 0
+        """Hull is what a mine can absorb, which is how it tells a drift from a collision."""
+        self.hull -= hitevent.amount
 
     # ---------------------------------------------------------------------- HISTORY INTERFACE
 

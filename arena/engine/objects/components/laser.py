@@ -1,19 +1,23 @@
 from arena.engine.history import Tick
 from arena.engine.world import World
 from arena.engine.objects.components.weapon import Weapon
-from arena.engine.objects.event import HitEvent, DrawType
+from arena.engine.objects.event import DamageType, HitEvent, DrawType
 from arena.engine.objects.component import ObjectByNameParameter
 
 
 class Laser(Weapon):
-    """A laser that directly fires at another named ship."""
+    """A laser that directly fires at another named ship.
+
+    The short-range weapon: `damage` is what it does at nothing, `reach` is where that has fallen
+    to nothing, and it drops off squared in between. See docs/ship-balance.md."""
     max_temperature = 100
     energy_per_shot = 5
     heat_per_shot = 20
 
-    def __init__(self, name: str, strength: int, firing_arc=None):
+    def __init__(self, name: str, damage: int, reach: int, firing_arc=None):
         super().__init__(name, firing_arc)
-        self.strength = strength
+        self.damage = damage
+        self.reach = reach
         self.temperature = 0
 
     # ---------------------------------------------------------------------- QUERIES
@@ -33,9 +37,13 @@ class Laser(Weapon):
                 and self.damage_to(ois))
 
     def damage_to(self, target):
-        """Damage reduces by 1 per distance."""
-        damage = round(self.strength - self.container.distance_to(target.pos))
-        return damage if damage >= 0 else 0
+        """Squared falloff to nothing at `reach`.
+
+        Past reach the square would climb again, so out of range is answered before it is used."""
+        distance = self.container.distance_to(target.pos)
+        if distance >= self.reach:
+            return 0
+        return round(self.damage * (1 - distance / self.reach) ** 2)
 
     @property
     def expected_parameters(self):
@@ -55,11 +63,11 @@ class Laser(Weapon):
             return None
 
         if self.container.can_scan(target_ship) and not self.damage_to(target_ship):
-            self.add_internal_event(f"{self.name} strength too low: no damage at this distance.")
+            self.add_internal_event(f"{self.name} is out of reach at this distance: no damage.")
             return None
 
         if target_ship and self.can_fire_at(target_ship):
-            hit_event = HitEvent((self.container.pos, target_ship.pos), 'Laser', self.owner, target_ship, self.damage_to(target_ship), DrawType.Line)
+            hit_event = HitEvent((self.container.pos, target_ship.pos), DamageType.Laser, self.owner, target_ship, self.damage_to(target_ship), DrawType.Line)
             target_ship.take_damage_from(hit_event)
             self.owner.add_event(hit_event)
         else:
@@ -90,4 +98,4 @@ class Laser(Weapon):
     @property
     def description(self):
         fa = self.firing_arc if self.firing_arc else "(360)"
-        return f"{self.__class__.__name__} ({self.strength} {fa})"
+        return f"{self.__class__.__name__} ({self.damage} to {self.reach} {fa})"

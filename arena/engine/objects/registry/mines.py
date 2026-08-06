@@ -9,6 +9,9 @@ class MineType(MachineType):
     slow_down_rate = 5
     energy_per_tick = 1
     max_speed = 0
+    # Heavy for its size, so what it hits is felt. A casing with hull to spare rides out a drift
+    # and goes off at anything faster.
+    mass = 0.5
 
     def create(self, name: str, vector: Vector, owner=None, tick: Tick = TICK_ZERO):
         vector = vector.accelerate(-self.slow_down_rate)
@@ -24,7 +27,7 @@ class SplinterMine(MineType):
     base_type = Mine
     max_battery = 50
     start_battery = 50
-    max_hull = 1
+    max_hull = 5
 
     @property
     def weapons(self):
@@ -38,7 +41,7 @@ class NanocyteMine(MineType):
     base_type = Mine
     max_battery = 50
     start_battery = 50
-    max_hull = 1
+    max_hull = 5
 
     @property
     def weapons(self):

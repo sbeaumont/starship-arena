@@ -8,7 +8,9 @@ import os
 import pkgutil
 from arena.engine.history import Tick
 from arena.engine.objects.objectinspace import Point, Vector
+from arena.engine.objects.body import BodyType
 from arena.engine.objects.ship import ShipType
+from arena.engine.objects.starbase import StarbaseType
 
 # Force loading of every package under ois.registry so its subclasses can be found for the manual.
 # Anchored to this file rather than to the working directory: a host picks that for itself, and
@@ -28,14 +30,28 @@ def _subclasses_recursive(cls):
     return direct + indirect
 
 
-all_ship_types = {st.__name__: st() for st in _subclasses_recursive(ShipType)}
+def _models(root, *filed_elsewhere) -> dict:
+    """Every model under root, ready to build from, keyed by type name.
+
+    A family with a registry of its own is left out of its parent's, so a starbase is a starbase
+    and never also a ship. That is what saves every caller from asking about base classes."""
+    skip = {c for other in filed_elsewhere for c in [other, *_subclasses_recursive(other)]}
+    return {t.__name__: t() for t in _subclasses_recursive(root) if t not in skip}
+
+
+all_starbase_types = _models(StarbaseType)
+all_ship_types = _models(ShipType, StarbaseType)
+all_body_types = _models(BodyType)
+
+# What a director fields, as against the terrain a game is played over. Both are models and both
+# are spawned by name, but only one of them has a hull to describe or a player to fly it.
+all_fielded_types = all_ship_types | all_starbase_types
+all_types = all_fielded_types | all_body_types
 
 
 def spawn(type_name: str, name: str, vector: Vector, **kwargs):
-    """Put a new object into space, facing and moving as the vector says.
-
-    Only ship types are spawnable so far; this is where that widens."""
-    type_instance = all_ship_types[type_name]
+    """Put a new object into space, facing and moving as the vector says."""
+    type_instance = all_types[type_name]
     return type_instance.base_type(name, type_instance, vector, **kwargs)
 
 

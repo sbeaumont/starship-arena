@@ -1,3 +1,5 @@
+from math import sqrt
+
 from arena.engine.history import Tick
 from arena.engine.world import World
 from arena.engine.objects.components.weapon import Weapon
@@ -9,36 +11,42 @@ from arena.cfg import max_scan
 
 class Gravscan(Weapon):
     """Active scanner that is 'fired' in a specific direction."""
+
+    narrowest_cone = 30
+
     def __init__(self, name: str):
         super().__init__(name)
         self.strength = 100
         self.energy_per_pulse = 10
-        self.default_scan_cone = 180
-        self.max_scan_distance = max_scan(500)
-        self.min_scan_distance = max_scan(50)
-        self.active = False
+        self.max_scan_distance = max_scan(200)
         self.default_firing_arc = self.firing_arc
 
     @property
     def expected_parameters(self):
         return [DirectionParameter('direction', self),
-                NumberInRangeParameter('scan cone', self, (30, 360))]
+                NumberInRangeParameter('scan cone', self, (self.narrowest_cone, 360))]
+
+    def reach_of(self, scan_cone: int) -> int:
+        """How far a pulse that wide gets: see docs/ship-balance.md on pointing it."""
+        return int(self.max_scan_distance * sqrt(self.narrowest_cone / scan_cone))
 
     def fire(self, params: dict, world: World, tick: Tick):
         direction = params['direction'].value
         scan_cone = params['scan cone'].value
 
         if self.container.battery >= self.energy_per_pulse:
-            self.firing_arc = (direction - scan_cone // 2, direction + scan_cone // 2)
-            coefficient = (self.max_scan_distance - self.min_scan_distance) / 330
-            scan_distance = int(self.max_scan_distance - (coefficient * (scan_cone - 30)))
+            # Both ends folded into the circle, or an arc straddling the bow sweeps only its
+            # starboard half.
+            self.firing_arc = ((direction - scan_cone // 2) % 360,
+                               (direction + scan_cone // 2) % 360)
+            scan_distance = self.reach_of(scan_cone)
             self.container.battery -= self.energy_per_pulse
             self.add_internal_event(f"Gravscan {self.name} used {self.energy_per_pulse} energy.")
             self.add_internal_event(f"Gravscan {self.name} activated (width {scan_cone}, distance {scan_distance}).")
             pings = 0
             for ois in world.objects.values():
                 if self.in_firing_arc(self.container.direction_to(ois.pos)):
-                    if ois.modify_scan_range(self.container.distance_to(ois.pos)) <= scan_distance:
+                    if self.container.distance_to(ois.pos) <= ois.modify_scan_range(scan_distance):
                         pings += 1
                         self.container.add_event(ScanEvent.create_scan(self.container, ois))
             self.add_internal_event(f"Gravscan got {pings} pings.")

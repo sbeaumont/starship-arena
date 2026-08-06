@@ -31,7 +31,7 @@ class R2545(ShipType):
     @property
     def weapons(self):
         return [
-            Laser('L1', 130),
+            Laser('L1', 130, 60),
             Launcher('S1', Splinter(), 10),
             Launcher('N1', NanoMissile(), 10),
             Launcher('R1', Rocket(), 8),
@@ -63,7 +63,7 @@ class R2525(ShipType):
     @property
     def weapons(self):
         return [
-            Laser('L1', 120),
+            Laser('L1', 120, 60),
             Launcher('S1', Splinter(), 5),
             Launcher('N1', NanoMissile(), 5),
             Launcher('R1', Rocket(), 10),
@@ -74,7 +74,7 @@ class R2525(ShipType):
     @property
     def ecm(self):
         return [
-            Cloak('Cloak', 0.20),
+            Cloak('Cloak', 4),
         ]
 
 
@@ -112,7 +112,7 @@ class R2531(ShipType):
     @property
     def ecm(self):
         return [
-            Cloak('Cloak', 0.20),
+            Cloak('Cloak', 4),
         ]
 
 
@@ -138,7 +138,7 @@ class R2551(ShipType):
     @property
     def weapons(self):
         return [
-            Laser('L1', 80),
+            Laser('L1', 80, 60),
             Launcher('S1', Splinter(), 4),
             Launcher('S2', Splinter(), 4),
             Launcher('N1', NanoMissile(), 5),
