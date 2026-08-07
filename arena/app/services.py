@@ -9,8 +9,8 @@ import shutil
 from pathlib import Path
 
 from arena.cfg import (ADMIN_UI_URL, ARCHIVE_DIR_NAME, COMMANDS_DIR, GAME_DATA_DIR,
-                       INIT_FILE_NAME, REGISTERING_DIR_NAME, REGISTRATION_FILE_NAME,
-                       SCENARIO_FILE_NAME, STATUS_FILE_TEMPLATE)
+                       INIT_FILE_NAME, MANUAL_FILENAME, REGISTERING_DIR_NAME,
+                       REGISTRATION_FILE_NAME, SCENARIO_FILE_NAME, STATUS_FILE_TEMPLATE)
 from arena.engine.admin import GameSetup
 from arena.engine.command import parse_commands
 from arena.engine.game import Game
@@ -207,6 +207,10 @@ class GameService(_EngineAccess):
         return [ShipTypeInfo(type_name=st.type_name, name=st.name, category=st.category,
                              specs=self._specs(st))
                 for st in sorted(all_fielded_types.values(), key=lambda t: t.name)]
+
+    def manual(self) -> bytes:
+        """The manual as the CLI last built it. Bytes, so no interface learns where it is kept."""
+        return Path(MANUAL_FILENAME).read_bytes()
 
     def list_ships(self, game: str) -> list[str]:
         return [s.name for s in Game(self._gd(game)).player_ships]

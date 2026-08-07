@@ -96,6 +96,11 @@ def list_ship_types() -> list[ShipTypeInfo]:
     return service.list_ship_types()
 
 
+@router.get("/manual")
+def manual() -> Response:
+    return Response(content=service.manual(), media_type="application/pdf")
+
+
 @router.get("/open")
 def open_games(me: Player = Depends(require_login)) -> list[OpenGame]:
     return service.open_games(me.name)

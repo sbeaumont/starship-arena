@@ -95,6 +95,7 @@
       {/if}
       <button type="button" onclick={() => onPage("ships")}>Ships</button>
       <button type="button" onclick={() => onPage("lore")}>Lore</button>
+      <button type="button" onclick={() => window.open("/api/game/manual", "_blank")}>Manual</button>
       <button type="button" onclick={onSignOut}>Sign out</button>
     </nav>
   </header>
