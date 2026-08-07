@@ -45,13 +45,9 @@ class FiveFactionWar:
             raise ValueError("Nobody has registered.")
 
         dealt = self._deal_players(entries, rng)
-        # Everyone commands at least one ship and nobody gets more than they asked for, so the
-        # level a faction can be held to is bounded on both sides.
-        target = max(max(len(m) for m in dealt.values()),
-                     min(sum(e.ships for e in m) for m in dealt.values()))
         return [record
                 for faction, members in dealt.items()
-                for record in self._faction_records(faction, members, target, rng)]
+                for record in self._faction_records(faction, members)]
 
     def _deal_players(self, entries: list[Registration], rng) -> dict[str, list[Registration]]:
         """Honour what the director assigned, then spread the rest to even the head count.
@@ -70,27 +66,16 @@ class FiveFactionWar:
         return {faction: members for faction, members in dealt.items() if members}
 
     @staticmethod
-    def _granted(members: list[Registration], target: int, rng) -> dict[str, int]:
-        granted = {e.player: 1 for e in members}
-        extras = [e.player for e in members for _ in range(e.ships - 1)]
-        rng.shuffle(extras)
-        total = len(members)
-        for player in extras[:max(0, target - total)]:
-            granted[player] += 1
-        return granted
-
-    def _faction_records(self, faction: str, members: list[Registration], target: int, rng) -> list[dict]:
-        granted = self._granted(members, target, rng)
+    def _faction_records(faction: str, members: list[Registration]) -> list[dict]:
+        """Everybody flies every ship they registered. Balancing the factions is the director's."""
         hulls = FACTIONS[faction]
-        records, flown = [], 0
+        records = []
         for entry in members:
-            for nth in range(granted[entry.player]):
-                name = entry.names[nth] if nth < len(entry.names) else f"{faction}-{flown + 1}"
-                records.append({'name': name, 'type': hulls[flown % len(hulls)],
+            for name in entry.names:
+                records.append({'name': name, 'type': hulls[len(records) % len(hulls)],
                                 'faction': faction, 'player': entry.player})
-                flown += 1
         # Members are already in the shuffled deal order, so a tie on ship count breaks randomly.
-        commander = min(members, key=lambda e: granted[e.player]).player
+        commander = min(members, key=lambda e: e.ships).player
         records.append({'name': f"{faction}-Base", 'type': STARBASE,
                         'faction': faction, 'player': commander})
         return records

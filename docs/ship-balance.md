@@ -347,7 +347,7 @@ missile that can't turn tight enough, something.
 
 ## Deal order in the Five Faction War
 
-`FiveFactionWar._faction_records` deals `hulls[flown % len(hulls)]`, so the list order in
+`FiveFactionWar._faction_records` deals the hulls round robin, so the list order in
 `arena/app/scenarios/five_faction_war.py` decides who gets what first.
 
 | faction | deal order | first | avg | ordering |

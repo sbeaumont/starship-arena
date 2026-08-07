@@ -97,25 +97,18 @@ class TestDealing(TestCase):
         records = self.deal(entries(*[f'P{n}' for n in range(20)]))
         self.assertEqual([4] * 5, sorted(self.ships_per_faction(records).values()))
 
-    def test_extra_ships_are_levelled_down_to_what_every_faction_can_field(self):
-        # Menno's faction can never field more than one, so that is the level Rik is held to.
-        people = entries(('Rik', 3), ('Menno', 1))
-        records = self.deal(self.over(people, 'Human', 'Feline'))
-        self.assertEqual([1, 1], sorted(self.ships_per_faction(records).values()))
-
-    def test_nobody_gets_more_than_they_asked_for(self):
+    def test_everybody_gets_every_ship_they_registered(self):
         people = entries(('Rik', 3), ('Menno', 1), ('Serge', 2), ('Ilona', 1))
         records = self.deal(self.over(people, 'Human', 'Feline'))
         got = Counter(r['player'] for r in records if r['type'] != STARBASE)
         for entry in people:
-            self.assertLessEqual(got[entry.player], entry.ships)
+            self.assertEqual(entry.ships, got[entry.player])
 
-    def test_a_faction_that_asked_for_too_little_comes_up_short(self):
-        # The two-player faction sets the level at two, and one player cannot be levelled up to
-        # meet it without handing them a ship they never asked for.
-        people = entries('Rik', 'Menno', 'Serge')
+    def test_a_lopsided_faction_stays_lopsided(self):
+        # Rik's three are not cut back to what Menno's faction can field. The director balances.
+        people = entries(('Rik', 3), ('Menno', 1))
         records = self.deal(self.over(people, 'Human', 'Feline'))
-        self.assertEqual([1, 2], sorted(self.ships_per_faction(records).values()))
+        self.assertEqual([1, 3], sorted(self.ships_per_faction(records).values()))
 
     def test_faction_sizes_differ_by_at_most_one(self):
         records = self.deal(entries(*[f'P{n}' for n in range(13)]))
