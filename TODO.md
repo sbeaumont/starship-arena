@@ -70,10 +70,14 @@ each section.
       lines. What that costs: nothing tells a player what the log means when it quotes the order
       that ran. Worth a line if anyone asks.
 
-      Left over: **two screenshots**, `static/gfx/map-overview.png` and
-      `static/gfx/planning-tick.png`. The template references them and WeasyPrint logs an ERROR
-      per missing file, so a build says what is wanted. `example-turn.png` and
-      `command-interface.png` are the old UI and nothing points at them any more.
+      Illustrated with one shot, `static/gfx/game_ui.png`, which carries all three parts at once:
+      log, map with a selected joint, and that tick's order buttons. The image and its caption are
+      separate paragraphs because the shared `img` rule has no bottom margin and the caption
+      otherwise sits on the picture.
+
+      Four images in `static/gfx/` are now dead: `example-turn.png` and `command-interface.png`
+      are the old UI, `starfield.jpg` and `astronaut.jpeg` went with the per-round PDFs. Nothing
+      outside this file names any of them.
 
 - [x] **Friendly fire scored.** `HitEvent.can_score` compared factions with `is not`, and two
       ships whose faction came off separate lines of `ships.jsonl` hold equal strings that are not
