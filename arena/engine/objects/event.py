@@ -127,7 +127,7 @@ class HitEvent(Event):
     def can_score(self):
         """You don't score for hitting your own faction."""
         if self.target:
-            return self.source.owner.faction is not self.target.owner.faction
+            return self.source.owner.faction != self.target.owner.faction
         else:
             return True
 

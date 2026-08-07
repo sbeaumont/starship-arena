@@ -54,14 +54,43 @@ each section.
       a category name, so the day a body stops being round it describes its own outline and nothing
       in the browser has learned a list of shapes. `Contact.friendly` became `Contact.stance` on the
       way, because a bool could only say mine or theirs and a rock came out as theirs.
-- [ ] **A new manual.** `manual.html` describes the old UI and is out of date throughout, so it
-      wants rewriting rather than correcting. Decide whether it stays a PDF or becomes a page in
-      the game UI.
+- [x] **A new manual.** `manual.html` described the old UI and was wrong throughout, so it was
+      rewritten rather than corrected. It stays a PDF: the ship tables were already reflection
+      over the registry, and that is the half that goes stale on its own.
 
-      Two parts of it should not be prose at all. The order language is written down in
-      [docs/orders.md](docs/orders.md) and the verbs are in `COMMAND_WORDS`, so the command
-      reference can be generated the way the ships reference already is. What is left is the
-      part that has to be written: what a round is, how planning works, and what wins a fight.
+      Every rule in it was checked against the engine rather than against the old text. The ones
+      that had drifted furthest: hull scored 2 a point and scores 1, the laser was
+      `strength - distance` and is now squared falloff over damage and reach, the gravscan reached
+      6000 and reaches 1200, the cloak was a 20% on/off switch and is a power draw on a halving
+      curve, and the standstill free-turn is gone. Mines, terrain, firing arcs and fog of war were
+      missing entirely.
+
+      It describes **actions, not a language**. A player never types an order, so the manual names
+      Fire, Boost, Power and Replenish rather than teaching `<tick>: <verb>`, aliases and comment
+      lines. What that costs: nothing tells a player what the log means when it quotes the order
+      that ran. Worth a line if anyone asks.
+
+      Left over: **two screenshots**, `static/gfx/map-overview.png` and
+      `static/gfx/planning-tick.png`. The template references them and WeasyPrint logs an ERROR
+      per missing file, so a build says what is wanted. `example-turn.png` and
+      `command-interface.png` are the old UI and nothing points at them any more.
+
+- [x] **Friendly fire scored.** `HitEvent.can_score` compared factions with `is not`, and two
+      ships whose faction came off separate lines of `ships.jsonl` hold equal strings that are not
+      the same object. It answered True, so you scored for hitting your own faction. Now `!=`.
+- [x] **A gravscan's strength did nothing.** It was set to 100 in `__init__`, read only by
+      `description`, and reach came off a hardcoded `max_scan(200)`. Strength is now the scan
+      rating that `max_scan` multiplies, the same shape as a hull's, and `max_scan_distance` is
+      derived from it. Default 200, so every reach is exactly what it was: 1200 at a 30 degree
+      cone, 346 at 360.
+
+      It's a constructor argument now, the way `Laser`'s damage and reach are, so hulls can differ.
+      They all still take the default. **Varying it is a balance decision**, and
+      [docs/ship-balance.md](docs/ship-balance.md) already lists the identical gravscan on all 20
+      objects as sameyness worth spending.
+
+      Saved rounds from before this hold `strength = 100`, and the new property reads it rather
+      than the baked-in distance, so an old pickle scans 600 instead of 1200. Regenerate.
 - [ ] **Time-scrubbing within a round.** Round-by-round works; stepping tick by tick does not.
       Snapshots now hold per-tick component state as well as position, so a slider over
       `TickState` would show shields dropping and ammo going down, not just movement.

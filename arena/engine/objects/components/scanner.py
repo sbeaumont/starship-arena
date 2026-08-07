@@ -10,16 +10,24 @@ from arena.cfg import max_scan
 
 
 class Gravscan(Weapon):
-    """Active scanner that is 'fired' in a specific direction."""
+    """Active scanner that is 'fired' in a specific direction.
+
+    `strength` is a scan rating like a hull's, so it runs through `max_scan` the same way and the
+    two can be read against each other. A pulse has that much reach at its narrowest and spreads
+    the same energy thinner as the cone widens."""
 
     narrowest_cone = 30
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, strength: int = 200):
         super().__init__(name)
-        self.strength = 100
+        self.strength = strength
         self.energy_per_pulse = 10
-        self.max_scan_distance = max_scan(200)
         self.default_firing_arc = self.firing_arc
+
+    @property
+    def max_scan_distance(self) -> int:
+        """How far the narrowest pulse this can make reaches."""
+        return max_scan(self.strength)
 
     @property
     def expected_parameters(self):
