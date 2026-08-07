@@ -1,16 +1,12 @@
 # Deployment
 
-Starship Arena runs on PythonAnywhere as a single WSGI application. Deploying is `git pull` and a
-reload, which is what `arena-deploy.sh` does from a Bash console on the host. Nothing on the
-host's dashboard needs configuring, because every default in `arena/cfg.py` is the deployed one
-and every path is anchored to the repository rather than the working directory.
+Starship Arena runs on PythonAnywhere as a single WSGI application. Nothing on the host's
+dashboard needs configuring, because every default in `arena/cfg.py` is the deployed one and
+every path is anchored to the repository rather than the working directory.
 
-The reload goes through the host's API rather than the Web tab, so a deploy never leaves the
-shell. On a plan with SSH that makes it one line from your own machine:
-
-```
-ssh AgFx@ssh.pythonanywhere.com 'bash starship-arena/arena-deploy.sh'
-```
+Deploying is `git pull` and a reload, and `./arena-deploy.sh` does both from your own machine:
+the pull over ssh, the reload through the host's API. Neither half wants a browser, so a deploy
+never leaves the terminal.
 
 ## One application, three jobs
 
@@ -102,12 +98,18 @@ environment first and from `secret.py` second:
 ```python
 GAME_DATA_DIR = 'games'                                        # relative means inside the repo
 SITE_URL = 'https://starship-arena-agfx.pythonanywhere.com'    # the address players use
-PA_API_TOKEN = '...'                                           # only arena-deploy.sh wants this
+PA_API_TOKEN = '...'                                           # deploying: the reload call
+PA_SSH_KEYFILE = '~/.ssh/id_pa_ssh'                            # deploying: the pull
 ```
 
-The first two are `arena/cfg.py`. `PA_API_TOKEN` is the odd one out: no application code reads
-it, only the deploy script, and a console on the host has the same token in `$API_TOKEN` already
-— so the host's own copy of `secret.py` can leave it out.
+The first two are `arena/cfg.py`. The `PA_` pair is the odd one out: no application code reads
+them, only `arena-deploy.sh`, and only on the machine you deploy *from*. The host's own copy of
+`secret.py` never needs either.
+
+`PA_SSH_KEYFILE` is optional, and naming it does one thing — it pins the pull to that key with
+`IdentitiesOnly`, so ssh stops offering every other key you own and hitting the server's limit on
+attempts before it gets to the right one. A `Host` entry in `~/.ssh/config` settles the same
+question; leave the setting out if you have one.
 
 `GAME_DATA_DIR` must never use `os.path.abspath()`. That resolves against the working directory,
 which the host picks for itself, and a relative value is already anchored to the repository.
