@@ -329,10 +329,23 @@
     return nodes;
   }
 
+  // What a faction mate has on file, read the same way but never written back. A mate who has
+  // saved nothing has no plan to show, which is the difference from your own ships: those
+  // always have one, because an empty plan is what you start from.
+  const allyOrders = $derived.by(() => {
+    const out = {};
+    if (plan) {
+      for (const s of plan.ships) if (!s.owned && s.commands.length) out[s.name] = parseOrders(s.commands, s);
+    }
+    return out;
+  });
+
+  const planOf = (s) => (s.owned ? orders[s.name] : allyOrders[s.name]);
+
   const chains = $derived.by(() => {
     const out = {};
     if (!plan) return out;
-    for (const s of ownShips) { const o = orders[s.name]; if (o) out[s.name] = simulate(s, o); }
+    for (const s of plan.ships) { const o = planOf(s); if (o) out[s.name] = simulate(s, o); }
     return out;
   });
 
@@ -440,13 +453,13 @@
     saveMsg = "";
   }
 
-  // Every planned shot of every ship you command, so a course and its firing read together
-  // whether or not that ship is the one being planned.
+  // Every planned shot the faction has on file, so a course and its firing read together
+  // whether or not that ship is the one being planned, and whoever commands it.
   const shots = $derived.by(() => {
     if (!plan) return [];
     const out = [];
-    for (const ship of ownShips) {
-      const o = orders[ship.name], chain = chains[ship.name];
+    for (const ship of plan.ships) {
+      const o = planOf(ship), chain = chains[ship.name];
       if (!o || !chain) continue;
       const byName = Object.fromEntries(ship.weapons.map((w) => [w.name, w]));
       const mine = ship.name === selected;
@@ -526,8 +539,8 @@
   const cones = $derived.by(() => {
     if (!plan) return [];
     const out = [];
-    for (const ship of ownShips) {
-      const o = orders[ship.name], chain = chains[ship.name];
+    for (const ship of plan.ships) {
+      const o = planOf(ship), chain = chains[ship.name];
       if (!o || !chain) continue;
       const byName = Object.fromEntries(ship.weapons.map((w) => [w.name, w]));
       const mine = ship.name === selected;
@@ -1053,17 +1066,17 @@
           {/if}
 
           {#if showPaths}
-            {#each ownShips.filter(canMove) as s (s.name)}
+            {#each plan.ships.filter(canMove) as s (s.name)}
               {#if chains[s.name]}
                 {@const isSel = s.name === selected}
-                <polyline class="course" class:sel={isSel}
+                <polyline class="course" class:sel={isSel} class:ally={!s.owned}
                           points={viewPath(chains[s.name])} stroke-width={2 * cam.upp} />
                 {#if !isSel}
                   <!-- Where each tick lands, so another ship's course can be read at a glance
                        without giving it draggable handles. -->
                   {#each chains[s.name].slice(1) as n (n.t)}
                     {@const v = w2v(n.x, n.y)}
-                    <circle class="course-dot" cx={v.vx} cy={v.vy} r={2.4 * cam.upp} />
+                    <circle class="course-dot" class:ally={!s.owned} cx={v.vx} cy={v.vy} r={2.4 * cam.upp} />
                   {/each}
                 {/if}
               {/if}
@@ -1226,6 +1239,9 @@
                 <span class="lamp" class:lit={s.player_ready}
                       title={s.player ? `${s.player} is ${s.player_ready ? "ready" : "not ready"}` : ""}></span>
                 <span class="nm">{s.name}</span><span class="ty">{s.player ?? s.ship_type}</span>
+                {#if s.commands.length}
+                  <span class="onmap" title="orders saved; their course and firing are on the map">plan</span>
+                {/if}
               </li>
             {/each}
           {/if}
@@ -1453,7 +1469,7 @@
             <li><span class="sw sel-sw"></span>ship being planned</li>
             <li><span class="sw own"></span>your other ships</li>
             <li><span class="sw course-sw"></span>their planned course</li>
-            <li><span class="sw ally"></span>faction ally</li>
+            <li><span class="sw ally"></span>faction ally, and the plan they saved</li>
             <li><span class="sw enemy"></span>enemy contact</li>
             <li><span class="sw blast-sw"></span>explosion (true radius)</li>
           </ul>
@@ -1572,6 +1588,10 @@
   .course { fill: none; stroke: #57d98a; opacity: 0.6; stroke-linejoin: round; }
   .course.sel { stroke: var(--amber); opacity: 1; }
   .course-dot { fill: #57d98a; opacity: 0.75; }
+  /* A faction mate's plan is drawn in the cyan they are, so whose course it is reads off the
+     colour rather than off the labels. */
+  .course.ally { stroke: var(--cyan); opacity: 0.45; }
+  .course-dot.ally { fill: var(--cyan); opacity: 0.55; }
   /* The route already flown: same colour family as the plan, but thinner and quieter so past
      reads as past without breaking the line up. */
   .wake { fill: none; stroke: #57d98a; opacity: 0.4; }
@@ -1685,6 +1705,8 @@
   .ally-row { display: flex; gap: 8px; align-items: center; padding: 6px 9px; font-size: 12.5px;
               color: var(--cyan); opacity: 0.7; }
   .ally-row .nm { flex: 1; }
+  .onmap { font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase;
+           border: 1px solid var(--cyan); border-radius: 2px; padding: 1px 4px; }
 
   /* Ready or not, per commander. Dim rather than red: not being ready yet is normal. */
   .lamp { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
