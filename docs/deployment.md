@@ -1,9 +1,16 @@
 # Deployment
 
 Starship Arena runs on PythonAnywhere as a single WSGI application. Deploying is `git pull` and a
-reload. Nothing on the host's dashboard needs configuring, because every default in `arena/cfg.py`
-is the deployed one and every path is anchored to the repository rather than the working
-directory.
+reload, which is what `arena-deploy.sh` does from a Bash console on the host. Nothing on the
+host's dashboard needs configuring, because every default in `arena/cfg.py` is the deployed one
+and every path is anchored to the repository rather than the working directory.
+
+The reload goes through the host's API rather than the Web tab, so a deploy never leaves the
+shell. On a plan with SSH that makes it one line from your own machine:
+
+```
+ssh AgFx@ssh.pythonanywhere.com 'bash starship-arena/arena-deploy.sh'
+```
 
 ## One application, three jobs
 
@@ -89,13 +96,18 @@ keep an old page for a while after a deploy. Telling people to refresh is the cu
 
 ## Per-host settings
 
-`secret.py` is gitignored, so each machine has its own. Both values are read by `arena/cfg.py`
-from the environment first, then from `secret.py`:
+`secret.py` is gitignored, so each machine has its own. Everything here is read from the
+environment first and from `secret.py` second:
 
 ```python
 GAME_DATA_DIR = 'games'                                        # relative means inside the repo
 SITE_URL = 'https://starship-arena-agfx.pythonanywhere.com'    # the address players use
+PA_API_TOKEN = '...'                                           # only arena-deploy.sh wants this
 ```
+
+The first two are `arena/cfg.py`. `PA_API_TOKEN` is the odd one out: no application code reads
+it, only the deploy script, and a console on the host has the same token in `$API_TOKEN` already
+— so the host's own copy of `secret.py` can leave it out.
 
 `GAME_DATA_DIR` must never use `os.path.abspath()`. That resolves against the working directory,
 which the host picks for itself, and a relative value is already anchored to the repository.
