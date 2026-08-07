@@ -11,19 +11,24 @@ ship_2_name = "PoodleII"
 
 original_ship_file = [
     {'name': ship_1_name, 'type': 'H2545', 'faction': 'One', 'player': 'Serge', 'x': 1, 'y': 0},
-    {'name': ship_2_name, 'type': 'H2552', 'faction': 'Two', 'player': 'Piet', 'x': 122, 'y': 0},
+    {'name': ship_2_name, 'type': 'H2552', 'faction': 'Two', 'player': 'Piet', 'x': 1, 'y': 122},
 ]
 
-# A weapon takes one order per tick, so the two rockets a tick come from the two launchers.
-# Splinters go on their own ticks: a rocket reaches 20 and a splinter 6, so a rocket launched
-# alongside one triggers first and its blast takes the splinter with it.
+# Both hulls face north and Poodle sits due south, so bearing 0 is dead ahead and every hit lands
+# on the target's stern shield.
+#
+# A weapon takes one order per tick, so two launches on one tick means two launchers. EMP goes on
+# its own ticks: a rocket reaches 20 and an EMP 10, so a rocket launched alongside one triggers
+# first and its blast takes the EMP with it.
 command_ship_1_1 = """
-    1: Fire R1 90
-    1: Fire R2 90
-    2: Fire S1 90
-    3: Fire R1 90
-    3: Fire R2 90
-    4: Fire S1 90
+    1: Fire R1 0
+    2: Fire E1 0
+    3: Fire R1 0
+    4: Fire E1 0
+    5: Fire R1 0
+    6: Fire R1 0
+    7: Fire R1 0
+    8: Fire R1 0
 """
 
 commands = {
@@ -113,14 +118,14 @@ class TestGames2(unittest.TestCase):
             game.process_current_round()
 
     def test_game_2(self):
-        """Same shape as test_game_1, but with two launchers firing rather than one.
+        """Same shape as test_game_1, but with a rocket tube and an EMP tube rather than one launcher.
 
         Scores the shield break and the kill. The total is not one sum: see test_game_1.
         """
         game = self._setup_game()
         target = game._dir.load_current_world().objects[ship_2_name]
         shield = target.defense[0]
-        self.assertGreater(shield.strengths['W'], 0)
+        self.assertGreater(shield.strengths['S'], 0)
         without_shield_damage = shield.shield_break_score + target.hull + target.kill_score
 
         number_of_rounds = 1
@@ -132,7 +137,7 @@ class TestGames2(unittest.TestCase):
         wreck = final.graveyard[ship_2_name]
 
         self.assertNotIn(ship_2_name, ships_1)
-        self.assertEqual(0, wreck.defense[0].strengths['W'])
+        self.assertEqual(0, wreck.defense[0].strengths['S'])
         self.assertGreater(ships_1[ship_1_name].score, without_shield_damage)
 
 

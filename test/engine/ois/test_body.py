@@ -158,20 +158,22 @@ class TestRunningIntoOne(TestCase):
 
     def test_head_on_it_comes_back_at_a_third(self):
         ship = self._ship(0)
+        bow = ship.defense[0].max_strengths['N']
         self._run({'Rock': asteroid('Rock', (200, 0)), 'S': ship})
 
         self.assertEqual(270.0, ship.heading, "turned right around")
         self.assertEqual(13.5, ship.speed, "45 at a restitution of 0.3")
-        self.assertEqual(105, ship.defense[0].strengths['N'], "struck on the bow, 45 of 150")
+        self.assertEqual(bow - 45, ship.defense[0].strengths['N'], "struck on the bow at 45")
 
     def test_a_graze_barely_costs_anything(self):
         """The travel along the surface is kept, and only what drove into it is turned around."""
         ship = self._ship(38)
+        bow = ship.defense[0].max_strengths['N']
         self._run({'Rock': asteroid('Rock', (200, 0)), 'S': ship})
 
         self.assertEqual(43.0, ship.speed, "45, near enough")
         self.assertEqual(66.2, ship.heading, "nudged off 90")
-        self.assertEqual(150, ship.defense[0].strengths['N'], "nothing on the bow")
+        self.assertEqual(bow, ship.defense[0].strengths['N'], "nothing on the bow")
 
     def test_it_spends_what_is_left_of_the_tick_on_the_new_course(self):
         """Stopping dead at the surface would cost a graze almost a whole tick of travel."""

@@ -40,10 +40,12 @@ class TestCommandsApi(unittest.TestCase):
         shutil.rmtree(self.root, ignore_errors=True)
 
     def test_add_commands(self):
+        # Bearing 0 rather than 90: R1 is a bow arc, so a beam shot is refused by validation and
+        # this test would be asserting the wrong thing about the route.
         commands = {
             'lines': [
                 '1: A25',
-                '2: Fire R1 90',
+                '2: Fire R1 0',
                 '3:A25',
             ]
         }

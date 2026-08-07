@@ -22,7 +22,11 @@ class TestGames(unittest.TestCase):
             game.process_current_round()
 
     def test_game_1(self):
-        """Blaster-1 shoots Shaper-1's west shield down and kills it, and is paid for both.
+        """Blaster-1 shoots Shaper-1's stern shield down and kills it, and is paid for both.
+
+        Blaster sits due south and both face north, so every rocket lands on S. Quadrants are
+        relative to the target, which is the whole point of being able to turn a good face to
+        something.
 
         Not an exact total: damage arrives in as many chunks as there are hits, and the shield
         pays half a point per damage rounded down, so the sum depends on the shot timing.
@@ -30,7 +34,7 @@ class TestGames(unittest.TestCase):
         game = self._setup_game('test-game')
         target = game._dir.load_current_world().objects['Shaper-1']
         shield = target.defense[0]
-        self.assertGreater(shield.strengths['W'], 0)
+        self.assertGreater(shield.strengths['S'], 0)
         without_shield_damage = shield.shield_break_score + target.hull + target.kill_score
 
         number_of_rounds = 1
@@ -42,7 +46,7 @@ class TestGames(unittest.TestCase):
         wreck = final.graveyard['Shaper-1']
 
         self.assertNotIn('Shaper-1', ships_1)
-        self.assertEqual(0, wreck.defense[0].strengths['W'])
+        self.assertEqual(0, wreck.defense[0].strengths['S'])
         self.assertGreater(ships_1['Blaster-1'].score, without_shield_damage)
 
 

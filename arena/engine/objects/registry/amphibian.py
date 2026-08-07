@@ -1,3 +1,10 @@
+"""The standoff line: the longest eyes in the fleet and the heaviest guided warheads.
+
+PowerSplinter is theirs, and until the payload airframe varies their reach is scan range rather
+than missile range: they find you first, fire on a wide forward arc, and never have to close.
+"""
+
+from arena.cfg import max_scan
 from arena.engine.objects.ship import ShipType
 from arena.engine.objects.registry.missiles import Rocket, NanoMissile, PowerSplinter
 from arena.engine.objects.registry.mines import SplinterMine
@@ -7,17 +14,48 @@ from arena.engine.objects.components.laser import Laser
 from arena.engine.objects.components.ecm import Cloak
 from arena.engine.objects.components.scanner import Gravscan
 
-from arena.cfg import max_scan
+
+class A2545(ShipType):
+    max_speed = 40
+    max_turn = 30
+    max_delta_v = 20
+    max_hull = 150
+    start_battery = 90
+    generators = 6
+    max_scan_distance = max_scan(55)
+
+    @property
+    def class_name(self):
+        return "Terrapin"
+
+    @property
+    def defense(self):
+        return [
+            Shields('Shields', {'N': 120, 'E': 115, 'S': 105, 'W': 115}),
+        ]
+
+    @property
+    def weapons(self):
+        # The furthest seeing hull in the game and no gun at all: everything it does, it does at
+        # the far end of a missile flight.
+        return [
+            Launcher('P1', PowerSplinter(), 8, (270, 90)),
+            Launcher('P2', PowerSplinter(), 8, (270, 90)),
+            Launcher('N1', NanoMissile(), 10, (270, 90)),
+            Launcher('R1', Rocket(), 10, (315, 45)),
+            Launcher('M1', SplinterMine(), 8),
+            Gravscan('G')
+        ]
 
 
 class A2527(ShipType):
     max_speed = 45
     max_turn = 35
     max_delta_v = 25
-    max_hull = 100
-    start_battery = 60
+    max_hull = 105
+    start_battery = 90
     generators = 7
-    max_scan_distance = max_scan(35)
+    max_scan_distance = max_scan(42)
 
     @property
     def class_name(self):
@@ -26,18 +64,17 @@ class A2527(ShipType):
     @property
     def defense(self):
         return [
-            Shields('Shields', {'N': 100, 'E': 100, 'S': 100, 'W': 100}),
+            Shields('Shields', {'N': 115, 'E': 100, 'S': 90, 'W': 100}),
         ]
 
     @property
     def weapons(self):
         return [
-            Laser('L1', 140, 60),
-            Launcher('S1', PowerSplinter(), 5),
-            Launcher('N1', NanoMissile(), 5, (315, 45)),
-            Launcher('R1', Rocket(), 10),
-            Launcher('RF1', Rocket(), 12, (315, 45)),
-            Launcher('M1', SplinterMine(), 10),
+            Laser('L1', 150, 70, (300, 60)),
+            Launcher('P1', PowerSplinter(), 6, (300, 60)),
+            Launcher('N1', NanoMissile(), 6, (300, 60)),
+            Launcher('R1', Rocket(), 10, (315, 45)),
+            Launcher('M1', SplinterMine(), 8),
             Gravscan('G')
         ]
 
@@ -47,9 +84,9 @@ class A2539(ShipType):
     max_turn = 35
     max_delta_v = 25
     max_hull = 100
-    start_battery = 80
+    start_battery = 100
     generators = 7
-    max_scan_distance = max_scan(30)
+    max_scan_distance = max_scan(38)
 
     @property
     def class_name(self):
@@ -58,71 +95,36 @@ class A2539(ShipType):
     @property
     def defense(self):
         return [
-            Shields('Shields', {'N': 100, 'E': 100, 'S': 100, 'W': 100}),
+            Shields('Shields', {'N': 110, 'E': 100, 'S': 90, 'W': 100}),
         ]
 
     @property
     def weapons(self):
         return [
-            Laser('L1', 110, 60),
-            Laser('LF1', 110, 60, (315, 45)),
-            Launcher('S1', PowerSplinter(), 5),
-            Launcher('SF1', PowerSplinter(), 5, (315, 45)),
-            Launcher('N1', NanoMissile(), 10),
-            Launcher('R1', Rocket(), 5),
-            Launcher('RF1', Rocket(), 5, (315, 45)),
-            Launcher('M1', SplinterMine(), 10),
+            Laser('L1', 140, 75, (330, 30)),
+            Laser('L2', 110, 65, (270, 90)),
+            Launcher('P1', PowerSplinter(), 6, (300, 60)),
+            Launcher('P2', PowerSplinter(), 6, (300, 60)),
+            Launcher('R1', Rocket(), 8, (315, 45)),
+            Launcher('M1', SplinterMine(), 8),
             Gravscan('G')
         ]
 
     @property
     def ecm(self):
         return [
-            Cloak('Cloak', 4),
-        ]
-
-
-class A2545(ShipType):
-    max_speed = 40
-    max_turn = 30
-    max_delta_v = 20
-    max_hull = 150
-    start_battery = 80
-    generators = 5
-    max_scan_distance = max_scan(45)
-
-    @property
-    def class_name(self):
-        return "Terrapin"
-
-    @property
-    def defense(self):
-        return [
-            Shields('Shields', {'N': 110, 'E': 110, 'S': 110, 'W': 110}),
-        ]
-
-    @property
-    def weapons(self):
-        return [
-            Launcher('S1', PowerSplinter(), 6),
-            Launcher('S2', PowerSplinter(), 6),
-            Launcher('SF1', PowerSplinter(), 6, (270, 90)),
-            Launcher('N1', NanoMissile(), 12, (270, 90)),
-            Launcher('R1', Rocket(), 8),
-            Launcher('RF1', Rocket(), 12, (270, 90)),
-            Launcher('M1', SplinterMine(), 10),
-            Gravscan('G')
+            Cloak('C1', 5),
         ]
 
 
 class A2553(ShipType):
-    max_speed = 40
+    max_speed = 45
     max_turn = 40
-    max_delta_v = 20
-    max_hull = 80
-    start_battery = 70
-    generators = 6
-    max_scan_distance = max_scan(40)
+    max_delta_v = 25
+    max_hull = 85
+    start_battery = 95
+    generators = 7
+    max_scan_distance = max_scan(35)
 
     @property
     def class_name(self):
@@ -131,25 +133,22 @@ class A2553(ShipType):
     @property
     def defense(self):
         return [
-            Shields('Shields', {'N': 100, 'E': 100, 'S': 100, 'W': 100}),
+            Shields('Shields', {'N': 105, 'E': 90, 'S': 80, 'W': 90}),
         ]
 
     @property
     def weapons(self):
         return [
-            Laser('L1', 120, 60),
-            Launcher('S1', PowerSplinter(), 5),
-            Launcher('SF1', PowerSplinter(), 5, (315, 45)),
-            Launcher('N1', NanoMissile(), 5),
-            Launcher('R1', Rocket(), 10),
-            Launcher('M1', SplinterMine(), 10),
+            Laser('L1', 160, 65, (315, 45)),
+            Launcher('P1', PowerSplinter(), 6, (315, 45)),
+            Launcher('N1', NanoMissile(), 5, (315, 45)),
+            Launcher('R1', Rocket(), 8, (315, 45)),
+            Launcher('M1', SplinterMine(), 6),
             Gravscan('G')
         ]
 
     @property
     def ecm(self):
         return [
-            Cloak('Cloak', 4),
+            Cloak('C1', 5),
         ]
-
-
