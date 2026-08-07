@@ -12,40 +12,49 @@
       races of Starship Arena are battling over one thing: planets rich in oxygen and liquid
       water, with survivable conditions to allow them to continue to grow and prosper in this
       brutal universe. They will do whatever it takes to gain control of planets for their
-      species. Survival is not an option. Peace is not an option.</p> <h2 class="svelte-16cbpsr">Anuran Alliance</h2> <p class="svelte-16cbpsr">The alliance of amphibious races are permanently searching for wet, lush climates to
+      species. Survival is not an option. Peace is not an option.</p> <h2 class="svelte-16cbpsr">Amphibian</h2> <p class="svelte-16cbpsr">The Anuran Alliance of amphibious races is permanently searching for wet, lush climates to
       reproduce on. Their populations swing between dwindling and exploding at an alarming rate as
       they decimate the resources of each planet with their enormous birth rates and the inherent
       need for huge amounts of flora and fauna to feed their young. They have short lifespans
       compared to other races and so the cycle continues in a desperately violent frenzy to
-      capture and absorb more and more planets. Their ships are lightly shielded and fast moving
-      with large batteries of powerful weaponry to ensure their victories swiftly with no precious
-      time wasted.</p> <h2 class="svelte-16cbpsr">Felidae</h2> <p class="svelte-16cbpsr">The Felidae live for the thrill of the hunt. Content with the food produced on their
+      capture and absorb more and more planets.</p> <p class="svelte-16cbpsr">Amphibian ships fight the war at arm's length. They carry the longest ranged scanners in the
+      fleet and the heaviest guided warheads to put on the end of them: a Terrapin sees 330 units,
+      mounts five tubes and no gun at all. They find you first, fire on a wide forward arc, and
+      spend the rest of the fight keeping the distance they opened with.</p> <h2 class="svelte-16cbpsr">Feline</h2> <p class="svelte-16cbpsr">The Felidae live for the thrill of the hunt. Content with the food produced on their
       planets, they simply want more hunting grounds for their entertainment. Felidae planets are
       vicious places, ruled by an alpha-leader and steeped in thousands of years of violent
       history. Leadership is disorganized, with some rulers only living for mere days, but their
       intentions are clear: bigger prey brings greater prestige and honour among their peers, and
-      so they will always hunt the biggest and most dangerous prey without fear or mercy. Felidae
-      ships are very fast and can cloak, making them perfect for sneak attacks or laying complex
-      traps for their prey.</p> <h2 class="svelte-16cbpsr">Human</h2> <p class="svelte-16cbpsr">Humanity destroyed their original home planet over a relatively short period of time due to
+      so they will always hunt the biggest and most dangerous prey without fear or mercy.</p> <p class="svelte-16cbpsr">Feline hulls are the fastest and most agile in the war, and every one of them cloaks, though
+      never as deeply as a Reptilian. They are also the thinnest, so a bad approach costs the ship.
+      Turning up to 50 degrees a tick they can aim guns nobody else could bring to bear: a Cheetah
+      swings its bow laser onto a target in three ticks where an Insectoid Swarm needs eight. Each
+      carries a few mines, laid where the prey is going rather than sown as a field.</p> <h2 class="svelte-16cbpsr">Human</h2> <p class="svelte-16cbpsr">Humanity destroyed their original home planet over a relatively short period of time due to
       their industrious nature and they are no strangers to strife and desperation. Their desire
       to grow and expand is driven by the need to find resources and habitable land for their
-      enormous populations, but also by their scientific curiosity, which shows in the
-      technological superiority of their fleets. The ships of the human fleet are technologically
-      advanced and come with a devastating array of useful abilities such as EMP weaponry and
-      Gravscanners.</p> <h2 class="svelte-16cbpsr">Insectoid</h2> <p class="svelte-16cbpsr">These curious creatures do not understand the political or recreational agendas of other
+      enormous populations, but also by their scientific curiosity, which shows in what their
+      fleets carry.</p> <p class="svelte-16cbpsr">Human ships are the generalists of the war, competent everywhere and extreme nowhere. What
+      belongs to them alone is ordnance that leaves a hull untouched and ruins everything behind
+      it: EMP warheads that drain shields and batteries, and nanocyte mines whose cloud splashes
+      off a shield and burns bare hull. Knock a quadrant down, then let the nanocytes through it.
+      Only the Babylon carries a cloak.</p> <h2 class="svelte-16cbpsr">Insectoid</h2> <p class="svelte-16cbpsr">These curious creatures do not understand the political or recreational agendas of other
       races. They do not communicate well with the other species of the universe, and they work
       only to protect and grow their hive. Guided by a single entity known as the Royal Guardian,
       who can communicate with the entire hive instantaneously through their Psionic Link, they
       can perform complex military manoeuvres in perfect unison. A fleet of Insectoid vessels can
-      strip a planet of all its resources in less than a solar year. Insectoid ships are
-      gargantuan hive vessels. They move slowly through space and carry huge arrays of armaments
-      and powerful shields, all performing in unison through the power of the Psionic Link.</p> <h2 class="svelte-16cbpsr">Reptilia</h2> <p class="svelte-16cbpsr">The ferocious Reptilia are a xenophobic race of highly trained weapons of war. They are
+      strip a planet of all its resources in less than a solar year.</p> <p class="svelte-16cbpsr">Insectoid vessels are gargantuan hive ships, three models where every other race fields
+      four, each slower, thicker and more heavily armed than anything else in space. Turning 20 to
+      30 degrees a tick they can never swing a narrow gun onto anything, so their weapons point
+      across the beam and they fight by holding ground: broadsides, magazines deep enough to keep
+      firing all round, and mines sown as fields. No Insectoid hull carries a cloak. A hive does
+      not hide.</p> <h2 class="svelte-16cbpsr">Reptilian</h2> <p class="svelte-16cbpsr">The ferocious Reptilia are a xenophobic race of highly trained weapons of war. They are
       genetically perfect killing machines and have no interest in peace. On their home planet,
       genetic modification in birth centres is used to make each generation stronger, faster and
       smarter. To them, there is only one acceptable outcome in the great war: total annihilation
-      of their foes. Reptilian ships are heavily armed with Splinter weapon technology designed to
-      ensure the guaranteed destruction of their foes with no mercy. Once you are in a Reptilian
-      ship's sights, escape is almost impossible.</p></article></div>`);function Do(e,t){var n=Eo(),r=R(n),i=R(r);Ne(2),A(r),Ne(2),A(n),G(`click`,i,function(...e){t.onLeave?.apply(this,e)}),J(e,n)}_r([`click`]);var Oo=K(`<p class="warn svelte-3z0wmw"> </p>`),ko=K(`<p class="err svelte-3z0wmw"> </p>`),Ao=K(`<div class="screen svelte-3z0wmw"><div class="card svelte-3z0wmw"><h1 class="svelte-3z0wmw">Starship Arena</h1> <!> <p class="svelte-3z0wmw">Every commander has their own link. Open the one the director sent you and this machine
+      of their foes.</p> <p class="svelte-16cbpsr">Reptilian ships carry the deepest cloaks in the game and the hardest lasers, and they lay no
+      mines at all. Every gun points forward or across a beam, so a Reptilian commander picks an
+      approach and lives with it. A Cobra's bow laser covers 30 degrees and does 320 damage at
+      contact, and nothing whatsoever past 55 units. One pass decides the fight.</p></article></div>`);function Do(e,t){var n=Eo(),r=R(n),i=R(r);Ne(2),A(r),Ne(2),A(n),G(`click`,i,function(...e){t.onLeave?.apply(this,e)}),J(e,n)}_r([`click`]);var Oo=K(`<p class="warn svelte-3z0wmw"> </p>`),ko=K(`<p class="err svelte-3z0wmw"> </p>`),Ao=K(`<div class="screen svelte-3z0wmw"><div class="card svelte-3z0wmw"><h1 class="svelte-3z0wmw">Starship Arena</h1> <!> <p class="svelte-3z0wmw">Every commander has their own link. Open the one the director sent you and this machine
       stays signed in.</p> <form class="svelte-3z0wmw"><h2 class="svelte-3z0wmw">New here?</h2> <p class="sub svelte-3z0wmw">Claim the name you want to be known by, in this game and every one after
         it. The director assigns you ships once you have a name.</p> <div class="row svelte-3z0wmw"><input type="text" placeholder="Your commander name" autocomplete="off" spellcheck="false" class="svelte-3z0wmw"/> <button type="submit" class="svelte-3z0wmw">Claim</button></div> <!></form> <p class="sub svelte-3z0wmw">Already commanding ships and no link? Ask the director to send you one. Your name is
       already taken, by you.</p> <nav class="svelte-3z0wmw"><button type="button" class="svelte-3z0wmw">Ships</button> <button type="button" class="svelte-3z0wmw">Lore</button> <button type="button" class="svelte-3z0wmw">Manual</button></nav></div></div>`);function jo(e,t){Re(t,!0);let n=I(``),r=I(null),i=I(!1);async function a(e){e.preventDefault(),L(r,null),L(i,!0);try{let e=await fetch(`/api/game/register`,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({name:W(n).trim()})}),i=await e.json();e.ok?t.onLoggedIn(i):L(r,i.detail??`API returned ${e.status}`,!0)}catch(e){L(r,String(e),!0)}finally{L(i,!1)}}var o=Ao(),s=R(o),c=B(R(s),2),l=e=>{var n=Oo(),r=R(n,!0);A(n),V(()=>Y(r,t.message)),J(e,n)};X(c,e=>{t.message&&e(l)});var u=B(c,4),d=B(R(u),4),f=R(d);ii(f);var p=B(f,2);A(d);var m=B(d,2),h=e=>{var t=ko(),n=R(t,!0);A(t),V(()=>Y(n,W(r))),J(e,t)};X(m,e=>{W(r)&&e(h)}),A(u);var g=B(u,4),_=R(g),v=B(_,2),y=B(v,2);A(g),A(s),A(o),V(e=>p.disabled=e,[()=>W(i)||!W(n).trim()]),gr(`submit`,u,a),li(f,()=>W(n),e=>L(n,e)),G(`click`,_,()=>t.onPage(`ships`)),G(`click`,v,()=>t.onPage(`lore`)),G(`click`,y,()=>window.open(`/api/game/manual`,`_blank`)),J(e,o),ze()}_r([`click`]);var Mo=K(`<p class="waiting svelte-1n46o8q">…</p>`);function No(e,t){Re(t,!0);function n(){let e=new URLSearchParams(location.search),t=e.get(`round`);return{game:e.get(`game`),player:e.get(`player`),round:t===null?null:Number(t),page:e.get(`page`)}}let r=I(Xt(n())),i=I(null),a=I(!0),o=I(null);function s(e){let t=new URLSearchParams;e.page&&t.set(`page`,e.page),e.game&&t.set(`game`,e.game),e.player&&t.set(`player`,e.player),e.round!==null&&e.round!==void 0&&t.set(`round`,String(e.round)),history.pushState({},``,t.size?`?${t}`:location.pathname),L(r,e,!0)}let c=()=>s({game:null,player:null,round:null,page:null}),l=e=>s({game:null,player:null,round:null,page:e});async function u(){let e=new URLSearchParams(location.search),t=e.get(`login`);if(!t)return null;let i=await fetch(`/api/game/login`,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({token:t})});return e.delete(`login`),history.replaceState({},``,e.size?`?${e}`:location.pathname),L(r,n(),!0),i.ok?await i.json():(L(o,(await i.json()).detail??`That link did not work.`,!0),null)}async function d(){if(L(i,await u(),!0),!W(i)){let e=await fetch(`/api/game/me`);e.ok&&L(i,await e.json(),!0)}L(a,!1)}async function f(){await fetch(`/api/game/logout`,{method:`POST`}),L(i,null),L(o,null),c()}_n(()=>{d();let e=()=>L(r,n(),!0);return addEventListener(`popstate`,e),()=>removeEventListener(`popstate`,e)});var p=Er(),m=z(p),h=e=>{To(e,{onLeave:c})},g=e=>{Do(e,{onLeave:c})},_=e=>{J(e,Mo())},v=e=>{jo(e,{onLoggedIn:e=>{L(i,e,!0),L(o,null)},onPage:l,get message(){return W(o)}})},y=e=>{vo(e,{get game(){return W(r).game},get player(){return W(r).player},get round(){return W(r).round},onRound:e=>s({...W(r),round:e}),onLeave:c})},ee=e=>{Vi(e,{get me(){return W(i)},onPick:(e,t)=>s({game:e,player:t,round:null,page:null}),onPage:l,onSignOut:f})};X(m,e=>{W(r).page===`ships`?e(h):W(r).page===`lore`?e(g,1):W(a)?e(_,2):W(i)?W(r).game&&W(r).player?e(y,4):e(ee,-1):e(v,3)}),J(e,p),ze()}Dr(No,{target:document.getElementById(`app`)});
