@@ -41,7 +41,7 @@ class GameRound(object):
         against a world the earlier one is about to change. Nothing moves past a fraction while
         anything is pending at or before it, which is what lets an object that has not moved
         answer where it was, without keeping a history of its own tick.
-        See docs/adr/0024-a-tick-advances-by-encounters.md."""
+        See docs/adr/0023-a-tick-advances-by-encounters.md."""
         while True:
             found = [e for e in (ois.encounter(self.world)
                                  for ois in list(self.world.objects.values())) if e is not None]

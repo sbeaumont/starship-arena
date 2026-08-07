@@ -5,12 +5,13 @@ each section.
 
 ## Next, in order
 
-1. **The leaderboard**, the last piece of player management still open.
-2. **Ship balance**, before a Five Faction War is played for real. Assessed in
-   [docs/ship-balance.md](docs/ship-balance.md), planned in
-   [plans/ship-balance-plan.md](plans/ship-balance-plan.md). Steps 1 to 6 and 8 are done. What is
-   left, in order: the Gunner, disabling, then the registry rewrite.
-3. **Large objects**: solid bodies and crossing them (see Engine).
+1. **A pass over the ship registry**, to give the hulls an identity worth choosing between. Runs
+   on the tools that exist. Assessed in [docs/ship-balance.md](docs/ship-balance.md), planned in
+   [plans/ship-balance-plan.md](plans/ship-balance-plan.md), where steps 1 to 6 and 8 are done.
+2. **The Gunner and the Engage order**, then **a disabling hit**, which is what makes a laser
+   worth aiming and point defence worth carrying. A second registry pass follows if they move the
+   laser numbers.
+3. **The leaderboard**, the last piece of player management still open.
 4. **Scenario builder**, now that a scenario is a real thing with a home.
 
 ## Game UI (`game-ui/`)
@@ -44,16 +45,15 @@ each section.
       anyone who did not send one, which reads as "no orders arrived in time".
 - [x] **Rename "Send all" to "Save all".** It saves orders; it does not send them anywhere. With
       Ready as a separate flag the distinction starts to matter.
-- [ ] **Draw solid bodies.** Circles to start with, in muted colours: terrain should read as
-      something to fly around rather than compete with contacts and blast circles for attention.
-      A body's radius is a real distance, so it belongs in the world layer and scales with zoom,
-      the way `plan.explosions` already draws with `r={e.radius}` and `stroke-width={cam.upp}`.
-      More complicated shapes are coming (a large station, a boss), so the radius comes from the
-      API and never from a constant in the browser, and the day a body stops being round it
-      describes its own outline rather than the map learning a list of them.
-      Bodies are terrain and probably public (see Engine), so they are not contacts built from
-      scans and want their own collection on `PlayerPlan`, present every round whether anything
-      scanned them or not.
+- [x] **Draw solid bodies.** Muted circles in the world layer, under everything else, so terrain
+      reads as something to fly around rather than competing with contacts and blast circles.
+
+      Two things went differently from the sketch here. A body is **scanned like anything else**,
+      so it is an ordinary `Contact` and needs no collection of its own on `PlayerPlan`; fog of war
+      applies to terrain the way it applies to ships. And the map **keys off the radius**, not off
+      a category name, so the day a body stops being round it describes its own outline and nothing
+      in the browser has learned a list of shapes. `Contact.friendly` became `Contact.stance` on the
+      way, because a bool could only say mine or theirs and a rock came out as theirs.
 - [ ] **A new manual.** `manual.html` describes the old UI and is out of date throughout, so it
       wants rewriting rather than correcting. Decide whether it stays a PDF or becomes a page in
       the game UI.
@@ -115,17 +115,23 @@ each section.
       is how one number came to mean both damage and reach.
 
       The answer is a crewman. A `Gunner` acts in `decide`, after everything has scanned, so it
-      fires on where things actually are. `Engage <gunner> <weapon> <target> <within> <shots>`
-      holds until changed, and the player's job becomes positioning rather than tick-prediction.
+      fires on where things actually are, and the player's job becomes positioning rather than
+      tick-prediction. This is the laser's compensation for being short-ranged: every other weapon
+      commits to a bearing ten ticks early.
+
+      `Engage <gunner> <weapon> <target> <within> <shots>`. The gunner mans every laser on the
+      hull, so it is not a scarce fire-control station and there is one per ship. `within` is the
+      range inside which to open fire. `shots` is a budget **for the rest of the round**: ordered
+      on tick 3, the laser fires at most that many times over ticks 3 to 10, and only on a tick
+      where the target is inside `within`.
+
+      Deliberately not in the game UI to begin with.
 
       `Gunner` and `Pilot` exist and no ship type carries either: `control` is empty everywhere.
       Three things to fix on the way. It queues for `tick.tick + 1`, which reintroduces the lag
       this is meant to remove. And it has both ADR 0019 violations that ADR names: `isinstance`
       to find its lasers, and `isinstance` to sort targets, where `category_name` already answers
-      the second.
-
-      Open: whether the gunner holds one engagement or one per gun. One per gunner makes the
-      number of fire-control stations a hull stat, which is free variety.
+      the second. `Laser.can_fire_at` also has to start checking `in_firing_arc`.
 
 - [ ] **A disabling hit.** A hit either takes something apart or stops it working.
       `Component.status_effects`, a set, with `DISABLED` its first member. On the component so
@@ -154,19 +160,22 @@ each section.
       last user. Four lines in `ComponentCommand._init_params` and a property on `Parameter` now
       serve a case that cannot arise. Delete, or keep deliberately as an extension point.
 
-- [ ] **Large objects, and crossing them.** Solid bodies with a radius, and movement that notices
-      them. A tick is a teleport: `move()` translates the whole speed at once, so nothing between
-      the endpoints exists. The primitive already exists: `ObjectInSpace.approach_fraction` answers
-      how far into the tick two legs first closed to a given distance, which is a body's surface,
-      and `position_at` turns that back into a point. Warheads ask the other question,
-      `closest_fraction`, because a proximity fuse wants the shortest gap rather than the first
-      contact.
-      What a hit does is settled in [ADR 0023](docs/adr/0023-a-collision-transmits-an-impulse.md):
-      a collision transmits an impulse and the object receiving it decides. Static bodies first:
-      everything moves in one loop, so ship-versus-ship collision would depend on iteration order.
-      Still open: whether bodies are public knowledge (probably - terrain, not fog of war), and
-      where they are placed (`bodies.txt` until the scenario builder owns world objects). Gravity
-      is a different feature; park it.
+- [x] **Large objects, and crossing them.** Solid bodies with a radius, and movement that notices
+      them. A collision transmits an impulse and the object receiving it decides what that means
+      ([ADR 0023](docs/adr/0023-a-tick-advances-by-encounters.md)), and a tick advances by
+      resolving encounters rather than teleporting from endpoint to endpoint
+      ([ADR 0023](docs/adr/0023-a-tick-advances-by-encounters.md)). Terrain is public: a body is
+      scanned like anything else and a `Contact` carries a `stance` and a `radius`, so the map
+      keys off the size rather than off a category name. Placed from `bodies.jsonl`, written by
+      the scenario.
+
+      Still open: ship against ship, which needs the processing-order defect below fixed first.
+      Gravity is a different feature; parked.
+- [ ] **Does a wreck bounce?** A graveyard entry is not in `world.objects`, so it never collides.
+      Fine for now, and slightly odd once a wreck is drifting somewhere a player can see it.
+- [ ] **A respawn placed inside a body is nobody's decision.** Nothing checks where
+      `ShipSpawner` puts a ship. One overlapping an asteroid is found in contact on its first move
+      with a leg and bounced out, which is probably right by accident rather than by rule.
 - [ ] **Solid bodies block line of sight.** Deliberately left out of ADR 0023 so the first cut
       stays movement only. A planet you can shoot straight through is wrong, and hiding behind one
       is worth having. Touches scanning, lasers and the blast loop in `Warhead.explode`, and the
@@ -218,13 +227,10 @@ each section.
       the entry above, and it collects prerequisites. A wreck has no faction, and
       `Warhead.triggers_on` goes off on anything factionless, so every wreck would be a minefield.
       It also wants the large-objects work, to have a radius.
-- [ ] **`Ship.fire` and the `Commandable` protocol have to go together.** `Ship.fire`
-      (`ship.py:98`) is called by nothing: `FireCommand` resolves the component through the
-      selector and calls it directly. But `Commandable` is `runtime_checkable`, so deleting the
-      method alone makes `isinstance(ship, Commandable)` false and every ship's orders are skipped
-      in silence. The method and the protocol member go, or neither does. See
-      [ADR 0019](docs/adr/0019-machines-drive-components-through-one-vocabulary.md) on why a
-      protocol is the wrong shape here.
+- [x] **`Ship.fire` and `Ship.activation` are gone, with their protocol members.** Both were dead
+      once the activation command reached its component directly. They could not go one at a time:
+      `Commandable` is `runtime_checkable`, so removing a method without its protocol entry makes
+      `isinstance(ship, Commandable)` false and every ship silently takes no orders.
 - [ ] **`MineType.max_scan_distance` asks the type, not the mine** (`registry/mines.py:18`). It
       reads `self.weapons[0].range`, which builds a throwaway warhead to get a number off it and
       then takes whichever happens to be first, so a `NanocyteMine` reports its Splinter's 6 rather
@@ -255,22 +261,11 @@ each section.
       Touches `mine.py:52`, `ship.py:93,120` and `missile.py:114`. Note `Ship.turn` normalises the
       *rounded* heading where `Vector.turn` uses the raw float, so consolidating the two shifts
       ship headings by fractions of a degree and moves every replay outcome.
-- [ ] **Five places name a component instead of asking all of them**, against
-      [ADR 0019](docs/adr/0019-machines-drive-components-through-one-vocabulary.md). Each is a spot
-      where a new component is silently ignored, so they block the healer, the teleporter and the
-      spawner-in-a-missile as much as they are wrong today.
-      - `Missile.decide` calls `self.warhead.decide(...)` (`missile.py:59`) through a property that
-        looks up the literal key `'warhead'` (`missile.py:39`, `mine.py:28`). A missile with two
-        components only ever runs one. `Mine.decide` loops and is right; copy that.
-      - `BoostCommand._init_params` finds its shield with `isinstance(d, Shields)`
-        (`command.py:224`). Asking each defense component for a `boost` parameter would do it.
-      - `Gunner.lasers` filters `isinstance(weapon, Laser)` (`control.py:99`) so an NPC gunner can
-        fire nothing else, and `Gunner.decide` sorts targets with `isinstance(enemy, (Missile,
-        Mine))` (`control.py:82`). The second wants a question on the object, not its class.
-      - `Ship.take_damage_from` guards with `hasattr(self, 'outer_defense')` (`ship.py:143`), which
-        is always true: `outer_defense` is a property on the class (`ship.py:58`). Dead guard.
-      - `Warhead.explode` reads `ois._type.max_scan_distance` (`warhead.py:49`, `:67`), through
-        another object's type and past a private attribute.
+- [ ] **Four places name a component instead of asking all of them.** Each is a spot where a new
+      component is silently ignored, so they block the healer, the teleporter and the
+      spawner-in-a-missile as much as they are wrong today. The list, with line numbers, is in
+      [ADR 0019](docs/adr/0019-machines-drive-components-through-one-vocabulary.md) under *Where
+      the code does not do this yet*. Two of them are in `Gunner` and go with that work.
 - Decided against: making each `Command` declare its own execution phase. The switch in
   `CommandSet.add` keeps all the tick ordering visible in one place, which is what makes it easy
   to move a command between phases while debugging.
@@ -297,16 +292,17 @@ stopping AI drift, and the reasoning is the part only a person can confirm.
     docs/development.md    running, testing, regenerating, the two scripts
     docs/adr/NNNN-*.md     one decision each
 
-ADRs are Nygard-style: **Context, Decision, Consequences, Alternatives rejected**, with a status
-of Accepted or Superseded by NNNN. Numbered once, never renumbered, never edited after acceptance
-- a change is a new ADR that supersedes the old. **The rejected alternatives are the anti-drift
-payload**: "we use DTOs" prevents nothing, "passing engine objects upward was rejected, and here
-is what it cost last time" prevents the re-proposal.
+ADRs are Nygard-style: **Context, Decision, Consequences, Alternatives rejected**. Numbered once
+and never renumbered, and **edited whenever the decision moves**, because a record of a decision we
+no longer take reads as current. **The rejected alternatives are the anti-drift payload**: "we use
+DTOs" prevents nothing, "passing engine objects upward was rejected, and here is what it cost last
+time" prevents the re-proposal.
 
-- [x] **18 ADRs written**, covering the layering, determinism, type objects, components,
+- [x] **24 ADRs written**, covering the layering, determinism, type objects, components,
       commands, file storage, the single WSGI app, laziness and statelessness, anchored paths,
       self-describing objects, snapshots, open information, fog of war, logins, Svelte, the URL as
-      state, the two SVG layers and jointed-chain planning.
+      state, the two SVG layers, jointed-chain planning, the component vocabulary, explosions,
+      scenarios, the three places a game lives, collisions and the encounter loop.
 - [ ] **New ADRs as decisions come up.** Not a backlog to work through: write one when something is
       decided, especially when an alternative was rejected for a reason worth remembering.
 - [x] **`CLAUDE.md` folded back** to constraints plus commands, with per-directory files for
@@ -337,20 +333,25 @@ Ideas from the original readme, kept because they are still wanted.
       registry. Narrowing them is the largest source of variety available, and it makes `max_turn`
       decide fights: bringing a 30 degree arc to bear is 9 ticks for a Swarm and 4 for a Tiger.
 
-      The races are settled. Reptilian ambushes with the best cloak and lasers as the alpha
-      strike, and lays no mines. Feline raids, fast and agile, cloaked but less so, carrying a few
-      mines to place. Insectoid holds ground with broadsides and fields, because at 20 to 30 turn
-      it cannot have narrow arcs at all. Human does attrition, owning EMP and nanocyte mines.
-      Amphibian is standoff, which needs the payload airframe to vary: every missile in the game
-      currently dies at 900 units. Every hull keeps a mine tube and a rocket tube.
+      The races are settled. Reptilian ambushes with the best cloak and the hardest lasers, and
+      lays no mines at all. Feline raids, fast and agile, cloaked but less so, carrying a few mines
+      to place. Insectoid holds ground with broadsides and fields, because at 20 to 30 turn it
+      cannot have narrow arcs. Human does attrition, owning EMP and nanocyte mines. Amphibian is
+      standoff, which needs the payload airframe to vary: every missile in the game currently dies
+      at 900 units.
+
+      **A Gravscan is the only thing every hull carries.** Everything else is tweakable, weapon by
+      weapon, and a race giving up a whole weapon class is how it comes to read as itself.
 
       Placeholder values to replace, all uniform where they should differ: every laser on reach
       60, every cloak on `half_power` 4 where Reptilian wants 3 and Feline 6, and `heat_per_shot`
-      a class attribute so every laser in the game fires 8 times a round.
+      a class attribute so every laser in the game fires 8 times a round. Every guided payload is
+      also the same airframe (speed 60, turn 45, seeker 150, cone 45, reach 900), which is variety
+      going unused and needs no engine change.
 
-      Wants an `arc(centre, width)` helper next to `in_firing_arc`, so a broadside reads as
-      `arc(90, 60)` rather than `(60, 120)`. Do it after the Gunner: how hard a laser hits can
-      only be judged once it is known how often it gets to hit at all.
+      **This runs before the Gunner**, on the tools that exist: the registry is generic enough that
+      any character is an upgrade. Laser damage and reach stay provisional until the Gunner makes
+      them aimable, and a second pass follows if that moves them.
       Detail in [plans/ship-balance-plan.md](plans/ship-balance-plan.md).
 
 - [ ] **See explosions from far away, or from anywhere.** You would know where the fighting is
@@ -360,7 +361,7 @@ Ideas from the original readme, kept because they are still wanted.
       Today an explosion is handed to whatever is close enough to scan it (`Warhead.explode`
       checks `distance_to(pos) <= max_scan_distance`), so a battle two scan ranges away is
       invisible. Loosening that is a change to what fog of war means, so it wants a decision
-      alongside [ADR 0013](docs/adr/0013-fog-of-war-from-scans.md) rather than a quiet edit.
+      alongside [GDDR 0013](docs/gddr/0013-fog-of-war-from-scans.md) rather than a quiet edit.
 
       What to settle: whether it is truly global or just a much longer range, and whether a
       distant blast is degraded to a position and nothing else. `ExplosionEvent` carries its
@@ -399,8 +400,10 @@ The lists grow without bound as games pile up, so this is about keeping them mai
 
 - [x] **Deal players into a game.** Drag registrations into faction columns, and whoever is left
       is spread at random to even the numbers. `arena/app/scenarios/`, screens at `/new_game`,
-      `/registering` and `/registering/<game>`. See
-      [plans/scenario-setup-plan.md](plans/scenario-setup-plan.md).
+      `/registering` and `/registering/<game>`. The durable parts are
+      [ADR 0021](docs/adr/0021-scenarios-sit-in-the-services-layer.md),
+      [ADR 0022](docs/adr/0022-a-game-directory-moves-between-three-places.md) and
+      [docs/data.md](docs/data.md).
 - [x] **A sign-up page.** The director names a game and opens it, players put themselves down in
       the game UI with a name per ship, and the console deals them into factions by dragging. A
       game being formed is a game directory in `registering/`, and starting it moves the directory
@@ -479,6 +482,15 @@ every route timing out at `504-loadbalancer`.
       it calls the services layer **in-process** and reads game data from the filesystem.
 
 ## Testing / data
+
+- [ ] **Four encounter tests that should exist and do not.** A missile's last sighting agreeing
+      with where its blast is; a ship bouncing and being caught in a blast in the same tick; a
+      surface and a trigger at the same fraction resolving in one pass; and a wedge, where an
+      object bounced off one surface into another spends the rest of the tick there.
+
+      The last two are unreachable in play today, because five rocks of radius 40 sitting 294 apart
+      cannot wedge anything. That is exactly why the rule must not depend on the layout, and why
+      the test has to build its own geometry rather than use a scenario.
 
 - [ ] **Half the console's routes are still untested.** The setup flow and the players page have
       tests now (`test/admin_ui/test_scenarios.py`, `test_players.py`), which caught the roster

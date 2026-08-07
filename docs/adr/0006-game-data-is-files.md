@@ -17,8 +17,8 @@ Everything lives in files under one data root. A directory per game holding `shi
 
 The text files are the game and are tracked. The pickles are derived and are gitignored.
 
-Text files are whitespace separated with a header line naming the columns, which makes them
-readable and editable by hand.
+A list is **JSON Lines**: one object per line, no header, the keys naming the fields. Command
+files stay plain text, because `3: Fire R1 90` is what a player types.
 
 ## Consequences
 
@@ -27,7 +27,11 @@ There's no database to run, migrate or back up. Copying a game is `cp -r`.
 Hand-editing works, and it's the escape hatch when something is wrong: adding a line to
 `players.jsonl` is how you let yourself back in when locked out.
 
-Whitespace separation means no value can contain a space. Names get underscores instead.
+A line per record still diffs one line per ship and is still hand-editable, and an absent key is
+how a fact says it does not apply: no player, no faction, no coordinates yet.
+
+No value may contain a space, because a game name becomes a directory and a ship name is part of a
+command file's name. Names get underscores instead.
 
 Reading a game costs unpickling. That's fine at this size, and would not be at ten times it.
 Moving to SQLite means changing one layer, because [nothing above the seam knows where data
@@ -38,5 +42,8 @@ lives](0001-layered-architecture.md).
 **A database from the start.** More to run and back up, and it buys nothing until concurrent
 writers or real query load appear. Neither is close.
 
-**JSON or YAML for the text files.** Quoting and indentation for data that's naturally a table.
-The current format is readable in a terminal and diffs one line per ship.
+**Whitespace columns with a header line**, which is what these files were until the respawn work.
+It reads beautifully for data that is naturally a table, and it cannot express an absent field: a
+row with no token collapses into the gap and the role is read as the token, and there is no way to
+write "this ship has no player". Both of those were real bugs. YAML would fix that and costs
+indentation for something that is a list of flat records.

@@ -2,8 +2,8 @@
 
 One decision per file, numbered in the order accepted. Numbers are never reused or renumbered.
 
-**An accepted ADR is never edited.** When a decision changes, write a new one that supersedes it
-and mark the old `Superseded by NNNN`.
+**An ADR says what you do now.** When the decision moves, edit the ADR and put what it replaced
+into `Alternatives rejected`. Version control holds the history.
 
 | | |
 |---|---|

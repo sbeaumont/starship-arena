@@ -15,16 +15,15 @@ original_ship_file = [
 ]
 
 # A weapon takes one order per tick, so the two rockets a tick come from the two launchers.
+# Splinters go on their own ticks: a rocket reaches 20 and a splinter 6, so a rocket launched
+# alongside one triggers first and its blast takes the splinter with it.
 command_ship_1_1 = """
-    1: Fire S1 45
     1: Fire R1 90
     1: Fire R2 90
     2: Fire S1 90
-    2: Fire R1 90
-    2: Fire R2 90
-    3: Fire S1 90
     3: Fire R1 90
     3: Fire R2 90
+    4: Fire S1 90
 """
 
 commands = {

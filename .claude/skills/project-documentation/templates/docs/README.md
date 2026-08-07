@@ -18,8 +18,9 @@ describes intentions ages badly, because nothing forces it to come true.
 **The overview describes; the ADRs argue.** So the overview can be rewritten freely while the
 reasoning stays put.
 
-**An ADR is never edited once accepted.** A decision that changes gets a new one that supersedes
-it, and the old stays readable. The trail is the point.
+**Every document here is current, not a trail.** When something changes, the file describing it
+changes with it, ADRs included. Version control holds what it used to say. A doc describing what
+you used to do gets read as what you do.
 
 **Instruction files carry the rules.** `AGENTS.md` at the root for what binds everywhere, one per
 subdirectory for what binds there. Short enough to survive in an agent's context.

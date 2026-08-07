@@ -16,17 +16,22 @@ Before the first answer about this codebase, not when you reach the area. 24kB t
 | [docs/information.md](docs/information.md) | The six places a fact can live, and how to pick one |
 | [docs/glossary.md](docs/glossary.md) | The words. Different ones is how vocabulary drifts |
 
-Then the ADR that governs what you are about to touch.
-[docs/adr/README.md](docs/adr/README.md) indexes them; these are the ones that bite:
+Then the decision record that governs what you are about to touch. **ADRs** are how it is built,
+**GDDRs** are how it is played, and they share one run of numbers:
+[docs/adr/README.md](docs/adr/README.md), [docs/gddr/README.md](docs/gddr/README.md). These are the
+ones that bite:
 
 | touching | read |
 |---|---|
-| a component, or anything a machine asks its parts | [0019](docs/adr/0019-machines-drive-components-through-one-vocabulary.md) |
-| the tick's order, or anything timing-dependent | [0002](docs/adr/0002-deterministic-rounds.md), and invariant 1 |
-| damage, warheads, collisions | [0020](docs/adr/0020-explosions-do-not-take-sides.md), [0023](docs/adr/0023-a-collision-transmits-an-impulse.md) |
-| orders, validation, what a weapon asks for | [0005](docs/adr/0005-commands-validated-before-execution.md), [0004](docs/adr/0004-components-own-their-parameters.md) |
-| history, snapshots, the map | [0011](docs/adr/0011-snapshots-hold-values.md), [0013](docs/adr/0013-fog-of-war-from-scans.md) |
-| races, factions, who flies what | [0021](docs/adr/0021-scenarios-sit-in-the-services-layer.md) |
+| a component, or anything a machine asks its parts | [ADR 0019](docs/adr/0019-machines-drive-components-through-one-vocabulary.md) |
+| the tick's order, or anything timing-dependent | [ADR 0002](docs/adr/0002-deterministic-rounds.md), [ADR 0023](docs/adr/0023-a-tick-advances-by-encounters.md), and invariant 1 |
+| damage, warheads, blasts | [GDDR 0020](docs/gddr/0020-explosions-do-not-take-sides.md) |
+| terrain, collisions, what a bounce costs | [ADR 0023](docs/adr/0023-a-tick-advances-by-encounters.md), [GDDR 0025](docs/gddr/0025-terrain-bounces-you-and-costs-hull.md) |
+| orders, validation, what a weapon asks for | [ADR 0005](docs/adr/0005-commands-validated-before-execution.md), [ADR 0004](docs/adr/0004-components-own-their-parameters.md) |
+| history, snapshots, the map | [ADR 0011](docs/adr/0011-snapshots-hold-values.md), [GDDR 0013](docs/gddr/0013-fog-of-war-from-scans.md) |
+| what a player is allowed to know | [GDDR 0012](docs/gddr/0012-open-information.md), [GDDR 0013](docs/gddr/0013-fog-of-war-from-scans.md) |
+| races, factions, who flies what | [ADR 0021](docs/adr/0021-scenarios-sit-in-the-services-layer.md) |
+| ship stats, weapons, what a hull is for | [docs/ship-balance.md](docs/ship-balance.md), and ask before rebalancing |
 
 **Say which ones you read when proposing an engine change.** Naming none means the proposal was
 reconstructed from implementation, which gets the mechanism right and the intent wrong.

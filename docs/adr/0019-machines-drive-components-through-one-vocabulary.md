@@ -84,18 +84,20 @@ ask across the seam, not what a component does inside itself.
 
 Each of these is a spot where a new component would be silently ignored. They are in TODO.md.
 
-- `Missile.decide` calls `self.warhead.decide(...)` (`missile.py:59`), reaching for one part by the
+- `Missile.decide` calls `self.warhead.decide(...)` (`missile.py:60`), reaching for one part by the
   literal key `'warhead'` (`missile.py:39`, `mine.py:28`). A missile with a second component never
   gets asked. `Mine` loops and is correct.
-- `BoostCommand._init_params` finds its shield with `isinstance(d, Shields)` (`command.py:224`), so
-  a boostable defense component that is not a `Shields` cannot be boosted.
-- `Gunner.lasers` filters on `isinstance(weapon, Laser)` (`control.py:99`), so an NPC gunner can
+- `Gunner.lasers` filters on `isinstance(weapon, Laser)` (`control.py:100`), so an NPC gunner can
   never fire anything else, and `Gunner.decide` sorts targets with `isinstance(enemy, (Missile,
-  Mine))` (`control.py:82`).
-- `Ship.take_damage_from` guards with `hasattr(self, 'outer_defense')` (`ship.py:143`), which is
-  always true because `outer_defense` is a property on the class (`ship.py:58`).
-- `Warhead.explode` reads `ois._type.max_scan_distance` (`warhead.py:49`, `:67`), reaching through
+  Mine))` (`control.py:83`), where `category_name` already answers the question.
+- `Ship.take_damage_from` guards with `hasattr(self, 'outer_defense')` (`ship.py:165`), which is
+  always true because `outer_defense` is a property on the class (`ship.py:64`).
+- `Warhead.explode` reads `ois._type.max_scan_distance` (`warhead.py:80`, `:102`), reaching through
   another object's type and past a private attribute for a question the object could answer.
+
+`BoostCommand` was the fifth. It found its shield with `isinstance(d, Shields)`; splitting the
+boost parameter into a quadrant and an amount removed the override entirely, and there is no
+`isinstance` left in `command.py`.
 
 ## Alternatives rejected
 

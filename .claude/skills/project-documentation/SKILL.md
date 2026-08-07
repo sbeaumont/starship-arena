@@ -83,8 +83,9 @@ What else was considered, and why it lost. Be concrete about the cost.
 
 Numbered in the order accepted. Numbers never reused, never renumbered.
 
-**An accepted ADR is never edited.** A decision that changes gets a new ADR that supersedes it, and
-the old one stays readable with `Superseded by NNNN`.
+**An ADR says what you do now.** When the decision moves, edit the ADR and put what it replaced
+into `Alternatives rejected`. Version control holds every earlier version, and a record of a
+decision you no longer take reads as current to anyone skimming, agents most of all.
 
 **The last section is the whole point.** "We use DTOs" prevents nothing. "Passing engine objects
 upward was rejected, because that is what made the old report generator impossible to change" stops

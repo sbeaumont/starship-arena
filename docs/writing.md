@@ -37,4 +37,4 @@ reader will otherwise fall into, and then in the same voice as the docs.
 ## The split
 
 Comments say *why this line*. Docs say *why this design*. ADRs say *why this design and not the
-other one*, and stay put once accepted.
+other one*. All three describe what is true now, and are edited when it stops being true.

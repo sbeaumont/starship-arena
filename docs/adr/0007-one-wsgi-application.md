@@ -13,9 +13,9 @@ no build step and no way to run a second process.
 
 `arena/serve.py` is one WSGI callable that dispatches on the path:
 
-    /api/...    the FastAPI app, run inside WSGI through a2wsgi
-    /play/...   the built game UI, static files from game-ui/dist
-    everything else, the Flask console
+    /api/...        the FastAPI app, run inside WSGI through a2wsgi
+    /director/...   the Flask console, mounted so Flask writes the prefix itself
+    everything else, the built game UI as static files from game-ui/dist
 
 `game-ui/dist` is committed, because the host cannot build it.
 

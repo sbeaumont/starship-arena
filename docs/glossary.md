@@ -16,10 +16,21 @@ round.
 one being planned now. Those are the only two names for it. Never "orders round", never "picture
 round", and never store both when one is the other plus one.
 
+**Leg.** The travel one object has ahead of it this tick: where it starts, and where its heading
+and speed would put it. A tick is a jump, so during a tick an object is a leg rather than a point.
+
+**Fraction.** How far into a tick something is, 0 to 1. An object knows how much of the tick it has
+used, and `position_at(fraction)` answers where it was at that moment whether it flew its whole leg
+or stopped early.
+
+**Encounter.** Something coming within a range that matters, at a fraction of the tick: a surface
+reached, a warhead's trigger. A tick advances by resolving them, earliest first.
+[ADR 0023](adr/0023-a-tick-advances-by-encounters.md).
+
 ## The world
 
-**Object in space.** Anything with a position: ships, missiles, mines, and later asteroids and
-worse. The base of everything in the simulation.
+**Object in space.** Anything with a position: ships, missiles, mines and asteroids. The base of
+everything in the simulation.
 
 **Owner.** A reference to an object in space, never to a person. A missile's owner is the ship that
 fired it, a mine's is the ship that laid it, and **a ship's owner is itself** (`Ship.__init__`
@@ -28,6 +39,19 @@ puts into space knows whose side it is on. The person is the *player*, and only 
 
 **Machine.** An object that was built, so it has hull, battery and components. Ships, starbases,
 missiles and mines are machines.
+
+**Body, or terrain.** An object in space that was not built: an asteroid today, a planet or a
+station later. No hull, no battery, no components. What it has is a **radius**, and carrying a
+radius is what makes something impassable. There is no `is_solid` anywhere.
+
+**Impulse.** A direction and a magnitude handed to whatever ran into something. The object receiving
+it decides what it means: a ship bounces and takes damage, a missile detonates, a mine settles.
+Named for the impulse rather than for the collision, so a push weapon transmits the same thing.
+[ADR 0023](adr/0023-a-tick-advances-by-encounters.md).
+
+**Stance.** What one object is to another: `Friend`, `Foe` or `Neutral`. Belonging to no faction is
+its own answer, which is why terrain is neither tracked by a seeker nor triggered on by a warhead.
+Nothing compares faction strings.
 
 **Type, or model.** What a machine is: `A2527`, readable as `A2527 Alligator`. A type object holds
 the maxima and the set of components, and instances ask it rather than knowing themselves.

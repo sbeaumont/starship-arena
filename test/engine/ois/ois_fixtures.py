@@ -14,7 +14,7 @@ def run_ticks(world: World, how_many: int = 1, round_nr: int = 1):
 
     Movement, what anything runs into and what any warhead goes off on are one loop now, so a
     test that moves an object by hand is testing a tick that does not exist.
-    See docs/adr/0024-a-tick-advances-by-encounters.md."""
+    See docs/adr/0023-a-tick-advances-by-encounters.md."""
     game_round = GameRound(world, round_nr)
     for tick in Tick.for_start_of_round(round_nr).ticks_for_round[:how_many]:
         game_round.do_tick(tick)

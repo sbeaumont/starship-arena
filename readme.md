@@ -71,7 +71,7 @@ of.
 ## Documentation
 
 [`docs/`](docs/) has the architecture, the glossary, the data formats and the deployment notes.
-[`docs/adr/`](docs/adr/) has 18 decision records, each with what was rejected and why, which is the
+[`docs/adr/`](docs/adr/) has 24 decision records, each with what was rejected and why, which is the
 part that stops the next person undoing it.
 
 [`TODO.md`](TODO.md) is what's next.
@@ -80,5 +80,6 @@ part that stops the next person undoing it.
 
 Playable and deployed. Games run, players plan, rounds process.
 
-Logins, the console, the map, the planner, the ship reference and the round log all work. A
-scenario builder, solid bodies to crash into, and a leaderboard are next.
+Logins, the console, the map, the planner, the ship reference and the round log all work, and
+there is terrain to crash into. A scenario builder, a leaderboard, and a pass over the ship
+registry to give the hulls some character are next.

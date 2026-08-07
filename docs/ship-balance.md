@@ -11,8 +11,11 @@ the report follows the registry:
 uv run python balance.py
 ```
 
-Figures below were taken on 6 August 2026. Re-run it after touching a registry file or a
-component, because most of these findings move when a single constant does.
+Figures below were taken on 6 August 2026 and the registry has moved since, so the tables read a
+few percent off a fresh run: Cairo is 1.29 rather than 1.32, Athens 0.99 rather than 1.10, Komodo
+and Cobra 0.09 apart rather than 0.21. **They are regenerated with the hull pass**, which is about
+to replace every number in them. Re-run `balance.py` after touching a registry file or a component,
+because most of these findings move when a single constant does.
 
 The work these findings feed into is in [plans/ship-balance-plan.md](../plans/ship-balance-plan.md).
 
@@ -220,7 +223,7 @@ generator output of most hulls and 50 shield points a round given up through boo
 ship ran an energy deficit at cruise for almost nothing. Read the other way, where 0.2 means "seen
 at 20% of range", the same values were a problem in the opposite direction: Rome would have been
 seen at 60 instead of 300.
-o
+
 A cloak drawing `power` energy a tick, halving an enemy's scan range every `half_power`, handles
 both:
 
@@ -365,7 +368,7 @@ Everything is read by reflection from `builder.all_ship_types` and the component
 
 | metric | how |
 |---|---|
-| salvo | one tick, everything firing. Lasers give `strength - REFERENCE_RANGE`; launchers give `warhead damage x delivery x arc weight` |
+| salvo | one tick, everything firing. Lasers give `damage x (1 - LASER_RANGE/reach)^2`; launchers give `warhead damage x delivery x arc weight` |
 | round throughput | ten ticks. Lasers capped by simulating the heat loop (8 shots from cold), launchers by `min(ammo, 10)` |
 | magazine | the whole racks, for a game that runs long between replenishments |
 | EHP facing / mean / weak | `hull + quadrant + boost_per_round`, for the best, average and worst quadrant |
@@ -376,8 +379,10 @@ Everything is read by reflection from `builder.all_ship_types` and the component
 
 The judgement calls sit in one block at the top of `balance.py`:
 
-- **`REFERENCE_RANGE = 60`.** The biggest lever by far, because laser damage is linear in
-  distance. Raise it and lasers collapse; lower it and missiles look pointless. Worth sweeping.
+- **`LASER_RANGE = 20`.** The range a laser is assumed to be used at, and the biggest lever by far.
+  Damage falls off squared to nothing at `reach`, so a laser scored at the range missiles cross
+  reads as worthless. Missiles are scored at contact, so the two weapon classes are each judged in
+  their own band. Worth sweeping.
 - **`DELIVERY = {guided: 1.0, dumb: 0.45, mine: 0.0}`.** How much of a payload lands. Mines are
   area denial and get counted separately rather than as offense.
 - **`ARC_FLOOR = 0.55`.** A 90-degree weapon is worth `0.55 + 0.45 x (arc/360)` of a turret, since

@@ -216,10 +216,10 @@ Every information element in the engine, classified.
 | `hull`, `battery`, `all_components`, `_type` | instance state | `MachineInSpace` |
 | `score`, `commands`, `player`, `generators` | instance state | `Ship` |
 | `target` | instance state | `Missile` |
-| `temperature`, `firing_arc`, `strength` | instance state | `Laser` |
+| `temperature`, `firing_arc`, `damage`, `reach` | instance state | `Laser` |
 | `ammo`, `missile_number` | instance state | `Launcher` |
 | `strengths`, `max_strengths` | instance state | `Shields` |
-| `active` | instance state | `Cloak` |
+| `power`, `half_power` | instance state | `Cloak` |
 | `pos`, `xy`, `heading`, `speed` | derived answer | `ObjectInSpace`, from `vector` |
 | `is_player_controlled` | derived answer | `Ship`, from `player` |
 | `range` | derived answer | `MachineInSpace`, from its components |

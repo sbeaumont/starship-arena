@@ -8,6 +8,7 @@ the root. There's no database.
     players.jsonl            who can log in, across all games
     <game name>/
         ships.jsonl          the plan: the roster the game starts from
+        bodies.jsonl         the plan: the terrain the game is played over
         spawns.jsonl         the plan: arrivals the director scheduled
         settings.jsonl       the plan: when this game processes a round
         registrations.jsonl  the plan: who put themselves down, and for how many ships
@@ -82,6 +83,22 @@ An absent field is why this is JSON rather than columns. Positional whitespace h
 
 **`player` is an identity, not a label.** It's the name someone logs in with, so a typo creates a
 commander who can never sign in. The new game screen autocompletes it for that reason.
+
+## bodies.jsonl
+
+The terrain, one object per line. Optional: a game without one is played on empty space.
+
+```jsonl
+{"name": "Asteroid-1", "type": "Asteroid", "x": 0, "y": 250}
+{"name": "Asteroid-2", "type": "Asteroid", "x": 238, "y": 77}
+```
+
+`type` is a type name from the body registry. All four fields are written, because nothing places a
+body for you: coordinates are never generated and never written back, so the file it came from is
+already the record a replay needs.
+
+A scenario is what puts them there. `FiveFactionWar.bodies()` returns a ring of five at radius 250,
+written when the game starts.
 
 ## spawns.jsonl
 

@@ -71,7 +71,7 @@ Measured from the imports, today:
 
 ```
 admin_ui -> app      7
-admin_ui -> engine   5
+admin_ui -> engine   4
 api      -> app      3
 app      -> engine   8
 cli      -> app      2
@@ -88,8 +88,8 @@ The rules:
 4. **The CLI may reach the engine.** It is the tool of last resort, run from a shell on the host,
    and it is where you go when the seam itself is what is broken.
 
-`admin_ui -> engine` is five imports that rule 3 says should not exist. A known gap, on the
-backlog. The API is already clean.
+`admin_ui -> engine` is four imports that rule 3 says should not exist, all of them in
+`appfacade.py`. A known gap, on the backlog. The API is already clean.
 
 ## Processing a round
 
@@ -116,8 +116,8 @@ flowchart TD
         Arrive["Anything due this tick arrives"] --> H["Open the tick's history"]
         H --> E["Generate and spend energy"]
         E --> PreCmd["Pre-move commands<br/><i>turn, accelerate</i>"]
-        PreCmd --> Detect["<b>Detect collisions</b><br/><i>every leg is settled, nothing has moved</i>"]
-        Detect --> Move["<b>Move</b><br/><i>as far as the leg allows, then the shove</i>"]
+        PreCmd --> Detect["<b>Resolve encounters</b><br/><i>every leg is settled, nothing has moved</i>"]
+        Detect --> Move["<b>Move</b><br/><i>whatever leg is left</i>"]
         Move --> PostCmd["Post-move commands<br/><i>fire, scan, activate</i>"]
         PostCmd --> Scan["Scan"]
         Scan --> Decide["Decide<br/><i>missiles intercept, warheads trigger</i>"]
@@ -132,13 +132,18 @@ flowchart TD
 `GameRound.do_tick` holds that order, and it is the heart of the engine. Changing it changes the
 game.
 
-**Detection is a pass of its own, and it has to be.** It runs after everything that can still
-change a vector, because `use_energy` slows a ship that cannot power its speed and the pre-move
-commands set heading and speed. It runs before anything moves, because an object that has not had
-its turn yet still sits at the start of its leg, and a detection that read those would answer
-differently depending on who was asked first. Between the two, every leg is known and no position
-has changed, which is the only moment where what meets what is a fact rather than an accident of
-iteration order. [ADR 0023](adr/0023-a-collision-transmits-an-impulse.md)
+**Encounters are a pass of their own, and they have to be.** An encounter is anything coming
+within a range that matters: a surface reached, a warhead's trigger, whatever is added later.
+`GameRound.resolve_encounters` asks every object for its first one, resolves everything at the
+earliest fraction of the tick, and repeats until nothing is left to answer.
+
+It runs after everything that can still change a vector, because `use_energy` slows a ship that
+cannot power its speed and the pre-move commands set heading and speed. It runs before anything
+moves, because an object that has not had its turn yet still sits at the start of its leg, and a
+question that read those would answer differently depending on who was asked first. Between the
+two, every leg is known and no position has changed, which is the only moment where what meets
+what is a fact rather than an accident of iteration order. What a contact then does is the same
+decision: [ADR 0023](adr/0023-a-tick-advances-by-encounters.md).
 
 `ObjectInSpace.pre_move` is an empty extension point today. It is the last thing before the leg is
 fixed, so anything added there may still change a vector; anything that must not is a phase later.

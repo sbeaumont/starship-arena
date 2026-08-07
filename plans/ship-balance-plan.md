@@ -208,33 +208,29 @@ whole circle in 30 degree pulses reaches 1200 but costs 120 energy against 10 fo
 so where to look is a real choice. Scaling energy with the cone was the other lever considered and
 is not needed: the reach curve already makes the lazy option worthless.
 
-## Step 7: arcs, and the registry rewrite - blocked
+## Step 7: arcs, and the registry rewrite - next
 
 Two thirds of the fleet's weapons and 64% of its round damage sit on 360 degree arcs, and the
 whole registry uses only three widths: 360, 180 and 90. Narrowing them is the single largest
 source of variety available, and it turns `max_turn` into a stat that decides fights: worst case
 turning to bring a 30 degree arc to bear is 9 ticks for a Swarm and 4 for a Tiger.
 
-Two things to settle before writing any of it.
+**This runs first, with the tools that exist.** The registry is generic enough that any character
+is an improvement, so the order is: a hull pass now, then the Gunner and disabling to make lasers
+work as intended, then a second hull pass if those move the laser numbers. Laser damage and reach
+are therefore provisional until the Gunner lands, and everything else is not.
 
-**An `arc()` helper belongs in the engine, not in `balance.py`.** The case for it is reading, not
-safety: players get sliders and the code constrains them, so nobody can transpose anything. But
-`(0, 180)` and `(180, 0)` are starboard and port, and neither tuple says so. Somebody writing forty
-of these by hand has to work each one out from `in_firing_arc` every time. Next to it in
-`weapon.py`:
+`balance.py` is reference, not a gate. Its `arc_weight` is flat and knows nothing about `max_turn`,
+so it will score a narrowed arc as a straight loss. Read the census and the loadouts from it, not
+the verdict.
 
-```python
-def arc(centre: int, width: int) -> tuple:
-    """A firing arc that wide, centred that many degrees off the bow."""
-    return (centre - width // 2) % 360, (centre + width // 2) % 360
-```
-
-Then the registry reads `arc(0, 30)`, `arc(90, 60)` for a starboard broadside, `arc(180, 90)` for
-a stern chaser. `balance.py` already reports the census and needs nothing.
+**No `arc()` helper.** Considered and dropped: the firing arcs in the registry are the only
+hand-written tuples left in the game, and a helper for forty of them earns less than it costs.
 
 **The NPC gunner does not check arcs.** `Laser.can_fire_at` tests heat, energy, scan and damage
-but not `in_firing_arc`, so `Gunner.decide` queues shots that `Laser.fire` then refuses. Invisible
-today because almost every laser is 360; it becomes noisy the moment arcs narrow.
+but not `in_firing_arc`, so it will offer shots that `Laser.fire` then refuses. Invisible today
+because almost every laser is 360; it becomes noisy the moment arcs narrow, and it goes in with
+the Gunner.
 
 ### What each race is for
 
@@ -262,10 +258,10 @@ then convert.
 a bigger number. This is the niche that most needs the payload airframe to vary, because every
 missile in the game currently dies at 900 units.
 
-Every hull keeps a mine tube and a rocket tube. They are the flattest thing in the registry, 17 of
-19 carrying exactly 10 mines and all 19 carrying rockets, and the variety has to come from
-somewhere else. Losing its only area denial and its only dumb-fire weapon costs a hull more than
-the sameyness costs the fleet.
+**A Gravscan is the only thing every hull carries.** Everything else is up for grabs, weapon by
+weapon. Rockets on all 19 hulls and exactly 10 mines on 17 of them is the flattest thing in the
+registry and there is no rule protecting it: a race gives up a whole weapon class when that is what
+makes it read as itself.
 
 ### The three laser families
 
@@ -342,32 +338,49 @@ should be able to say "when I am close enough, hit them" instead of "on tick 7 I
 enough". Then the interesting decision becomes whether to commit to the approach at all, which is
 a decision worth making, rather than arithmetic about where two ships will be, which is not.
 
-Options, in the order I would try them.
+**The answer is a standing engage order, run by a gunner.** Settled:
 
-**A standing engage order.** `Engage L1 <target>` holds until changed and fires on every tick the
-target is in reach and in arc. Heat caps it at 8 shots a round on its own, so it needs no further
-limit. This fits the vocabulary already built: Boost is an act, Power is a setting, Engage is a
-standing order.
+```
+Engage <gunner> <weapon> <target> <within> <shots>
+```
 
-It also already exists in another form. `Gunner.decide` is exactly this mechanism for NPC hulls:
-it looks for something `laser.can_fire_at` and queues a shot. One wrinkle worth copying carefully
-rather than copying blindly, though: `Gunner` queues for `tick.tick + 1` off this tick's geometry,
-which builds in a tick of lag. At a reach of 50 and a closing speed of 90 the range has changed by
-more than the reach in that time. A player-facing engage order should resolve in the tick it fires.
+The gunner mans every laser on the hull, so there is one per ship and it is not a scarce
+fire-control station. `within` is the range inside which to open fire, which matters because
+squared falloff makes a shot at the edge of reach nearly worthless while costing a full share of
+the round's heat. `shots` is a budget for the rest of the round: ordered on tick 3, the laser fires
+at most that many times over ticks 3 to 10, and only on a tick where the target is inside `within`.
 
-This is the one that makes narrow arcs interesting instead of punishing, because the game becomes
-about holding a bearing rather than predicting a tick.
+This fits the vocabulary already built. Boost is an act, Power is a setting, Engage is a standing
+order, and a player reading their own plan can tell which is which without looking anything up.
 
-**An inner plateau on the falloff.** Full damage inside some radius, then squared away to reach.
-"Close enough" becomes a band rather than a point, and the reward for a good approach stops being
-all-or-nothing. Cheap to do and composes with the engage order.
+Not in the game UI to begin with. Hand-written command files and the CLI first.
 
-**Nothing else.** Making misses cheaper is already nearly true, and giving laser hulls more speed
-and turn treats the symptom.
+`Gunner.decide` is already this mechanism for NPC hulls: it looks for something `laser.can_fire_at`
+and queues a shot. One wrinkle to fix rather than copy: it queues for `tick.tick + 1` off this
+tick's geometry, which builds in a tick of lag, and at a reach of 50 and a closing speed of 90 the
+range has changed by more than the reach in that time. Engage resolves in the tick it fires.
 
-Until this is settled the laser families in step 7 are guesses, because how hard a laser hits can
-only be judged once it is known how often it gets to hit at all. Whatever is chosen wants an ADR:
-it is a decision about how the game is played, not a number.
+This is what makes narrow arcs interesting instead of punishing, because the game becomes about
+holding a bearing rather than predicting a tick.
+
+**Still open, and cheap: an inner plateau on the falloff.** Full damage inside some radius, then
+squared away to reach, so "close enough" is a band rather than a point. Composes with the engage
+order rather than competing with it. Not needed until the engage order has been played with.
+
+**Rejected: making misses cheaper.** Already nearly true, since an out-of-arc or out-of-reach shot
+returns before heat and energy are spent. Giving laser hulls more speed and turn treats the
+symptom.
+
+**Rejected: `Engage <weapon> <target>` with heat as the only cap.** The earlier version of this
+section. It is shorter to type and it hands back the decision the order exists to create: the
+player says who to shoot rather than when to open up and how much to spend on it, and a gunner
+holding fire until the range is right is the whole point.
+
+Laser damage and reach stay provisional until this lands, because how hard a laser hits can only
+be judged once it is known how often it gets to hit at all. The registry pass runs first anyway
+and simply revisits those two numbers afterwards.
+
+Wants an ADR when it is built: it is a decision about how the game is played, not a number.
 
 ## A disabling hit, and what point defence is for
 

@@ -2,7 +2,7 @@
 
 A body is not a machine. It has no hull, no battery and no components, so it answers the engine's
 hooks with the defaults and does nothing all round. What it has is a radius, which is what makes
-anything stop at it. See docs/adr/0023-a-collision-transmits-an-impulse.md.
+anything stop at it. See docs/adr/0023-a-tick-advances-by-encounters.md.
 """
 
 from math import cos, radians, sin

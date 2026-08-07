@@ -32,8 +32,8 @@ Storage can move without an interface noticing.
 Every new operation an interface needs costs a service method and usually a DTO. That's real
 friction, and it's the price of the seam meaning anything.
 
-The console currently breaks this: `arena/admin_ui` imports the engine in 5 places. Known, on the
-backlog.
+The console currently breaks this: `arena/admin_ui` imports the engine in 4 places, all in
+`appfacade.py`. Known, on the backlog.
 
 Closing that also makes something else possible: the console could become an HTTP client of
 `/api/admin/*` and move to its own deployment, which is impossible while it reads the filesystem
