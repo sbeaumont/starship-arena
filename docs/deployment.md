@@ -110,8 +110,15 @@ them, only `arena-deploy.sh`, and only on the machine you deploy *from*. The hos
 
 `DISCORD_MESSAGE_WEBHOOK` is one address for the whole installation. Each game says whether it
 announces, in its own settings; left out here, nothing is announced anywhere, which is what a
-development machine wants. `python -m arena.cli.main announce` sends a test line, which is how a
-host proves it can reach the channel. [ADR 0029](adr/0029-announcements-leave-through-channels.md).
+development machine wants. To prove the host can reach the channel, from a console on it:
+
+```bash
+cd ~/starship-arena
+~/.virtualenvs/starship-arena/bin/python -m arena.cli.main announce
+```
+
+That is the interpreter cron uses. There is no `uv` on the host.
+[ADR 0029](adr/0029-announcements-leave-through-channels.md).
 
 `PA_SSH_KEYFILE` is optional, and naming it does one thing — it pins the pull to that key with
 `IdentitiesOnly`, so ssh stops offering every other key you own and hitting the server's limit on

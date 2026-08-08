@@ -6,6 +6,7 @@ See docs/adr/0029-announcements-leave-through-one-channel.md."""
 
 import json
 import logging
+import urllib.error
 import urllib.request
 from abc import ABC, abstractmethod
 
@@ -14,6 +15,9 @@ from arena.cfg import DISCORD_WEBHOOK
 logger = logging.getLogger('starship-arena.announce')
 
 TIMEOUT = 5
+# Cloudflare fronts Discord and bans the default `Python-urllib/x.y` with its error 1010, so a
+# client that does not name itself gets a 403 before Discord ever sees the request.
+USER_AGENT = 'Starship-Arena'
 
 
 class Channel(ABC):
@@ -53,9 +57,14 @@ class DiscordWebhook(Channel):
     def send(self, message: str) -> None:
         request = urllib.request.Request(self.url,
                                          data=json.dumps({'content': message}).encode(),
-                                         headers={'Content-Type': 'application/json'})
-        with urllib.request.urlopen(request, timeout=TIMEOUT) as answer:
-            logger.debug(f"Discord answered {answer.status}")
+                                         headers={'Content-Type': 'application/json',
+                                                  'User-Agent': USER_AGENT})
+        try:
+            with urllib.request.urlopen(request, timeout=TIMEOUT) as answer:
+                logger.debug(f"Discord answered {answer.status}")
+        except urllib.error.HTTPError as e:
+            # The status line alone says nothing useful; the reason is in the body.
+            raise RuntimeError(f"Discord refused it: {e.code} {e.read().decode()}") from e
 
 
 class Announcer:
