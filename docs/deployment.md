@@ -96,7 +96,7 @@ keep an old page for a while after a deploy. Telling people to refresh is the cu
 environment first and from `secret.py` second:
 
 ```python
-GAME_DATA_DIR = 'games'                                        # relative means inside the repo
+GAME_DATA_DIR = 'game-data'                                    # relative means inside the repo
 SITE_URL = 'https://starship-arena-agfx.pythonanywhere.com'    # the address players use
 LOG_DIR = 'logs'                                               # optional; relative, same rule
 DISCORD_MESSAGE_WEBHOOK = 'https://discord.com/api/webhooks/...'  # where announcements go

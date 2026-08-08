@@ -66,7 +66,8 @@ class TestTerrainReachesThePlayer(TestCase):
 
     def setUp(self):
         self.root = tempfile.mkdtemp()
-        os.makedirs(os.path.join(self.root, 'terr', 'commands'))
+        self.games = os.path.join(self.root, 'games')
+        os.makedirs(os.path.join(self.games, 'terr', 'commands'))
         # Off the origin, or setup scatters them and nothing ends up near the rock.
         ships = [{'name': 'Alpha', 'type': 'H2545', 'faction': 'One', 'player': 'Rik',
                   'x': 40, 'y': 0},
@@ -77,10 +78,10 @@ class TestTerrainReachesThePlayer(TestCase):
         admin = AdminService(self.root)
         for who in ('Rik', 'Piet'):
             admin.issue_login(who)
-        gd = GameDirectory(self.root, 'terr')
+        gd = GameDirectory(self.games, 'terr')
         setup_game(gd)
         for ship in ('Alpha', 'Beta'):
-            open(os.path.join(self.root, 'terr', 'commands', f'{ship}-commands-1.txt'), 'w').close()
+            open(os.path.join(self.games, 'terr', 'commands', f'{ship}-commands-1.txt'), 'w').close()
         Game(gd).process_current_round()
         self.contacts = {c.name: c for c in GameService(self.root).get_player_plan('terr', 'Rik').contacts}
 
@@ -88,7 +89,7 @@ class TestTerrainReachesThePlayer(TestCase):
         shutil.rmtree(self.root, ignore_errors=True)
 
     def _write(self, name, records):
-        with open(os.path.join(self.root, 'terr', name), 'w') as f:
+        with open(os.path.join(self.games, 'terr', name), 'w') as f:
             f.write('\n'.join(json.dumps(r) for r in records) + '\n')
 
     def test_a_rock_is_neutral_where_a_ship_is_a_foe(self):

@@ -10,13 +10,12 @@ from arena.app.services import AdminService
 
 class TestRegisteringGames(TestCase):
     def setUp(self):
-        self.root = Path(tempfile.mkdtemp()) / 'games'
-        self.root.mkdir()
+        self.root = Path(tempfile.mkdtemp())
         self.admin = AdminService(str(self.root))
         self.admin.open_registrations('war', 'five-faction-war')
 
     def tearDown(self):
-        shutil.rmtree(self.root.parent, ignore_errors=True)
+        shutil.rmtree(self.root, ignore_errors=True)
 
     def register_four(self):
         for player, names in (('Rik', ['Voyager', 'Pathfinder']), ('Menno', ['Rocinante']),
@@ -59,14 +58,14 @@ class TestRegisteringGames(TestCase):
 
         self.assertEqual(['war'], [g.name for g in self.admin.list_games()])
         self.assertEqual([], self.admin.list_registering_games())
-        self.assertFalse((self.root.parent / 'registering' / 'war').exists())
+        self.assertFalse((self.root / 'registering' / 'war').exists())
 
     def test_starting_writes_the_roster_and_the_settings(self):
         self.register_four()
         ships = [{'name': 'Voyager', 'type': 'H2545', 'faction': 'Human', 'player': 'Rik'}]
         self.admin.start_game('war', ships, GameSettings(on_all_ready=True, process_hours=[8, 20]))
 
-        self.assertTrue((self.root / 'war' / 'ships.jsonl').exists())
+        self.assertTrue((self.root / 'games' / 'war' / 'ships.jsonl').exists())
         self.assertEqual(GameSettings(on_all_ready=True, process_hours=[8, 20]),
                          self.admin.settings('war'))
 
@@ -74,10 +73,10 @@ class TestRegisteringGames(TestCase):
         self.register_four()
         ships = [{'name': 'Voyager', 'type': 'H2545', 'faction': 'Human', 'player': 'Rik'}]
         self.admin.start_game('war', ships, GameSettings(on_all_ready=False, process_hours=[]))
-        self.assertTrue((self.root / 'war' / 'registrations.jsonl').exists())
+        self.assertTrue((self.root / 'games' / 'war' / 'registrations.jsonl').exists())
 
     def test_starting_over_a_live_game_is_refused(self):
-        (self.root / 'war').mkdir(parents=True)
+        (self.root / 'games' / 'war').mkdir(parents=True)
         with self.assertRaises(ValueError):
             self.admin.start_game('war', [], GameSettings(on_all_ready=False, process_hours=[]))
 
@@ -93,11 +92,11 @@ class TestRegisteringGames(TestCase):
         self.assertEqual(['war'], [g.name for g in self.admin.list_registering_games()])
         self.assertEqual([], self.admin.list_games())
         self.assertEqual(4, len(self.admin.registrations('war')))
-        self.assertFalse((self.root.parent / 'registering' / 'war' / 'ships.jsonl').exists())
+        self.assertFalse((self.root / 'registering' / 'war' / 'ships.jsonl').exists())
 
     def test_a_game_that_has_played_a_round_cannot(self):
         self.start_it()
-        (self.root / 'war' / 'status_round_1.pickle').write_text('not really')
+        (self.root / 'games' / 'war' / 'status_round_1.pickle').write_text('not really')
         self.assertFalse(self.admin.is_reopenable('war'))
         with self.assertRaises(ValueError):
             self.admin.reopen_registrations('war')

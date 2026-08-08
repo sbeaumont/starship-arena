@@ -14,8 +14,7 @@ from arena.app.services import AdminService, GameService
 
 class TestRegistrationApi(TestCase):
     def setUp(self):
-        self.root = Path(tempfile.mkdtemp()) / 'games'
-        self.root.mkdir()
+        self.root = Path(tempfile.mkdtemp())
         self.original = game_api.service
         game_api.service = GameService(str(self.root))
         self.admin = AdminService(str(self.root))
@@ -26,7 +25,7 @@ class TestRegistrationApi(TestCase):
 
     def tearDown(self):
         game_api.service = self.original
-        shutil.rmtree(self.root.parent, ignore_errors=True)
+        shutil.rmtree(self.root, ignore_errors=True)
 
     def test_a_stranger_is_refused(self):
         self.assertEqual(401, TestClient(app).get('/api/game/open').status_code)

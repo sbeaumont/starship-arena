@@ -58,11 +58,9 @@ class TestAnnouncingARound(TestCase):
 
     def setUp(self):
         self.root = tempfile.mkdtemp()
-        games = os.path.join(self.root, 'games')
-        os.makedirs(games)
         self.speaker = Loudspeaker()
-        self.admin = AdminService(games, announcer=Announcer([self.speaker]))
-        self.game = GameService(games, announcer=Announcer([self.speaker]))
+        self.admin = AdminService(self.root, announcer=Announcer([self.speaker]))
+        self.game = GameService(self.root, announcer=Announcer([self.speaker]))
         self.admin.create_game(GAME, SHIPS)
 
     def tearDown(self):

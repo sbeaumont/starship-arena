@@ -12,9 +12,8 @@ class TestArchiving(TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
         self.games = os.path.join(self.root, 'games')
-        os.makedirs(self.games)
-        self.admin = AdminService(self.games)
-        self.game = GameService(self.games)
+        self.admin = AdminService(self.root)
+        self.game = GameService(self.root)
         for name in ('live', 'old'):
             self.admin.create_game(name, SHIPS)
 

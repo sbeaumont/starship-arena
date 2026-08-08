@@ -19,7 +19,7 @@ from arena.app.services import AdminService
 from arena.engine.admin import GameSetup
 from arena.engine.gamedirectory import GameDirectory
 from arena.engine.game import Game
-from arena.cfg import GAME_DATA_DIR, MANUAL_FILENAME
+from arena.cfg import GAME_DATA_DIR, GamesRoot, MANUAL_FILENAME
 from arena.engine.objects.registry import builder
 
 logger = logging.getLogger('starship-arena.facade')
@@ -112,12 +112,12 @@ class AppFacade(object):
     """Object that hides specifics from the web interface."""
 
     def __init__(self):
-        self.data_root = Path(GAME_DATA_DIR)
-        self.admin = AdminService(self.data_root)
+        self.dirs = GamesRoot(Path(GAME_DATA_DIR))
+        self.admin = AdminService(self.dirs.root)
 
     def gd(self, game: str) -> GameDirectory:
         """To make the webapp more robust it initializes a game if it wasn't before returning."""
-        gd = GameDirectory(str(self.data_root), game)
+        gd = GameDirectory(str(self.dirs.games), game)
         if not gd.has_been_setup:
             logger.info(f"Setting up game {game}, since this was not done yet.")
             GameSetup(gd).execute()
@@ -142,7 +142,7 @@ class AppFacade(object):
     # ---------------------------------------------------------------------- QUERIES - Game
 
     def all_game_names(self) -> list:
-        return [os.path.basename(d) for d in self.data_root.iterdir() if d.is_dir()]
+        return [os.path.basename(d) for d in self.dirs.games.iterdir() if d.is_dir()]
 
     def game_names_in_use(self) -> set:
         return self.admin.game_names_in_use()

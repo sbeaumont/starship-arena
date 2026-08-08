@@ -5,7 +5,4 @@
 .venv/
 secret.py
 .claude/settings.local.json
-/test/test-games/xke/commands.tar.gz
-# Built from share/ai-guardrails/ when you want to send it; no need to track the archive.
-share/**
-/test/archived/
+/game-data/

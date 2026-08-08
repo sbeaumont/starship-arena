@@ -16,10 +16,8 @@ class TestGamePulse(TestCase):
 
     def setUp(self):
         self.root = tempfile.mkdtemp()
-        games = os.path.join(self.root, 'games')
-        os.makedirs(games)
-        self.admin = AdminService(games)
-        self.game = GameService(games)
+        self.admin = AdminService(self.root)
+        self.game = GameService(self.root)
         self.admin.create_game('live', SHIPS)
 
     def tearDown(self):

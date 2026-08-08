@@ -27,7 +27,7 @@ PLAYER = 'Serge'
 class TestCommandsApi(unittest.TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
-        shutil.copytree(os.path.join('test', 'test-games', GAME), os.path.join(self.root, GAME))
+        shutil.copytree(os.path.join('test', 'test-games', GAME), os.path.join(self.root, 'games', GAME))
         self.service = GameService(self.root)
         self.original, game_api.service = game_api.service, self.service
         # https, so the client keeps a Secure cookie the way a browser would.

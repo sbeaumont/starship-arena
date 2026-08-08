@@ -538,9 +538,8 @@ every route timing out at `504-loadbalancer`.
       cwd-relative `'./test/test-games'` and re-runs `setup_game()` on the real `test-game`, so
       running tests changes which round it is on. Should work on a copy.
 
-      The same data root is what the console runs on, so archiving a game there takes it away from
-      the suite: `test/api/test_fastapimain.py` copies its fixture out of `test-games/apitest`,
-      and with that game archived three tests error on a missing directory.
+      No longer the console's data root, at least: that moved to `game-data/`, so playing with a
+      game can't take a fixture away from the suite any more.
 - [ ] **`test_distribute_ships` is flaky.** It asserts no placed ship has an x or y of exactly
       zero, but `centers_for` places them at a random angle, which occasionally rounds to it.
       Seen twice; 20 runs since have been clean.

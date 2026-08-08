@@ -3,5 +3,3 @@
 **/*.pdf
 **/*.pickle
 round-*/
-# Login tokens are secrets, and the data root is where they live.
-players.jsonl

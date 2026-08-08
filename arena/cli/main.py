@@ -15,7 +15,7 @@ import sys
 import os
 
 from arena.announce import Announcer
-from arena.cfg import GAME_DATA_DIR, LOG_FILE_NAME, PLAY_URL
+from arena.cfg import GAMES_ROOT, LOG_FILE_NAME, PLAY_URL
 from arena.log import configure_logger
 
 from arena.app.clock import server_now
@@ -75,7 +75,7 @@ def issue_link(name: str, director: bool, url: str):
     before they can hand out anything."""
     if not name:
         sys.exit("Who for? Use --name.")
-    player = PlayerRegistry(GAME_DATA_DIR).issue(name, role=DIRECTOR if director else PLAYER)
+    player = PlayerRegistry(GAMES_ROOT.root).issue(name, role=DIRECTOR if director else PLAYER)
     # The address given is the game UI's own, wherever that is, and it answers at the root of it.
     # A host that knows its own address says so in secret.py.
     where = url.rstrip('/') if url else PLAY_URL
@@ -106,7 +106,7 @@ def announce_test():
 
 
 def list_players():
-    players = PlayerRegistry(GAME_DATA_DIR).all()
+    players = PlayerRegistry(GAMES_ROOT.root).all()
     if not players:
         print("Nobody can log in yet. Issue the first link with:")
         print("  python arena/cli/main.py link --name <you> --director")
@@ -132,7 +132,7 @@ def main():
     else:
         if not args.gamedir:
             sys.exit("Which game? Give its name.")
-        game_dir = GameDirectory(GAME_DATA_DIR, args.gamedir)
+        game_dir = GameDirectory(str(GAMES_ROOT.games), args.gamedir)
         game_dir.check_ok()
 
         if args.action == 'setup':
@@ -140,7 +140,7 @@ def main():
             do_setup(game_dir)
         else:
             logger.info("Generating unprocessed rounds...")
-            generate(GAME_DATA_DIR, args.gamedir)
+            generate(str(GAMES_ROOT.games), args.gamedir)
 
 
 if __name__ == '__main__':

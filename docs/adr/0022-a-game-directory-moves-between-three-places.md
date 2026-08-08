@@ -10,22 +10,25 @@ has a name, and is collecting files, but cannot be played and must not appear an
 game appears.
 
 The same was already true at the other end of a game's life. Archiving solved it by moving the
-directory to `archived/` beside the data root, which is why nothing that lists games has to filter:
-a game is playable because of where it is.
+directory somewhere else, which is why nothing that lists games has to filter: a game is playable
+because of where it is.
 
 ## Decision
 
-A game directory lives in exactly one of three places:
+A game directory lives in exactly one of three places, all of them children of the data root:
 
-    <data root>/<game>          being played
-    archived/<game>             over
-    registering/<game>          named, collecting registrations, not started
+    <data root>/games/<game>          being played
+    <data root>/archived/<game>       over
+    <data root>/registering/<game>    named, collecting registrations, not started
+
+`cfg.GamesRoot` holds a root and names its three children, so the layout is written once and
+`AdminService` carries one of these rather than a path it does arithmetic on.
 
 It is the same directory throughout, holding the same kinds of file. `registering/` adds
 `scenario.json`, saying which scenario it is being built from, and `registrations.jsonl`, holding
 who signed up, what they named their ships and which faction the director put them in.
 
-Moving between places is `shutil.move`. Starting a game moves it into the data root and then
+Moving between places is `shutil.move`. Starting a game moves it into `games/` and then
 writes `ships.jsonl` and `settings.jsonl`. Putting it back into registration moves it out again and
 deletes the roster, the round-zero pickle and the empty commands directory.
 
@@ -48,6 +51,11 @@ The three roots have to be created on demand, and a stray directory in any of th
 is the same bargain archiving already made.
 
 ## Alternatives rejected
+
+**Games at the data root, with the other two beside it.** How it was first built: the root held the
+games being played, and `archived/` and `registering/` were its siblings. Every path to a game that
+is not in play then went up before it went down, and the three could not be ignored, moved or
+backed up as one thing, having no parent of their own.
 
 **A status field inside the game.** One directory, one `state` key, every list filtering on it.
 Every reader then has to know the states, a reader that forgets shows half-built games to players,

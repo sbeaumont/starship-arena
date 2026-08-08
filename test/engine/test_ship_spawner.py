@@ -53,8 +53,7 @@ class TestFiringTheSpawner(TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
         games = os.path.join(self.root, 'games')
-        os.makedirs(games)
-        admin = AdminService(games)
+        admin = AdminService(self.root)
         admin.issue_login('Rik')
         admin.create_game('spawner', ROSTER)
         self.gd = GameDirectory(games, 'spawner')

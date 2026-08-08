@@ -11,9 +11,9 @@ from datetime import datetime
 from pathlib import Path
 
 from arena.announce import Announcer
-from arena.cfg import (ADMIN_UI_URL, ARCHIVE_DIR_NAME, COMMANDS_DIR, GAME_DATA_DIR,
-                       INIT_FILE_NAME, MANUAL_FILENAME, PLAY_URL, REGISTERING_DIR_NAME,
-                       REGISTRATION_FILE_NAME, SCENARIO_FILE_NAME, STATUS_FILE_TEMPLATE)
+from arena.cfg import (ADMIN_UI_URL, COMMANDS_DIR, GAMES_ROOT, GamesRoot, INIT_FILE_NAME,
+                       MANUAL_FILENAME, PLAY_URL, REGISTRATION_FILE_NAME, SCENARIO_FILE_NAME,
+                       STATUS_FILE_TEMPLATE)
 from arena.engine.admin import GameSetup, regenerate_game as engine_regenerate_game
 from arena.engine.command import parse_commands
 from arena.engine.game import Game
@@ -46,13 +46,13 @@ def _entry(raw: dict) -> JournalEntry:
 class _EngineAccess:
     """Shared engine/storage access. The GameDirectory never leaves this layer."""
 
-    def __init__(self, data_root: str = None, announcer: Announcer = None):
-        self.data_root = str(data_root if data_root is not None else GAME_DATA_DIR)
-        self.players = PlayerRegistry(self.data_root)
+    def __init__(self, data_root: str | Path = None, announcer: Announcer = None):
+        self.dirs = GamesRoot(Path(data_root)) if data_root is not None else GAMES_ROOT
+        self.players = PlayerRegistry(self.dirs.root)
         self.announcer = announcer if announcer is not None else Announcer()
 
     def _gd(self, game: str) -> GameDirectory:
-        return GameDirectory(self.data_root, game)
+        return GameDirectory(str(self.dirs.games), game)
 
     def _append_journal(self, game: str, event: str, **detail) -> None:
         """Add a line to the game's journal. Real time enters here, never below."""
@@ -69,22 +69,14 @@ class _EngineAccess:
         """The game's journal, newest first, which is how a screen wants it."""
         return [_entry(raw) for raw in reversed(self._gd(game).read_journal(limit))]
 
-    @property
-    def _archive(self) -> Path:
-        return Path(self.data_root).parent / ARCHIVE_DIR_NAME
-
-    @property
-    def _registering(self) -> Path:
-        return Path(self.data_root).parent / REGISTERING_DIR_NAME
-
     def list_games(self) -> list[GameSummary]:
-        return self._games_in(Path(self.data_root))
+        return self._games_in(self.dirs.games)
 
     def list_archived_games(self) -> list[GameSummary]:
-        return self._games_in(self._archive)
+        return self._games_in(self.dirs.archived)
 
     def list_registering_games(self) -> list[GameSummary]:
-        return self._games_in(self._registering)
+        return self._games_in(self.dirs.registering)
 
     def game_names_in_use(self) -> set[str]:
         """Being played, archived or still collecting registrations. All of them claim the name."""
@@ -92,16 +84,16 @@ class _EngineAccess:
                                  + self.list_registering_games())}
 
     def scenario_of(self, game: str) -> str:
-        return json.loads((self._registering / game / SCENARIO_FILE_NAME).read_text())['scenario']
+        return json.loads((self.dirs.registering / game / SCENARIO_FILE_NAME).read_text())['scenario']
 
     def registrations(self, game: str) -> list[Registration]:
         """Whoever registered, wherever the game is: still forming, or already started."""
-        forming = self._registering / game
+        forming = self.dirs.registering / game
         return RegistrationFile(forming if forming.exists()
-                                else Path(self.data_root) / game).all()
+                                else self.dirs.games / game).all()
 
     def assign(self, game: str, factions: dict[str, str]) -> None:
-        RegistrationFile(self._registering / game).assign(factions)
+        RegistrationFile(self.dirs.registering / game).assign(factions)
 
     def forming_games(self) -> list[FormingGame]:
         """Every game collecting registrations, with how much has come in."""
@@ -117,10 +109,10 @@ class _EngineAccess:
 
     def register(self, game: str, player: str, names: list[str]) -> Registration:
         scenario = scenarios.by_key(self.scenario_of(game))
-        return RegistrationFile(self._registering / game).put(player, names, scenario.max_ships)
+        return RegistrationFile(self.dirs.registering / game).put(player, names, scenario.max_ships)
 
     def withdraw(self, game: str, player: str) -> None:
-        RegistrationFile(self._registering / game).remove(player)
+        RegistrationFile(self.dirs.registering / game).remove(player)
 
     @classmethod
     def _games_in(cls, root: Path) -> list[GameSummary]:
@@ -590,21 +582,22 @@ class AdminService(_EngineAccess):
 
     def archive_game(self, name: str) -> None:
         """Move a game out of every list. Its data is untouched."""
-        self._archive.mkdir(parents=True, exist_ok=True)
-        target = self._archive / name
+        self.dirs.archived.mkdir(parents=True, exist_ok=True)
+        target = self.dirs.archived / name
         if target.exists():
             raise ValueError(f"'{name}' is already archived.")
-        shutil.move(str(Path(self.data_root) / name), str(target))
+        shutil.move(str(self.dirs.games / name), str(target))
 
     def unarchive_game(self, name: str) -> None:
-        target = Path(self.data_root) / name
+        self.dirs.games.mkdir(parents=True, exist_ok=True)
+        target = self.dirs.games / name
         if target.exists():
             raise ValueError(f"A game called '{name}' is already being played.")
-        shutil.move(str(self._archive / name), str(target))
+        shutil.move(str(self.dirs.archived / name), str(target))
 
     def delete_archived_game(self, name: str) -> None:
         """Delete for good. Only reaches into the archive, so a live game cannot be lost here."""
-        shutil.rmtree(self._archive / name)
+        shutil.rmtree(self.dirs.archived / name)
 
     # ---------------------------------------------------------------------- LOGINS
 
@@ -634,7 +627,8 @@ class AdminService(_EngineAccess):
         self.players.set_active(name, active)
 
     def create_game(self, name: str, ships: list[dict], bodies: list[dict] = None) -> None:
-        gd = GameDirectory(self.data_root, name)
+        self.dirs.games.mkdir(parents=True, exist_ok=True)
+        gd = GameDirectory(str(self.dirs.games), name)
         if not gd.exists or not gd.has_been_setup:
             GameSetup(gd, ShipFile(gd, ships), BodyFile(gd, bodies or [])).execute()
 
@@ -645,22 +639,22 @@ class AdminService(_EngineAccess):
         scenarios.by_key(scenario)
         if name in self.game_names_in_use():
             raise ValueError(f"A game called '{name}' already exists.")
-        target = self._registering / name
+        target = self.dirs.registering / name
         target.mkdir(parents=True)
         (target / SCENARIO_FILE_NAME).write_text(json.dumps({'scenario': scenario}) + '\n')
 
     def is_reopenable(self, name: str) -> bool:
         """Built from registrations and no round played yet, so the roster can still be redealt."""
-        gd = GameDirectory(self.data_root, name)
+        gd = GameDirectory(str(self.dirs.games), name)
         return (gd.last_round_number <= 0
-                and (Path(self.data_root) / name / REGISTRATION_FILE_NAME).exists())
+                and (self.dirs.games / name / REGISTRATION_FILE_NAME).exists())
 
     def reopen_registrations(self, name: str) -> None:
         """Put a started game back into registration, roster and all.
 
         Only before its first round: after that the roster is what people have been playing."""
-        source = Path(self.data_root) / name
-        gd = GameDirectory(self.data_root, name)
+        source = self.dirs.games / name
+        gd = GameDirectory(str(self.dirs.games), name)
         if gd.last_round_number > 0:
             raise ValueError(f"'{name}' has played rounds. Archive it instead.")
         if not (source / REGISTRATION_FILE_NAME).exists():
@@ -668,17 +662,18 @@ class AdminService(_EngineAccess):
         for leftover in (INIT_FILE_NAME, STATUS_FILE_TEMPLATE.format(0)):
             (source / leftover).unlink(missing_ok=True)
         shutil.rmtree(source / COMMANDS_DIR, ignore_errors=True)
-        self._registering.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(source), str(self._registering / name))
+        self.dirs.registering.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(source), str(self.dirs.registering / name))
 
     def start_game(self, name: str, ships: list[dict], settings: GameSettings) -> None:
         """Move the directory into play, write the roster, keep the registrations as the record."""
-        target = Path(self.data_root) / name
+        self.dirs.games.mkdir(parents=True, exist_ok=True)
+        target = self.dirs.games / name
         if target.exists():
             raise ValueError(f"A game called '{name}' is already being played.")
         # Asked before the move, because the scenario is read from where the game is registering.
         terrain = scenarios.by_key(self.scenario_of(name)).bodies()
-        shutil.move(str(self._registering / name), str(target))
+        shutil.move(str(self.dirs.registering / name), str(target))
         self.create_game(name, ships, terrain)
         self.save_settings(name, settings)
 

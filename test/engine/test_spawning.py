@@ -20,8 +20,7 @@ class TestASpawnedShip(TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
         self.games = os.path.join(self.root, 'games')
-        os.makedirs(self.games)
-        self.admin = AdminService(self.games)
+        self.admin = AdminService(self.root)
         self.admin.issue_login('Rik')
         self.admin.create_game('spawning', ROSTER)
         self.gd = GameDirectory(self.games, 'spawning')

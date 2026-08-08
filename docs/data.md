@@ -6,7 +6,7 @@ the root. There's no database.
 ```
 <data root>/
     players.jsonl            who can log in, across all games
-    <game name>/
+    games/<game name>/
         ships.jsonl          the plan: the roster the game starts from
         bodies.jsonl         the plan: the terrain the game is played over
         spawns.jsonl         the plan: arrivals the director scheduled
@@ -19,9 +19,9 @@ the root. There's no database.
         status_round_<n>.pickle              the state: the world at the end of a round
 ```
 
-Two sibling directories hold game directories that are not in play. `archived/` is a game that is
-over, `registering/` is one that has been named and is collecting registrations. A game directory
-is the same thing in all three places, and moving between them is a `shutil.move`.
+Two more directories sit beside `games/` and hold the ones that are not in play. `archived/` is a
+game that is over, `registering/` is one that has been named and is collecting registrations. A
+game directory is the same thing in all three places, and moving between them is a `shutil.move`.
 [ADR 0022](adr/0022-a-game-directory-moves-between-three-places.md).
 
 ## Plan, state, and record

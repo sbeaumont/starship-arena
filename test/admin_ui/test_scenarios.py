@@ -157,8 +157,7 @@ class TestConsoleFlow(TestCase):
     """Open registrations, assign them into factions, start the game."""
 
     def setUp(self):
-        self.root = Path(tempfile.mkdtemp()) / 'games'
-        self.root.mkdir()
+        self.root = Path(tempfile.mkdtemp())
         self.original, appfacade.GAME_DATA_DIR = appfacade.GAME_DATA_DIR, str(self.root)
         registry = PlayerRegistry(str(self.root))
         self.client = app.test_client()
@@ -167,7 +166,7 @@ class TestConsoleFlow(TestCase):
 
     def tearDown(self):
         appfacade.GAME_DATA_DIR = self.original
-        shutil.rmtree(self.root.parent, ignore_errors=True)
+        shutil.rmtree(self.root, ignore_errors=True)
 
     def open_war(self):
         self.client.post('/new_game', data={'game_name': 'war', 'scenario': 'five-faction-war'})
@@ -272,7 +271,7 @@ class TestConsoleFlow(TestCase):
         self.assertEqual([8, 20], settings.process_hours)
 
         written = [json.loads(line) for line in
-                   (self.root / 'war' / 'ships.jsonl').read_text().splitlines()]
+                   (self.root / 'games' / 'war' / 'ships.jsonl').read_text().splitlines()]
         self.assertEqual(sorted(r['name'] for r in records),
                          sorted(s['name'] for s in written))
         self.assertTrue(any(s['x'] or s['y'] for s in written))
@@ -288,7 +287,7 @@ class TestConsoleFlow(TestCase):
             'ship_player': [r['player'] for r in records],
             'ship_x': [''] * len(records),
             'ship_y': [''] * len(records)})
-        self.assertTrue((self.root / 'war' / 'registrations.jsonl').exists())
+        self.assertTrue((self.root / 'games' / 'war' / 'registrations.jsonl').exists())
 
     def test_a_broken_roster_comes_back_with_the_problem(self):
         self.open_war()
