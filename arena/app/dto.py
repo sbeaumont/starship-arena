@@ -7,7 +7,7 @@ storage details such as GameDirectory or file paths.
 """
 
 from dataclasses import dataclass, field
-from enum import StrEnum
+from enum import Enum
 
 from arena.app.naming import for_display
 
@@ -159,19 +159,25 @@ class GameSettings:
     process_hours: list[int]   # hours of the day it runs on. Empty means never
 
 
-class By(StrEnum):
-    """Who did something."""
+class By(str, Enum):
+    """Who did something. Spelled the 3.10-compatible way; the host has no StrEnum."""
     DIRECTOR = 'director'
     CRON = 'cron'
     PLAYER = 'player'
 
+    def __str__(self):
+        return self.value
 
-class ProcessingTrigger(StrEnum):
+
+class ProcessingTrigger(str, Enum):
     """What set a round going."""
     MANUAL = 'manual'
     MANUAL_FORCED = 'manual forced'
     DEADLINE = 'deadline'
     ALL_READY = 'all players ready'
+
+    def __str__(self):
+        return self.value
 
 
 @dataclass
