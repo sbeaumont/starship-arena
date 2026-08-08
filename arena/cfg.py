@@ -48,6 +48,12 @@ if (not SITE_URL) and ('SITE_URL' in dir(secret)):
 # server - is whole as it stands; otherwise the site's address goes in front of the path.
 PLAY_URL = GAME_UI_URL if '://' in GAME_UI_URL else SITE_URL.rstrip('/') + GAME_UI_URL
 
+# Where announcements go. One webhook for the whole installation: a game says whether it announces,
+# not where to. Empty means nothing is announced anywhere, which is what a test host wants.
+DISCORD_WEBHOOK = os.environ.get('DISCORD_MESSAGE_WEBHOOK', '')
+if (not DISCORD_WEBHOOK) and ('DISCORD_MESSAGE_WEBHOOK' in dir(secret)):
+    DISCORD_WEBHOOK = secret.DISCORD_MESSAGE_WEBHOOK
+
 # Only a single process may write here: two preforked workers would both rename the file at
 # rollover and one of them would keep writing to an unlinked inode. So the CLI logs to a file and
 # the web application logs to stderr, which the host captures and rotates itself.

@@ -218,8 +218,10 @@ class AppFacade(object):
     def settings(self, game: str):
         return self.admin.settings(game)
 
-    def save_settings(self, game: str, on_all_ready: bool, hours: list[int]) -> None:
-        self.admin.save_settings(game, GameSettings(on_all_ready=on_all_ready, process_hours=hours))
+    def save_settings(self, game: str, on_all_ready: bool, hours: list[int],
+                      announce: bool) -> None:
+        self.admin.save_settings(game, GameSettings(on_all_ready=on_all_ready,
+                                                    process_hours=hours, announce=announce))
 
     def archived_games(self) -> list:
         return self.admin.list_archived_games()
@@ -242,9 +244,10 @@ class AppFacade(object):
     def forming_games(self) -> list:
         return self.admin.forming_games()
 
-    def start_game(self, game: str, ships: list[dict], on_all_ready: bool, hours: list[int]):
-        self.admin.start_game(game, ships,
-                              GameSettings(on_all_ready=on_all_ready, process_hours=hours))
+    def start_game(self, game: str, ships: list[dict], on_all_ready: bool, hours: list[int],
+                   announce: bool):
+        self.admin.start_game(game, ships, GameSettings(on_all_ready=on_all_ready,
+                                                        process_hours=hours, announce=announce))
 
     def reopen_registrations(self, game: str) -> None:
         self.admin.reopen_registrations(game)

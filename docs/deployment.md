@@ -99,13 +99,19 @@ environment first and from `secret.py` second:
 GAME_DATA_DIR = 'games'                                        # relative means inside the repo
 SITE_URL = 'https://starship-arena-agfx.pythonanywhere.com'    # the address players use
 LOG_DIR = 'logs'                                               # optional; relative, same rule
+DISCORD_MESSAGE_WEBHOOK = 'https://discord.com/api/webhooks/...'  # where announcements go
 PA_API_TOKEN = '...'                                           # deploying: the reload call
 PA_SSH_KEYFILE = '~/.ssh/id_pa_ssh'                            # deploying: the pull
 ```
 
-The first three are `arena/cfg.py`. The `PA_` pair is the odd one out: no application code reads
+The first four are `arena/cfg.py`. The `PA_` pair is the odd one out: no application code reads
 them, only `arena-deploy.sh`, and only on the machine you deploy *from*. The host's own copy of
 `secret.py` never needs either.
+
+`DISCORD_MESSAGE_WEBHOOK` is one address for the whole installation. Each game says whether it
+announces, in its own settings; left out here, nothing is announced anywhere, which is what a
+development machine wants. `python -m arena.cli.main announce` sends a test line, which is how a
+host proves it can reach the channel. [ADR 0029](adr/0029-announcements-leave-through-channels.md).
 
 `PA_SSH_KEYFILE` is optional, and naming it does one thing — it pins the pull to that key with
 `IdentitiesOnly`, so ssh stops offering every other key you own and hitting the server's limit on

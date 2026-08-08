@@ -10,8 +10,9 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
+from arena.announce import Announcer
 from arena.cfg import (ADMIN_UI_URL, ARCHIVE_DIR_NAME, COMMANDS_DIR, GAME_DATA_DIR,
-                       INIT_FILE_NAME, MANUAL_FILENAME, REGISTERING_DIR_NAME,
+                       INIT_FILE_NAME, MANUAL_FILENAME, PLAY_URL, REGISTERING_DIR_NAME,
                        REGISTRATION_FILE_NAME, SCENARIO_FILE_NAME, STATUS_FILE_TEMPLATE)
 from arena.engine.admin import GameSetup, regenerate_game as engine_regenerate_game
 from arena.engine.command import parse_commands
@@ -23,6 +24,7 @@ from arena.engine.objects.event import ExplosionEvent
 from arena.engine.objects.objectinspace import Stance
 from arena.app import scenarios
 from arena.app.clock import next_occurrence, server_now, zone_name
+from arena.app.naming import for_display
 from arena.app.players import DIRECTOR, LOGIN_COOKIE, PLAYER, Player, PlayerRegistry
 from arena.app.registrations import Registration, RegistrationFile
 from arena.app.dto import (
@@ -44,9 +46,10 @@ def _entry(raw: dict) -> JournalEntry:
 class _EngineAccess:
     """Shared engine/storage access. The GameDirectory never leaves this layer."""
 
-    def __init__(self, data_root: str = None):
+    def __init__(self, data_root: str = None, announcer: Announcer = None):
         self.data_root = str(data_root if data_root is not None else GAME_DATA_DIR)
         self.players = PlayerRegistry(self.data_root)
+        self.announcer = announcer if announcer is not None else Announcer()
 
     def _gd(self, game: str) -> GameDirectory:
         return GameDirectory(self.data_root, game)
@@ -55,6 +58,12 @@ class _EngineAccess:
         """Add a line to the game's journal. Real time enters here, never below."""
         self._gd(game).append_journal({'at': server_now().isoformat(timespec='seconds'),
                                        'event': event, **detail})
+
+    def _announce_round_processed(self, game: str, round_nr: int) -> None:
+        """Tell the players a round is out, if this game is set to."""
+        if self.settings(game).announce:
+            self.announcer.announce(f"**{for_display(game)}** - round {round_nr} has been "
+                                    f"processed. Plan your next one: {PLAY_URL}")
 
     def journal(self, game: str, limit: int = 0) -> list[JournalEntry]:
         """The game's journal, newest first, which is how a screen wants it."""
@@ -140,7 +149,8 @@ class _EngineAccess:
     def _settings_of(gd: GameDirectory) -> GameSettings:
         raw = gd.read_settings()
         return GameSettings(on_all_ready=raw.get('process_on_all_ready', False),
-                            process_hours=sorted(raw.get('process_hours', [])))
+                            process_hours=sorted(raw.get('process_hours', [])),
+                            announce=raw.get('announce', True))
 
     def settings(self, game: str) -> GameSettings:
         return self._settings_of(self._gd(game))
@@ -150,7 +160,8 @@ class _EngineAccess:
         if any(not 0 <= h <= 23 for h in hours):
             raise ValueError(f"Hours run from 0 to 23: {hours}")
         self._gd(game).write_settings({'process_on_all_ready': settings.on_all_ready,
-                                       'process_hours': hours})
+                                       'process_hours': hours,
+                                       'announce': settings.announce})
 
     def all_ready(self, game: str) -> bool:
         players = {p for p in Game(self._gd(game)).players if p}
@@ -174,6 +185,7 @@ class _EngineAccess:
                 g.process_current_round()
                 self._append_journal(game, 'processed', round=round_nr,
                                      by=By.PLAYER, trigger=ProcessingTrigger.ALL_READY)
+                self._announce_round_processed(game, round_nr)
                 return True
         return False
 
@@ -707,6 +719,7 @@ class AdminService(_EngineAccess):
         g.process_current_round()
         self._append_journal(game, 'processed', round=round_nr,
                              by=By.DIRECTOR, trigger=ProcessingTrigger.MANUAL)
+        self._announce_round_processed(game, round_nr)
         return True
 
     def force_process_turn(self, game: str, by: By, trigger: ProcessingTrigger) -> list[str]:
@@ -726,6 +739,7 @@ class AdminService(_EngineAccess):
         if silent:
             detail['no_orders_from'] = ', '.join(silent)
         self._append_journal(game, 'processed', **detail)
+        self._announce_round_processed(game, round_nr)
         return silent
 
     def regenerate_game(self, game: str) -> int:

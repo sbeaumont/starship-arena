@@ -99,6 +99,11 @@
                     </label>
                 {% endfor %}
             </div>
+
+            <label class="check">
+                <input type="checkbox" name="announce" value="1" {{ 'checked' if settings.announce }}>
+                Announce every processed round on Discord
+            </label>
             <div class="saveline">
                 <button class="go" type="submit">Save settings</button>
                 <span class="dirty" hidden>Not saved yet</span>

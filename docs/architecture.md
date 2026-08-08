@@ -20,12 +20,15 @@ flowchart TD
     App["<b>Application services</b> · arena/app<br/>operations in domain terms, returning DTOs"]
     Engine["<b>Engine</b> · arena/engine<br/>ships, rounds, commands, components, history"]
     Store[("Game data<br/>ships.jsonl · commands · pickles")]
+    Announce["<b>Announcer</b> · arena/announce<br/><i>a message out: Discord today</i>"]
 
     GameUI -->|HTTP| API
     API --> App
     Console --> App
     CLI --> App
     App --> Engine
+    App --> Announce
+    CLI --> Announce
     Engine --> Store
     CLI -.->|"allowed: last resort"| Engine
 
@@ -34,7 +37,7 @@ flowchart TD
     classDef core fill:#111726,stroke:#223056,color:#c2ccdf
     class App seam
     class GameUI,Console,CLI,API ui
-    class Engine,Store core
+    class Engine,Store,Announce core
 ```
 
 Everything crosses one line: **`arena/app` is the seam**. Above it nobody holds an engine object or
@@ -55,6 +58,7 @@ you go when the seam itself is what is broken.
 | `arena/admin_ui` | The director's Flask pages and its own facade | One UI's semantics |
 | `arena/cli` | Setting up, generating rounds, issuing links | The tool for a shell on the host |
 | `game-ui/` | The player's map, planning, log | Svelte 5 + Vite, no framework beyond that |
+| `arena/announce.py` | Channels a message can leave through | Beside the layers, like `log.py`. Knows nothing about rounds |
 
 The **services layer is the seam**. It speaks in domain terms and returns DTOs, plain dataclasses
 with no framework in them, so that what is above it never handles an engine object and never

@@ -14,6 +14,7 @@ import logging
 import sys
 import os
 
+from arena.announce import Announcer
 from arena.cfg import GAME_DATA_DIR, LOG_FILE_NAME, PLAY_URL
 from arena.log import configure_logger
 
@@ -31,10 +32,11 @@ logger = logging.getLogger('starship-arena')
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("action",
-                        choices=['setup', 'generate', 'manual', 'link', 'players', 'process_due'],
+                        choices=['setup', 'generate', 'manual', 'link', 'players', 'process_due',
+                                 'announce'],
                         help="Set a game up, generate its unprocessed rounds, build the manual, "
-                             "issue a login link, list who can log in, or process the games due "
-                             "this hour")
+                             "issue a login link, list who can log in, process the games due "
+                             "this hour, or send a test announcement")
     parser.add_argument("gamedir", nargs='?',
                         help="The name of the game you want to process.")
     parser.add_argument("-n", "--name", help="Who to issue a login link for.")
@@ -93,6 +95,16 @@ def process_due():
         logger.info(f"Nothing due at {server_now():%H:00 %Z}")
 
 
+def announce_test():
+    """Say something harmless on every channel. This is how a host proves it can reach them."""
+    announcer = Announcer()
+    if not announcer.configured:
+        print("No channel has an address. Set DISCORD_MESSAGE_WEBHOOK in secret.py.")
+        return
+    announcer.announce(f"Starship Arena checking in at {server_now():%H:%M %Z}.")
+    print(f"Sent to: {', '.join(c.name for c in announcer.configured)}")
+
+
 def list_players():
     players = PlayerRegistry(GAME_DATA_DIR).all()
     if not players:
@@ -115,6 +127,8 @@ def main():
         list_players()
     elif args.action == 'process_due':
         process_due()
+    elif args.action == 'announce':
+        announce_test()
     else:
         if not args.gamedir:
             sys.exit("Which game? Give its name.")

@@ -96,7 +96,8 @@ def processing():
 def save_settings(game: str):
     facade().save_settings(game,
                            on_all_ready=bool(request.form.get('on_all_ready')),
-                           hours=[int(h) for h in request.form.getlist('hour')])
+                           hours=[int(h) for h in request.form.getlist('hour')],
+                           announce=bool(request.form.get('announce')))
     return redirect(url_for('game_overview', game_name=game, _anchor='processing'))
 
 
@@ -273,7 +274,8 @@ def start_game(game: str):
         return roster_page(game, rows, problems, starting=game)
     facade().start_game(game, ships,
                         on_all_ready=bool(request.form.get('on_all_ready')),
-                        hours=[int(h) for h in request.form.getlist('hour')])
+                        hours=[int(h) for h in request.form.getlist('hour')],
+                        announce=bool(request.form.get('announce')))
     return redirect(url_for('game_overview', game_name=game))
 
 

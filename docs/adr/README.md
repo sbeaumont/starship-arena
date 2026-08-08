@@ -40,6 +40,7 @@ we already moved away from.
 | [0023](0023-a-tick-advances-by-encounters.md) | A tick advances by encounters, and contact transmits an impulse |
 | [0026](0026-a-game-keeps-a-journal.md) | A game keeps a journal of its processing |
 | [0027](0027-the-server-keeps-one-timezone.md) | The server keeps one timezone, and shifting is a UI concern |
+| [0029](0029-announcements-leave-through-channels.md) | Announcements leave the game through channels |
 
 ## Template
 
