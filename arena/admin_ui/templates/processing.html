@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Processing{% endblock %}
+
+{% block content %}
+<h1>Processing</h1>
+<p class="lede">What every game has done, newest first. Open one to change when it runs.</p>
+
+{% if not journal.lines %}
+    <div class="empty">No game has processed a round yet.</div>
+{% else %}
+    <div class="runlog" style="grid-template-columns: repeat({{ 2 + journal.columns|length }}, max-content) 1fr">
+        <div class="head">
+            <span>When</span>
+            <span>Game</span>
+            <span>Event</span>
+            {% for column in journal.columns %}<span>{{ column }}</span>{% endfor %}
+        </div>
+        {% for line in journal.lines %}
+            <a href="{{ url_for('game_overview', game_name=line.game, _anchor='processing') }}">
+                <span class="at">{{ line.when }}</span>
+                <span class="gamename">{{ line.display }}</span>
+                <span class="event {{ line.event }}">{{ line.event }}</span>
+                {% for column in journal.columns %}<span>{{ line.detail.get(column, '') }}</span>{% endfor %}
+            </a>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock content %}
