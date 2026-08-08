@@ -23,7 +23,7 @@ component through `self.selector.value` and calls it directly, never routing bac
 `Ship.accelerate` is the precedent for a limit: clamp, then record an `InternalEvent` saying what
 was done. Turning already does the same thing, just with an exemption in front of it.
 
-`balance.py` at the repository root reads the registry by reflection and prints the tables the
+`../docs/balance.py` at the repository root reads the registry by reflection and prints the tables the
 assessment is built from. Every step below that changes a number should be followed by a run of
 it.
 
@@ -128,7 +128,7 @@ needs an `active` flag. The battery does the bounding, so there is no clamp to w
 `half_power = 1` is too steep: 3 energy is near invisibility. `half_power = 8` is too shallow: 8
 energy only halves you. Every hull is on 4 for now, which keeps cloaks as undifferentiated as they
 already were. What each race gets is part of step 7, because it is the same question about what a
-race feels like, and `balance.py` prints the whole grid so other values can be looked at rather
+race feels like, and `../docs/balance.py` prints the whole grid so other values can be looked at rather
 than guessed.
 
 The draw is capped at twice what the hull generates, which is 10 to 16 across the fleet. A ceiling
@@ -220,7 +220,7 @@ is an improvement, so the order is: a hull pass now, then the Gunner and disabli
 work as intended, then a second hull pass if those move the laser numbers. Laser damage and reach
 are therefore provisional until the Gunner lands, and everything else is not.
 
-`balance.py` is reference, not a gate. Its `arc_weight` is flat and knows nothing about `max_turn`,
+`../docs/balance.py` is reference, not a gate. Its `arc_weight` is flat and knows nothing about `max_turn`,
 so it will score a narrowed arc as a straight loss. Read the census and the loadouts from it, not
 the verdict.
 
@@ -304,7 +304,7 @@ Every laser is on `reach = 60` with its old strength as `damage`, which keeps th
 ordering exactly as it was and leaves the real values to the families above. The starbase's two
 300 lasers are on 60 as well, which suits a fortress badly and wants revisiting with the rest.
 
-`balance.py` scores lasers at 20 units now rather than 60. Squared falloff to a 60 reach means a
+`../docs/balance.py` scores lasers at 20 units now rather than 60. Squared falloff to a 60 reach means a
 laser judged at the range missiles cross reads as worthless, so the two weapon classes are each
 scored in their own band. `LASER_RANGE` is the constant.
 

@@ -7,6 +7,7 @@ storage details such as GameDirectory or file paths.
 """
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from arena.app.naming import for_display
 
@@ -24,6 +25,10 @@ class Named:
 @dataclass
 class GameSummary(Named):
     current_round: int = 0
+    process_hours: list[int] = field(default_factory=list)  # hours of server time it runs on
+    # When it next will, ISO 8601 with the offset. None when the director processes it by hand.
+    # A moment rather than a schedule, so a reader's browser can put it in their own clock.
+    next_processing: str | None = None
 
 
 @dataclass
@@ -67,6 +72,13 @@ class GameOverview(Named):
     """Who is playing a game and how they are doing, enough to pick whose view to open."""
     last_round: int = 0
     factions: list[FactionSummary] = field(default_factory=list)
+
+
+@dataclass
+class ServerTime:
+    """The clock a game's hours are in, so an interface can put a reader's own beside it."""
+    now: str    # ISO 8601 with the offset
+    zone: str   # what the server calls it: 'CEST', 'UTC'
 
 
 @dataclass
@@ -145,6 +157,32 @@ class GameSettings:
     """How a game decides to process a round by itself. Both off means the director does it."""
     on_all_ready: bool
     process_hours: list[int]   # hours of the day it runs on. Empty means never
+
+
+class By(StrEnum):
+    """Who did something."""
+    DIRECTOR = 'director'
+    CRON = 'cron'
+    PLAYER = 'player'
+
+
+class ProcessingTrigger(StrEnum):
+    """What set a round going."""
+    MANUAL = 'manual'
+    MANUAL_FORCED = 'manual forced'
+    DEADLINE = 'deadline'
+    ALL_READY = 'all players ready'
+
+
+@dataclass
+class JournalEntry:
+    """One thing that happened to a game, and when.
+
+    `detail` is the entry's own reported dict, so a screen prints its pairs without knowing their
+    names and a new kind of entry needs no template edit."""
+    at: str      # ISO 8601 with the offset, in server time
+    event: str   # 'processed', 'failed', 'regenerated'
+    detail: dict[str, str]
 
 
 @dataclass

@@ -68,7 +68,6 @@ class GameRound(object):
 
         tick_nr = tick.abs_tick - tick.round_start.abs_tick + 1
 
-        logger.info(f"Processing tick {tick}")
         # Anything due this tick joins before the phases, so it lives the tick out in full.
         self.world.spawn(tick)
 

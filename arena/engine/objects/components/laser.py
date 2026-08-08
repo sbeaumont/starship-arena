@@ -34,6 +34,7 @@ class Laser(Weapon):
         return (self.temperature_ok
                 and self.energy_ok
                 and self.container.can_scan(ois)
+                and self.in_firing_arc(self.container.direction_to(ois.xy))
                 and self.damage_to(ois))
 
     def damage_to(self, target):

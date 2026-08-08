@@ -48,6 +48,22 @@ if (not SITE_URL) and ('SITE_URL' in dir(secret)):
 # server - is whole as it stands; otherwise the site's address goes in front of the path.
 PLAY_URL = GAME_UI_URL if '://' in GAME_UI_URL else SITE_URL.rstrip('/') + GAME_UI_URL
 
+# Only a single process may write here: two preforked workers would both rename the file at
+# rollover and one of them would keep writing to an unlinked inode. So the CLI logs to a file and
+# the web application logs to stderr, which the host captures and rotates itself.
+LOG_DIR = os.environ.get('LOG_DIR')
+if (not LOG_DIR) and ('LOG_DIR' in dir(secret)):
+    LOG_DIR = secret.LOG_DIR
+if not LOG_DIR:
+    LOG_DIR = 'logs'
+if not os.path.isabs(LOG_DIR):
+    LOG_DIR = os.path.join(REPO_ROOT, LOG_DIR)
+LOG_FILE_NAME = "arena.log"
+LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')             # what a console is shown
+LOG_FILE_LEVEL = os.environ.get('LOG_FILE_LEVEL', 'DEBUG')  # what the file keeps
+LOG_FILE_BYTES = int(os.environ.get('LOG_FILE_BYTES', 1_000_000))
+LOG_FILE_KEEP = int(os.environ.get('LOG_FILE_KEEP', 10))
+
 STATUS_FILE_TEMPLATE = "status_round_{}.pickle"
 COMMANDS_DIR = 'commands/'
 READY_DIR = 'ready/'
@@ -61,6 +77,7 @@ ARCHIVE_DIR_NAME = "archived"
 REGISTERING_DIR_NAME = "registering"
 REGISTRATION_FILE_NAME = "registrations.jsonl"
 SETTINGS_FILE_NAME = "settings.jsonl"
+JOURNAL_FILE_NAME = "journal.jsonl"
 SCENARIO_FILE_NAME = "scenario.json"
 # Who may log in, across every game. Lives at the data root rather than inside a game, because a
 # player's name is their identity everywhere.

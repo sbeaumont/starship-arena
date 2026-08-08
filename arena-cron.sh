@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Process every game whose settings name this hour. Hook it into cron on the hour:
 #
-#     0 * * * * /home/you/starship-arena/arena-cron.sh >> /home/you/arena-cron.log 2>&1
+#     0 * * * * /home/you/starship-arena/arena-cron.sh
+#
+# The run writes itself to logs/arena.log, which rotates. Anything that fails before that, a
+# missing venv or a broken import, goes to whatever the host does with a task's output.
 #
 # The cron schedule is the clock. `process_hours 8 20` runs on those two passes, `*` runs on every
 # pass, and a game with none is left to the director.

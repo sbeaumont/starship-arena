@@ -27,6 +27,11 @@ app.logger.setLevel(logging.DEBUG)
 app.jinja_env.globals['game_ui_url'] = GAME_UI_URL
 app.jinja_env.globals['play_url'] = PLAY_URL
 
+# How much of a game's journal its own page shows, and how much of every game's the Processing
+# screen does.
+JOURNAL_LINES = 20
+COMBINED_JOURNAL_LINES = 60
+
 
 # ---------------------------------------------------------------------- HELPERS
 
@@ -36,6 +41,12 @@ def facade():
     if not _facade:
         _facade = g._facade = AppFacade()
     return _facade
+
+
+@app.context_processor
+def server_clock():
+    """Every hour on every screen here is server time, so every screen says what that is."""
+    return {'server_time': facade().server_time, 'server_zone': facade().server_zone}
 
 
 # ---------------------------------------------------------------------- WHO IS ASKING
@@ -75,12 +86,18 @@ def overview():
                            archived=facade().archived_games())
 
 
+@app.route('/processing')
+def processing():
+    """What every game has actually done, newest first."""
+    return render_template('processing.html', journal=facade().all_journals(COMBINED_JOURNAL_LINES))
+
+
 @app.route('/settings/<game>', methods=['POST'])
 def save_settings(game: str):
     facade().save_settings(game,
                            on_all_ready=bool(request.form.get('on_all_ready')),
                            hours=[int(h) for h in request.form.getlist('hour')])
-    return redirect(url_for('game_overview', game_name=game))
+    return redirect(url_for('game_overview', game_name=game, _anchor='processing'))
 
 
 @app.route('/reopen/<game>', methods=['POST'])
@@ -88,7 +105,7 @@ def reopen(game: str):
     try:
         facade().reopen_registrations(game)
     except ValueError as e:
-        return redirect(url_for('game_overview', game_name=game, msg=str(e)))
+        return redirect(url_for('game_overview', game_name=game, msg=str(e), _anchor='processing'))
     return redirect(url_for('assign', game=game))
 
 
@@ -281,6 +298,7 @@ def game_overview(game_name: str):
                            ships=len(command_file),
                            orders_in=sum(1 for ok in command_file.values() if ok),
                            all_command_files_ok=game.current_round_ready,
+                           journal=facade().journal(game.name, JOURNAL_LINES),
                            dead_ships=game.graveyard.values(),
                            known_players=[p.name for p in facade().active_players()],
                            ship_types=facade().all_ship_types.values(),
@@ -304,8 +322,9 @@ def spawn(game: str):
                             heading=int(form.get('heading') or 0),
                             round_nr=int(form.get('round') or 0))
     except ValueError as refused:
-        return redirect(url_for('game_overview', game_name=game, spawn_error=str(refused)))
-    return redirect(url_for('game_overview', game_name=game))
+        return redirect(url_for('game_overview', game_name=game, spawn_error=str(refused),
+                                _anchor='edit'))
+    return redirect(url_for('game_overview', game_name=game, _anchor='edit'))
 
 
 @app.route('/game_status/<game>')
@@ -319,10 +338,9 @@ def process_turn(game: str):
     """POST rather than GET: a browser is free to prefetch a link, and processing a round twice
     is not something to leave to chance."""
     was = facade().game(game).current_round_nr
-    facade().process_turn(game)
-    now = facade().game(game).current_round_nr
-    told = f"Round {was} processed." if now > was else "Nothing processed: orders are still missing."
-    return redirect(url_for('game_overview', game_name=game, msg=told))
+    told = (f"Round {was} processed." if facade().process_turn(game)
+            else "Nothing processed: orders are still missing.")
+    return redirect(url_for('game_overview', game_name=game, msg=told, _anchor='processing'))
 
 
 @app.route('/force_process/<game>', methods=['POST'])
@@ -333,7 +351,7 @@ def force_process(game: str):
     told = f"Round {was} processed."
     if silent:
         told += f" No orders from {', '.join(silent)}."
-    return redirect(url_for('game_overview', game_name=game, msg=told))
+    return redirect(url_for('game_overview', game_name=game, msg=told, _anchor='processing'))
 
 
 @app.route('/regenerate/<game>', methods=['POST'])
@@ -343,7 +361,7 @@ def regenerate(game: str):
     told = f"Replayed to round {now}."
     if now < was:
         told += f" It stopped short of round {was}: orders are missing for a round in between."
-    return redirect(url_for('game_overview', game_name=game, msg=told))
+    return redirect(url_for('game_overview', game_name=game, msg=told, _anchor='processing'))
 
 
 @app.route('/players')

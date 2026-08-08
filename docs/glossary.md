@@ -27,6 +27,10 @@ or stopped early.
 reached, a warhead's trigger. A tick advances by resolving them, earliest first.
 [ADR 0023](adr/0023-a-tick-advances-by-encounters.md).
 
+**Server time.** The one clock the server keeps. A game's processing hours are hours of it, and so
+is every time it writes down. An interface may show a reader their own clock beside it; what it
+shows never travels back down. [ADR 0027](adr/0027-the-server-keeps-one-timezone.md).
+
 ## The world
 
 **Object in space.** Anything with a position: ships, missiles, mines and asteroids. The base of
@@ -95,6 +99,11 @@ on.
 
 **Event.** Something that happened to an object during a tick, with a `kind`: `internal`, `hit`,
 `explosion` or `scan`. Everything except scans shows up in the player's log.
+
+**Journal.** What the server did to a game and when: rounds processed, by whom, and what set each
+of them going. One file per game, and the director's answer to "did last night run". Not a log:
+that word already means the ops log and the ship events a player reads.
+[ADR 0026](adr/0026-a-game-keeps-a-journal.md).
 
 **Contact.** Something a faction has scanned but does not own, as a track of sightings. A scan
 records where something was, never its heading, so a contact's course is inferred from its last

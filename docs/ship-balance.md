@@ -3,7 +3,7 @@
 What the 19 hulls and the starbase are actually worth against each other, where the variety is
 thin, and which mechanics decide fights before any ship stat gets a say.
 
-Every number here comes from [`balance.py`](../balance.py) in the repository root, which reads
+Every number here comes from [`balance.py`](balance.py) in the repository root, which reads
 `builder.all_ship_types` by reflection and derives the rest. Nothing is transcribed by hand, so
 the report follows the registry:
 

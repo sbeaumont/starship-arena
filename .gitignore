@@ -1,5 +1,6 @@
 *.py[cod]
 .idea/
+/logs/
 **/__pycache__
 .venv/
 secret.py

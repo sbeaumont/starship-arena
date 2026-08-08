@@ -71,6 +71,20 @@ class GameDirectory(object):
         with open(os.path.join(self._dir, SETTINGS_FILE_NAME), 'w') as f:
             f.write(json.dumps(settings, sort_keys=True) + '\n')
 
+    def append_journal(self, entry: dict) -> None:
+        """One line about something that happened to this game. The caller stamps the time."""
+        with open(os.path.join(self._dir, JOURNAL_FILE_NAME), 'a') as f:
+            f.write(json.dumps(entry) + '\n')
+
+    def read_journal(self, limit: int = 0) -> list[dict]:
+        """Oldest first. `limit` keeps the last that many."""
+        path = os.path.join(self._dir, JOURNAL_FILE_NAME)
+        if not os.path.exists(path):
+            return []
+        with open(path) as f:
+            lines = [line for line in f if line.strip()]
+        return [json.loads(line) for line in (lines[-limit:] if limit else lines)]
+
     def is_ready(self, player: str, round_nr: int) -> bool:
         path = os.path.join(self._dir, READY_FILE_TEMPLATE.format(player))
         if not os.path.exists(path):

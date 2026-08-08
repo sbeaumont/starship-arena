@@ -10,138 +10,78 @@
     <p class="notice">{{ request.args.get('msg') }}</p>
 {% endif %}
 
-<div class="rowactions">
-    <form method="POST" action="{{ url_for('process_turn', game=game) }}">
-        <button class="go" type="submit" id="process" {{ 'disabled' if not all_command_files_ok }}>
-            {{ 'Process round ' ~ round_nr if all_command_files_ok else 'Waiting for orders' }}
-        </button>
-    </form>
-    <form method="POST" action="{{ url_for('force_process', game=game) }}"
-          onsubmit="return confirm('Process round {{ round_nr }} now? Anyone without orders gets an empty file and does nothing.')">
-        <button type="submit">Force it</button>
-    </form>
-    <form method="POST" action="{{ url_for('regenerate', game=game) }}"
-          onsubmit="return confirm('Replay {{ display }} from its ships file and orders? Its saved rounds are rebuilt.')">
-        <button type="submit">Regenerate</button>
-    </form>
-    {% if reopenable %}
-        <form method="POST" action="{{ url_for('reopen', game=game) }}"
-              onsubmit="return confirm('Put {{ display }} back into registration? The roster is thrown away; who registered is not.')">
-            <button type="submit">Back to registration</button>
-        </form>
+<nav class="tabs">
+    <button type="button" data-goto="overview">Overview</button>
+    <button type="button" data-goto="processing">Processing</button>
+    <button type="button" data-goto="edit">Edit</button>
+</nav>
+
+<section data-tab="overview" hidden>
+    {% for faction, ships_of in factions.items() %}
+        <div class="faction">Faction {{ faction }}</div>
+        <div class="grid ships">
+            <span class="header">Ship</span>
+            <span class="header num">Score</span>
+            <span class="header">Player</span>
+            <span class="header">Orders</span>
+            <span class="header">Ready</span>
+            {% for ship in ships_of %}
+                <span>{{ ship.name }}</span>
+                <span class="num">{{ ship.score }}</span>
+                <span>
+                    {{ ship.player }}
+                    {%- if ship.player %}
+                        <a href="{{ game_ui_url }}/?game={{ game|urlencode }}&amp;player={{ ship.player|urlencode }}"
+                           target="_blank" rel="noopener" title="Open this player's interactive map">map</a>
+                    {%- endif %}
+                </span>
+                <span data-orders="{{ ship.name }}" class="{{ 'ok' if command_file[ship.name] else 'no' }}"
+                    >{{ 'in' if command_file[ship.name] else 'waiting' }}</span>
+                <span data-ready="{{ ship.player }}" class="{{ 'ok' if ready.get(ship.player) else 'no' }}"
+                    >{{ 'ready' if ready.get(ship.player) else 'not yet' }}</span>
+            {% endfor %}
+        </div>
+    {% endfor %}
+
+    {% if dead_ships %}
+        <h2>Graveyard</h2>
+        <div class="grid graveyard">
+            <span class="header">Ship</span>
+            <span class="header num">Score</span>
+            <span class="header">Player</span>
+            {% for ship in dead_ships %}
+                <span class="gone">{{ ship.name }}</span>
+                <span class="num">{{ ship.score }}</span>
+                <span>{{ ship.player }}</span>
+            {% endfor %}
+        </div>
     {% endif %}
-    <span class="hint">Regenerating replays every round, so saved state is rebuilt with the current engine.</span>
-</div>
+</section>
 
-{% for faction, ships_of in factions.items() %}
-    <div class="faction">Faction {{ faction }}</div>
-    <div class="grid ships">
-        <span class="header">Ship</span>
-        <span class="header num">Score</span>
-        <span class="header">Player</span>
-        <span class="header">Orders</span>
-        <span class="header">Ready</span>
-        {% for ship in ships_of %}
-            <span>{{ ship.name }}</span>
-            <span class="num">{{ ship.score }}</span>
-            <span>
-                {{ ship.player }}
-                {%- if ship.player %}
-                    <a href="{{ game_ui_url }}/?game={{ game|urlencode }}&amp;player={{ ship.player|urlencode }}"
-                       target="_blank" rel="noopener" title="Open this player's interactive map">map</a>
-                {%- endif %}
-            </span>
-            <span data-orders="{{ ship.name }}" class="{{ 'ok' if command_file[ship.name] else 'no' }}"
-                >{{ 'in' if command_file[ship.name] else 'waiting' }}</span>
-            <span data-ready="{{ ship.player }}" class="{{ 'ok' if ready.get(ship.player) else 'no' }}"
-                >{{ 'ready' if ready.get(ship.player) else 'not yet' }}</span>
-        {% endfor %}
+<section data-tab="processing" hidden>
+    <div class="rowactions">
+        <form method="POST" action="{{ url_for('process_turn', game=game) }}">
+            <button class="go" type="submit" id="process" {{ 'disabled' if not all_command_files_ok }}>
+                {{ 'Process round ' ~ round_nr if all_command_files_ok else 'Waiting for orders' }}
+            </button>
+        </form>
+        <form method="POST" action="{{ url_for('force_process', game=game) }}"
+              onsubmit="return confirm('Process round {{ round_nr }} now? Anyone without orders gets an empty file and does nothing.')">
+            <button type="submit">Force it</button>
+        </form>
+        <form method="POST" action="{{ url_for('regenerate', game=game) }}"
+              onsubmit="return confirm('Replay {{ display }} from its ships file and orders? Its saved rounds are rebuilt.')">
+            <button type="submit">Regenerate</button>
+        </form>
+        {% if reopenable %}
+            <form method="POST" action="{{ url_for('reopen', game=game) }}"
+                  onsubmit="return confirm('Put {{ display }} back into registration? The roster is thrown away; who registered is not.')">
+                <button type="submit">Back to registration</button>
+            </form>
+        {% endif %}
     </div>
-{% endfor %}
 
-{% if dead_ships %}
-    <h2>Graveyard</h2>
-    <div class="grid graveyard">
-        <span class="header">Ship</span>
-        <span class="header num">Score</span>
-        <span class="header">Player</span>
-        {% for ship in dead_ships %}
-            <span class="gone">{{ ship.name }}</span>
-            <span class="num">{{ ship.score }}</span>
-            <span>{{ ship.player }}</span>
-        {% endfor %}
-    </div>
-{% endif %}
-
-<details class="settings" {{ 'open' if spawn_error }}>
-    <summary>Spawn a ship</summary>
-    {% if spawn_error %}<ul class="messages"><li>{{ spawn_error }}</li></ul>{% endif %}
-    <form method="POST" action="{{ url_for('spawn', game=game) }}" class="spawn">
-        <div class="spawnrow one">
-            <span>
-                <label for="spawn_name">Name</label>
-                <input type="text" id="spawn_name" name="name" autocomplete="off" required>
-            </span>
-        </div>
-
-        <div class="spawnrow three">
-            <span>
-                <label for="spawn_type">Type</label>
-                <select id="spawn_type" name="type">
-                    <optgroup label="Ships">
-                        {% for st in ship_types %}<option value="{{ st.type_name }}">{{ st.name }}</option>{% endfor %}
-                    </optgroup>
-                    <optgroup label="Starbases">
-                        {% for st in starbase_types %}<option value="{{ st.type_name }}">{{ st.name }}</option>{% endfor %}
-                    </optgroup>
-                </select>
-            </span>
-            <span>
-                <label for="spawn_player">Player</label>
-                <input type="text" id="spawn_player" name="player" list="known_players" autocomplete="off">
-            </span>
-            <span>
-                <label for="spawn_faction">Faction</label>
-                <input type="text" id="spawn_faction" name="faction" list="known_factions" autocomplete="off">
-            </span>
-        </div>
-
-        <div class="spawnrow four">
-            <span><label for="spawn_x">X</label>
-                <input type="text" id="spawn_x" name="x" value="0" class="coord"></span>
-            <span><label for="spawn_y">Y</label>
-                <input type="text" id="spawn_y" name="y" value="0" class="coord"></span>
-            <span><label for="spawn_heading">Heading</label>
-                <input type="text" id="spawn_heading" name="heading" value="0" class="coord"></span>
-            <span><label for="spawn_round">Round</label>
-                <input type="text" id="spawn_round" name="round" value="{{ round_nr }}" class="coord"></span>
-        </div>
-
-        <datalist id="known_players">
-            {% for p in known_players %}<option value="{{ p }}">{% endfor %}
-        </datalist>
-        <datalist id="known_factions">
-            {% for f in factions %}<option value="{{ f }}">{% endfor %}
-        </datalist>
-
-        <div class="rowactions">
-            <button class="go" type="submit">Spawn</button>
-        </div>
-    </form>
-</details>
-
-<details class="settings">
-    <summary>Processing
-        {%- if settings.on_all_ready or settings.process_hours %} <span class="when">&mdash;
-            {%- if settings.on_all_ready %} automatic on ready{% endif -%}
-            {%- if settings.process_hours|length == 24 %}
-                {{- ' and' if settings.on_all_ready }} on every hour
-            {%- elif settings.process_hours %}
-                {{- ' and' if settings.on_all_ready }} on hours
-                {%- for h in settings.process_hours %} {{ '%02d' % h }}{{ ',' if not loop.last }}{% endfor %}
-            {%- endif %}</span>
-        {%- endif %}
-    </summary>
+    <h2>When it processes</h2>
     <div class="panel">
         <form method="POST" action="{{ url_for('save_settings', game=game) }}" id="settings">
             <label class="check">
@@ -149,7 +89,7 @@
                 Process as soon as every player says they are ready
             </label>
 
-            <label>Process at these hours, ready or not</label>
+            <label>Process at these hours (forced, server time)</label>
             <div class="hours">
                 {% for h in range(24) %}
                     <label class="hour">
@@ -165,11 +105,108 @@
             </div>
         </form>
     </div>
-</details>
+
+    <h2>Journal</h2>
+    <div class="panel">
+        {% if journal.lines %}
+            <div class="runlog" style="grid-template-columns: repeat({{ 1 + journal.columns|length }}, max-content) 1fr">
+                <div class="head">
+                    <span>When</span>
+                    <span>Event</span>
+                    {% for column in journal.columns %}<span>{{ column }}</span>{% endfor %}
+                </div>
+                {% for line in journal.lines %}
+                    <div>
+                        <span class="at">{{ line.when }}</span>
+                        <span class="event {{ line.event }}">{{ line.event }}</span>
+                        {% for column in journal.columns %}<span>{{ line.detail.get(column, '') }}</span>{% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+            <p class="note">Times are server time ({{ server_zone }}).</p>
+        {% else %}
+            <p class="note">Nothing has happened to this game yet.</p>
+        {% endif %}
+    </div>
+</section>
+
+<section data-tab="edit" hidden>
+    <h2>Spawn a ship</h2>
+    {% if spawn_error %}<ul class="messages"><li>{{ spawn_error }}</li></ul>{% endif %}
+    <div class="panel">
+        <form method="POST" action="{{ url_for('spawn', game=game) }}" class="spawn">
+            <div class="spawnrow one">
+                <span>
+                    <label for="spawn_name">Name</label>
+                    <input type="text" id="spawn_name" name="name" autocomplete="off" required>
+                </span>
+            </div>
+
+            <div class="spawnrow three">
+                <span>
+                    <label for="spawn_type">Type</label>
+                    <select id="spawn_type" name="type">
+                        <optgroup label="Ships">
+                            {% for st in ship_types %}<option value="{{ st.type_name }}">{{ st.name }}</option>{% endfor %}
+                        </optgroup>
+                        <optgroup label="Starbases">
+                            {% for st in starbase_types %}<option value="{{ st.type_name }}">{{ st.name }}</option>{% endfor %}
+                        </optgroup>
+                    </select>
+                </span>
+                <span>
+                    <label for="spawn_player">Player</label>
+                    <input type="text" id="spawn_player" name="player" list="known_players" autocomplete="off">
+                </span>
+                <span>
+                    <label for="spawn_faction">Faction</label>
+                    <input type="text" id="spawn_faction" name="faction" list="known_factions" autocomplete="off">
+                </span>
+            </div>
+
+            <div class="spawnrow four">
+                <span><label for="spawn_x">X</label>
+                    <input type="text" id="spawn_x" name="x" value="0" class="coord"></span>
+                <span><label for="spawn_y">Y</label>
+                    <input type="text" id="spawn_y" name="y" value="0" class="coord"></span>
+                <span><label for="spawn_heading">Heading</label>
+                    <input type="text" id="spawn_heading" name="heading" value="0" class="coord"></span>
+                <span><label for="spawn_round">Round</label>
+                    <input type="text" id="spawn_round" name="round" value="{{ round_nr }}" class="coord"></span>
+            </div>
+
+            <datalist id="known_players">
+                {% for p in known_players %}<option value="{{ p }}">{% endfor %}
+            </datalist>
+            <datalist id="known_factions">
+                {% for f in factions %}<option value="{{ f }}">{% endfor %}
+            </datalist>
+
+            <div class="rowactions">
+                <button class="go" type="submit">Spawn</button>
+            </div>
+        </form>
+    </div>
+</section>
 
 <script>
     const POLL_MS = 15000;
     const round_nr = {{ round_nr }};
+
+    const panes = document.querySelectorAll('[data-tab]');
+    const tabs = document.querySelectorAll('[data-goto]');
+
+    function showTab(wanted) {
+        const known = [...panes].some((p) => p.dataset.tab === wanted) ? wanted : 'overview';
+        for (const pane of panes) pane.hidden = pane.dataset.tab !== known;
+        for (const tab of tabs) tab.classList.toggle('here', tab.dataset.goto === known);
+    }
+
+    for (const tab of tabs) {
+        tab.addEventListener('click', () => { location.hash = tab.dataset.goto; });
+    }
+    addEventListener('hashchange', () => showTab(location.hash.slice(1)));
+    showTab(location.hash.slice(1));
 
     const form = document.getElementById('settings');
     const dirty = form.querySelector('.dirty');

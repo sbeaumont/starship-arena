@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
 from arena.app.dto import (GameSummary, OpenGame, ShipRound, PlayerPlan, GameOverview,
-                           ShipTypeInfo, Me, Pulse)
+                           ShipTypeInfo, Me, Pulse, ServerTime)
 from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE, Player
 from arena.app.services import GameService
 
@@ -89,6 +89,12 @@ def logout(response: Response) -> dict:
 @router.get("/games")
 def list_games() -> list[GameSummary]:
     return service.list_games()
+
+
+@router.get("/time")
+def server_time() -> ServerTime:
+    """The server's clock, so a reader can put a game's processing hours beside their own."""
+    return service.server_time()
 
 
 @router.get("/ship-types")

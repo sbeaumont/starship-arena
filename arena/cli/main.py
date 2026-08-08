@@ -13,11 +13,11 @@ import argparse
 import logging
 import sys
 import os
-from datetime import datetime
 
-from arena.cfg import GAME_DATA_DIR, PLAY_URL
+from arena.cfg import GAME_DATA_DIR, LOG_FILE_NAME, PLAY_URL
 from arena.log import configure_logger
 
+from arena.app.clock import server_now
 from arena.app.players import PlayerRegistry, DIRECTOR, PLAYER
 from arena.app.services import AdminService
 from arena.engine.admin import setup_game
@@ -86,12 +86,11 @@ def issue_link(name: str, director: bool, url: str):
 
 def process_due():
     """Process every game whose settings name this hour. Run hourly by cron."""
-    hour = datetime.now().hour
-    done = AdminService().process_due(hour)
+    done = AdminService().process_due()
     for line in done:
         logger.info(line)
     if not done:
-        logger.info(f"Nothing due at {hour}:00")
+        logger.info(f"Nothing due at {server_now():%H:00 %Z}")
 
 
 def list_players():
@@ -105,7 +104,7 @@ def list_players():
 
 
 def main():
-    configure_logger(False, ["fontTools"])
+    configure_logger(LOG_FILE_NAME)
     args = parse_args()
     if args.action == 'manual':
         logger.info("Generating manual...")
@@ -131,5 +130,4 @@ def main():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
     main()

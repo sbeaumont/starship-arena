@@ -1,40 +1,43 @@
-import locale
+"""Where log output goes. See docs/development.md."""
+
 import logging
+import logging.handlers
+import os
 
+from arena.cfg import LOG_DIR, LOG_FILE_BYTES, LOG_FILE_KEEP, LOG_FILE_LEVEL, LOG_LEVEL
 
-locale.setlocale(locale.LC_ALL, 'nl_NL.UTF-8')
 logger = logging.getLogger('starship-arena')
-LOG_FILE_NAME = "./logfile.txt"
-FILE_LOG_LEVEL = logging.DEBUG
-CONSOLE_LOG_LEVEL = logging.DEBUG
-LOG_FORMAT = '%(name)s %(levelname)s: %(message)s'
+LOG_FORMAT = '%(asctime)s %(name)s %(levelname)s: %(message)s'
+NOISY = ['fontTools']
 
 
-def deactivate_logger_blocklist(logger_blocklist=list()):
-    logger_blocklist.append('fontTools')
-    # Silence library logging
-    for module in logger_blocklist:
+def deactivate_logger_blocklist(logger_blocklist=()):
+    """Libraries that log about their own internals at DEBUG."""
+    for module in NOISY + list(logger_blocklist):
         logging.getLogger(module).setLevel(logging.ERROR)
 
 
-def configure_logger(create_log_file=False, logger_blocklist=list()):
-    """Configure the file and console logging."""
-    logging.getLogger().setLevel(logging.ERROR)
+def configure_logger(log_file: str = '', logger_blocklist=()):
+    """Log to the console, and to a rotating file when one is named.
 
-    logger.setLevel(FILE_LOG_LEVEL)
+    Naming a file is for a single process only: preforked workers fight over the rollover."""
+    logging.getLogger().setLevel(logging.ERROR)
+    logger.setLevel(logging.DEBUG)
+    logger.handlers.clear()
     formatter = logging.Formatter(LOG_FORMAT)
 
-    if create_log_file:
-        # create file handler
-        fh = logging.FileHandler(LOG_FILE_NAME, 'w')
-        fh.setLevel(FILE_LOG_LEVEL)
-        fh.setFormatter(formatter)
-        logger.addHandler(fh)
+    console = logging.StreamHandler()
+    console.setLevel(LOG_LEVEL)
+    console.setFormatter(formatter)
+    logger.addHandler(console)
 
-    # create console handler with its own log level
-    ch = logging.StreamHandler()
-    ch.setLevel(CONSOLE_LOG_LEVEL)
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+    if log_file:
+        os.makedirs(LOG_DIR, exist_ok=True)
+        rotating = logging.handlers.RotatingFileHandler(os.path.join(LOG_DIR, log_file),
+                                                        maxBytes=LOG_FILE_BYTES,
+                                                        backupCount=LOG_FILE_KEEP)
+        rotating.setLevel(LOG_FILE_LEVEL)
+        rotating.setFormatter(formatter)
+        logger.addHandler(rotating)
 
     deactivate_logger_blocklist(logger_blocklist)

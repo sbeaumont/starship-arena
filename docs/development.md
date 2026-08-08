@@ -45,6 +45,19 @@ pass a local one explicitly when testing.
 
 Issuing again replaces the old link.
 
+## Logs
+
+The CLI writes `logs/arena.log`, rotating at 1 MB and keeping 10. The console it prints to shows
+INFO, the file keeps DEBUG, so a round's ticks are there when you want them and out of the way
+when you don't.
+
+The web application writes no file. Two preforked workers would both rename one at rollover and
+the loser would keep writing to an unlinked inode, so they print to stderr and the host captures
+it. `arena-dev.sh` is that stderr, tagged per server.
+
+`LOG_DIR`, `LOG_LEVEL`, `LOG_FILE_LEVEL`, `LOG_FILE_BYTES` and `LOG_FILE_KEEP` are in
+`arena/cfg.py`, all overridable from the environment.
+
 ## Testing
 
 ```

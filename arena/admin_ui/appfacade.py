@@ -9,12 +9,14 @@ import logging
 import os
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
-from arena.app.dto import GameSettings
+from arena.app.clock import server_now, zone_name
+from arena.app.dto import By, GameSettings, ProcessingTrigger
 from arena.app.naming import for_display
 from arena.app.services import AdminService
-from arena.engine.admin import GameSetup, regenerate_game
+from arena.engine.admin import GameSetup
 from arena.engine.gamedirectory import GameDirectory
 from arena.engine.game import Game
 from arena.cfg import GAME_DATA_DIR, MANUAL_FILENAME
@@ -52,6 +54,29 @@ class NameValidator(object):
     def _check_not_empty(self):
         if not self.name or len(self.name.strip()) == 0:
             self.messages.append('Name can not be empty.')
+
+
+@dataclass
+class JournalLine:
+    """One journal entry as the console prints it: a time to read, and pairs to show."""
+    game: str
+    when: str
+    event: str
+    detail: dict[str, str]
+
+    @property
+    def display(self) -> str:
+        return for_display(self.game)
+
+
+@dataclass
+class Journal:
+    """Journal entries as a table: the detail columns they use between them, and the rows.
+
+    The columns come from the entries rather than from a list held here, so a new detail on an
+    entry gets a column of its own and nothing needs editing."""
+    columns: list[str]
+    lines: list[JournalLine]
 
 
 @dataclass
@@ -144,19 +169,45 @@ class AppFacade(object):
 
     # ---------------------------------------------------------------------- COMMANDS
 
-    def process_turn(self, game_name: str):
-        game = Game(self.gd(game_name))
-        if game.current_round_ready:
-            logger.info(f"Processing round {game.current_round_nr} of game {game_name}")
-            game.process_current_round()
-        else:
-            logger.info(f"Not proceeding to process {game_name}: not all command files ok")
+    def process_turn(self, game_name: str) -> bool:
+        return self.admin.process_turn(game_name)
 
     def regenerate_game(self, game_name: str) -> int:
-        return regenerate_game(self.gd(game_name))
+        return self.admin.regenerate_game(game_name)
 
     def force_process_turn(self, game_name: str) -> list[str]:
-        return self.admin.force_process_turn(game_name)
+        return self.admin.force_process_turn(game_name, By.DIRECTOR,
+                                             ProcessingTrigger.MANUAL_FORCED)
+
+    @staticmethod
+    def _journal_line(game: str, entry) -> JournalLine:
+        return JournalLine(game=game,
+                           when=f"{datetime.fromisoformat(entry.at):%d %b %H:%M}",
+                           event=entry.event,
+                           detail={k.replace('_', ' '): v for k, v in entry.detail.items()})
+
+    @staticmethod
+    def _as_table(lines: list[JournalLine]) -> Journal:
+        return Journal(columns=list(dict.fromkeys(k for line in lines for k in line.detail)),
+                       lines=lines)
+
+    def journal(self, game: str, limit: int = 0) -> Journal:
+        return self._as_table([self._journal_line(game, e)
+                               for e in self.admin.journal(game, limit)])
+
+    def all_journals(self, limit: int = 0) -> Journal:
+        """Every game's journal in one run, newest first."""
+        found = [(g.name, e) for g in self.admin.list_games() for e in self.admin.journal(g.name)]
+        found.sort(key=lambda pair: datetime.fromisoformat(pair[1].at), reverse=True)
+        return self._as_table([self._journal_line(name, e) for name, e in found[:limit or None]])
+
+    @property
+    def server_zone(self) -> str:
+        return zone_name()
+
+    @property
+    def server_time(self) -> str:
+        return f"{server_now():%H:%M}"
 
     def is_ready(self, game: str, player: str) -> bool:
         return self.admin.is_ready(game, player)

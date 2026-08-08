@@ -13,6 +13,7 @@ the root. There's no database.
         settings.jsonl       the plan: when this game processes a round
         registrations.jsonl  the plan: who put themselves down, and for how many ships
         scenario.json        the plan: which scenario it is being built from
+        journal.jsonl        the record: what the server did to this game, and when
         commands/
             <ship>-commands-<round>.txt      the plan: what each player ordered
         status_round_<n>.pickle              the state: the world at the end of a round
@@ -23,10 +24,10 @@ over, `registering/` is one that has been named and is collecting registrations.
 is the same thing in all three places, and moving between them is a `shutil.move`.
 [ADR 0022](adr/0022-a-game-directory-moves-between-three-places.md).
 
-## Plan and state
+## Plan, state, and record
 
-Every file here is one or the other, and which one decides everything about how it is written,
-whether it can be thrown away, and who is allowed to touch it.
+Almost every file here is a plan or state, and which one decides everything about how it is
+written, whether it can be thrown away, and who is allowed to touch it. One file is neither.
 
 **A plan says what should happen.** The roster, the scheduled arrivals, the orders. Somebody wrote
 it: a player typing commands, a director setting a game up or spawning a reinforcement. It is text,
@@ -38,8 +39,16 @@ graveyard, and what has arrived. Nobody writes it by hand. It is a pickle, it is
 every round, and it can always be rebuilt by replaying the plans, because [the game is
 deterministic](architecture.md#processing-a-round). So it is gitignored and disposable.
 
+**A record is what the server did.** `journal.jsonl` is the only one: which rounds were processed,
+when, and what set each of them going. Nothing replays from it, so losing it loses no game, and
+nothing can rebuild it, because a replay has no idea what time anything happened at.
+
 The test that decides which one a new file is: **could the engine produce it again from what is
-left after you delete it?** If yes it is state. If no it is a plan, and losing it loses the game.
+left after you delete it?** If yes it is state. If no, ask whether anything reads it back to
+rebuild the game. If so it is a plan and losing it loses the game; if not it is a record.
+
+A record is not disposable and not irreplaceable. **A regenerate leaves it alone**, and writes
+itself into it.
 
 Two consequences worth spelling out, because both have caught us:
 
@@ -130,6 +139,22 @@ or not. Empty means the director processes it. The timing comes from cron runnin
 on the hour; nothing here measures elapsed time.
 
 `process_on_all_ready` processes the moment the last player says they are ready.
+
+## journal.jsonl
+
+What the server did to this game. One object per line, appended and never rewritten.
+
+```jsonl
+{"at": "2026-08-08T15:14:22+02:00", "event": "processed", "round": 5, "by": "cron", "trigger": "deadline", "no_orders_from": "Cronny, Dewey"}
+{"at": "2026-08-08T15:14:33+02:00", "event": "regenerated", "round": 6, "by": "director"}
+```
+
+`at` is in server time, with the offset written out. `event` is `processed`, `failed` or
+`regenerated`. `by` says who and `trigger` says what, which are different questions: cron is a who,
+a deadline is a what.
+
+Everything after those is the entry's own to name. A screen prints the pairs it finds, so a new
+detail needs no template edit. [ADR 0026](adr/0026-a-game-keeps-a-journal.md).
 
 ## registrations.jsonl, and scenario.json
 

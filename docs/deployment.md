@@ -98,11 +98,12 @@ environment first and from `secret.py` second:
 ```python
 GAME_DATA_DIR = 'games'                                        # relative means inside the repo
 SITE_URL = 'https://starship-arena-agfx.pythonanywhere.com'    # the address players use
+LOG_DIR = 'logs'                                               # optional; relative, same rule
 PA_API_TOKEN = '...'                                           # deploying: the reload call
 PA_SSH_KEYFILE = '~/.ssh/id_pa_ssh'                            # deploying: the pull
 ```
 
-The first two are `arena/cfg.py`. The `PA_` pair is the odd one out: no application code reads
+The first three are `arena/cfg.py`. The `PA_` pair is the odd one out: no application code reads
 them, only `arena-deploy.sh`, and only on the machine you deploy *from*. The host's own copy of
 `secret.py` never needs either.
 
@@ -117,6 +118,32 @@ which the host picks for itself, and a relative value is already anchored to the
 `SITE_URL` is read only where a login link is made whole: the CLI printing one, and the console's
 player page. It's the address a link is *for*, not where this machine serves from, so the same
 value belongs in both copies.
+
+There is no timezone setting. The server keeps the host's clock, and PythonAnywhere's is UTC, so a
+game asking for hour 20 processes at 20:00 UTC. Every screen showing an hour says which clock it
+is. [ADR 0027](adr/0027-the-server-keeps-one-timezone.md).
+
+## Processing on the clock
+
+A game names the hours it processes on, and cron is what makes those hours happen. Hourly, on the
+hour:
+
+```
+0 * * * * /home/you/starship-arena/arena-cron.sh
+```
+
+No redirect. The run logs itself to `logs/arena.log`, and what happens before logging is
+configured, a missing virtualenv or a broken import, goes to the host's own capture of the task's
+output.
+
+`arena-cron.sh` looks for `~/.virtualenvs/starship-arena` first, then `uv`, then bare `python3`.
+Cron runs with `PATH=/usr/bin:/bin` and no profile, so a `uv` in `~/.local/bin` is invisible to it:
+on a machine with no virtualenv at that path the fallback reaches `python3` and dies on the
+imports.
+
+The web application writes no log file of its own. Two preforked workers would both rename one at
+rollover and the loser would go on writing to an unlinked inode, so they print to stderr and the
+host's server log keeps it.
 
 ## Rolling out logins
 

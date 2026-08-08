@@ -4,14 +4,16 @@ GameService is player-facing and restricted, AdminService is the director's. Sto
 this line. See docs/adr/0001-layered-architecture.md."""
 
 import json
+import logging
 import re
 import shutil
+from datetime import datetime
 from pathlib import Path
 
 from arena.cfg import (ADMIN_UI_URL, ARCHIVE_DIR_NAME, COMMANDS_DIR, GAME_DATA_DIR,
                        INIT_FILE_NAME, MANUAL_FILENAME, REGISTERING_DIR_NAME,
                        REGISTRATION_FILE_NAME, SCENARIO_FILE_NAME, STATUS_FILE_TEMPLATE)
-from arena.engine.admin import GameSetup
+from arena.engine.admin import GameSetup, regenerate_game as engine_regenerate_game
 from arena.engine.command import parse_commands
 from arena.engine.game import Game
 from arena.engine.gamedirectory import BodyFile, GameDirectory, ShipFile
@@ -20,6 +22,7 @@ from arena.engine.objects.registry.builder import all_fielded_types
 from arena.engine.objects.event import ExplosionEvent
 from arena.engine.objects.objectinspace import Stance
 from arena.app import scenarios
+from arena.app.clock import next_occurrence, server_now, zone_name
 from arena.app.players import DIRECTOR, LOGIN_COOKIE, PLAYER, Player, PlayerRegistry
 from arena.app.registrations import Registration, RegistrationFile
 from arena.app.dto import (
@@ -27,8 +30,15 @@ from arena.app.dto import (
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
     WeaponInfo, ComponentInput,
     ShipSummary, FactionSummary, GameOverview, ShipTypeInfo, Me, LoginInfo, GameSettings, Pulse,
-    GamePulse,
+    GamePulse, JournalEntry, By, ProcessingTrigger, ServerTime,
 )
+
+logger = logging.getLogger('starship-arena.services')
+
+
+def _entry(raw: dict) -> JournalEntry:
+    return JournalEntry(at=raw['at'], event=raw['event'],
+                        detail={k: str(v) for k, v in raw.items() if k not in ('at', 'event')})
 
 
 class _EngineAccess:
@@ -40,6 +50,15 @@ class _EngineAccess:
 
     def _gd(self, game: str) -> GameDirectory:
         return GameDirectory(self.data_root, game)
+
+    def _append_journal(self, game: str, event: str, **detail) -> None:
+        """Add a line to the game's journal. Real time enters here, never below."""
+        self._gd(game).append_journal({'at': server_now().isoformat(timespec='seconds'),
+                                       'event': event, **detail})
+
+    def journal(self, game: str, limit: int = 0) -> list[JournalEntry]:
+        """The game's journal, newest first, which is how a screen wants it."""
+        return [_entry(raw) for raw in reversed(self._gd(game).read_journal(limit))]
 
     @property
     def _archive(self) -> Path:
@@ -94,12 +113,20 @@ class _EngineAccess:
     def withdraw(self, game: str, player: str) -> None:
         RegistrationFile(self._registering / game).remove(player)
 
-    @staticmethod
-    def _games_in(root: Path) -> list[GameSummary]:
+    @classmethod
+    def _games_in(cls, root: Path) -> list[GameSummary]:
         if not root.exists():
             return []
-        return [GameSummary(name=d.name, current_round=GameDirectory(str(root), d.name).last_round_number + 1)
-                for d in sorted(root.iterdir()) if d.is_dir()]
+        now = server_now()
+        games = []
+        for d in sorted(p for p in root.iterdir() if p.is_dir()):
+            gd = GameDirectory(str(root), d.name)
+            hours = cls._settings_of(gd).process_hours
+            due = next_occurrence(hours, now)
+            games.append(GameSummary(name=d.name, current_round=gd.last_round_number + 1,
+                                     process_hours=hours,
+                                     next_processing=due.isoformat(timespec='seconds') if due else None))
+        return games
 
     def _roster(self, game: str) -> dict[str, str]:
         """Which player commands which ship.
@@ -109,10 +136,14 @@ class _EngineAccess:
         graveyard, everything that ever did."""
         return {s.name: s.player for s in Game(self._gd(game)).world.player_objects.values()}
 
-    def settings(self, game: str) -> GameSettings:
-        raw = self._gd(game).read_settings()
+    @staticmethod
+    def _settings_of(gd: GameDirectory) -> GameSettings:
+        raw = gd.read_settings()
         return GameSettings(on_all_ready=raw.get('process_on_all_ready', False),
                             process_hours=sorted(raw.get('process_hours', [])))
+
+    def settings(self, game: str) -> GameSettings:
+        return self._settings_of(self._gd(game))
 
     def save_settings(self, game: str, settings: GameSettings) -> None:
         hours = sorted(set(settings.process_hours))
@@ -139,7 +170,10 @@ class _EngineAccess:
         if ready and self.settings(game).on_all_ready and self.all_ready(game):
             g = Game(self._gd(game))
             if g.current_round_ready:
+                round_nr = g.current_round_nr
                 g.process_current_round()
+                self._append_journal(game, 'processed', round=round_nr,
+                                     by=By.PLAYER, trigger=ProcessingTrigger.ALL_READY)
                 return True
         return False
 
@@ -179,6 +213,11 @@ class GameService(_EngineAccess):
         if any(name in self._roster(g.name).values() for g in self.list_games()):
             raise ValueError(f"'{name}' already commands ships. Ask the director for a link.")
         return self.players.issue(name)
+
+    @staticmethod
+    def server_time() -> ServerTime:
+        """The clock every processing hour is in. Open, like the hours themselves."""
+        return ServerTime(now=server_now().isoformat(timespec='seconds'), zone=zone_name())
 
     def me(self, player: Player) -> Me:
         return Me(name=player.name, is_director=player.is_director,
@@ -499,24 +538,41 @@ class GameService(_EngineAccess):
 class AdminService(_EngineAccess):
     """Lower-level operations for the admin/director interface."""
 
-    def process_due(self, hour: int) -> list[str]:
+    def process_due(self) -> list[str]:
         """Force a round in every game whose settings say this hour is its hour.
 
         Called once an hour by cron, which is where the timing comes from: the games say which
         hour they want, and nothing here measures elapsed time. Deadlines override readiness, so a
         due game processes whether the orders are in or not."""
+        now = server_now()
         run = []
         for game in self.list_games():
             try:
-                if hour not in self.settings(game.name).process_hours:
+                if now.hour not in self.settings(game.name).process_hours:
                     continue
-                silent = self.force_process_turn(game.name)
+                if self._deadline_already_fired(game.name, now):
+                    run.append(f"{game.name}: this hour's deadline has already run")
+                    continue
+                logger.info(f"{game.name}: processing round {game.current_round}")
+                silent = self.force_process_turn(game.name, By.CRON, ProcessingTrigger.DEADLINE)
                 run.append(f"{game.name}: round {game.current_round} processed"
                            + (f", no orders from {', '.join(silent)}" if silent else ""))
             except Exception as e:
                 # One unreadable game must not stop the rest of the hour's work.
                 run.append(f"{game.name}: FAILED, {e}")
+                self._append_journal(game.name, 'failed', round=game.current_round,
+                                     by=By.CRON, trigger=ProcessingTrigger.DEADLINE, error=str(e))
         return run
+
+    def _deadline_already_fired(self, game: str, now: datetime) -> bool:
+        """Whether this game's deadline has already run this hour. Nothing else is asked."""
+        for raw in reversed(self._gd(game).read_journal()):
+            at = datetime.fromisoformat(raw['at'])
+            if (at.date(), at.hour) != (now.date(), now.hour):
+                return False
+            if raw.get('trigger') == ProcessingTrigger.DEADLINE:
+                return True
+        return False
 
     # ---------------------------------------------------------------------- GAMES
 
@@ -642,24 +698,41 @@ class AdminService(_EngineAccess):
             record['faction'] = faction
         gd.append_spawn(record)
 
-    def process_turn(self, game: str) -> None:
+    def process_turn(self, game: str) -> bool:
+        """Process only when every order is in. Returns whether it ran."""
         g = Game(self._gd(game))
-        if g.current_round_ready:
-            g.process_current_round()
+        if not g.current_round_ready:
+            return False
+        round_nr = g.current_round_nr
+        g.process_current_round()
+        self._append_journal(game, 'processed', round=round_nr,
+                             by=By.DIRECTOR, trigger=ProcessingTrigger.MANUAL)
+        return True
 
-    def force_process_turn(self, game: str) -> list[str]:
+    def force_process_turn(self, game: str, by: By, trigger: ProcessingTrigger) -> list[str]:
         """Process whether or not the orders are in, writing an empty file for those that are not.
 
         An empty command file reads as "no orders arrived in time", which is what a deadline
         means. Returns the ships it had to do that for."""
         gd = self._gd(game)
         g = Game(gd)
+        round_nr = g.current_round_nr
         silent = sorted(g.missing_command_files)
         for ship in silent:
-            with open(gd.command_file(ship, g.current_round_nr), 'w') as f:
+            with open(gd.command_file(ship, round_nr), 'w') as f:
                 f.write('')
         Game(gd).process_current_round()
+        detail = {'round': round_nr, 'by': by, 'trigger': trigger}
+        if silent:
+            detail['no_orders_from'] = ', '.join(silent)
+        self._append_journal(game, 'processed', **detail)
         return silent
+
+    def regenerate_game(self, game: str) -> int:
+        """Replay from the plans, back to the round it was on. Returns the round it ended on."""
+        to_round = engine_regenerate_game(self._gd(game))
+        self._append_journal(game, 'regenerated', round=to_round, by=By.DIRECTOR)
+        return to_round
 
     def command_status(self, game: str) -> dict[str, bool]:
         return Game(self._gd(game)).command_file_status

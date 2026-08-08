@@ -72,6 +72,7 @@ p { font-family: var(--sans); line-height: 1.6; color: var(--ink); }
 .topbar nav a:hover { color: var(--hull); }
 .topbar nav a.here { color: var(--amber); }
 .topbar nav .sep { width: 1px; height: 18px; background: var(--edge); }
+.topbar .clock { margin-left: auto; color: var(--ink-dim); font-size: 12px; white-space: nowrap; }
 
 .main { max-width: 1000px; margin: 0 auto; padding: 28px 24px 64px; }
 
@@ -357,7 +358,7 @@ label.check { display: flex; align-items: center; gap: 8px; color: var(--ink-dim
               font-size: 12px; margin-top: 14px; }
 label.check input { width: auto; }
 
-.hours { display: grid; grid-template-columns: repeat(12, 44px); gap: 4px; margin-bottom: 4px; }
+.hours { display: grid; grid-template-columns: repeat(12, 44px); gap: 4px; margin: 12px 0 20px; }
 .hour {
     margin: 0; padding: 6px 0; text-align: center; cursor: pointer;
     font-size: 11px; color: var(--ink-faint); background: var(--bg);
@@ -375,6 +376,43 @@ details.settings summary:hover { color: var(--hull); }
 details.settings summary .when { color: var(--ink-faint); font-size: 12px; }
 .saveline { display: flex; align-items: center; gap: 12px; }
 .saveline .dirty { color: var(--warn); font-size: 11px; font-family: var(--sans); }
+
+nav.tabs { display: flex; gap: 4px; margin: 24px 0 18px; border-bottom: 1px solid var(--edge); }
+nav.tabs button {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    padding: 8px 16px;
+    color: var(--ink-dim);
+    font-family: var(--sans);
+    font-size: 13px;
+    cursor: pointer;
+}
+nav.tabs button:hover { color: var(--hull); }
+nav.tabs button.here { color: var(--amber); border-bottom-color: var(--amber); }
+
+/* One grid for the whole log, with the rows as `display: contents`, so every column lines up
+   across rows. The column template is written inline: only the data knows how many there are. */
+.runlog { display: grid; font-size: 12px; }
+.runlog > * { display: contents; color: var(--ink); }
+.runlog > * > span {
+    padding: 6px 16px 6px 0;
+    border-top: 1px solid var(--edge);
+    white-space: nowrap;
+}
+.runlog > a:hover > span { background: var(--panel-lit); }
+.runlog .head > span {
+    border-top: none;
+    color: var(--ink-faint);
+    font-family: var(--sans);
+    font-size: 11px;
+}
+.runlog .at { color: var(--ink-dim); }
+.runlog .gamename { color: var(--hull); }
+.runlog .event { color: var(--green); }
+.runlog .event.failed { color: var(--warn); }
+.note { color: var(--ink-faint); font-size: 12px; margin: 12px 0 0; }
 
 .graveyard { grid-template-columns: 1fr 80px 1fr; }
 

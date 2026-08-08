@@ -17,6 +17,58 @@
   let loadingOverview = $state(false);
   let error = $state(null);
 
+  // A game's hours are the server's, so its clock is what a deadline means. Everything below
+  // shows the reader their own time; the server's is only ever displayed.
+  let server = $state(null);
+  let askedAtMs = $state(0);
+  let nowMs = $state(Date.now());
+  // What this browser's clock is out by, so a wrong one cannot make a countdown lie.
+  const skew = $derived(server ? Date.parse(server.now) - askedAtMs : 0);
+
+  function offsetMsOf(iso) {
+    const signed = /([+-])(\d{2}):(\d{2})$/.exec(iso);
+    return signed
+      ? (signed[1] === "-" ? -1 : 1) * (Number(signed[2]) * 60 + Number(signed[3])) * 60000
+      : 0;
+  }
+
+  // The server's zone has no name here, only an offset, so shift the epoch by it and read the
+  // UTC fields. Formatting in the browser's zone would show the reader's clock, not the server's.
+  const serverClock = $derived(
+    server ? new Date(nowMs + skew + offsetMsOf(server.now)).toISOString().slice(11, 16) : "",
+  );
+
+  function whenLocal(iso) {
+    const at = new Date(iso);
+    const today = new Date(nowMs + skew).toDateString() === at.toDateString();
+    const hm = at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return today ? hm : `${at.toLocaleDateString([], { weekday: "short" })} ${hm}`;
+  }
+
+  function until(iso) {
+    const mins = Math.round((Date.parse(iso) - (nowMs + skew)) / 60000);
+    if (mins <= 0) return "due now";
+    if (mins < 60) return `in ${mins} min`;
+    const hours = Math.floor(mins / 60);
+    return mins % 60 ? `in ${hours}h ${mins % 60}m` : `in ${hours}h`;
+  }
+
+  $effect(() => {
+    const ticking = setInterval(() => (nowMs = Date.now()), 30000);
+    return () => clearInterval(ticking);
+  });
+
+  $effect(() => {
+    (async () => {
+      const asked = Date.now();
+      const res = await fetch("/api/game/time");
+      if (res.ok) {
+        server = await res.json();
+        askedAtMs = asked;
+      }
+    })();
+  });
+
   $effect(() => {
     (async () => {
       try {
@@ -83,6 +135,7 @@
     <h1>Starship Arena</h1>
     <p class="sub">
       Signed in as {me.name}{#if me.is_director} · <span class="role">{directing ? "director" : "director, looking as a player"}</span>{/if}
+      {#if server} · <span class="clock">server time {serverClock} {server.zone}</span>{/if}
     </p>
     <nav>
       {#if me.is_director}
@@ -121,6 +174,13 @@
                 <span class="nm">{g.display}</span>
                 <span class="meta">
                   {g.current_round === 1 ? "not played yet" : `${g.current_round - 1} rounds played`}
+                </span>
+                <span class="meta next">
+                  {#if g.next_processing}
+                    next round {whenLocal(g.next_processing)} · {until(g.next_processing)}
+                  {:else}
+                    no deadline, the director runs it
+                  {/if}
                 </span>
               </button>
             </li>
@@ -259,6 +319,8 @@
   .pick.on { border-color: var(--amber); color: var(--amber); }
   .pick:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
   .meta { font-size: 11px; color: var(--ink-dim); }
+  .next { color: var(--ink-faint); }
+  .clock { color: var(--ink-dim); }
 
   .faction { margin-bottom: 18px; }
   .fhead { display: flex; align-items: baseline; gap: 10px; padding: 0 0 6px;
