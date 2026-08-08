@@ -17,7 +17,7 @@ and Cobra 0.09 apart rather than 0.21. **They are regenerated with the hull pass
 to replace every number in them. Re-run `balance.py` after touching a registry file or a component,
 because most of these findings move when a single constant does.
 
-The work these findings feed into is in [plans/ship-balance-plan.md](../plans/ship-balance-plan.md).
+The work these findings feed into is in [plans/ship-balance-plan.md](../work/plans/ship-balance-plan.md).
 
 ## Four things the engine had wrong
 
@@ -126,7 +126,7 @@ units away on tick 7. A missile forgives a bad prediction because it steers. A l
 the weapon reads as weak when it is really unaimable, and raising the numbers to compensate is
 what conflated damage with reach in the first place. Fixing the formula without fixing the aiming
 walks straight back into it. The options are worked through in
-[the plan](../plans/ship-balance-plan.md), and the front runner is a standing order that fires
+[the plan](../work/plans/ship-balance-plan.md), and the front runner is a standing order that fires
 whenever the target is in reach, turning a prediction into a commitment.
 
 ## Two tubes of five beat one tube of ten

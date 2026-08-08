@@ -12,7 +12,7 @@ same thing: what the pieces are, and why they're that way rather than some other
 
 ## How these fit together
 
-**This directory describes and decides. [`TODO.md`](../TODO.md) plans.** Documentation that
+**This directory describes and decides. [`../../../../../work/TODO.md`](../TODO.md) plans.** Documentation that
 describes intentions ages badly, because nothing forces it to come true.
 
 **The overview describes; the ADRs argue.** So the overview can be rewritten freely while the

@@ -19,7 +19,7 @@ in context. So the rules go where the work happens, short, with the reasoning on
 | **`docs/`** | Why *this design*. Describes what is true now |
 | **`docs/adr/`** | Why this design *and not the other one*. Frozen once accepted |
 | **Instruction files** | The rules a change must not break. Short, absolute, per directory |
-| **`TODO.md`** | What is not done yet |
+| **`../../../work/TODO.md`** | What is not done yet |
 
 The last one earns its place: **docs describe and decide, the backlog plans.** Intentions written
 into documentation age badly, because nothing forces them to come true. Move anything aspirational

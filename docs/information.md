@@ -160,7 +160,7 @@ that is an addition rather than an alternative.
 ## Five ways to get it wrong
 
 Shapes rather than instances, so they stay recognisable. Whichever ones are live at any moment are
-tracked in [`TODO.md`](../TODO.md).
+tracked in [`../work/TODO.md`](../work/TODO.md).
 
 **The reader names the fields.** A reported dict assembled somewhere other than the thing it
 describes:

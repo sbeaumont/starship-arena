@@ -74,7 +74,7 @@ of.
 [`docs/adr/`](docs/adr/) has 24 decision records, each with what was rejected and why, which is the
 part that stops the next person undoing it.
 
-[`TODO.md`](TODO.md) is what's next.
+[`work/TODO.md`](work/TODO.md) is what's next.
 
 ## State of it
 

@@ -19,7 +19,7 @@ the same thing: what the pieces are, and why they're that way rather than some o
 
 ## How these fit together
 
-**This directory describes and decides. [`TODO.md`](../TODO.md) plans.** If something is not done
+**This directory describes and decides. [`../work/TODO.md`](../work/TODO.md) plans.** If something is not done
 yet it belongs in the backlog. Documentation that describes intentions ages badly, because
 nothing forces it to come true.
 
@@ -41,6 +41,6 @@ reasoning, so an agent reads what it needs where it's working.
 changes with it, ADRs included. Git holds what it used to say. A doc describing what we used to do
 gets read as what we do, which is how an agent ends up implementing a decision that was reversed.
 
-**`plans/` is scratch.** A plan is the working document for one piece of work: the order the steps
+**`../work/plans/` is scratch.** A plan is the working document for one piece of work: the order the steps
 go in and what will bite. Decisions made along the way move into an ADR or into this directory, and
 the plan is deleted once the work lands.

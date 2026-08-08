@@ -6,7 +6,7 @@ each section.
 ## Next, in order
 
 1. **A pass over the ship registry**, to give the hulls an identity worth choosing between. Runs
-   on the tools that exist. Assessed in [docs/ship-balance.md](docs/ship-balance.md), planned in
+   on the tools that exist. Assessed in [docs/ship-balance.md](../docs/ship-balance.md), planned in
    [plans/ship-balance-plan.md](plans/ship-balance-plan.md), where steps 1 to 6 and 8 are done.
 2. **The Gunner and the Engage order**, then **a disabling hit**, which is what makes a laser
    worth aiming and point defence worth carrying. A second registry pass follows if they move the
@@ -14,7 +14,7 @@ each section.
 3. **The leaderboard**, the last piece of player management still open.
 4. **Scenario builder**, now that a scenario is a real thing with a home.
 
-## Game UI (`game-ui/`)
+## Game UI (`../game-ui`)
 
 - [x] **Boost and Power have controls**, in the tick panel under the weapons. `ComponentStatus`
       now carries the collection the machine keeps a component in and the inputs an order to it
@@ -195,9 +195,9 @@ each section.
 
 - [x] **Large objects, and crossing them.** Solid bodies with a radius, and movement that notices
       them. A collision transmits an impulse and the object receiving it decides what that means
-      ([ADR 0023](docs/adr/0023-a-tick-advances-by-encounters.md)), and a tick advances by
+      ([ADR 0023](../docs/adr/0023-a-tick-advances-by-encounters.md)), and a tick advances by
       resolving encounters rather than teleporting from endpoint to endpoint
-      ([ADR 0023](docs/adr/0023-a-tick-advances-by-encounters.md)). Terrain is public: a body is
+      ([ADR 0023](../docs/adr/0023-a-tick-advances-by-encounters.md)). Terrain is public: a body is
       scanned like anything else and a `Contact` carries a `stance` and a `radius`, so the map
       keys off the size rather than off a category name. Placed from `bodies.jsonl`, written by
       the scenario.
@@ -225,7 +225,7 @@ each section.
       of throwaway NPC hulls would want to opt out without becoming a new ship type. That means
       moving it to instance state in `Ship.__init__` and overriding the derived answer, which is
       an internal change: readers already ask the machine, and it crosses no seam. See
-      [docs/information.md](docs/information.md).
+      [docs/information.md](../docs/information.md).
 - [ ] **A malformed Boost command crashes.** Long-standing.
 - [x] **The CLI could not take an action and a game name.** `action` was `nargs="*"` ahead of an
       optional `gamedir`, so argparse handed both words to `action` and every documented form
@@ -244,7 +244,7 @@ each section.
       it may put out, and a scenario trigger is a third writer of the spawn plan.
 - [x] **A wreck is claimed once.** A `claimed` tag on the wreck rather than a field: too small a
       fact to earn one. `ObjectInSpace.tags` is a set of strings, the well-known ones defined next
-      to the rule that sets them. See [docs/information.md](docs/information.md) for the line a tag
+      to the rule that sets them. See [docs/information.md](../docs/information.md) for the line a tag
       must not cross.
 
       It also gave the planning UI its dropdown: `World.find_objects` takes where, tags and
@@ -297,13 +297,13 @@ each section.
 - [ ] **Four places name a component instead of asking all of them.** Each is a spot where a new
       component is silently ignored, so they block the healer, the teleporter and the
       spawner-in-a-missile as much as they are wrong today. The list, with line numbers, is in
-      [ADR 0019](docs/adr/0019-machines-drive-components-through-one-vocabulary.md) under *Where
+      [ADR 0019](../docs/adr/0019-machines-drive-components-through-one-vocabulary.md) under *Where
       the code does not do this yet*. Two of them are in `Gunner` and go with that work.
 - Decided against: making each `Command` declare its own execution phase. The switch in
   `CommandSet.add` keeps all the tick ordering visible in one place, which is what makes it easy
   to move a command between phases while debugging.
 
-## Application services (`arena/app/`)
+## Application services (`../arena/app`)
 
 - [ ] **`_EngineAccess` is a shared-behaviour base wearing an access name.** It holds `_gd`,
       `list_games` and `_archive`, which is what the name promises, and then `settings`,
@@ -312,7 +312,7 @@ each section.
       class named for reaching files constructs an engine object. Either thin the base to file
       access and put the shared operations somewhere honest, or rename it for what it is.
 
-## Documentation (`docs/`)
+## Documentation (`../docs`)
 
 Written with the author, not handed over as a draft: the intent is human understanding *and*
 stopping AI drift, and the reasoning is the part only a person can confirm.
@@ -338,9 +338,9 @@ time" prevents the re-proposal.
       scenarios, the three places a game lives, collisions and the encounter loop.
 - [ ] **New ADRs as decisions come up.** Not a backlog to work through: write one when something is
       decided, especially when an alternative was rejected for a reason worth remembering.
-- [x] **`CLAUDE.md` folded back** to constraints plus commands, with per-directory files for
-      `arena/engine`, `arena/app`, `arena/api`, `arena/admin_ui` and `game-ui`.
-- [x] **`readme.md` rewritten** as the front door: what the game is, how to run it, what is worth
+- [x] **`../CLAUDE.md` folded back** to constraints plus commands, with per-directory files for
+      `../arena/engine`, `../arena/app`, `../arena/api`, `../arena/admin_ui` and `game-ui`.
+- [x] **`../readme.md` rewritten** as the front door: what the game is, how to run it, what is worth
       knowing before reading the code, and where the rest lives. Its old backlog was migrated into
       this file first, including the processing-order defect and the Boost crash.
 - [x] **Mermaid diagrams**: the layers and the tick phases in `architecture.md`, the request
@@ -349,11 +349,11 @@ time" prevents the re-proposal.
 ## Documentation, continued
 
 - [x] **Documentation meta-rules extracted into a skill**:
-      `.claude/skills/project-documentation/`, with copyable templates. `share/ai-guardrails/`
+      `../.claude/skills/project-documentation`, with copyable templates. `share/ai-guardrails/`
       is the same thing packaged for someone on another agent, prose rules included.
 
-- [ ] **Close the console's engine imports.** `arena/admin_ui` reaches into `arena/engine` in five
-      places, which `docs/architecture.md` rule 3 forbids: the console is a user interface and
+- [ ] **Close the console's engine imports.** `../arena/admin_ui` reaches into `../arena/engine` in five
+      places, which `../docs/architecture.md` rule 3 forbids: the console is a user interface and
       goes through `AdminService`. `AppFacade` builds `Game` objects directly today. Doing this
       also makes the later move of the console onto `/api/admin/*` possible.
 
@@ -432,11 +432,11 @@ The lists grow without bound as games pile up, so this is about keeping them mai
 ## Making a game easily
 
 - [x] **Deal players into a game.** Drag registrations into faction columns, and whoever is left
-      is spread at random to even the numbers. `arena/app/scenarios/`, screens at `/new_game`,
+      is spread at random to even the numbers. `../arena/app/scenarios`, screens at `/new_game`,
       `/registering` and `/registering/<game>`. The durable parts are
-      [ADR 0021](docs/adr/0021-scenarios-sit-in-the-services-layer.md),
-      [ADR 0022](docs/adr/0022-a-game-directory-moves-between-three-places.md) and
-      [docs/data.md](docs/data.md).
+      [ADR 0021](../docs/adr/0021-scenarios-sit-in-the-services-layer.md),
+      [ADR 0022](../docs/adr/0022-a-game-directory-moves-between-three-places.md) and
+      [docs/data.md](../docs/data.md).
 - [x] **A sign-up page.** The director names a game and opens it, players put themselves down in
       the game UI with a name per ship, and the console deals them into factions by dragging. A
       game being formed is a game directory in `registering/`, and starting it moves the directory
@@ -454,7 +454,7 @@ The lists grow without bound as games pile up, so this is about keeping them mai
       that fills the columns in front of you rather than at submit time, so you can see what you
       got and move a few.
 - [ ] **Relative power of the ship types.** A faction must not be handed the beginner hulls by
-      accident. The table in `arena/app/scenarios/five_faction_war.py` is where the answer lands,
+      accident. The table in `../arena/app/scenarios/five_faction_war.py` is where the answer lands,
       and possibly a per-faction ordering, so the first ship dealt to one side is comparable to
       the first ship dealt to every other. Note Insectoid has three hulls where the rest have four.
       Wants every type side by side: hull, shields per quadrant, speed, turn, delta-v, battery,
@@ -466,7 +466,7 @@ The lists grow without bound as games pile up, so this is about keeping them mai
       scenario that wants something else needs a way to say so; deriving a template name from the
       key was tried and thrown away as premature.
 
-## Admin / director UI (`arena/admin_ui/`)
+## Admin / director UI (`../arena/admin_ui`)
 
 - [x] **The game page keeps up by itself**, polling `/game_status/<game>` every 15 seconds for who
       has handed in and who has said ready. It costs no round load. When the round has moved on
@@ -479,30 +479,30 @@ The lists grow without bound as games pile up, so this is about keeping them mai
 
 ## Hosting
 
-Deployed on PythonAnywhere as a single WSGI app: `arena/serve.py` serves the built UI as static
+Deployed on PythonAnywhere as a single WSGI app: `../arena/serve.py` serves the built UI as static
 files from the root, mounts the Flask console under `/director` and sends `/api/...` to the
 FastAPI app through `a2wsgi`. No Node at runtime; `npm run build --prefix game-ui` is a build step. Deploying is
-`git pull` and a reload; every default in `arena/cfg.py` is the deployed one and all paths are
+`git pull` and a reload; every default in `../arena/cfg.py` is the deployed one and all paths are
 anchored to the repository rather than the working directory.
 
 **The host preforks with Python threads disabled.** uWSGI loads the app in a master process and
 forks the workers, and a fork keeps only the calling thread, so anything with a background
 thread, event loop or connection pool must be built on first use inside the worker, never at
-import. `arena/serve.py` builds the ASGI adapter that way; the symptom of getting it wrong is
+import. `../arena/serve.py` builds the ASGI adapter that way; the symptom of getting it wrong is
 every route timing out at `504-loadbalancer`.
 
 - [ ] **Deploying the logins is order-sensitive.** The console refuses everyone until a director
       exists, so: `git pull`, then `./arena-link.sh <you> https://your.site --director` in a Bash
       console there, then open that link once. Deploy first and reload and you get the 403 page
       until you do - recoverable, but only through the shell.
-- [ ] **Set `SITE_URL` in the host's `secret.py`** (e.g.
+- [ ] **Set `SITE_URL` in the host's `../secret.py`** (e.g.
       `SITE_URL = 'https://starship-arena-agfx.pythonanywhere.com'`) so `./arena-link.sh <name>`
       prints a whole link there without the address being typed each time. Left unset it prints a
       path, which is right for development where the address differs per runner.
-- [ ] **Rebuild and commit `game-ui/dist` whenever the UI changes**, tracked because the
+- [ ] **Rebuild and commit `../game-ui/dist` whenever the UI changes**, tracked because the
       host has no build step. `npm run build --prefix game-ui`.
-- [ ] **Consider dropping the CORS entry** in `arena/api/app.py`. It exists only for the Vite dev
-      server, but `arena-dev.sh` proxies `/api` through Vite, so the browser is same-origin in
+- [ ] **Consider dropping the CORS entry** in `../arena/api/app.py`. It exists only for the Vite dev
+      server, but `../arena-dev.sh` proxies `/api` through Vite, so the browser is same-origin in
       development too.
 - [ ] **Watch WeasyPrint.** It depends on system Pango/Cairo, and only the manual still needs it
       now that per-round PDFs are gone. If it breaks on the host, pin it back rather than
@@ -526,7 +526,7 @@ every route timing out at `504-loadbalancer`.
       the test has to build its own geometry rather than use a scenario.
 
 - [ ] **Half the console's routes are still untested.** The setup flow and the players page have
-      tests now (`test/admin_ui/test_scenarios.py`, `test_players.py`), which caught the roster
+      tests now (`../test/admin_ui/test_scenarios.py`, `test_players.py`), which caught the roster
       screen offering the wrong players. Still only exercised by hand: `spawn`, `process_turn`,
       `force_process`, `regenerate`, the settings form and the game overview. The pattern is
       established: post the form, follow the redirect, assert on what came back.
