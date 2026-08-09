@@ -540,9 +540,9 @@ every route timing out at `504-loadbalancer`.
 
       No longer the console's data root, at least: that moved to `game-data/`, so playing with a
       game can't take a fixture away from the suite any more.
-- [ ] **`test_distribute_ships` is flaky.** It asserts no placed ship has an x or y of exactly
-      zero, but `centers_for` places them at a random angle, which occasionally rounds to it.
-      Seen twice; 20 runs since have been clean.
+- [x] **`test_distribute_ships` is flaky.** Gone with the move of deployment into
+      `arena/app/scenarios/placement.py`: its test seeds the generator, so the placement it checks
+      is the same one every run.
 - [ ] Game pickles are regenerable and gitignored: on schema drift, **delete them** rather than
       adding compatibility shims. Player orders live in `commands/*.txt` and are tracked, so they
       survive. The console's **Regenerate** button replays a game from its ships file and orders.
