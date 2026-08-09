@@ -18,7 +18,7 @@ class TestGamePulse(TestCase):
         self.root = tempfile.mkdtemp()
         self.admin = AdminService(self.root)
         self.game = GameService(self.root)
-        self.admin.create_game('live', SHIPS)
+        self.admin.create_game('live', SHIPS, 'generic')
 
     def tearDown(self):
         shutil.rmtree(self.root, ignore_errors=True)

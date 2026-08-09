@@ -74,15 +74,16 @@ outcomes. Same plans, but the rules have moved.
 One JSON object per line, no header. `#` starts a comment.
 
 ```jsonl
-{"name": "BaseOne", "type": "SB2531", "faction": "One", "player": "TeamOne", "x": 548, "y": 116}
-{"name": "Voyager", "type": "A2527", "faction": "One", "player": "Rik", "x": 479, "y": 121}
+{"name": "BaseOne", "type": "SB2531", "faction": "One", "player": "TeamOne", "x": 548, "y": 116, "heading": 258.0}
+{"name": "Voyager", "type": "A2527", "faction": "One", "player": "Rik", "x": 479, "y": 121, "heading": 255.8}
 ```
 
 `name`, `type` and `faction` are required. `type` is a type name from the ship registry, `A2527`
 rather than `A2527 Alligator`.
 
-`x` and `y` are optional. Leave them out and setup spreads the factions evenly around the origin,
-then writes the coordinates back into this file so the placement replays.
+`x`, `y` and `heading` are where a ship starts and which way it looks. They are the scenario's to
+decide, and it does that when the game is created; what it decided is written here and setup places
+nothing. So a regenerate deploys the game the way it was deployed the first time.
 
 `player` is optional, and a ship without one is nobody's: no orders are expected and it is not
 player controlled.

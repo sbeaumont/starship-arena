@@ -61,7 +61,7 @@ class TestAnnouncingARound(TestCase):
         self.speaker = Loudspeaker()
         self.admin = AdminService(self.root, announcer=Announcer([self.speaker]))
         self.game = GameService(self.root, announcer=Announcer([self.speaker]))
-        self.admin.create_game(GAME, SHIPS)
+        self.admin.create_game(GAME, SHIPS, 'generic')
 
     def tearDown(self):
         shutil.rmtree(self.root, ignore_errors=True)

@@ -15,7 +15,7 @@ class TestArchiving(TestCase):
         self.admin = AdminService(self.root)
         self.game = GameService(self.root)
         for name in ('live', 'old'):
-            self.admin.create_game(name, SHIPS)
+            self.admin.create_game(name, SHIPS, 'generic')
 
     def tearDown(self):
         shutil.rmtree(self.root, ignore_errors=True)

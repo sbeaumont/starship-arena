@@ -5,6 +5,7 @@ this line. See docs/adr/0001-layered-architecture.md."""
 
 import json
 import logging
+import random
 import re
 import shutil
 from datetime import datetime
@@ -626,11 +627,17 @@ class AdminService(_EngineAccess):
     def set_player_active(self, name: str, active: bool) -> None:
         self.players.set_active(name, active)
 
-    def create_game(self, name: str, ships: list[dict], bodies: list[dict] = None) -> None:
+    def create_game(self, name: str, ships: list[dict], scenario: str) -> None:
+        """Build the game the scenario describes: its roster deployed, its terrain in place.
+
+        Where a ship starts is the scenario's call, and it is written into the roster file, so a
+        regenerate replays the deployment rather than drawing a new one."""
         self.dirs.games.mkdir(parents=True, exist_ok=True)
         gd = GameDirectory(str(self.dirs.games), name)
         if not gd.exists or not gd.has_been_setup:
-            GameSetup(gd, ShipFile(gd, ships), BodyFile(gd, bodies or [])).execute()
+            plan = scenarios.by_key(scenario)
+            placed = plan.place(ships, random.Random())
+            GameSetup(gd, ShipFile(gd, placed), BodyFile(gd, plan.bodies())).execute()
 
     # ---------------------------------------------------------------------- BEFORE IT STARTS
 
@@ -672,9 +679,9 @@ class AdminService(_EngineAccess):
         if target.exists():
             raise ValueError(f"A game called '{name}' is already being played.")
         # Asked before the move, because the scenario is read from where the game is registering.
-        terrain = scenarios.by_key(self.scenario_of(name)).bodies()
+        scenario = self.scenario_of(name)
         shutil.move(str(self.dirs.registering / name), str(target))
-        self.create_game(name, ships, terrain)
+        self.create_game(name, ships, scenario)
         self.save_settings(name, settings)
 
     def spawn_ship(self, game: str, name: str, ship_type: str, player: str = '',

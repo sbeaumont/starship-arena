@@ -229,13 +229,14 @@ class ShipFile(JsonLinesFile):
         player: str = ''
         x: float = 0
         y: float = 0
+        heading: float = 0
 
         @property
         def xy(self):
             return self.x, self.y
 
     def __init__(self, gd: GameDirectory, ships: list[dict] = None):
-        """Ships as records: name, type, faction, and optionally player, x and y."""
+        """Ships as records: name, type, faction, and optionally player, x, y and heading."""
         super().__init__(gd, self.name)
         records = ships if ships is not None else self.load()
         self.ship_lines = [self.line_from_record(r) for r in records]
@@ -253,6 +254,7 @@ class ShipFile(JsonLinesFile):
             player=record.get('player', ''),
             x=record.get('x', 0),
             y=record.get('y', 0),
+            heading=record.get('heading', 0),
         )
 
     def save(self, ships):
@@ -265,6 +267,7 @@ class ShipFile(JsonLinesFile):
             record['player'] = ship.player
         record['x'] = ship.pos.x
         record['y'] = ship.pos.y
+        record['heading'] = ship.heading
         return record
 
 

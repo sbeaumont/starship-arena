@@ -55,9 +55,10 @@ def spawn(type_name: str, name: str, vector: Vector, **kwargs):
     return type_instance.base_type(name, type_instance, vector, **kwargs)
 
 
-def create(name: str, type_name: str, position: tuple, **kwargs):
-    """Spawn at a position, stationary and facing north. What game setup wants."""
-    return spawn(type_name, name, Vector(Point(position[0], position[1]), heading=0, speed=0), **kwargs)
+def create(name: str, type_name: str, position: tuple, heading: float = 0, **kwargs):
+    """Spawn at a position and a facing, stationary. What game setup wants."""
+    return spawn(type_name, name, Vector(Point(position[0], position[1]), heading=heading, speed=0),
+                 **kwargs)
 
 
 def from_plan(record: dict, tick: Tick):

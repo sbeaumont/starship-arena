@@ -13,7 +13,7 @@ from arena.engine.objects.components.spawner import CLAIMED, ShipSpawner
 from arena.engine.objects.registry import builder
 from arena.engine.world import World
 
-# Placed away from the origin, because setup scatters anything still sitting on it. Voyager is
+# Placed away from the origin, because a scenario deploys anything still sitting on it. Voyager is
 # 20 off the base, where a 300 laser reaching 60 does 133. The first shot breaks a 100 shield and
 # takes 33 hull, the second lands whole on 100 of hull, so it takes both of the base's lasers.
 ROSTER = [
@@ -55,7 +55,7 @@ class TestFiringTheSpawner(TestCase):
         games = os.path.join(self.root, 'games')
         admin = AdminService(self.root)
         admin.issue_login('Rik')
-        admin.create_game('spawner', ROSTER)
+        admin.create_game('spawner', ROSTER, 'generic')
         self.gd = GameDirectory(games, 'spawner')
         self.games = games
         # Round 1 kills Voyager, so round 2 has a wreck to claim.
@@ -95,7 +95,8 @@ class TestFiringTheSpawner(TestCase):
         world = self._run_round_two("1: Fire SS Voyager 90\n")
 
         replacement = world.objects['Voyager-2']
-        self.assertEqual(90, replacement.heading)
+        self.assertEqual((world.objects['Base'].heading + 90) % 360, replacement.heading,
+                         "the direction is the base's own, and the base faces the middle")
         self.assertEqual(ShipSpawner.launch_distance,
                          world.objects['Base'].distance_to(replacement.xy))
 

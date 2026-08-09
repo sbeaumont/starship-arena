@@ -182,8 +182,13 @@ def ship_records(rows: list[dict], known_types) -> tuple[list[str], list[dict]]:
     return problems, ships
 
 
-def roster_page(game_name: str, rows: list[dict], messages: list[str], starting: str = ''):
+def roster_page(game_name: str, rows: list[dict], messages: list[str], starting: str = '',
+                scenario: str = ''):
     """The roster screen. `starting` names the game being brought out of registration.
+
+    A game created straight from here carries its scenario in the form, because it is the scenario
+    that deploys the roster and there is no game directory yet to read it back from. One coming out
+    of registration has one, so it says nothing.
 
     The player list is whoever registered for this game, because those are the only names its
     ships can belong to. Without registrations it is everyone who could play."""
@@ -192,6 +197,7 @@ def roster_page(game_name: str, rows: list[dict], messages: list[str], starting:
                            game_name=game_name,
                            rows=rows,
                            starting=starting,
+                           scenario=scenario,
                            display=for_display(starting or game_name),
                            settings=facade().settings(starting) if starting else None,
                            known_players=registered or [p.name for p in facade().active_players()],
@@ -214,7 +220,7 @@ def new_game():
         elif as_stored(typed) in facade().game_names_in_use():
             messages.append("Game name already exists.")
         elif not scenario.registers:
-            return roster_page(as_stored(typed), [], [])
+            return roster_page(as_stored(typed), [], [], scenario=scenario.key)
         else:
             try:
                 facade().open_registrations(as_stored(typed), scenario.key)
@@ -228,11 +234,12 @@ def new_game():
 def create_game():
     """The generic path: a typed roster, created straight away."""
     game_name = request.form.get('game_name', '')
+    scenario = request.form['scenario']
     rows = submitted_rows(request.form)
     problems, ships = ship_records(rows, facade().all_ship_types | facade().all_starbase_types)
     if problems:
-        return roster_page(game_name, rows, problems)
-    facade().create_new_game(as_stored(game_name), ships)
+        return roster_page(game_name, rows, problems, scenario=scenario)
+    facade().create_new_game(as_stored(game_name), ships, scenario)
     return redirect(url_for('game_overview', game_name=as_stored(game_name)))
 
 

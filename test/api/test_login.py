@@ -22,7 +22,7 @@ SHIPS = [{'name': 'McAve', 'type': 'F2547', 'faction': 'Three', 'player': 'Menno
 class TestLogin(TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
-        AdminService(self.root).create_game('mygame', SHIPS)
+        AdminService(self.root).create_game('mygame', SHIPS, 'generic')
         self.service = GameService(self.root)
         self.original, game_api.service = game_api.service, self.service
         # https, so the client keeps a Secure cookie the way a browser would.

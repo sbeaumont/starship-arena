@@ -103,7 +103,7 @@ class TestRegisteringGames(TestCase):
 
     def test_a_game_that_never_had_registrations_cannot(self):
         self.admin.create_game('handmade',
-                               [{'name': 'A', 'type': 'H2545', 'faction': 'Human'}])
+                               [{'name': 'A', 'type': 'H2545', 'faction': 'Human'}], 'generic')
         self.assertFalse(self.admin.is_reopenable('handmade'))
         with self.assertRaises(ValueError):
             self.admin.reopen_registrations('handmade')

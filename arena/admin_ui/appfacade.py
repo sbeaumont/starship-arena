@@ -297,6 +297,6 @@ class AppFacade(object):
     def active_players(self) -> list:
         return [p for p in self.logins() if p.active]
 
-    def create_new_game(self, name: str, ships: list[dict]):
+    def create_new_game(self, name: str, ships: list[dict], scenario: str):
         logger.info(f"Creating new game: {name}")
-        self.admin.create_game(name, ships)
+        self.admin.create_game(name, ships, scenario)

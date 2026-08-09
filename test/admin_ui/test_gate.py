@@ -15,7 +15,7 @@ SHIPS = [{'name': 'McAve', 'type': 'F2547', 'faction': 'Three', 'player': 'Menno
 class TestConsoleGate(TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
-        AdminService(self.root).create_game('mygame', SHIPS)
+        AdminService(self.root).create_game('mygame', SHIPS, 'generic')
         # The facade reads this when it is built, which is once per request.
         self.original, appfacade.GAME_DATA_DIR = appfacade.GAME_DATA_DIR, self.root
         self.registry = PlayerRegistry(self.root)

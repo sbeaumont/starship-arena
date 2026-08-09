@@ -47,17 +47,18 @@
 <p class="lede"><a href="{{ url_for('assign', game=starting) }}">&larr; Back to the assignment</a>,
     if the factions are not right yet. Anything you change here is lost when you go back.</p>
 <p class="lede">Last look before it starts. Change anything here, say when rounds are processed,
-    and the game begins. Leave the coordinates blank and the engine scatters the factions evenly
-    around the origin for you.</p>
+    and the game begins. Leave the coordinates blank and the scenario deploys the factions around
+    the origin, each ship facing the middle.</p>
 {% else %}
 <h1>{{ display }}</h1>
-<p class="lede">Add its ships. Leave the coordinates blank and the engine scatters the factions
-    evenly around the origin for you.</p>
+<p class="lede">Add its ships. Leave the coordinates blank and the scenario deploys the factions
+    around the origin, each ship facing the middle.</p>
 {% endif %}
 
 <form action="{{ url_for('start_game', game=starting) if starting else url_for('create_game') }}"
       method="POST">
-    {% if not starting %}<input type="hidden" name="game_name" value="{{ game_name }}">{% endif %}
+    {% if not starting %}<input type="hidden" name="game_name" value="{{ game_name }}">
+    <input type="hidden" name="scenario" value="{{ scenario }}">{% endif %}
 
     <h2>Ships</h2>
     <div class="shiptable">

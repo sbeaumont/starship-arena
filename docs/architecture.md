@@ -100,8 +100,10 @@ The rules:
 **The game is deterministic by design.** A round is a pure function of the previous round's saved
 state plus the command files. Same inputs, same game, every time.
 
-Nothing in round processing reads a clock or draws a random number. Setup does draw, to place
-factions, and it writes the coordinates back into `ships.jsonl` so that placement replays too.
+Nothing in round processing reads a clock or draws a random number. The one draw is a scenario
+deploying its roster, which happens above the engine and before the game exists; where it put
+everything is written into `ships.jsonl`, so a replay repeats that deployment instead of making a
+new one.
 
 That determinism carries weight. Regenerate depends on it, and so does throwing stale saved state
 away instead of migrating it.

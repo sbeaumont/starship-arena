@@ -428,6 +428,10 @@ class ObjectInSpace(ABC):
         self.vector = replace(self.vector, pos=pos)
         self.moved_from = pos
 
+    def face(self, point: Point):
+        """Point this object at somewhere without it having turned."""
+        self.vector = replace(self.vector, heading=self.heading_to(point))
+
     def end_tick(self):
         """Spend what is left of the tick where it stands, so a later move does nothing."""
         self.tick_fraction = 1

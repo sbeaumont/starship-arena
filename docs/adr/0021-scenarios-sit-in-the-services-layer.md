@@ -26,8 +26,14 @@ That lasted until players had to register for a game themselves. Registration ar
 Scenarios live in `arena/app/scenarios/`, one module each, listed in the package's `__init__`.
 
 A scenario answers for itself: `key`, `name`, `blurb`, `factions`, `max_ships`, whether it
-`registers`, and `deal(entries, rng)` returning ship records. Both interfaces sit on that, the
-same way they sit on `AdminService`.
+`registers`, `deal(entries, rng)` returning ship records, `place(ships, rng)` deploying them, and
+`bodies()` for the terrain they are deployed among. Both interfaces sit on that, the same way they
+sit on `AdminService`.
+
+**Where a ship starts is part of that.** How far apart two sides begin, and whether they start
+looking at each other, is a decision somebody makes rather than a mechanism.
+`scenarios/placement.py` holds the shape most scenarios want — factions evenly around the middle,
+facing it — as a capability that takes its distances from whoever calls it.
 
 What stays in an interface is that interface's own business: parsing its forms, and choosing its
 template.
@@ -46,6 +52,10 @@ honest place for it: it is domain knowledge every interface needs and the engine
 
 The generic "type your own roster" path became a scenario too, with `registers = False`. So the
 console has one entry point rather than a scenario flow beside a legacy flow.
+
+Creating a game names a scenario, because a scenario is what deploys the roster, so the typed-roster
+form carries the key it was started from. `ships.jsonl` then holds where every ship starts and which
+way it faces, and the engine draws no random numbers at all.
 
 ## Alternatives rejected
 

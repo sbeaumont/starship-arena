@@ -2,20 +2,21 @@ import shutil
 import tempfile
 import unittest
 
-from arena.engine.admin import GameSetup, distribute_factions
+from arena.engine.admin import GameSetup
 from arena.engine.gamedirectory import GameDirectory, ShipFile
 
 PLACED = [
-    {'name': 'Blaster', 'type': 'H2545', 'faction': 'One', 'player': 'Serge', 'x': -400, 'y': 0},
-    {'name': 'Shaper', 'type': 'H2552', 'faction': 'Two', 'player': 'Piet', 'x': 400, 'y': 0},
-    {'name': 'Starbase-1', 'type': 'SB2531', 'faction': 'One', 'player': 'Serge', 'x': -430, 'y': 0},
+    {'name': 'Blaster', 'type': 'H2545', 'faction': 'One', 'player': 'Serge',
+     'x': -400, 'y': 0, 'heading': 90},
+    {'name': 'Shaper', 'type': 'H2552', 'faction': 'Two', 'player': 'Piet',
+     'x': 400, 'y': 0, 'heading': 270},
+    {'name': 'Starbase-1', 'type': 'SB2531', 'faction': 'One', 'player': 'Serge',
+     'x': -430, 'y': 0, 'heading': 90},
 ]
-
-UNPLACED = [{k: v for k, v in ship.items() if k not in ('x', 'y')} for ship in PLACED]
 
 
 class TestTheRosterSurvivesSetup(unittest.TestCase):
-    """Setup writes coordinates back, so running it twice places the ships the same way."""
+    """The roster says where everything starts, and setup writes back what it was given."""
 
     def setUp(self):
         self.root = tempfile.mkdtemp()
@@ -29,7 +30,7 @@ class TestTheRosterSurvivesSetup(unittest.TestCase):
         setup.shipfile.save(setup.ships.values())
         return {line.name: line for line in ShipFile(self.gd).ship_lines}
 
-    def test_coordinates_that_were_given_come_back_unchanged(self):
+    def test_what_the_roster_gave_comes_back_unchanged(self):
         setup = GameSetup(self.gd, ShipFile(self.gd, PLACED))
 
         saved = self._save_and_reload(setup)
@@ -37,15 +38,11 @@ class TestTheRosterSurvivesSetup(unittest.TestCase):
         for ship in PLACED:
             self.assertEqual(ship['x'], saved[ship['name']].x)
             self.assertEqual(ship['y'], saved[ship['name']].y)
+            self.assertEqual(ship['heading'], saved[ship['name']].heading)
             self.assertEqual(ship['player'], saved[ship['name']].player)
 
-    def test_ships_without_coordinates_are_placed_and_the_places_are_kept(self):
-        setup = GameSetup(self.gd, ShipFile(self.gd, UNPLACED))
-        for ship in setup.ships.values():
-            self.assertEqual((0, 0), (ship.pos.x, ship.pos.y))
+    def test_a_ship_starts_facing_the_way_the_roster_says(self):
+        setup = GameSetup(self.gd, ShipFile(self.gd, PLACED))
 
-        distribute_factions(setup.ships.values(), 100)
-        saved = self._save_and_reload(setup)
-
-        for name, line in saved.items():
-            self.assertNotEqual((0, 0), (line.x, line.y), f"{name} was never placed")
+        for ship in PLACED:
+            self.assertEqual(ship['heading'], setup.ships[ship['name']].heading)

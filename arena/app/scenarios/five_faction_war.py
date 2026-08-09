@@ -3,10 +3,12 @@
 from math import cos, radians, sin
 
 from arena.app.registrations import Registration
+from arena.app.scenarios.placement import distribute_factions
 
-# Factions start on a circle of radius 500, so a ring half way in leaves everyone the same choice:
-# go around the outside, or cut through the middle and thread the gaps.
-RING_RADIUS = 250
+# A ring half way in leaves everyone the same choice: go around the outside, or cut through the
+# middle and thread the gaps.
+FACTION_DISTANCE = 500
+RING_RADIUS = FACTION_DISTANCE // 2
 RING_BODIES = 5
 
 FACTIONS = {
@@ -35,6 +37,10 @@ class FiveFactionWar:
                  'x': round(RING_RADIUS * sin(radians(n * 360 / RING_BODIES))),
                  'y': round(RING_RADIUS * cos(radians(n * 360 / RING_BODIES)))}
                 for n in range(RING_BODIES)]
+
+    def place(self, ships: list[dict], rng) -> list[dict]:
+        """Each faction its own corner of the circle, everyone pointed at the middle."""
+        return distribute_factions(ships, rng, FACTION_DISTANCE)
 
     def deal(self, entries: list[Registration], rng) -> list[dict]:
         """Ship records for everyone, each in the faction they were assigned to or dealt into."""

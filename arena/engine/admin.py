@@ -4,39 +4,15 @@ Administrative features
 """
 
 from collections import defaultdict
-from math import cos, sin, radians
-from random import randint
 import logging
 
 import arena.engine.objects.registry.builder as builder
 from arena.engine.gamedirectory import BodyFile, GameDirectory, ShipFile
 from arena.engine.world import World
 from arena.engine.game import Game
-from arena.engine.objects.objectinspace import Point
 from arena.engine.history import TICK_ZERO
 
 logger = logging.getLogger('starship-arena.admin')
-
-
-def polar_to_cartesian(r, theta) -> (int, int):
-    """theta in degrees
-
-    returns tuple; (int, int); (x, y)
-    """
-    x = r * cos(radians(theta))
-    y = r * sin(radians(theta))
-    return round(x), round(y)
-
-
-def centers_for(num_factions, distance, random_rotation=60, angle_tweak=(0, 0), distance_tweak=(0, 0)) -> list[(int, int)]:
-    result = list()
-    rotation = randint(0, random_rotation)
-    for i in range(num_factions):
-        angle = (i * int(360 / num_factions)) + rotation
-        tweaked_angle = angle + randint(*angle_tweak)
-        tweaked_distance = distance + randint(*distance_tweak)
-        result.append(polar_to_cartesian(tweaked_distance, tweaked_angle))
-    return result
 
 
 def group_by_faction(ships) -> dict:
@@ -44,20 +20,6 @@ def group_by_faction(ships) -> dict:
     for s in ships:
         result[s.faction].append(s)
     return result
-
-
-def distribute_factions(ships, distance) -> None:
-    """Distribute the factions evenly along a circle centered around (0, 0) and radius of distance"""
-    factions = {s.faction for s in ships}
-    faction_centers = centers_for(len(factions), distance, angle_tweak=(-10, 10), distance_tweak=(-30, 60))
-    faction_groups = group_by_faction(ships)
-    for center, group in zip(faction_centers, faction_groups.values()):
-        num_ships_in_faction = len(group)
-        offsets = centers_for(num_ships_in_faction, 20, angle_tweak=(-30, 30), distance_tweak=(0, 30))
-        for ship, offset in zip(group, offsets):
-            # Only move ship if it has not already been set in the ships file
-            if ship.xy == Point(0, 0):
-                ship.place_at(Point(0, 0).move(center).move(offset))
 
 
 class GameSetup(object):
@@ -80,8 +42,7 @@ class GameSetup(object):
                 logger.info(f"Ship: {ship.name}, Faction: {ship.faction}, Pos: {ship.pos}, Type: {ship.class_name}")
         self.save()
 
-    def run_tick_zero(self, distance_from_center=500):
-        distribute_factions(self.ships.values(), distance_from_center)
+    def run_tick_zero(self):
         for ois in self.world.objects.values():
             ois.history.set_tick(TICK_ZERO)
             ois.scan(self.world)
@@ -96,13 +57,13 @@ class GameSetup(object):
         return bodies
 
     def _init_ships(self, ship_file: list) -> dict:
-        """Load and initialize all the ships to their status at the start of a round."""
+        """Load and initialize all the ships to their status at the start of a round.
+
+        Where a ship starts and which way it looks are the roster's to say: a scenario deployed it
+        before the file was ever written. Nothing here moves anything."""
         objects_in_space = dict()
         for line in ship_file:
-            # position = (int(line.x), int(line.y))
-            position = line.xy
-            # Always for tick 0 in this case.
-            ois = builder.create(line.name, line.type, position, player=line.player)
+            ois = builder.create(line.name, line.type, line.xy, line.heading, player=line.player)
             ois.faction = line.faction
             objects_in_space[ois.name] = ois
         return objects_in_space
@@ -119,9 +80,8 @@ def regenerate_game(gd: GameDirectory) -> int:
     """Rebuild a game from its ships file and command files, back to the round it was on.
 
     Snapshots are written as rounds are processed, so a change to what they hold only reaches
-    rounds processed afterwards; this replays the earlier ones. Deterministic, because setup only
-    places ships still sitting on the origin and the ships file holds the coordinates from the
-    first setup. Returns the round it ended on."""
+    rounds processed afterwards; this replays the earlier ones. Deterministic, because the ships
+    file holds where everything started and setup draws nothing. Returns the round it ended on."""
     target = gd.last_round_number
     logger.info(f"Regenerating {gd.game_name} up to round {target}")
     GameSetup(gd).execute()

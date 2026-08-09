@@ -22,7 +22,7 @@ class TestASpawnedShip(TestCase):
         self.games = os.path.join(self.root, 'games')
         self.admin = AdminService(self.root)
         self.admin.issue_login('Rik')
-        self.admin.create_game('spawning', ROSTER)
+        self.admin.create_game('spawning', ROSTER, 'generic')
         self.gd = GameDirectory(self.games, 'spawning')
         for ship in ('Voyager', 'Shaper'):
             self._orders(ship, "1: A10\n")

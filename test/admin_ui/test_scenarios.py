@@ -362,6 +362,7 @@ class TestConsoleFlow(TestCase):
 
     def test_a_generic_game_is_created_from_its_roster(self):
         self.client.post('/roster', data={
-            'game_name': 'Hand Made', 'ship_name': ['Blaster'], 'ship_type': ['H2545'],
+            'game_name': 'Hand Made', 'scenario': 'generic',
+            'ship_name': ['Blaster'], 'ship_type': ['H2545'],
             'ship_faction': ['One'], 'ship_player': ['Serge'], 'ship_x': [''], 'ship_y': ['']})
         self.assertEqual(['Hand_Made'], [g.name for g in self.admin.list_games()])
