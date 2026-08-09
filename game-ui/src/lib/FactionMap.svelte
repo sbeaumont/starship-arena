@@ -845,11 +845,14 @@
   });
 
   async function toggleReady() {
+    const goingReady = !ready;
     settingReady = true;
     try {
+      // Ready can process the round on the spot, so the orders go up before it does.
+      if (goingReady) await saveAll();
       const res = await fetch(`/api/game/${game}/players/${player}/ready`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ready: !ready }),
+        body: JSON.stringify({ ready: goingReady }),
       });
       if (!res.ok) return;
       const body = await res.json();
