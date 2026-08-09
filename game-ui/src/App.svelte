@@ -130,7 +130,7 @@
 {:else}
   <!-- The reference pages are open, so someone deciding whether to join can read them first. -->
   <div class="shell">
-    <TopBar {me} {directing} {asPlayer} clock={serverClock} zone={server?.zone ?? ''}
+    <TopBar {me} {directing} {asPlayer} page={route.page} clock={serverClock} zone={server?.zone ?? ''}
             onToggleAsPlayer={() => (asPlayer = !asPlayer)}
             onPage={openPage} onHome={home} onSignOut={signOut} />
     <div class="page">

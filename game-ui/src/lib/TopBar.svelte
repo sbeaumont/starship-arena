@@ -1,7 +1,7 @@
 <script>
   // The chrome every page keeps: who you are, what the server's clock says, and where else
   // you can go. The map is the exception, since it needs the room.
-  let { me = null, directing = false, asPlayer = false, clock = "", zone = "",
+  let { me = null, page = null, directing = false, asPlayer = false, clock = "", zone = "",
         onToggleAsPlayer, onPage, onHome, onSignOut } = $props();
 
   let open = $state([]);
@@ -21,11 +21,6 @@
     {#if me}
       <p class="sub">
         Signed in as {me.name}{#if me.is_director} · <span class="role">{directing ? "director" : "director, looking as a player"}</span>{/if}
-        {#if me.is_director}
-          <button type="button" class="mode" class:on={asPlayer} onclick={onToggleAsPlayer}>
-            {asPlayer ? "View as director" : "View as player"}
-          </button>
-        {/if}
         {#if clock} · <span class="clock">server time {clock} {zone}</span>{/if}
       </p>
     {/if}
@@ -33,21 +28,30 @@
 
   <nav>
     {#if me}
-      {#if directing && me.admin_url}
-        <a href={me.admin_url}>Console</a>
-      {/if}
-      <button type="button" class:hot={open.length} onclick={() => onPage("register")}>
+      <button type="button" class:here={!page} onclick={onHome}>Games</button>
+      <button type="button" class:here={page === "register"} onclick={() => onPage("register")}>
         {open.length ? `Register (${open.length})` : "Register"}
       </button>
     {/if}
-    <button type="button" onclick={() => onPage("ships")}>Ships</button>
-    <button type="button" onclick={() => onPage("lore")}>Lore</button>
+    <button type="button" class:here={page === "ships"} onclick={() => onPage("ships")}>Ships</button>
+    <button type="button" class:here={page === "lore"} onclick={() => onPage("lore")}>Lore</button>
     <button type="button" onclick={() => window.open("/api/game/manual", "_blank")}>Manual</button>
     {#if me}
       <button type="button" onclick={onSignOut}>Sign out</button>
     {:else}
       <button type="button" onclick={onHome}>Sign in</button>
     {/if}
+
+    <span class="right">
+      {#if me?.is_director}
+        <button type="button" class="mode" class:on={asPlayer} onclick={onToggleAsPlayer}>
+          {asPlayer ? "View as director" : "View as player"}
+        </button>
+      {/if}
+      {#if directing && me.admin_url}
+        <a href={me.admin_url}>Console</a>
+      {/if}
+    </span>
   </nav>
 </header>
 
@@ -64,7 +68,7 @@
   }
   .brand:hover { color: var(--cyan); }
 
-  nav { display: flex; gap: 16px; margin-top: 10px; }
+  nav { display: flex; align-items: baseline; gap: 16px; margin-top: 10px; }
   nav button, nav a {
     font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
     color: var(--ink-dim); background: transparent; border: none;
@@ -72,7 +76,9 @@
     text-decoration: none;
   }
   nav button:hover, nav a:hover { color: var(--cyan); border-color: var(--cyan); }
-  nav button.hot { color: var(--amber); }
+  /* Amber is where you are, and nothing else, or a tab that merely has news reads as selected. */
+  nav button.here { color: var(--amber); border-color: var(--amber); }
+  .right { display: flex; align-items: baseline; gap: 16px; margin-left: auto; }
 
   .sub { margin: 0 0 0 auto; font-size: 13px; color: var(--ink-dim); }
   .role { color: var(--amber); }
