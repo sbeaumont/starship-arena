@@ -11,6 +11,9 @@ export default defineConfig({
   // the root both in development and deployed, but an absolute base would tie it to that.
   base: './',
   server: {
+    // Every interface, so a phone on the same network can open the map. Vite still reaches the
+    // API over localhost itself, so only this one port has to be exposed.
+    host: true,
     proxy: {
       '/api': 'http://localhost:8000',
     },

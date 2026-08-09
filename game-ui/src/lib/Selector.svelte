@@ -13,6 +13,16 @@
   let loadingOverview = $state(false);
   let error = $state(null);
 
+  // Narrow enough and the standings open under the game they belong to, which is the only place
+  // there is room for them. Matches the breakpoint the stylesheet stacks at.
+  const stacked = matchMedia("(max-width: 820px)");
+  let inline = $state(stacked.matches);
+  $effect(() => {
+    const on = (e) => (inline = e.matches);
+    stacked.addEventListener("change", on);
+    return () => stacked.removeEventListener("change", on);
+  });
+
   function whenLocal(iso) {
     const at = new Date(iso);
     const today = new Date(nowMs + skew).toDateString() === at.toDateString();
@@ -79,9 +89,15 @@
     }
   });
 
+  // Tapping the game you already have open shuts it, so a list of games reads as a list rather
+  // than as something that only ever grows.
   async function chooseGame(name) {
-    game = name;
     overview = null;
+    if (game === name) {
+      game = null;
+      return;
+    }
+    game = name;
     loadingOverview = true;
     try {
       const res = await fetch(`/api/game/${name}/overview`);
@@ -91,6 +107,75 @@
     }
   }
 </script>
+
+{#snippet status(done, lost, doneWord, owedWord)}
+  <span class="st" class:ok={done} class:out={lost}>
+    <span class="dot" class:filled={done && !lost} class:none={lost}></span>
+    <span class="long">{lost ? "—" : done ? doneWord : owedWord}</span>
+  </span>
+{/snippet}
+
+{#snippet standings()}
+  {#if loadingOverview}
+    <p class="msg quiet">Loading {game}…</p>
+  {:else if !overview}
+    <p class="msg quiet">Nothing to show for {game}.</p>
+  {:else}
+    {#each overview.factions as f, rank (f.name)}
+      <div class="faction">
+        <div class="fhead">
+          <span class="rank">{rank + 1}</span>
+          <span class="fname">Faction {f.name}</span>
+          <span class="fscore">{f.score}</span>
+          <span class="st head" title="orders saved"><span class="long">saved</span><span class="short">S</span></span>
+          <span class="st head" title="said ready"><span class="long">ready</span><span class="short">R</span></span>
+        </div>
+        {#each commandersOf(f) as c (c.player ?? "unassigned")}
+          {#if c.ships.length === 1}
+            <!-- One ship, one row: grouping a single ship under a header is just noise. -->
+            {@const s = c.ships[0]}
+            <button type="button" class="ship" disabled={!canOpen(c.player)}
+                    onclick={() => onPick(game, c.player)}
+                    title={canOpen(c.player) ? `Open ${c.player}'s view` : "Not yours to open"}>
+              <span class="nm" class:gone={!s.alive}>{s.name}</span>
+              <span class="ty">{s.ship_type}</span>
+              <span class="pl">{c.player ?? "—"}</span>
+              <span class="sc">{s.score}</span>
+              {@render status(c.saved, c.lost, "saved", "waiting")}
+              {@render status(c.ready, c.lost, "ready", "not yet")}
+            </button>
+          {:else}
+            <!-- A whole fleet under one player, since opening them plans all of it. -->
+            <div class="commander">
+              <!-- Same columns as a single-ship row, so the player name and score line up
+                   whichever shape a game happens to have. -->
+              <button type="button" class="ship fleet" disabled={!canOpen(c.player)}
+                      onclick={() => onPick(game, c.player)}
+                      title={canOpen(c.player)
+                        ? `Open ${c.player}'s view and plan all ${c.ships.length} of their ships`
+                        : "Not yours to open"}>
+                <span class="nm">{c.ships.map((s) => s.name).join(", ")}</span>
+                <span class="pl">{c.player ?? "unassigned"}</span>
+                <span class="sc">{c.score}</span>
+                {@render status(c.saved, c.lost, "saved", "waiting")}
+                {@render status(c.ready, c.lost, "ready", "not yet")}
+              </button>
+              <ul class="ships">
+                {#each c.ships as s (s.name)}
+                  <li class="shiprow">
+                    <span class="nm" class:gone={!s.alive}>{s.name}</span>
+                    <span class="ty">{s.ship_type}</span>
+                    <span class="sc">{s.score}</span>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {/if}
+        {/each}
+      </div>
+    {/each}
+  {/if}
+{/snippet}
 
 <div class="screen">
   {#if loading}
@@ -131,98 +216,36 @@
                   <span class="cnt">{g.standing.players_ready}/{g.standing.players}</span>
                 </span>
               </button>
+
+              {#if inline && g.name === game}
+                <div class="opened">{@render standings()}</div>
+              {/if}
             </li>
           {/each}
         </ul>
       </section>
 
-      <section class="detail">
-        {#if !game}
-          <h2>Factions</h2>
-          <p class="msg quiet">Pick a game first.</p>
-        {:else if loadingOverview}
-          <h2>Factions</h2>
-          <p class="msg quiet">Loading {game}…</p>
-        {:else if !overview}
-          <h2>Factions</h2>
-          <p class="msg quiet">Nothing to show for {game}.</p>
-        {:else}
-          <h2>{game} · planning round {overview.last_round + 1}, best first</h2>
-          {#each overview.factions as f, rank (f.name)}
-            <div class="faction">
-              <div class="fhead">
-                <span class="rank">{rank + 1}</span>
-                <span class="fname">Faction {f.name}</span>
-                <span class="fscore">{f.score}</span>
-                <span class="st head">saved</span>
-                <span class="st head">ready</span>
-              </div>
-              {#each commandersOf(f) as c (c.player ?? "unassigned")}
-                {#if c.ships.length === 1}
-                  <!-- One ship, one row: grouping a single ship under a header is just noise. -->
-                  {@const s = c.ships[0]}
-                  <button type="button" class="ship" disabled={!canOpen(c.player)}
-                          onclick={() => onPick(game, c.player)}
-                          title={canOpen(c.player) ? `Open ${c.player}'s view` : "Not yours to open"}>
-                    <span class="nm" class:gone={!s.alive}>{s.name}</span>
-                    <span class="ty">{s.ship_type}</span>
-                    <span class="pl">{c.player ?? "—"}</span>
-                    <span class="sc">{s.score}</span>
-                    <span class="st" class:ok={c.saved} class:out={c.lost}>
-                      {c.lost ? "—" : c.saved ? "saved" : "waiting"}
-                    </span>
-                    <span class="st" class:ok={c.ready} class:out={c.lost}>
-                      {c.lost ? "—" : c.ready ? "ready" : "not yet"}
-                    </span>
-                  </button>
-                {:else}
-                  <!-- A whole fleet under one player, since opening them plans all of it. -->
-                  <div class="commander">
-                    <!-- Same columns as a single-ship row, so the player name and score line
-                         up whichever shape a game happens to have. -->
-                    <button type="button" class="ship fleet" disabled={!canOpen(c.player)}
-                            onclick={() => onPick(game, c.player)}
-                            title={canOpen(c.player)
-                              ? `Open ${c.player}'s view and plan all ${c.ships.length} of their ships`
-                              : "Not yours to open"}>
-                      <span class="nm">{c.ships.map((s) => s.name).join(", ")}</span>
-                      <span class="pl">{c.player ?? "unassigned"}</span>
-                      <span class="sc">{c.score}</span>
-                      <span class="st" class:ok={c.saved} class:out={c.lost}>
-                        {c.lost ? "—" : c.saved ? "saved" : "waiting"}
-                      </span>
-                      <span class="st" class:ok={c.ready} class:out={c.lost}>
-                        {c.lost ? "—" : c.ready ? "ready" : "not yet"}
-                      </span>
-                    </button>
-                    <ul class="ships">
-                      {#each c.ships as s (s.name)}
-                        <li class="shiprow">
-                          <span class="nm" class:gone={!s.alive}>{s.name}</span>
-                          <span class="ty">{s.ship_type}</span>
-                          <span class="sc">{s.score}</span>
-                        </li>
-                      {/each}
-                    </ul>
-                  </div>
-                {/if}
-              {/each}
-            </div>
-          {/each}
-        {/if}
-      </section>
+      {#if !inline}
+        <section class="detail">
+          <h2>{game ? `${game} · planning round ${(overview?.last_round ?? 0) + 1}, best first` : "Factions"}</h2>
+          {#if !game}
+            <p class="msg quiet">Pick a game first.</p>
+          {:else}
+            {@render standings()}
+          {/if}
+        </section>
+      {/if}
     </div>
   {/if}
 </div>
 
 <style>
   .screen {
-    height: 100%; overflow-y: auto; padding: 28px 32px 40px;
+    height: 100%; overflow-y: auto; overscroll-behavior: contain; padding: 28px 32px 40px;
     background: radial-gradient(120% 90% at 50% 0%, #0e1526 0%, #080b12 70%);
   }
-  .cols { max-width: 1000px; margin-left: auto; margin-right: auto; }
-
-  .cols { display: flex; gap: 28px; align-items: flex-start; }
+  .cols { max-width: 1000px; margin-left: auto; margin-right: auto;
+          display: flex; gap: 28px; align-items: flex-start; }
   .games { width: 280px; flex-shrink: 0; }
   .detail { flex: 1; min-width: 0; }
   h2 { margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.16em;
@@ -256,6 +279,9 @@
   .gauge .bar i { display: block; height: 100%; background: #57d98a; }
   .gauge .bar.ready i { background: var(--cyan); }
 
+  /* Standings opened under the game they belong to, when there is no column to put them in. */
+  .opened { padding: 12px 0 6px; }
+
   .faction { --col: 60px; margin-bottom: 18px; }
   .fhead { display: flex; align-items: baseline; gap: 10px; padding: 0 11px 6px;
            border-bottom: 1px solid var(--edge); margin-bottom: 6px; }
@@ -266,6 +292,7 @@
             color: var(--amber); font-variant-numeric: tabular-nums; }
   .st.head { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
              color: var(--ink-faint); }
+  .short { display: none; }
 
   /* A player with a single ship: one flat row, as informative as a group would be. */
   .ship {
@@ -301,16 +328,44 @@
 
   /* Saved and ready are per commander, not per ship: amber for still owed, since neither is
      late until the deadline. */
-  .st { min-width: var(--col); text-align: right; font-size: 11.5px; color: var(--amber); }
+  .st { min-width: var(--col); text-align: right; font-size: 11.5px; color: var(--amber);
+        flex-shrink: 0; }
   .st.ok { color: #57d98a; }
   .st.out { color: var(--ink-faint); }
+  .dot { display: none; }
 
   .msg { font-size: 13px; color: var(--ink); line-height: 1.6; }
   .msg.err { color: var(--warn); }
   .msg.quiet { color: var(--ink-faint); }
 
   @media (max-width: 820px) {
-    .cols { flex-direction: column; }
+    /* Cross axis, once the direction is a column: without this every block is content-wide. */
+    .cols { flex-direction: column; align-items: stretch; }
     .games { width: auto; }
+  }
+
+  /* A phone has no room for two words per commander per row. The words become a lamp, lit for
+     done and hollow for still owed, and the ship type goes: it is on the fleet rows already. */
+  @media (max-width: 620px) {
+    .screen { padding: 16px 12px 28px; }
+    .faction { --col: 18px; }
+    .ship { gap: 8px; padding: 8px 10px; }
+    .ship .nm { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+    .ship .ty { display: none; }
+    .ship .pl { min-width: 0; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis;
+                white-space: nowrap; }
+    .sc { min-width: 30px; }
+    .ships { padding-right: calc(2 * var(--col) + 16px); }
+    .shiprow { gap: 8px; }
+    .shiprow .nm { min-width: 0; flex: 1 1 auto; }
+    .shiprow .ty { display: none; }
+
+    .st { display: flex; justify-content: flex-end; }
+    .st .long { display: none; }
+    .short { display: inline; }
+    .dot { display: block; width: 10px; height: 10px; border-radius: 50%;
+           border: 2px solid currentColor; }
+    .dot.filled { background: currentColor; }
+    .dot.none { opacity: 0.35; border-style: dotted; }
   }
 </style>

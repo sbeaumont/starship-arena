@@ -27,6 +27,11 @@ prefix() {
 # all writing to pipes now.
 export PYTHONUNBUFFERED=1
 
+# Development is http, and a browser drops a Secure cookie on anything but https and localhost.
+# Without this the map opens fine on this machine and answers 401 to a phone on the network.
+# Only ever set here.
+export ARENA_INSECURE_COOKIES=1
+
 # Ctrl-C reaches this shell only; kill the whole process group so no server is left holding a
 # port. Without this you get "address already in use" on the next run.
 trap 'kill 0' EXIT

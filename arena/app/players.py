@@ -15,6 +15,10 @@ logger = logging.getLogger('starship-arena.players')
 # A play-by-mail game runs for months, so the cookie outlives any session.
 LOGIN_COOKIE = 'arena_login'
 LOGIN_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
+# A browser keeps a Secure cookie over https, and over localhost, and nowhere else. Trying the
+# UI on a phone means a plain address on the network, where the cookie would be dropped and
+# every call would come back 401, so the dev runner turns this off. Nothing else ever does.
+LOGIN_COOKIE_SECURE = os.environ.get('ARENA_INSECURE_COOKIES') != '1'
 TOKEN_BYTES = 16
 DIRECTOR = 'director'
 PLAYER = 'player'

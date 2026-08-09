@@ -20,7 +20,13 @@
 
 * { box-sizing: border-box; }
 
-html, body, #app { height: 100%; }
+/* Dynamic, because a phone's address bar slides in and out and 100vh does not notice. */
+html { height: 100dvh; }
+body, #app { height: 100%; }
+
+/* The document itself never moves. Every page that scrolls does it in its own panel, so a drag
+   on the map is the map's; without this it takes the whole page with it, bars and all. */
+html, body { overflow: hidden; overscroll-behavior: none; }
 
 body {
   margin: 0;
@@ -29,3 +35,19 @@ body {
   font-family: var(--mono);
   -webkit-font-smoothing: antialiased;
 }
+
+/* A control is something a thumb lands on, not something a browser waits 300ms to zoom. */
+button, select { font-family: inherit; touch-action: manipulation; cursor: pointer; }
+
+/* A slider is dragged sideways, which is the one gesture a scroller would otherwise steal. */
+input[type="range"] { touch-action: none; }
+
+/* Chrome is furniture rather than text: nothing to select, nothing to long-press into a
+   callout, and no grey flash where a finger landed. What is worth copying opts back in. */
+#app {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+p, li, td, h1, h2, h3, code, pre { -webkit-user-select: text; user-select: text; }

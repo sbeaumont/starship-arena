@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from arena.app.dto import (GameSummary, OpenGame, ShipRound, PlayerPlan, GameOverview,
                            ShipTypeInfo, Me, Pulse, ServerTime)
-from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE, Player
+from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE, LOGIN_COOKIE_SECURE, Player
 from arena.app.services import GameService
 
 router = APIRouter(prefix="/api/game", tags=["game"])
@@ -52,7 +52,7 @@ def require_own_ship(game: str, ship: str, me: Player) -> None:
 
 def _remember(response: Response, player: Player) -> None:
     response.set_cookie(LOGIN_COOKIE, player.token, max_age=LOGIN_COOKIE_MAX_AGE,
-                        httponly=True, samesite='lax', secure=True)
+                        httponly=True, samesite='lax', secure=LOGIN_COOKIE_SECURE)
 
 
 @router.post("/login")

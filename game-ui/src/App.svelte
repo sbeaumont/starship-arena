@@ -17,6 +17,8 @@
       game: q.get('game'), player: q.get('player'),
       round: round === null ? null : Number(round),
       page: q.get('page'),
+      // Which map shell to use. Left off, the browser is asked whether it has fingers.
+      ui: q.get('ui'),
     }
   }
 
@@ -35,12 +37,14 @@
     if (next.game) q.set('game', next.game)
     if (next.player) q.set('player', next.player)
     if (next.round !== null && next.round !== undefined) q.set('round', String(next.round))
+    if (next.ui) q.set('ui', next.ui)
     history.pushState({}, '', q.size ? `?${q}` : location.pathname)
     route = next
   }
 
-  const home = () => go({ game: null, player: null, round: null, page: null })
-  const openPage = (page) => go({ game: null, player: null, round: null, page })
+  // `ui` rides along everywhere, so trying the touch shell on a desktop survives navigating.
+  const home = () => go({ game: null, player: null, round: null, page: null, ui: route.ui })
+  const openPage = (page) => go({ game: null, player: null, round: null, page, ui: route.ui })
 
   // A game's hours are the server's, so its clock is what a deadline means. Everything the
   // pages show is in the reader's own time; the server's is only ever displayed.
@@ -122,7 +126,7 @@
 {#if checking}
   <p class="waiting">…</p>
 {:else if me && route.game && route.player}
-  <FactionMap game={route.game} player={route.player} round={route.round}
+  <FactionMap game={route.game} player={route.player} round={route.round} ui={route.ui}
               onRound={(r) => go({ ...route, round: r })}
               onLeave={home} />
 {:else if !me && !route.page}
@@ -143,7 +147,7 @@
         <OpenGames />
       {:else}
         <Selector {me} {directing} {skew} {nowMs}
-                  onPick={(game, player) => go({ game, player, round: null, page: null })} />
+                  onPick={(game, player) => go({ game, player, round: null, page: null, ui: route.ui })} />
       {/if}
     </div>
   </div>
