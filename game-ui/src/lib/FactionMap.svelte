@@ -848,8 +848,11 @@
     const goingReady = !ready;
     settingReady = true;
     try {
-      // Ready can process the round on the spot, so the orders go up before it does.
-      if (goingReady) await saveAll();
+      // Ready can process the round on the spot, so the orders go up first and have to hold.
+      if (goingReady && !(await saveAll())) {
+        saveMsg += " · Still not ready.";
+        return;
+      }
       const res = await fetch(`/api/game/${game}/players/${player}/ready`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ready: goingReady }),
@@ -870,6 +873,7 @@
     sending = true;
     saveMsg = "Saving…";
     const results = [];
+    let allOk = true;
     for (const s of ownShips) {
       const lines = orderLines(orders[s.name]);
       try {
@@ -882,14 +886,17 @@
           baseline[s.name] = lines;
           results.push(`${s.name}: ${lines.length} order${lines.length === 1 ? "" : "s"}`);
         } else {
+          allOk = false;
           results.push(`${s.name}: REJECTED (${body.checks.filter((c) => !c.ok).map((c) => c.line).join(", ")})`);
         }
       } catch (e) {
+        allOk = false;
         results.push(`${s.name}: error ${e}`);
       }
     }
     saveMsg = results.join(" · ");
     sending = false;
+    return allOk;
   }
 </script>
 
