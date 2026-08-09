@@ -50,6 +50,29 @@ Rules that bind this directory:
     and hand the template a different instance from the one that was loaded, which reads as a map
     that never updates.
 
+## The icon
+
+`public/favicon.svg` is the source. The three PNGs beside it are rendered from it, so a new
+drawing means rendering them again or the home screen keeps the old one:
+
+```bash
+cd game-ui/public
+for s in 180 192 512; do
+    inkscape --export-type=png --export-width=$s --export-height=$s \
+             --export-filename="icon-$s.png" favicon.svg
+done
+```
+
+What a replacement has to hold to, whoever draws it:
+
+- **Full bleed.** iOS puts its own background behind a transparent icon, so the artwork owns
+  every pixel of the square.
+- **Inside the safe circle.** Android may crop a maskable icon to a centred circle of 80%
+  diameter. Anything outside that is decoration, not subject.
+- **Legible at 32px.** One subject, and detail that is thin enough to disappear rather than
+  turn to noise when the icon is small.
+- **A PNG for iOS.** `apple-touch-icon` does not read SVG, which is what `icon-180.png` is for.
+
 ## Development
 
 `npm run dev` listens on every interface, so a phone on the same network can open the map.
