@@ -74,11 +74,10 @@ would end up as the union of two vocabularies.
 Measured from the imports, today:
 
 ```
-admin_ui -> app      7
-admin_ui -> engine   4
+admin_ui -> app      8
 api      -> app      3
 app      -> engine   8
-cli      -> app      2
+cli      -> app      3
 cli      -> engine   4
 ```
 
@@ -92,8 +91,7 @@ The rules:
 4. **The CLI may reach the engine.** It is the tool of last resort, run from a shell on the host,
    and it is where you go when the seam itself is what is broken.
 
-`admin_ui -> engine` is four imports that rule 3 says should not exist, all of them in
-`appfacade.py`. A known gap, on the backlog. The API is already clean.
+The CLI is the only line to the engine from above. The console and the API hold nothing but DTOs.
 
 ## Processing a round
 

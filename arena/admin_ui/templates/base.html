@@ -11,6 +11,8 @@
 <header class="topbar">
     <a class="brand" href="{{ url_for('overview') }}">STARSHIP ARENA<span>director</span></a>
     <nav>
+        <a href="{{ game_ui_url }}/" target="_blank" rel="noopener">Game</a>
+        <span class="sep"></span>
         <a href="{{ url_for('players') }}" class="{{ 'here' if request.endpoint == 'players' }}">Players</a>
         <span class="sep"></span>
         <a href="{{ url_for('new_game') }}" class="{{ 'here' if request.endpoint == 'new_game' }}">New game</a>

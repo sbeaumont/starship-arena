@@ -6,21 +6,16 @@ console's own terms. Player-facing operations live in the application-services l
 """
 
 import logging
-import os
 import re
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
 from arena.app.clock import server_now, zone_name
-from arena.app.dto import By, GameSettings, ProcessingTrigger
+from arena.app.dto import By, GameSettings, GameStanding, ProcessingTrigger
 from arena.app.naming import for_display
 from arena.app.services import AdminService
-from arena.engine.admin import GameSetup
-from arena.engine.gamedirectory import GameDirectory
-from arena.engine.game import Game
 from arena.cfg import GAME_DATA_DIR, GamesRoot, MANUAL_FILENAME
-from arena.engine.objects.registry import builder
 
 logger = logging.getLogger('starship-arena.facade')
 
@@ -80,32 +75,17 @@ class Journal:
 
 
 @dataclass
-class GameLine:
-    """One game as the director's console shows it: is this round ready, and if not, who is owed.
-
-    `ready` is the engine's own verdict rather than something derived here, so there is only ever
-    one definition of a round being ready to process."""
+class GameDetail:
+    """One game as the console's own page shows it: the living ships by faction, the dead, and
+    what the round is waiting for."""
     name: str
-    round_nr: int
-    ships: int
-    orders_in: int
-    missing: list[str]
-    ready: bool
-    players: int
-    players_ready: int
-    not_ready: list[str]
+    standing: GameStanding
+    factions: dict[str, list]   # faction -> its living ships, best faction first
+    dead: list                  # what is in the graveyard, whatever faction it flew for
 
     @property
     def display(self) -> str:
         return for_display(self.name)
-
-    @property
-    def percent_in(self) -> int:
-        return round(100 * self.orders_in / self.ships) if self.ships else 0
-
-    @property
-    def all_ready(self) -> bool:
-        return bool(self.players) and self.players_ready == self.players
 
 
 class AppFacade(object):
@@ -115,57 +95,38 @@ class AppFacade(object):
         self.dirs = GamesRoot(Path(GAME_DATA_DIR))
         self.admin = AdminService(self.dirs.root)
 
-    def gd(self, game: str) -> GameDirectory:
-        """To make the webapp more robust it initializes a game if it wasn't before returning."""
-        gd = GameDirectory(str(self.dirs.games), game)
-        if not gd.has_been_setup:
-            logger.info(f"Setting up game {game}, since this was not done yet.")
-            GameSetup(gd).execute()
-        return gd
-
-    def game(self, game_name: str) -> Game:
-        return Game(self.gd(game_name))
-
     # ---------------------------------------------------------------------- QUERIES - Reference
 
     def get_manual_pdf(self) -> str:
         return MANUAL_FILENAME
 
-    @property
-    def all_ship_types(self) -> dict:
-        return builder.all_ship_types
+    def types_by_category(self) -> dict[str, list]:
+        """Every model that can be fielded, grouped as the forms offer them. The categories are
+        the types' own, so a new kind of machine needs nothing here."""
+        grouped = {}
+        for t in self.admin.list_ship_types():
+            grouped.setdefault(t.category, []).append(t)
+        return grouped
 
-    @property
-    def all_starbase_types(self) -> dict:
-        return builder.all_starbase_types
+    def known_type_names(self) -> set:
+        return {t.type_name for t in self.admin.list_ship_types()}
 
     # ---------------------------------------------------------------------- QUERIES - Game
-
-    def all_game_names(self) -> list:
-        return [os.path.basename(d) for d in self.dirs.games.iterdir() if d.is_dir()]
 
     def game_names_in_use(self) -> set:
         return self.admin.game_names_in_use()
 
-    def all_game_objs(self) -> list:
-        return [self.game(name) for name in self.all_game_names()]
+    def game_lines(self) -> list:
+        """Every game being played, each with what its round is waiting for."""
+        return self.admin.list_games()
 
-    def game_lines(self) -> list[GameLine]:
-        lines = []
-        for game in self.all_game_objs():
-            status = game.command_file_status
-            players = sorted(p for p in game.players if p)
-            said_ready = [p for p in players if self.admin.is_ready(game.name, p)]
-            lines.append(GameLine(name=game.name,
-                                  round_nr=game.current_round_nr,
-                                  ships=len(status),
-                                  orders_in=sum(1 for ok in status.values() if ok),
-                                  missing=sorted(n for n, ok in status.items() if not ok),
-                                  ready=game.current_round_ready,
-                                  players=len(players),
-                                  players_ready=len(said_ready),
-                                  not_ready=[p for p in players if p not in said_ready]))
-        return lines
+    def game_detail(self, game: str) -> GameDetail:
+        overview = self.admin.game_overview(game)
+        return GameDetail(name=game,
+                          standing=self.admin.standing(game),
+                          factions={f.name: [s for s in f.ships if s.alive]
+                                    for f in overview.factions},
+                          dead=[s for f in overview.factions for s in f.ships if not s.alive])
 
     # ---------------------------------------------------------------------- COMMANDS
 
@@ -209,8 +170,8 @@ class AppFacade(object):
     def server_time(self) -> str:
         return f"{server_now():%H:%M}"
 
-    def is_ready(self, game: str, player: str) -> bool:
-        return self.admin.is_ready(game, player)
+    def standing(self, game: str):
+        return self.admin.standing(game)
 
     def game_pulse(self, game: str):
         return self.admin.game_pulse(game)

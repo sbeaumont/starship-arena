@@ -47,9 +47,16 @@
   const asked = (game) => names[game.name]?.filter((n) => n.trim()).length ?? 0;
 </script>
 
-{#if games.length}
+<div class="screen">
+  <header>
+    <h1>Register</h1>
+  </header>
+
   <section class="open">
-    <h2>Open for registration</h2>
+    {#if !games.length}
+      <p class="none">No game is taking registrations right now. The director opens one when the
+        next war is being set up.</p>
+    {/if}
     {#each games as g (g.name)}
       <div class="card">
         <div class="head">
@@ -88,12 +95,19 @@
       </div>
     {/each}
   </section>
-{/if}
+</div>
 
 <style>
-  .open { max-width: 1000px; margin: 0 auto 28px; }
-  h2 { margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.16em;
-       text-transform: uppercase; color: var(--ink-dim); }
+  .screen {
+    height: 100%; overflow-y: auto; padding: 40px 32px;
+    background: radial-gradient(120% 90% at 50% 0%, #0e1526 0%, #080b12 70%);
+  }
+  header, .open { max-width: 1000px; margin-left: auto; margin-right: auto; }
+  header { margin-bottom: 24px; }
+  h1 { margin: 10px 0 0; font-size: 19px; font-weight: 600; letter-spacing: 0.2em;
+       text-transform: uppercase; color: var(--hull); }
+
+  .none { margin: 0; font-size: 13px; line-height: 1.6; color: var(--ink-faint); max-width: 70ch; }
 
   .card { background: #0d1320; border: 1px solid var(--edge); border-radius: 3px;
           padding: 14px 16px; margin-bottom: 8px; }

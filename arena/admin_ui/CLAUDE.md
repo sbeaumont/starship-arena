@@ -2,9 +2,8 @@
 
 Flask pages for running games. A player never sees this.
 
-1. **Go through `AdminService`.** The console is an interface like any other.
-   Four engine imports remain in `appfacade.py`; they are a known gap, not a licence.
-   [ADR 0001](../../docs/adr/0001-layered-architecture.md)
+1. **Go through `AdminService`.** The console is an interface like any other, and imports nothing
+   from `arena/engine`. [ADR 0001](../../docs/adr/0001-layered-architecture.md)
 2. **Everything is behind the director check.** `before_request` gates the whole app.
 3. **Anything that changes state is a POST.** Browsers prefetch links, and processing a round
    twice is not something to leave to chance.

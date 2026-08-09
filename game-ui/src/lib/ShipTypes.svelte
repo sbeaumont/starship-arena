@@ -1,6 +1,4 @@
 <script>
-  let { onLeave } = $props();
-
   let types = $state([]);
   let loading = $state(true);
   let error = $state(null);
@@ -32,7 +30,6 @@
 
 <div class="screen">
   <header>
-    <button type="button" class="back" onclick={onLeave}>‹ back</button>
     <h1>Ships</h1>
     <p class="sub">Every model in the registry, with what it carries. Stats are public: the
       game is won by flying well, not by knowing something the others do not.</p>
@@ -74,11 +71,6 @@
   h2 { margin: 26px auto 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.16em;
        text-transform: uppercase; color: var(--ink-dim); }
 
-  .back {
-    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--ink-dim); background: transparent; border: none; padding: 0; cursor: pointer;
-  }
-  .back:hover { color: var(--cyan); }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
   article { background: var(--panel); border: 1px solid var(--edge); border-radius: 4px;

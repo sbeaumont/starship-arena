@@ -32,8 +32,8 @@ from arena.app.dto import (
     FormingGame, GameSummary, OpenGame, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
     WeaponInfo, ComponentInput,
-    ShipSummary, FactionSummary, GameOverview, ShipTypeInfo, Me, LoginInfo, GameSettings, Pulse,
-    GamePulse, JournalEntry, By, ProcessingTrigger, ServerTime,
+    ShipSummary, FactionSummary, GameOverview, GameStanding, ShipTypeInfo, Me, LoginInfo,
+    GameSettings, Pulse, GamePulse, JournalEntry, By, ProcessingTrigger, ServerTime,
 )
 
 logger = logging.getLogger('starship-arena.services')
@@ -127,8 +127,35 @@ class _EngineAccess:
             due = next_occurrence(hours, now)
             games.append(GameSummary(name=d.name, current_round=gd.last_round_number + 1,
                                      process_hours=hours,
-                                     next_processing=due.isoformat(timespec='seconds') if due else None))
+                                     next_processing=due.isoformat(timespec='seconds') if due else None,
+                                     standing=cls._standing_of(gd)))
         return games
+
+    def standing(self, game: str) -> GameStanding:
+        return self._standing_of(self._gd(game))
+
+    @staticmethod
+    def _standing_of(gd: GameDirectory) -> GameStanding | None:
+        """Who is owed what for the round being planned, or None while there is no round yet.
+
+        Whether it can run is the engine's own verdict rather than something counted here, so
+        there is only ever one definition of a round being ready to process."""
+        if gd.last_round_number < 0:
+            return None
+        game = Game(gd)
+        orders = game.command_file_status
+        fleets: dict[str, list[str]] = {}
+        for ship in game.player_ships:
+            fleets.setdefault(ship.player, []).append(ship.name)
+        return GameStanding(
+            round_nr=game.current_round_nr,
+            all_in=game.current_round_ready,
+            ships=len(orders),
+            orders_in=sum(1 for ok in orders.values() if ok),
+            missing=sorted(name for name, ok in orders.items() if not ok),
+            players=len(fleets),
+            players_saved=sum(1 for names in fleets.values() if all(orders[n] for n in names)),
+            players_ready=sum(1 for p in fleets if gd.is_ready(p, game.current_round_nr)))
 
     def _roster(self, game: str) -> dict[str, str]:
         """Which player commands which ship.
@@ -193,6 +220,60 @@ class _EngineAccess:
         return Pulse(last_round=gd.last_round_number,
                      ready={p: gd.is_ready(p, round_nr) for p in sorted(players)})
 
+    def list_ship_types(self) -> list[ShipTypeInfo]:
+        """Every model in the registry. Reflection, so a new type needs no change here."""
+        return [ShipTypeInfo(type_name=st.type_name, name=st.name, category=st.category,
+                             specs=self._specs(st))
+                for st in sorted(all_fielded_types.values(), key=lambda t: t.name)]
+
+    def game_overview(self, game: str) -> GameOverview:
+        """Every faction with its ships, who commands them and how they are scoring.
+
+        Destroyed ships are included from the graveyard and marked, both because a score
+        earned still counts and because their player can still review their history."""
+        gd = self._gd(game)
+        world = gd.load_current_world()
+        if world is None:
+            raise FileNotFoundError(f"{game} has no completed rounds yet")
+
+        current_round = gd.last_round_number + 1
+        readiness: dict[str, bool] = {}
+        by_faction: dict[str, list[ShipSummary]] = {}
+        for pool, alive in ((world.objects, True), (world.graveyard, False)):
+            for s in pool.values():
+                if not s.is_player_controlled:
+                    continue
+                if s.player not in readiness:
+                    readiness[s.player] = gd.is_ready(s.player, current_round)
+                by_faction.setdefault(s.faction, []).append(ShipSummary(
+                    name=s.name, ship_type=s._type.name, player=s.player,
+                    score=s.score, alive=alive,
+                    orders_in=gd.command_file_exists(s.name, current_round),
+                    player_ready=readiness[s.player]))
+
+        factions = [FactionSummary(name=f, score=sum(x.score for x in ships),
+                                   ships=sorted(ships, key=lambda x: x.name))
+                    for f, ships in by_faction.items()]
+        # Best first, so the overview doubles as the scoreboard.
+        factions.sort(key=lambda f: (-f.score, f.name))
+        return GameOverview(name=game, last_round=gd.last_round_number, factions=factions)
+
+    @staticmethod
+    def _specs(ship_type) -> dict[str, str]:
+        """What the type object says this model is. Each component describes itself."""
+        specs = {
+            'Hull': str(ship_type.max_hull),
+            'Battery': f"{ship_type.start_battery}/{ship_type.max_battery}",
+            'Generators': str(ship_type.generators),
+            'Max speed': str(ship_type.max_speed),
+            'Max turn': str(ship_type.max_turn),
+            'Acceleration': str(ship_type.max_delta_v),
+            'Scan range': str(ship_type.max_scan_distance),
+        }
+        for c in (ship_type.defense + ship_type.weapons + ship_type.ecm + ship_type.control):
+            specs[c.name] = c.description
+        return specs
+
     def games_for_player(self, name: str) -> list[str]:
         return [g.name for g in self.list_games() if name in self._roster(g.name).values()]
 
@@ -246,46 +327,12 @@ class GameService(_EngineAccess):
 
     # ---------------------------------------------------------------------- REFERENCE
 
-    def list_ship_types(self) -> list[ShipTypeInfo]:
-        """Every model in the registry. Reflection, so a new type needs no change here."""
-        return [ShipTypeInfo(type_name=st.type_name, name=st.name, category=st.category,
-                             specs=self._specs(st))
-                for st in sorted(all_fielded_types.values(), key=lambda t: t.name)]
-
     def manual(self) -> bytes:
         """The manual as the CLI last built it. Bytes, so no interface learns where it is kept."""
         return Path(MANUAL_FILENAME).read_bytes()
 
     def list_ships(self, game: str) -> list[str]:
         return [s.name for s in Game(self._gd(game)).player_ships]
-
-    def game_overview(self, game: str) -> GameOverview:
-        """Every faction with its ships, who commands them and how they are scoring.
-
-        Destroyed ships are included from the graveyard and marked, both because a score
-        earned still counts and because their player can still review their history."""
-        gd = self._gd(game)
-        world = gd.load_current_world()
-        if world is None:
-            raise FileNotFoundError(f"{game} has no completed rounds yet")
-
-        current_round = gd.last_round_number + 1
-        by_faction: dict[str, list[ShipSummary]] = {}
-        for pool, alive in ((world.objects, True), (world.graveyard, False)):
-            for s in pool.values():
-                if not s.is_player_controlled:
-                    continue
-                by_faction.setdefault(s.faction, []).append(ShipSummary(
-                    name=s.name, ship_type=s._type.name, player=s.player,
-                    score=s.score, alive=alive,
-                    orders_in=gd.command_file_exists(s.name, current_round)))
-
-        factions = [FactionSummary(name=f, score=sum(x.score for x in ships),
-                                   ships=sorted(ships, key=lambda x: x.name))
-                    for f, ships in by_faction.items()]
-        # Best first, so the overview doubles as the scoreboard.
-        factions.sort(key=lambda f: (-f.score, f.name))
-        return GameOverview(name=game, last_round=gd.last_round_number, factions=factions)
 
     def get_ship_round(self, game: str, ship_name: str, round_nr: int) -> ShipRound:
         gd = self._gd(game)
@@ -445,22 +492,6 @@ class GameService(_EngineAccess):
         if not src.owner.faction:
             return str(Stance.Neutral)
         return str(Stance.Friend if src.owner.faction in factions else Stance.Foe)
-
-    @staticmethod
-    def _specs(ship_type) -> dict[str, str]:
-        """What the type object says this model is. Each component describes itself."""
-        specs = {
-            'Hull': str(ship_type.max_hull),
-            'Battery': f"{ship_type.start_battery}/{ship_type.max_battery}",
-            'Generators': str(ship_type.generators),
-            'Max speed': str(ship_type.max_speed),
-            'Max turn': str(ship_type.max_turn),
-            'Acceleration': str(ship_type.max_delta_v),
-            'Scan range': str(ship_type.max_scan_distance),
-        }
-        for c in (ship_type.defense + ship_type.weapons + ship_type.ecm + ship_type.control):
-            specs[c.name] = c.description
-        return specs
 
     @staticmethod
     def _tick_condition(ship, tick) -> TickCondition:

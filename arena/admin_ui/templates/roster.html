@@ -9,16 +9,13 @@
     registry is keyed by - not `name` (A2527 Alligator), which is for reading. -#}
 {% macro type_select(selected) -%}
 <select name="ship_type">
-    <optgroup label="Ships">
-        {%- for st in ship_types %}
-            <option value="{{ st.type_name }}" {{ 'selected' if st.type_name == selected }}>{{ st.name }} · hull {{ st.max_hull }} · speed {{ st.max_speed }} · turn {{ st.max_turn }}</option>
+    {%- for category, types in types_by_category.items() %}
+    <optgroup label="{{ category }}">
+        {%- for st in types %}
+            <option value="{{ st.type_name }}" {{ 'selected' if st.type_name == selected }}>{{ st.name }} · hull {{ st.specs['Hull'] }} · speed {{ st.specs['Max speed'] }} · turn {{ st.specs['Max turn'] }}</option>
         {%- endfor %}
     </optgroup>
-    <optgroup label="Starbases">
-        {%- for st in starbase_types %}
-            <option value="{{ st.type_name }}" {{ 'selected' if st.type_name == selected }}>{{ st.name }} · hull {{ st.max_hull }} · fixed</option>
-        {%- endfor %}
-    </optgroup>
+    {%- endfor %}
 </select>
 {%- endmacro %}
 

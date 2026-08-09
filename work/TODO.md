@@ -352,10 +352,9 @@ time" prevents the re-proposal.
       `../.claude/skills/project-documentation`, with copyable templates. `share/ai-guardrails/`
       is the same thing packaged for someone on another agent, prose rules included.
 
-- [ ] **Close the console's engine imports.** `../arena/admin_ui` reaches into `../arena/engine` in five
-      places, which `../docs/architecture.md` rule 3 forbids: the console is a user interface and
-      goes through `AdminService`. `AppFacade` builds `Game` objects directly today. Doing this
-      also makes the later move of the console onto `/api/admin/*` possible.
+- [x] **Close the console's engine imports.** `../arena/admin_ui` holds none: what a round is
+      waiting for is `GameStanding`, the overview page reads `game_overview`, and the type lists
+      are `ShipTypeInfo`. Moving the console onto `/api/admin/*` is now possible.
 
 ## Game features
 

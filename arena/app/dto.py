@@ -23,12 +23,43 @@ class Named:
 
 
 @dataclass
+class GameStanding:
+    """What the round being planned is still waiting for.
+
+    Orders are counted per ship, because that is what gates processing. Saved and ready are
+    counted per commander, because a player says they are ready once and saves their whole
+    fleet in one go."""
+    round_nr: int
+    all_in: bool           # every ship has orders: the round can be processed
+    ships: int
+    orders_in: int
+    missing: list[str]     # ships still owing orders
+    players: int
+    players_saved: int     # commanders whose ships all have orders in
+    players_ready: int
+
+    @property
+    def percent_in(self) -> int:
+        return round(100 * self.orders_in / self.ships) if self.ships else 0
+
+    @property
+    def percent_ready(self) -> int:
+        return round(100 * self.players_ready / self.players) if self.players else 0
+
+    @property
+    def all_ready(self) -> bool:
+        return bool(self.players) and self.players_ready == self.players
+
+
+@dataclass
 class GameSummary(Named):
     current_round: int = 0
     process_hours: list[int] = field(default_factory=list)  # hours of server time it runs on
     # When it next will, ISO 8601 with the offset. None when the director processes it by hand.
     # A moment rather than a schedule, so a reader's browser can put it in their own clock.
     next_processing: str | None = None
+    # None while a game is still collecting registrations: nothing is being planned yet.
+    standing: GameStanding | None = None
 
 
 @dataclass
@@ -58,6 +89,7 @@ class ShipSummary:
     score: int
     alive: bool
     orders_in: bool      # whether orders for the current round have been handed in
+    player_ready: bool   # whether their player has said they are done with the round
 
 
 @dataclass

@@ -1,10 +1,8 @@
 <script>
-  let { onLeave } = $props();
 </script>
 
 <div class="screen">
   <header>
-    <button type="button" class="back" onclick={onLeave}>‹ back</button>
     <h1>Lore</h1>
   </header>
 
@@ -119,9 +117,4 @@
   p + p { margin-top: 12px; }
   .lede { color: var(--ink-dim); }
 
-  .back {
-    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--ink-dim); background: transparent; border: none; padding: 0; cursor: pointer;
-  }
-  .back:hover { color: var(--cyan); }
 </style>

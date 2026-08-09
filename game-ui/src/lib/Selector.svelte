@@ -1,14 +1,10 @@
 <script>
-  import OpenGames from "./OpenGames.svelte";
-
-  let { me, onPick, onPage, onSignOut } = $props();
+  // The clock and who is signed in belong to the chrome above; this screen is handed the skew
+  // and the ticking now, so its countdowns cannot disagree with the bar's clock.
+  let { me, directing, skew, nowMs, onPick } = $props();
 
   let allGames = $state([]);
   let overview = $state(null);
-  // A director is a commander too. This drops them to what one of their players sees, both to
-  // plan their own ships without the noise and to check the experience.
-  let asPlayer = $state(false);
-  const directing = $derived(me.is_director && !asPlayer);
   const games = $derived(directing
     ? allGames
     : allGames.filter((g) => me.games.includes(g.name)));
@@ -16,27 +12,6 @@
   let loading = $state(true);
   let loadingOverview = $state(false);
   let error = $state(null);
-
-  // A game's hours are the server's, so its clock is what a deadline means. Everything below
-  // shows the reader their own time; the server's is only ever displayed.
-  let server = $state(null);
-  let askedAtMs = $state(0);
-  let nowMs = $state(Date.now());
-  // What this browser's clock is out by, so a wrong one cannot make a countdown lie.
-  const skew = $derived(server ? Date.parse(server.now) - askedAtMs : 0);
-
-  function offsetMsOf(iso) {
-    const signed = /([+-])(\d{2}):(\d{2})$/.exec(iso);
-    return signed
-      ? (signed[1] === "-" ? -1 : 1) * (Number(signed[2]) * 60 + Number(signed[3])) * 60000
-      : 0;
-  }
-
-  // The server's zone has no name here, only an offset, so shift the epoch by it and read the
-  // UTC fields. Formatting in the browser's zone would show the reader's clock, not the server's.
-  const serverClock = $derived(
-    server ? new Date(nowMs + skew + offsetMsOf(server.now)).toISOString().slice(11, 16) : "",
-  );
 
   function whenLocal(iso) {
     const at = new Date(iso);
@@ -52,22 +27,6 @@
     const hours = Math.floor(mins / 60);
     return mins % 60 ? `in ${hours}h ${mins % 60}m` : `in ${hours}h`;
   }
-
-  $effect(() => {
-    const ticking = setInterval(() => (nowMs = Date.now()), 30000);
-    return () => clearInterval(ticking);
-  });
-
-  $effect(() => {
-    (async () => {
-      const asked = Date.now();
-      const res = await fetch("/api/game/time");
-      if (res.ok) {
-        server = await res.json();
-        askedAtMs = asked;
-      }
-    })();
-  });
 
   $effect(() => {
     (async () => {
@@ -99,23 +58,26 @@
         player: player || null,
         ships,
         score: ships.reduce((sum, s) => sum + s.score, 0),
-        waiting: ships.filter((s) => s.alive && !s.orders_in).length,
+        // Saving and saying ready are both things a commander does once, for their whole fleet.
+        saved: ships.every((s) => !s.alive || s.orders_in),
+        ready: ships[0].player_ready,
         lost: ships.every((s) => !s.alive),
       }))
       .sort((a, b) => b.score - a.score || (a.player ?? "").localeCompare(b.player ?? ""));
   }
 
+  const pct = (n, of) => (of ? Math.round((100 * n) / of) : 0);
+
   // The standings are everyone's to read; only your own view is yours to open.
   const canOpen = (player) => !!player && (directing || player === me.name);
 
-  function toggleAsPlayer() {
-    asPlayer = !asPlayer;
-    // A game that is not yours makes no sense to keep open once you are looking as a player.
+  // A game that is not yours makes no sense to keep open once you drop to a player's view.
+  $effect(() => {
     if (!directing && game && !me.games.includes(game)) {
       game = null;
       overview = null;
     }
-  }
+  });
 
   async function chooseGame(name) {
     game = name;
@@ -131,30 +93,6 @@
 </script>
 
 <div class="screen">
-  <header>
-    <h1>Starship Arena</h1>
-    <p class="sub">
-      Signed in as {me.name}{#if me.is_director} · <span class="role">{directing ? "director" : "director, looking as a player"}</span>{/if}
-      {#if server} · <span class="clock">server time {serverClock} {server.zone}</span>{/if}
-    </p>
-    <nav>
-      {#if me.is_director}
-        <button type="button" class="mode" class:on={asPlayer} onclick={toggleAsPlayer}>
-          {asPlayer ? "View as director" : "View as player"}
-        </button>
-      {/if}
-      {#if directing && me.admin_url}
-        <a href={me.admin_url}>Console</a>
-      {/if}
-      <button type="button" onclick={() => onPage("ships")}>Ships</button>
-      <button type="button" onclick={() => onPage("lore")}>Lore</button>
-      <button type="button" onclick={() => window.open("/api/game/manual", "_blank")}>Manual</button>
-      <button type="button" onclick={onSignOut}>Sign out</button>
-    </nav>
-  </header>
-
-  <OpenGames />
-
   {#if loading}
     <p class="msg">Loading games…</p>
   {:else if error}
@@ -171,16 +109,26 @@
             <li>
               <button type="button" class="pick" class:on={g.name === game}
                       onclick={() => chooseGame(g.name)}>
-                <span class="nm">{g.display}</span>
-                <span class="meta">
-                  {g.current_round === 1 ? "not played yet" : `${g.current_round - 1} rounds played`}
+                <span class="head">
+                  <span class="nm">{g.display}</span>
+                  <span class="rnd">Round {g.standing.round_nr}</span>
                 </span>
                 <span class="meta next">
                   {#if g.next_processing}
-                    next round {whenLocal(g.next_processing)} · {until(g.next_processing)}
+                    next {whenLocal(g.next_processing)} · <span class="soon">{until(g.next_processing)}</span>
                   {:else}
                     no deadline, the director runs it
                   {/if}
+                </span>
+                <span class="meta gauge">
+                  <span class="lbl">saved</span>
+                  <span class="bar"><i style="width: {pct(g.standing.players_saved, g.standing.players)}%"></i></span>
+                  <span class="cnt">{g.standing.players_saved}/{g.standing.players}</span>
+                </span>
+                <span class="meta gauge">
+                  <span class="lbl">ready</span>
+                  <span class="bar ready"><i style="width: {pct(g.standing.players_ready, g.standing.players)}%"></i></span>
+                  <span class="cnt">{g.standing.players_ready}/{g.standing.players}</span>
                 </span>
               </button>
             </li>
@@ -206,6 +154,8 @@
                 <span class="rank">{rank + 1}</span>
                 <span class="fname">Faction {f.name}</span>
                 <span class="fscore">{f.score}</span>
+                <span class="st head">saved</span>
+                <span class="st head">ready</span>
               </div>
               {#each commandersOf(f) as c (c.player ?? "unassigned")}
                 {#if c.ships.length === 1}
@@ -214,13 +164,16 @@
                   <button type="button" class="ship" disabled={!canOpen(c.player)}
                           onclick={() => onPick(game, c.player)}
                           title={canOpen(c.player) ? `Open ${c.player}'s view` : "Not yours to open"}>
-                    <span class="dot" class:in={s.orders_in} class:dead={!s.alive}
-                          title={!s.alive ? "destroyed" : s.orders_in ? "orders handed in" : "waiting for orders"}
-                    ></span>
                     <span class="nm" class:gone={!s.alive}>{s.name}</span>
                     <span class="ty">{s.ship_type}</span>
                     <span class="pl">{c.player ?? "—"}</span>
                     <span class="sc">{s.score}</span>
+                    <span class="st" class:ok={c.saved} class:out={c.lost}>
+                      {c.lost ? "—" : c.saved ? "saved" : "waiting"}
+                    </span>
+                    <span class="st" class:ok={c.ready} class:out={c.lost}>
+                      {c.lost ? "—" : c.ready ? "ready" : "not yet"}
+                    </span>
                   </button>
                 {:else}
                   <!-- A whole fleet under one player, since opening them plans all of it. -->
@@ -232,20 +185,19 @@
                             title={canOpen(c.player)
                               ? `Open ${c.player}'s view and plan all ${c.ships.length} of their ships`
                               : "Not yours to open"}>
-                      <span class="dot" class:in={c.waiting === 0} class:dead={c.lost}
-                            title={c.lost ? "all ships lost"
-                                   : c.waiting === 0 ? "all orders handed in"
-                                   : `${c.waiting} still to plan`}></span>
                       <span class="nm">{c.ships.map((s) => s.name).join(", ")}</span>
                       <span class="pl">{c.player ?? "unassigned"}</span>
                       <span class="sc">{c.score}</span>
+                      <span class="st" class:ok={c.saved} class:out={c.lost}>
+                        {c.lost ? "—" : c.saved ? "saved" : "waiting"}
+                      </span>
+                      <span class="st" class:ok={c.ready} class:out={c.lost}>
+                        {c.lost ? "—" : c.ready ? "ready" : "not yet"}
+                      </span>
                     </button>
                     <ul class="ships">
                       {#each c.ships as s (s.name)}
                         <li class="shiprow">
-                          <span class="dot small" class:in={s.orders_in} class:dead={!s.alive}
-                                title={!s.alive ? "destroyed" : s.orders_in ? "orders handed in" : "waiting for orders"}
-                          ></span>
                           <span class="nm" class:gone={!s.alive}>{s.name}</span>
                           <span class="ty">{s.ship_type}</span>
                           <span class="sc">{s.score}</span>
@@ -257,52 +209,21 @@
               {/each}
             </div>
           {/each}
-          <p class="key">
-            <span class="dot in"></span> orders in ·
-            <span class="dot"></span> waiting ·
-            <span class="dot dead"></span> destroyed
-          </p>
         {/if}
       </section>
     </div>
-    <p class="honour">
-      {directing
-        ? "Opening a commander plans all of their ships together in one view."
-        : "The standings are open to everyone; only your own view can be opened."}
-    </p>
   {/if}
 </div>
 
 <style>
   .screen {
-    height: 100%; overflow-y: auto; padding: 40px 32px;
+    height: 100%; overflow-y: auto; padding: 28px 32px 40px;
     background: radial-gradient(120% 90% at 50% 0%, #0e1526 0%, #080b12 70%);
   }
-  header, .cols, .honour { max-width: 1000px; margin-left: auto; margin-right: auto; }
-  header { margin-bottom: 28px; }
-  h1 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: 0.2em;
-       text-transform: uppercase; color: var(--hull); }
-  .sub { margin: 8px 0 0; font-size: 13px; color: var(--ink-dim); }
-
-  header nav { display: flex; gap: 16px; margin-top: 14px; }
-  header nav button {
-    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--ink-dim); background: transparent; border: none; border-bottom: 1px solid var(--edge);
-    padding: 0 0 2px; cursor: pointer;
-  }
-  header nav button:hover { color: var(--cyan); border-color: var(--cyan); }
-  header nav a {
-    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--ink-dim); text-decoration: none; border-bottom: 1px solid var(--edge);
-    padding: 0 0 2px;
-  }
-  header nav a:hover { color: var(--cyan); border-color: var(--cyan); }
-  header nav button.mode { color: var(--amber); border-color: var(--edge); }
-  header nav button.mode.on { border-color: var(--amber); }
-  .role { color: var(--amber); }
+  .cols { max-width: 1000px; margin-left: auto; margin-right: auto; }
 
   .cols { display: flex; gap: 28px; align-items: flex-start; }
-  .games { width: 230px; flex-shrink: 0; }
+  .games { width: 280px; flex-shrink: 0; }
   .detail { flex: 1; min-width: 0; }
   h2 { margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.16em;
        text-transform: uppercase; color: var(--ink-dim); }
@@ -318,18 +239,33 @@
   .pick:hover { border-color: var(--cyan); color: var(--cyan); }
   .pick.on { border-color: var(--amber); color: var(--amber); }
   .pick:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
+  .head { display: flex; align-items: baseline; gap: 10px; }
+  .head .nm { flex: 1; min-width: 0; }
+  .rnd { font-size: 11px; color: var(--ink-dim); white-space: nowrap; }
   .meta { font-size: 11px; color: var(--ink-dim); }
-  .next { color: var(--ink-faint); }
-  .clock { color: var(--ink-dim); }
+  .next { margin-top: 2px; color: var(--ink); }
+  .next .soon { color: var(--amber); }
 
-  .faction { margin-bottom: 18px; }
-  .fhead { display: flex; align-items: baseline; gap: 10px; padding: 0 0 6px;
+  /* How far the round has got, per commander: what the director's console shows, for the
+     people waiting on each other. */
+  .gauge { display: flex; align-items: center; gap: 7px; margin-top: 3px; }
+  .gauge .lbl { color: var(--ink-faint); }
+  .gauge .cnt { font-variant-numeric: tabular-nums; }
+  .gauge .bar { flex: 1; height: 3px; background: var(--grid); border-radius: 2px;
+                overflow: hidden; }
+  .gauge .bar i { display: block; height: 100%; background: #57d98a; }
+  .gauge .bar.ready i { background: var(--cyan); }
+
+  .faction { --col: 60px; margin-bottom: 18px; }
+  .fhead { display: flex; align-items: baseline; gap: 10px; padding: 0 11px 6px;
            border-bottom: 1px solid var(--edge); margin-bottom: 6px; }
   .rank { font-size: 11px; color: var(--ink-faint); font-variant-numeric: tabular-nums;
           min-width: 14px; }
   .fname { font-size: 12.5px; color: var(--hull); font-weight: 600; letter-spacing: 0.06em; }
-  .fscore { margin-left: auto; font-size: 12.5px; color: var(--amber);
-            font-variant-numeric: tabular-nums; }
+  .fscore { margin-left: auto; min-width: 40px; text-align: right; font-size: 12.5px;
+            color: var(--amber); font-variant-numeric: tabular-nums; }
+  .st.head { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+             color: var(--ink-faint); }
 
   /* A player with a single ship: one flat row, as informative as a group would be. */
   .ship {
@@ -353,7 +289,9 @@
   .ship.fleet .nm { flex: 1; line-height: 1.5; }
   .ship.fleet .pl { font-weight: 600; }
 
-  .ships { margin: 2px 0 0; padding: 0 0 0 22px; gap: 0; }
+  /* A fleet's own ships, indented under its commander. The padding on the right is the two
+     status columns, so their scores stay in the column the scores above them are in. */
+  .ships { margin: 2px 0 0; padding: 0 calc(2 * var(--col) + 21px) 0 22px; gap: 0; }
   .shiprow { display: flex; align-items: center; gap: 9px; padding: 3px 10px;
              font-size: 11.5px; color: var(--ink-dim); }
   .shiprow .nm { min-width: 120px; color: var(--ink); }
@@ -361,22 +299,15 @@
   .shiprow .ty { flex: 1; font-size: 11px; }
   .sc { min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
 
-  .dot {
-    width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
-    background: var(--warn);           /* waiting for orders */
-  }
-  .dot.in { background: #57d98a; }     /* handed in */
-  .dot.dead { background: var(--ink-faint); }
-  .dot.small { width: 6px; height: 6px; }
-
-  .key { display: flex; align-items: center; gap: 6px; margin: 14px 0 0;
-         font-size: 11.5px; color: var(--ink-dim); }
-  .key .dot { margin-left: 6px; }
+  /* Saved and ready are per commander, not per ship: amber for still owed, since neither is
+     late until the deadline. */
+  .st { min-width: var(--col); text-align: right; font-size: 11.5px; color: var(--amber); }
+  .st.ok { color: #57d98a; }
+  .st.out { color: var(--ink-faint); }
 
   .msg { font-size: 13px; color: var(--ink); line-height: 1.6; }
   .msg.err { color: var(--warn); }
   .msg.quiet { color: var(--ink-faint); }
-  .honour { margin-top: 28px; font-size: 11.5px; color: var(--ink-faint); }
 
   @media (max-width: 820px) {
     .cols { flex-direction: column; }

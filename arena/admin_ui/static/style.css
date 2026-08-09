@@ -103,6 +103,7 @@ p { font-family: var(--sans); line-height: 1.6; color: var(--ink); }
 .games { display: flex; flex-direction: column; gap: 10px; }
 
 .game {
+    position: relative;
     display: grid;
     grid-template-columns: 10px minmax(140px, 1fr) 110px 1fr auto;
     align-items: center;
@@ -115,6 +116,10 @@ p { font-family: var(--sans); line-height: 1.6; color: var(--ink); }
 .game:hover { background: var(--panel-lit); border-color: var(--ring); }
 
 .game .name a { color: var(--hull); font-size: 15px; }
+/* The whole box opens the game: still one link, so the middle button and the keyboard work.
+   The actions sit above it, or they would never be reached. */
+.game .name a::after { content: ""; position: absolute; inset: 0; border-radius: 8px; }
+.game .act { position: relative; }
 .game .name a:hover { color: var(--cyan); }
 .game .round { color: var(--ink-dim); font-size: 12px; }
 /* Lines under the name: who is still owed, and who has not said they are done. */
@@ -134,9 +139,11 @@ button.danger:hover { border-color: var(--warn); color: var(--warn); background:
 .dot.waiting { background: var(--amber); }
 .dot.idle    { background: var(--ink-faint); }
 
-/* Orders in, as a count and as a bar - the director's one question is who we are waiting for. */
-.orders { display: flex; align-items: center; gap: 10px; }
-.orders .count { color: var(--ink-dim); font-size: 12px; white-space: nowrap; }
+/* Orders in and players ready, each as a count and a bar - the director's one question is who
+   we are waiting for. Orders gate the round; ready is what they say about it. */
+.orders { display: flex; flex-direction: column; gap: 6px; }
+.orders .gauge { display: flex; align-items: center; gap: 10px; }
+.orders .count { min-width: 122px; color: var(--ink-dim); font-size: 12px; white-space: nowrap; }
 .orders .count.ok { color: var(--green); }
 .orders .bar {
     flex: 1;
@@ -147,6 +154,7 @@ button.danger:hover { border-color: var(--warn); color: var(--warn); background:
     overflow: hidden;
 }
 .orders .bar i { display: block; height: 100%; background: var(--green); }
+.orders .bar.ready i { background: var(--cyan); }
 
 .waiting-for { color: var(--ink-faint); font-size: 11px; font-style: normal; }
 

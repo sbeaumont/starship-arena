@@ -9,7 +9,6 @@ everything else to an AppFacade.
 import logging
 import random
 import re
-from collections import defaultdict
 from dataclasses import asdict
 from flask import Flask, abort, render_template, request, g, jsonify, send_file, redirect, url_for
 
@@ -201,8 +200,7 @@ def roster_page(game_name: str, rows: list[dict], messages: list[str], starting:
                            display=for_display(starting or game_name),
                            settings=facade().settings(starting) if starting else None,
                            known_players=registered or [p.name for p in facade().active_players()],
-                           ship_types=facade().all_ship_types.values(),
-                           starbase_types=facade().all_starbase_types.values(),
+                           types_by_category=facade().types_by_category(),
                            messages=messages)
 
 
@@ -236,7 +234,7 @@ def create_game():
     game_name = request.form.get('game_name', '')
     scenario = request.form['scenario']
     rows = submitted_rows(request.form)
-    problems, ships = ship_records(rows, facade().all_ship_types | facade().all_starbase_types)
+    problems, ships = ship_records(rows, facade().known_type_names())
     if problems:
         return roster_page(game_name, rows, problems, scenario=scenario)
     facade().create_new_game(as_stored(game_name), ships, scenario)
@@ -276,7 +274,7 @@ def assign(game: str):
 @app.route('/start/<game>', methods=['POST'])
 def start_game(game: str):
     rows = submitted_rows(request.form)
-    problems, ships = ship_records(rows, facade().all_ship_types | facade().all_starbase_types)
+    problems, ships = ship_records(rows, facade().known_type_names())
     if problems:
         return roster_page(game, rows, problems, starting=game)
     facade().start_game(game, ships,
@@ -289,29 +287,17 @@ def start_game(game: str):
 @app.route('/game_overview/<game_name>')
 def game_overview(game_name: str):
     """One game: who commands what, and who still owes orders."""
-    factions = defaultdict(list)
-    game = facade().game(game_name)
-    for s in game.player_ships:
-        factions[s.faction].append(s)
-    command_file = game.command_file_status
-    ready = {p: facade().is_ready(game.name, p) for p in game.players if p}
+    detail = facade().game_detail(game_name)
     return render_template('game-overview.html',
-                           display=for_display(game.name),
-                           reopenable=facade().is_reopenable(game.name),
-                           factions=factions,
-                           ready=ready,
-                           settings=facade().settings(game.name),
-                           round_nr=game.current_round_nr,
-                           game=game.name,
-                           command_file=command_file,
-                           ships=len(command_file),
-                           orders_in=sum(1 for ok in command_file.values() if ok),
-                           all_command_files_ok=game.current_round_ready,
-                           journal=facade().journal(game.name, JOURNAL_LINES),
-                           dead_ships=game.graveyard.values(),
+                           detail=detail,
+                           game=detail.name,
+                           display=detail.display,
+                           standing=detail.standing,
+                           reopenable=facade().is_reopenable(game_name),
+                           settings=facade().settings(game_name),
+                           journal=facade().journal(game_name, JOURNAL_LINES),
                            known_players=[p.name for p in facade().active_players()],
-                           ship_types=facade().all_ship_types.values(),
-                           starbase_types=facade().all_starbase_types.values(),
+                           types_by_category=facade().types_by_category(),
                            spawn_error=request.args.get('spawn_error')
                            )
 
@@ -346,7 +332,7 @@ def game_status(game: str):
 def process_turn(game: str):
     """POST rather than GET: a browser is free to prefetch a link, and processing a round twice
     is not something to leave to chance."""
-    was = facade().game(game).current_round_nr
+    was = facade().standing(game).round_nr
     told = (f"Round {was} processed." if facade().process_turn(game)
             else "Nothing processed: orders are still missing.")
     return redirect(url_for('game_overview', game_name=game, msg=told, _anchor='processing'))
@@ -355,7 +341,7 @@ def process_turn(game: str):
 @app.route('/force_process/<game>', methods=['POST'])
 def force_process(game: str):
     """Run the round now, whatever the state of the orders."""
-    was = facade().game(game).current_round_nr
+    was = facade().standing(game).round_nr
     silent = facade().force_process_turn(game)
     told = f"Round {was} processed."
     if silent:
@@ -365,7 +351,7 @@ def force_process(game: str):
 
 @app.route('/regenerate/<game>', methods=['POST'])
 def regenerate(game: str):
-    was = facade().game(game).current_round_nr - 1
+    was = facade().standing(game).round_nr - 1
     now = facade().regenerate_game(game)
     told = f"Replayed to round {now}."
     if now < was:
