@@ -230,7 +230,7 @@ Every information element in the engine, classified.
 | `kind` | self-description | `Event`, `Parameter`, abstract |
 | `status` | reported dict | every component |
 | `description` | reported dict | every component |
-| `specs` | reported dict | assembled in `AdminService` |
+| `specs` | reported dict | assembled in the services layer |
 | `expected_parameters` | order surface | every component |
 | `snapshot` | per-tick values | `ObjectInSpace`, see [ADR 0011](adr/0011-snapshots-hold-values.md) |
 
