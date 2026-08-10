@@ -82,6 +82,18 @@ class OpenGame(Named):
 
 
 @dataclass
+class SoloGame:
+    """The one game a player may start on their own, and what starting a new one allows.
+
+    `game` is None until they have. Starting another throws the one they had away, so this is
+    both the offer and the state of it."""
+    scenario: str
+    blurb: str
+    max_ships: int
+    game: GameSummary | None = None
+
+
+@dataclass
 class ShipSummary:
     name: str
     ship_type: str

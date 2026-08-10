@@ -32,8 +32,12 @@ Moving between places is `shutil.move`. Starting a game moves it into `games/` a
 writes `ships.jsonl` and `settings.jsonl`. Putting it back into registration moves it out again and
 deletes the roster, the round-zero pickle and the empty commands directory.
 
-`game_names_in_use()` spans all three, so a name in registration cannot be claimed twice and the
+`game_names_in_use()` spans them all, so a name in registration cannot be claimed twice and the
 move at the end cannot collide.
+
+These three are the stages of one game's life. A game a player runs on their own is not a stage of
+it, and sits in a fourth root of its own:
+[0030](0030-solo-games-live-in-their-own-root.md).
 
 The registrations travel with the directory and stay in the live game. They are a plan under
 [docs/data.md](../data.md): the record of who asked for what, and nothing can rebuild it.

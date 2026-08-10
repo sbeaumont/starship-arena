@@ -7,7 +7,8 @@ from unittest import TestCase
 
 from arena.app.services import AdminService, GameService
 from arena.engine.game import Game
-from arena.app.scenarios.five_faction_war import FiveFactionWar, RING_BODIES, RING_RADIUS
+from arena.app.scenarios.five_faction_war import FiveFactionWar, RING_RADIUS
+from arena.app.scenarios.terrain import STANDARD_BODIES
 from arena.engine.admin import regenerate_game, setup_game
 from arena.engine.gamedirectory import GameDirectory
 from arena.engine.objects.objectinspace import Point
@@ -107,7 +108,7 @@ class TestTheRing(TestCase):
     def test_five_of_them_evenly_spaced(self):
         ring = FiveFactionWar().bodies()
 
-        self.assertEqual(RING_BODIES, len(ring))
+        self.assertEqual(STANDARD_BODIES, len(ring))
         self.assertEqual({'Asteroid'}, {body['type'] for body in ring})
         for body in ring:
             self.assertAlmostEqual(RING_RADIUS, (body['x'] ** 2 + body['y'] ** 2) ** 0.5, delta=1)

@@ -41,6 +41,7 @@ we already moved away from.
 | [0026](0026-a-game-keeps-a-journal.md) | A game keeps a journal of its processing |
 | [0027](0027-the-server-keeps-one-timezone.md) | The server keeps one timezone, and shifting is a UI concern |
 | [0029](0029-announcements-leave-through-channels.md) | Announcements leave the game through channels |
+| [0030](0030-solo-games-live-in-their-own-root.md) | A solo game is a game in a root of its own |
 
 ## Template
 

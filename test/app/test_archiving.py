@@ -30,6 +30,15 @@ class TestArchiving(TestCase):
         # The player's games and the claimable-name check both go through list_games.
         self.assertEqual(['live'], self.game.games_for_player('Serge'))
 
+    def test_an_archived_name_is_still_claimed(self):
+        """Or a second game of that name could not be archived without landing on the first."""
+        self.admin.archive_game('old')
+        self.assertIn('old', self.admin.game_names_in_use())
+        with self.assertRaises(ValueError):
+            self.admin.create_game('old', SHIPS, 'generic')
+        with self.assertRaises(ValueError):
+            self.admin.open_registrations('old', 'generic')
+
     def test_the_archive_sits_beside_the_games(self):
         self.admin.archive_game('old')
         self.assertTrue(os.path.isdir(os.path.join(self.root, 'archived', 'old')))

@@ -1,9 +1,12 @@
 <script>
   // The clock and who is signed in belong to the chrome above; this screen is handed the skew
   // and the ticking now, so its countdowns cannot disagree with the bar's clock.
-  let { me, directing, skew, nowMs, onPick } = $props();
+  let { me, directing, skew, nowMs, onPick, onPage } = $props();
 
   let allGames = $state([]);
+  // Kept apart from the shared games rather than mixed in: it is nobody else's, it waits for
+  // nobody, and a director's list would otherwise fill up with other people's practice.
+  let solo = $state(null);
   let overview = $state(null);
   const games = $derived(directing
     ? allGames
@@ -37,6 +40,13 @@
     const hours = Math.floor(mins / 60);
     return mins % 60 ? `in ${hours}h ${mins % 60}m` : `in ${hours}h`;
   }
+
+  $effect(() => {
+    (async () => {
+      const mine = await fetch("/api/game/solo");
+      if (mine.ok) solo = await mine.json();
+    })();
+  });
 
   $effect(() => {
     (async () => {
@@ -185,9 +195,29 @@
   {:else}
     <div class="cols">
       <section class="games">
-        <h2>Game</h2>
+        {#if solo?.game}
+          <h2>My solo game</h2>
+          <ul>
+            <li>
+              <!-- Straight into the map: there is nobody else on the standings to look at. -->
+              <button type="button" class="pick" onclick={() => onPick(solo.game.name, me.name)}>
+                <span class="head">
+                  <span class="nm">{solo.game.display}</span>
+                  <span class="rnd">Round {solo.game.current_round}</span>
+                </span>
+                <span class="meta next">no deadline · say you are ready and the round runs</span>
+              </button>
+            </li>
+          </ul>
+        {/if}
+
+        <h2 class:later={solo?.game}>Games</h2>
         {#if !games.length}
-          <p class="msg quiet">No games yet. The director will add you to one.</p>
+          <p class="msg quiet">
+            No games yet. The director will add you to one{#if !solo?.game}, or
+            <button type="button" class="link" onclick={() => onPage("solo")}>start a solo game</button>
+            of your own{/if}.
+          </p>
         {/if}
         <ul>
           {#each games as g (g.name)}
@@ -250,6 +280,10 @@
   .detail { flex: 1; min-width: 0; }
   h2 { margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.16em;
        text-transform: uppercase; color: var(--ink-dim); }
+  h2.later { margin-top: 20px; }
+
+  .link { font: inherit; color: var(--cyan); background: transparent; border: none; padding: 0;
+          text-decoration: underline; cursor: pointer; }
 
   ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
 

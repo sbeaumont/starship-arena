@@ -24,6 +24,12 @@ game that is over, `registering/` is one that has been named and is collecting r
 game directory is the same thing in all three places, and moving between them is a `shutil.move`.
 [ADR 0022](adr/0022-a-game-directory-moves-between-three-places.md).
 
+A fourth, `solo-games/`, holds the game a player runs on their own, one each and named
+`Solo_<player>`. Same files, same rounds, and it never appears in a list of games: a player asks
+for theirs by itself. No shared game may take a name starting with `Solo`, so which root a
+directory is in is never in doubt.
+[ADR 0030](adr/0030-solo-games-live-in-their-own-root.md).
+
 ## Plan, state, and record
 
 Almost every file here is a plan or state, and which one decides everything about how it is

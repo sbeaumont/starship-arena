@@ -91,8 +91,8 @@ Tests that need game data copy it into a temp directory. One that doesn't yet:
 
 Two places, and they are not the same thing. `test/test-games/` holds the suite's fixtures, and
 only games a test names belong there: `test-game` and `apitest`. `game-data/` is the local data
-root the servers and the console run on, holding `games/`, `archived/` and `registering/`, all of
-it gitignored. Point `GAME_DATA_DIR` at it and play with whatever you like; the suite never sees
+root the servers and the console run on, holding `games/`, `archived/`, `registering/` and
+`solo-games/`, all of it gitignored. Point `GAME_DATA_DIR` at it and play with whatever you like; the suite never sees
 it.
 
 In either place the text files are the plan and the pickles are derived, so only the text is

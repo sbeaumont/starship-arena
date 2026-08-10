@@ -5,6 +5,7 @@
   import Lore from './lib/Lore.svelte'
   import Login from './lib/Login.svelte'
   import OpenGames from './lib/OpenGames.svelte'
+  import Solo from './lib/Solo.svelte'
   import TopBar from './lib/TopBar.svelte'
 
   // The whole view lives in the URL: ?game=xke&player=Menno&round=2, or ?page=ships. That way
@@ -145,9 +146,12 @@
       {:else if route.page === 'register' && me}
         <!-- Registering is its own page: it matters for a week and would sit on the list forever. -->
         <OpenGames />
+      {:else if route.page === 'solo' && me}
+        <Solo onOpen={(game) => go({ game, player: me.name, round: null, page: null, ui: route.ui })} />
       {:else}
         <Selector {me} {directing} {skew} {nowMs}
-                  onPick={(game, player) => go({ game, player, round: null, page: null, ui: route.ui })} />
+                  onPick={(game, player) => go({ game, player, round: null, page: null, ui: route.ui })}
+                  onPage={openPage} />
       {/if}
     </div>
   </div>

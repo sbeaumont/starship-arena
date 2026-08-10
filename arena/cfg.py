@@ -81,12 +81,13 @@ logger.info(f"cfg.py: Loading game data from {GAME_DATA_DIR}")
 ARCHIVE_DIR_NAME = "archived"
 REGISTERING_DIR_NAME = "registering"
 GAMES_DIR_NAME = "games"
+SOLO_DIR_NAME = "solo-games"
 PLAYERS_FILE_NAME = "players.jsonl"
 
 
 @dataclass(frozen=True)
 class GamesRoot:
-    """A data root, and the three places a game directory can be in it."""
+    """A data root, and the four places a game directory can be in it."""
 
     root: Path
 
@@ -101,6 +102,19 @@ class GamesRoot:
     @property
     def registering(self) -> Path:
         return self.root / REGISTERING_DIR_NAME
+
+    @property
+    def solo(self) -> Path:
+        return self.root / SOLO_DIR_NAME
+
+    def holding(self, game: str) -> Path:
+        """Which of the two playable roots a game is in.
+
+        There is nothing to disambiguate: a shared game may not be named what a solo game is or
+        could be called. Resolving it here is what lets one set of operations serve both, so a
+        solo game is planned, ordered and processed through exactly the calls a shared game is.
+        See docs/adr/0030-solo-games-live-in-their-own-root.md."""
+        return self.solo if (self.solo / game).is_dir() else self.games
 
 
 GAMES_ROOT = GamesRoot(Path(GAME_DATA_DIR))

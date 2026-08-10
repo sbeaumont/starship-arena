@@ -16,6 +16,27 @@ each section.
 
 ## Game UI (`../game-ui`)
 
+- [x] **A solo game, so a new player has something to fly.** They pick one or two hulls, and get
+      the standard five asteroids, three drifting pirate hulls and a game that processes the
+      moment they say they are ready. One per player, in `solo-games/` beside the other three
+      roots, named `Solo_<player>`.
+      [ADR 0030](../docs/adr/0030-solo-games-live-in-their-own-root.md).
+
+      Almost none of it was new. `GamesRoot.holding` resolves which playable root a game is in, so
+      the map, the orders, the ready flag, the pulse and the journal all worked on it unchanged,
+      and `process_on_all_ready` already meant one player pressing Ready runs the round. What was
+      added is the scenario, two API routes and a page.
+
+      Still open, in the order they will start to itch:
+      **the pirates fly nothing.** They drift, get scanned and get shot, and nothing shoots back.
+      This is the first real customer for `Pilot` and `Gunner`, below.
+      **No objectives, and no way to finish.** A solo game runs until the player stops caring.
+      Wants scenario triggers, which is the same machinery the story scenarios want.
+      **Nothing teaches.** The manual is a PDF behind a menu; the map explains itself to nobody.
+      A first round with something pointing at the controls is the actual tutorial.
+      **The console shows none of them.** Deliberate for now. A read-only list with a delete is
+      the cheap version if stale directories ever pile up.
+
 - [x] **Boost and Power have controls**, in the tick panel under the weapons. `ComponentStatus`
       now carries the collection the machine keeps a component in and the inputs an order to it
       needs, so the row that already showed shield strengths can be ordered from.

@@ -1,15 +1,13 @@
 """Five factions, one war. Everybody who plays is dealt into one of them."""
 
-from math import cos, radians, sin
-
 from arena.app.registrations import Registration
 from arena.app.scenarios.placement import distribute_factions
+from arena.app.scenarios.terrain import asteroid_ring
 
 # A ring half way in leaves everyone the same choice: go around the outside, or cut through the
 # middle and thread the gaps.
 FACTION_DISTANCE = 500
 RING_RADIUS = FACTION_DISTANCE // 2
-RING_BODIES = 5
 
 FACTIONS = {
     'Human': ['H2545', 'H2552', 'H2535', 'H2527'],
@@ -33,10 +31,7 @@ class FiveFactionWar:
 
     def bodies(self) -> list[dict]:
         """A ring of asteroids between the factions and the middle."""
-        return [{'name': f"Asteroid-{n + 1}", 'type': 'Asteroid',
-                 'x': round(RING_RADIUS * sin(radians(n * 360 / RING_BODIES))),
-                 'y': round(RING_RADIUS * cos(radians(n * 360 / RING_BODIES)))}
-                for n in range(RING_BODIES)]
+        return asteroid_ring(RING_RADIUS)
 
     def place(self, ships: list[dict], rng) -> list[dict]:
         """Each faction its own corner of the circle, everyone pointed at the middle."""

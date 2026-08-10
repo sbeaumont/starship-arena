@@ -40,6 +40,7 @@
   <nav class:open={drawer}>
     {#if me}
       <button type="button" class:here={!page} onclick={() => shut(onHome)}>Games</button>
+      <button type="button" class:here={page === "solo"} onclick={() => shut(() => onPage("solo"))}>Solo</button>
       <button type="button" class:here={page === "register"} onclick={() => shut(() => onPage("register"))}>
         {open.length ? `Register (${open.length})` : "Register"}
       </button>

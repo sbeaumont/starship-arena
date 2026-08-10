@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
 from arena.app.dto import (GameSummary, OpenGame, ShipRound, PlayerPlan, GameOverview,
-                           ShipTypeInfo, Me, Pulse, ServerTime)
+                           ShipTypeInfo, Me, Pulse, ServerTime, SoloGame)
 from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE, LOGIN_COOKIE_SECURE, Player
 from arena.app.services import GameService
 
@@ -30,6 +30,15 @@ class RegisterBody(BaseModel):
 
 class RegistrationBody(BaseModel):
     names: list[str]
+
+
+class SoloShipBody(BaseModel):
+    name: str
+    type: str
+
+
+class SoloBody(BaseModel):
+    ships: list[SoloShipBody]
 
 
 def logged_in(request: Request) -> Player | None:
@@ -125,6 +134,21 @@ def register(game: str, body: RegistrationBody, me: Player = Depends(require_log
 def withdraw(game: str, me: Player = Depends(require_login)) -> OpenGame:
     service.withdraw(game, me.name)
     return next(g for g in service.open_games(me.name) if g.name == game)
+
+
+@router.get("/solo")
+def solo_game(me: Player = Depends(require_login)) -> SoloGame:
+    """The caller's own game, if they have started one. Theirs alone: the name is not a path."""
+    return service.solo_game(me.name)
+
+
+@router.post("/solo")
+def start_solo_game(body: SoloBody, me: Player = Depends(require_login)) -> SoloGame:
+    """Start one, throwing away whatever they had. Played through the same routes as any game."""
+    try:
+        return service.start_solo_game(me.name, [s.model_dump() for s in body.ships])
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/{game}/ships")

@@ -25,7 +25,7 @@ from arena.engine.objects.event import ExplosionEvent
 from arena.engine.objects.objectinspace import Stance
 from arena.app import scenarios
 from arena.app.clock import next_occurrence, server_now, zone_name
-from arena.app.naming import for_display
+from arena.app.naming import SOLO_PREFIX, for_display, is_solo_game_name, solo_game_name
 from arena.app.players import DIRECTOR, LOGIN_COOKIE, PLAYER, Player, PlayerRegistry
 from arena.app.registrations import Registration, RegistrationFile
 from arena.app.dto import (
@@ -33,7 +33,7 @@ from arena.app.dto import (
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
     WeaponInfo, ComponentInput,
     ShipSummary, FactionSummary, GameOverview, GameStanding, ShipTypeInfo, Me, LoginInfo,
-    GameSettings, Pulse, GamePulse, JournalEntry, By, ProcessingTrigger, ServerTime,
+    GameSettings, Pulse, GamePulse, JournalEntry, By, ProcessingTrigger, ServerTime, SoloGame,
 )
 
 logger = logging.getLogger('starship-arena.services')
@@ -53,7 +53,19 @@ class _EngineAccess:
         self.announcer = announcer if announcer is not None else Announcer()
 
     def _gd(self, game: str) -> GameDirectory:
-        return GameDirectory(str(self.dirs.games), game)
+        """A game, wherever it is playable from: shared in `games/`, or somebody's own in `solo/`.
+
+        Resolving it here is what lets one set of operations serve both, so nothing above this
+        line asks which kind of game it is holding."""
+        return GameDirectory(str(self.dirs.holding(game)), game)
+
+    def _build_game(self, gd: GameDirectory, scenario, ships: list[dict]) -> None:
+        """Deploy a roster over a scenario's terrain, and save the world that makes.
+
+        Where a ship starts is the scenario's call, and it is written into the roster file, so a
+        regenerate replays the deployment rather than drawing a new one."""
+        placed = scenario.place(ships, random.Random())
+        GameSetup(gd, ShipFile(gd, placed), BodyFile(gd, scenario.bodies())).execute()
 
     def _append_journal(self, game: str, event: str, **detail) -> None:
         """Add a line to the game's journal. Real time enters here, never below."""
@@ -79,10 +91,14 @@ class _EngineAccess:
     def list_registering_games(self) -> list[GameSummary]:
         return self._games_in(self.dirs.registering)
 
+    def list_solo_games(self) -> list[GameSummary]:
+        """Every player's own game. Not shown beside the shared ones anywhere."""
+        return self._games_in(self.dirs.solo)
+
     def game_names_in_use(self) -> set[str]:
-        """Being played, archived or still collecting registrations. All of them claim the name."""
+        """Played, archived, registering or somebody's own. All of them claim the name."""
         return {g.name for g in (self.list_games() + self.list_archived_games()
-                                 + self.list_registering_games())}
+                                 + self.list_registering_games() + self.list_solo_games())}
 
     def scenario_of(self, game: str) -> str:
         return json.loads((self.dirs.registering / game / SCENARIO_FILE_NAME).read_text())['scenario']
@@ -119,17 +135,17 @@ class _EngineAccess:
     def _games_in(cls, root: Path) -> list[GameSummary]:
         if not root.exists():
             return []
-        now = server_now()
-        games = []
-        for d in sorted(p for p in root.iterdir() if p.is_dir()):
-            gd = GameDirectory(str(root), d.name)
-            hours = cls._settings_of(gd).process_hours
-            due = next_occurrence(hours, now)
-            games.append(GameSummary(name=d.name, current_round=gd.last_round_number + 1,
-                                     process_hours=hours,
-                                     next_processing=due.isoformat(timespec='seconds') if due else None,
-                                     standing=cls._standing_of(gd)))
-        return games
+        return [cls._summary_of(GameDirectory(str(root), d.name))
+                for d in sorted(p for p in root.iterdir() if p.is_dir())]
+
+    @classmethod
+    def _summary_of(cls, gd: GameDirectory) -> GameSummary:
+        hours = cls._settings_of(gd).process_hours
+        due = next_occurrence(hours, server_now())
+        return GameSummary(name=gd.game_name, current_round=gd.last_round_number + 1,
+                           process_hours=hours,
+                           next_processing=due.isoformat(timespec='seconds') if due else None,
+                           standing=cls._standing_of(gd))
 
     def standing(self, game: str) -> GameStanding:
         return self._standing_of(self._gd(game))
@@ -324,6 +340,31 @@ class GameService(_EngineAccess):
                                        blurb=scenario.blurb, max_ships=scenario.max_ships,
                                        players=len(entries), my_ships=mine.names if mine else []))
         return open_games
+
+    # ---------------------------------------------------------------------- A GAME OF THEIR OWN
+
+    def solo_game(self, player: str) -> SoloGame:
+        """The one game this player may run on their own, started or not."""
+        gd = GameDirectory(str(self.dirs.solo), solo_game_name(player))
+        return SoloGame(scenario=scenarios.SOLO.name, blurb=scenarios.SOLO.blurb,
+                        max_ships=scenarios.SOLO.max_ships,
+                        game=self._summary_of(gd) if gd.exists else None)
+
+    def start_solo_game(self, player: str, picks: list[dict]) -> SoloGame:
+        """Build this player's own game from the hulls they picked, throwing away the one they had.
+
+        It runs a round the moment they say they are ready, because they are the only one it
+        waits for, and it announces nothing: a practice round is nobody else's news."""
+        scenario = scenarios.SOLO
+        name = solo_game_name(player)
+        ships = scenario.roster(player, picks, random.Random())
+        self.dirs.solo.mkdir(parents=True, exist_ok=True)
+        theirs = self.dirs.solo / name
+        if theirs.exists():
+            shutil.rmtree(theirs)
+        self._build_game(GameDirectory(str(self.dirs.solo), name), scenario, ships)
+        self.save_settings(name, GameSettings(on_all_ready=True, process_hours=[], announce=False))
+        return self.solo_game(player)
 
     # ---------------------------------------------------------------------- REFERENCE
 
@@ -658,25 +699,31 @@ class AdminService(_EngineAccess):
     def set_player_active(self, name: str, active: bool) -> None:
         self.players.set_active(name, active)
 
-    def create_game(self, name: str, ships: list[dict], scenario: str) -> None:
-        """Build the game the scenario describes: its roster deployed, its terrain in place.
+    def _claim_name(self, name: str) -> None:
+        """Refuse a name a shared game may not take. Every way of naming one comes through here.
 
-        Where a ship starts is the scenario's call, and it is written into the roster file, so a
-        regenerate replays the deployment rather than drawing a new one."""
+        Solo names are reserved as a set rather than one at a time: player names are unique, so
+        the prefix speaks for all of them whether or not anybody has started one. Nothing then has
+        to be disambiguated later, and where a game directory sits still says what kind it is."""
+        if is_solo_game_name(name):
+            raise ValueError(f"'{name}' is reserved: a name starting with '{SOLO_PREFIX}' "
+                             f"belongs to a player's own game.")
+        if name in self.game_names_in_use():
+            raise ValueError(f"A game called '{name}' already exists.")
+
+    def create_game(self, name: str, ships: list[dict], scenario: str) -> None:
+        """Name a game and build it: its roster deployed, its terrain in place."""
+        self._claim_name(name)
         self.dirs.games.mkdir(parents=True, exist_ok=True)
-        gd = GameDirectory(str(self.dirs.games), name)
-        if not gd.exists or not gd.has_been_setup:
-            plan = scenarios.by_key(scenario)
-            placed = plan.place(ships, random.Random())
-            GameSetup(gd, ShipFile(gd, placed), BodyFile(gd, plan.bodies())).execute()
+        self._build_game(GameDirectory(str(self.dirs.games), name),
+                         scenarios.by_key(scenario), ships)
 
     # ---------------------------------------------------------------------- BEFORE IT STARTS
 
     def open_registrations(self, name: str, scenario: str) -> None:
         """Name a game and start collecting registrations for it."""
         scenarios.by_key(scenario)
-        if name in self.game_names_in_use():
-            raise ValueError(f"A game called '{name}' already exists.")
+        self._claim_name(name)
         target = self.dirs.registering / name
         target.mkdir(parents=True)
         (target / SCENARIO_FILE_NAME).write_text(json.dumps({'scenario': scenario}) + '\n')
@@ -712,7 +759,9 @@ class AdminService(_EngineAccess):
         # Asked before the move, because the scenario is read from where the game is registering.
         scenario = self.scenario_of(name)
         shutil.move(str(self.dirs.registering / name), str(target))
-        self.create_game(name, ships, scenario)
+        # The name was claimed when registrations opened, and the directory is already here.
+        self._build_game(GameDirectory(str(self.dirs.games), name),
+                         scenarios.by_key(scenario), ships)
         self.save_settings(name, settings)
 
     def spawn_ship(self, game: str, name: str, ship_type: str, player: str = '',

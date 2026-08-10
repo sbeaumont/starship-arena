@@ -23,6 +23,17 @@ TOKEN_BYTES = 16
 DIRECTOR = 'director'
 PLAYER = 'player'
 
+# A name becomes the directory name of that person's solo game, so it may not walk out of one.
+# A single dot stays allowed, because "St. Nicolaas" is a name somebody will want.
+FORBIDDEN_IN_A_NAME = ('..', '/', '\\')
+
+
+def check_name(name: str) -> None:
+    if not (name and name.strip()):
+        raise ValueError("A name cannot be empty.")
+    if any(bad in name for bad in FORBIDDEN_IN_A_NAME):
+        raise ValueError(f"'{name}' cannot be a name: no '..', no slashes.")
+
 
 @dataclass
 class Player:
@@ -74,6 +85,7 @@ class PlayerRegistry:
 
     def issue(self, name: str, role: str = PLAYER) -> Player:
         """A fresh token, replacing any they had. Rotating a leaked link is the same call."""
+        check_name(name)
         had = self.by_name(name)
         players = [p for p in self.all() if p.name != name]
         issued = Player(name=name, token=secrets.token_urlsafe(TOKEN_BYTES), role=role,
