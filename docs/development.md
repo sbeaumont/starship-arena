@@ -30,6 +30,23 @@ shape locally.
 
 Cookies ignore ports, so signing in on 5173 also signs you in on 8080.
 
+## On a phone
+
+`arena-dev.sh` listens on every interface, so the game answers at this machine's own address from
+anything on the same network. Issue the link with that address rather than with localhost:
+
+```
+./arena-link.sh Menno http://192.168.1.6:5173
+```
+
+A browser keeps a `Secure` cookie over https, and over localhost, and nowhere else. A plain
+address on the network would drop it and every call would come back 401, so `arena-dev.sh` exports
+`ARENA_INSECURE_COOKIES=1`. Nothing else sets it and the host must not: deployed, the cookie is
+`Secure` as it should be.
+
+The map picks its shell from whether the browser has fingers. `?ui=touch` and `?ui=desktop`
+override that, so either can be opened on any machine.
+
 ## Logging in
 
 ```

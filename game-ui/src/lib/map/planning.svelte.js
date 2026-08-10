@@ -261,11 +261,17 @@ export class Planning {
 
   // Returns the round to move to when saying ready set everyone off, and null otherwise.
   async toggleReady() {
+    const goingReady = !this.ready;
     this.settingReady = true;
     try {
+      // Ready can process the round on the spot, so the orders go up first and have to hold.
+      if (goingReady && !(await this.saveAll())) {
+        this.saveMsg += " · Still not ready.";
+        return null;
+      }
       const res = await fetch(`/api/game/${this.game}/players/${this.player}/ready`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ready: !this.ready }),
+        body: JSON.stringify({ ready: goingReady }),
       });
       if (!res.ok) return null;
       const body = await res.json();
