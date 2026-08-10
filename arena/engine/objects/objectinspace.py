@@ -240,7 +240,7 @@ class Stance(str, Enum):
 
 class ObjectInSpace(ABC):
     """Any object in space, which can be ships, rockets, starbases, black holes, etc."""
-    def __init__(self, name: str, vector: Vector, visibility: int = 100, tick: Tick = TICK_ZERO):
+    def __init__(self, name: str, vector: Vector, tick: Tick = TICK_ZERO):
         assert isinstance(vector, Vector)
         super().__init__()
         self.name = name
@@ -249,7 +249,6 @@ class ObjectInSpace(ABC):
         self.owner = None
         self.faction = None
         self.history = History(self, tick)
-        self.visibility = visibility
         self.tags = set()
         # How much of the tick it has spent. Per-tick, like moved_from, and meaningless on its own.
         self.tick_fraction = 0.0
@@ -343,8 +342,16 @@ class ObjectInSpace(ABC):
             d += 360
         return round(d, 1)
 
+    @property
+    def visibility(self) -> int:
+        """How much of a scanner's reach this is worth to whoever is looking, as a percentage.
+
+        The model's to answer: 100 is a standard object, a rock or a starbase is worth more, and
+        anything hiding takes it down again through modify_scan_range."""
+        return self._type.visibility
+
     def modify_scan_range(self, scan_range: float) -> float:
-        """Change a scanning object's scan range based on this object's visibility."""
+        """How far a scanner has to reach to find this."""
         return scan_range * (self.visibility / 100)
 
     @property

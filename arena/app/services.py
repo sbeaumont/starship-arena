@@ -9,6 +9,7 @@ import random
 import re
 import shutil
 from datetime import datetime
+from math import atan2, degrees
 from pathlib import Path
 
 from arena.announce import Announcer
@@ -21,7 +22,7 @@ from arena.engine.game import Game
 from arena.engine.gamedirectory import BodyFile, GameDirectory, ShipFile
 from arena.engine.history import Tick
 from arena.engine.objects.registry.builder import all_fielded_types
-from arena.engine.objects.event import ExplosionEvent
+from arena.engine.objects.event import ExplosionEvent, HitEvent
 from arena.engine.objects.objectinspace import Stance
 from arena.app import scenarios
 from arena.app.clock import next_occurrence, server_now, zone_name
@@ -31,6 +32,7 @@ from arena.app.registrations import Registration, RegistrationFile
 from arena.app.dto import (
     FormingGame, GameSummary, OpenGame, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
+    Effect,
     WeaponInfo, ComponentInput,
     ShipSummary, FactionSummary, GameOverview, GameStanding, ShipTypeInfo, Me, LoginInfo,
     GameSettings, Pulse, GamePulse, JournalEntry, By, ProcessingTrigger, ServerTime, SoloGame,
@@ -466,6 +468,7 @@ class GameService(_EngineAccess):
                 player_ready=readiness.get(s.player, False),
                 owned=(s.player == player),
                 limits=ShipLimits(st.max_turn, st.max_delta_v, st.max_speed),
+                scan_range=st.max_scan_distance,
                 components=self._component_status(s, final, world),
                 specs=self._specs(st),
                 weapons=[self._weapon_info(w, pristine_weapons[w.name], world)
@@ -517,9 +520,40 @@ class GameService(_EngineAccess):
                             blasts.setdefault(key, Explosion(tick=t.tick, x=e.pos.x, y=e.pos.y,
                                                              radius=e.radius, damage_type=str(e._type)))
 
+        # What the faction's own blows did. Read off the striker's history, and placed from what
+        # the target was doing on that tick: you hit it, so where it was is not fog of war. A
+        # faction mate who watched the same hit holds the same event, hence the dedup.
+        landed: dict[tuple, Effect] = {}
+        for s in faction_ships:
+            for t in round_ticks:
+                if t in s.history:
+                    for e in s.history[t].events:
+                        if not (isinstance(e, HitEvent) and e.source.owner.name in own_names):
+                            continue
+                        struck = self._where_at(world, e.target.name, t)
+                        striker = self._where_at(world, e.source.owner.name, t)
+                        if struck is None or striker is None:
+                            continue
+                        for x in e.effects:
+                            landed.setdefault(
+                                (t.tick, e.target.name, x.part, str(x.outcome)),
+                                Effect(tick=t.tick, x=struck.x, y=struck.y,
+                                       bearing=round(degrees(atan2(striker.x - struck.x,
+                                                                   striker.y - struck.y)) % 360, 1),
+                                       target=e.target.name, part=x.part,
+                                       outcome=str(x.outcome), amount=x.amount, points=x.points))
+
         return PlayerPlan(game=game, player=player, factions=sorted(factions), round=round_nr,
                           last_round=last_round, ready=gd.is_ready(player, last_round + 1),
-                          ships=ships, contacts=contacts, explosions=list(blasts.values()))
+                          ships=ships, contacts=contacts, explosions=list(blasts.values()),
+                          effects=list(landed.values()))
+
+    @staticmethod
+    def _where_at(world, name: str, tick: Tick):
+        """Where something was at the end of a tick, from its own snapshot. The graveyard counts:
+        the thing you killed stopped existing, and where it died is the interesting part."""
+        obj = world.objects.get(name) or world.graveyard.get(name)
+        return obj.history[tick]['pos'] if obj and tick in obj.history else None
 
     # ---------------------------------------------------------------- internals
 

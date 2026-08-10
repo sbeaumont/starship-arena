@@ -290,8 +290,10 @@
         <label><input type="checkbox" bind:checked={layers.grid} /> Grid &amp; origin</label>
         <label><input type="checkbox" bind:checked={layers.paths} /> Planned courses</label>
         <label><input type="checkbox" bind:checked={layers.fire} /> Weapon orders</label>
+        <label><input type="checkbox" bind:checked={layers.scan} /> Scan range</label>
         <label><input type="checkbox" bind:checked={layers.tracks} /> Tracks</label>
         <label><input type="checkbox" bind:checked={layers.explosions} /> Explosions ({plan ? plan.explosions.length : 0})</label>
+        <label><input type="checkbox" bind:checked={layers.hits} /> Hits ({plan ? plan.effects.length : 0})</label>
         <label><input type="checkbox" bind:checked={layers.enemyOrdnance} /> Enemy ordnance ({planning.counts.enemyOrd})</label>
         <label><input type="checkbox" bind:checked={layers.friendlyOrdnance} /> Friendly ordnance ({planning.counts.friendlyOrd})</label>
       </section>

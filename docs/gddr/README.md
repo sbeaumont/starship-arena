@@ -18,6 +18,7 @@ One decision per file, numbered in the order they were accepted.
 | [0020](0020-explosions-do-not-take-sides.md) | An explosion damages everything in range |
 | [0025](0025-terrain-bounces-you-and-costs-hull.md) | Running into terrain bounces you, and costs hull |
 | [0028](0028-deadlines-are-part-of-the-game.md) | A round lands on the clock, and missing it costs you the round |
+| [0031](0031-loud-things-are-seen-from-further-away.md) | Loud things are seen from further away |
 
 ## What belongs here
 

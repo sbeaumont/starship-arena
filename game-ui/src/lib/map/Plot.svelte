@@ -32,6 +32,11 @@
 
   const SIZE = { Ship: 11, Starbase: 7.5, Missile: 5.5, Mine: 5 };
 
+  // The API's symbols for the machine itself, as against one of its defence components. Breaching
+  // a defence layer lets the blow through; breaching the hull is the end of the ship.
+  const HULL = "hull";
+  const MACHINE = new Set(["hull", "battery"]);
+
   // A finger is not a cursor. Every invisible hit target grows for one, which only works because
   // the shell has already said which of them are live.
   const HIT = $derived(coarse
@@ -45,11 +50,28 @@
 
   const contacts = $derived.by(() => {
     if (!plan) return [];
-    return plan.contacts.filter((c) => {
-      if (c.radius) return false;
-      if (NAMED.has(c.category_name)) return true;
-      return c.stance === "Friend" ? layers.friendlyOrdnance : layers.enemyOrdnance;
-    });
+    return plan.contacts
+      .filter((c) => {
+        if (c.radius) return false;
+        if (NAMED.has(c.category_name)) return true;
+        return c.stance === "Friend" ? layers.friendlyOrdnance : layers.enemyOrdnance;
+      })
+      // Ships last. SVG paints in order and the aiming target rides with the blip, so ordnance
+      // that went off on a ship would otherwise sit between you and the ship you want to shoot.
+      .sort((a, b) => Number(NAMED.has(a.category_name)) - Number(NAMED.has(b.category_name)));
+  });
+
+  // Last seen before the round ended: it is either gone or out of range, and either way where it
+  // is drawn is where it was, not where it is.
+  const stale = (c) => c.track[c.track.length - 1].tick < N;
+
+  const selected = $derived(plan?.ships.find((s) => s.name === planning.selected) ?? null);
+  // Where you are now, and where the course you are drawing puts you on tick 10. The far one
+  // moves as the course is dragged, which is the point of it.
+  const scanRings = $derived.by(() => {
+    if (!selected) return [];
+    const c = planning.chain;
+    return c?.length ? [c[0], c[c.length - 1]] : [{ x: selected.x, y: selected.y }];
   });
 
   // Anything with a size is terrain: drawn true to scale rather than as a marker, because a
@@ -109,6 +131,14 @@
     const a = alongWorld(vx, vy, headingDeg + lo, r);
     const b = alongWorld(vx, vy, headingDeg + lo + span, r);
     return `M ${vx},${vy} L ${a[0]},${a[1]} A ${r},${r} 0 ${span > 180 ? 1 : 0} 1 ${b[0]},${b[1]} Z`;
+  }
+
+  // A band across one side of something, centred on a bearing. The face that took a blow is the
+  // one pointing at whoever landed it, so this needs nothing about the target's own heading.
+  function arcAcross(vx, vy, bearing, span, r) {
+    const a = alongWorld(vx, vy, bearing - span / 2, r);
+    const b = alongWorld(vx, vy, bearing + span / 2, r);
+    return `M ${a[0]},${a[1]} A ${r},${r} 0 0 1 ${b[0]},${b[1]}`;
   }
 
   // A ray burst, drawn where something died.
@@ -349,8 +379,47 @@
     svgEl.setPointerCapture(e.pointerId);
   }
 
+  // Markers overlap all the time: ordnance goes off on the ship it killed, and a fleet flies in
+  // formation. Whichever is painted on top is an accident of ordering and the nearest to a
+  // fingertip is a guess, so when a tap covers more than one, the map asks which you meant.
+  let choosing = $state(null);
+
+  function under(e, items, reachPx) {
+    const { px, py } = localOf(e);
+    return items
+      .map((it) => ({ ...it, d: Math.hypot(camera.sx(it.v.vx) - px, camera.sy(it.v.vy) - py) }))
+      .filter((it) => it.d <= reachPx)
+      .sort((a, b) => a.d - b.d);
+  }
+
+  function ask(e, hits, aiming) {
+    const { px, py } = localOf(e);
+    choosing = { px: Math.min(px, camera.boxW - 150), py: Math.min(py, camera.boxH - 30 * hits.length),
+                 hits, aiming };
+  }
+
+  function choose(name) {
+    if (choosing.aiming) planning.pickTarget(name);
+    else planning.selectShip(name);
+    choosing = null;
+  }
+
   function onDown(e) {
     if (gesture === "pinch" || blocked) return;
+    choosing = null;
+    if (plan && planning.aiming) {
+      const hits = under(e, contacts.map((c) => ({ name: c.name, note: c.type_name,
+                                                   v: lastOf(c) })), HIT.target);
+      if (hits.length > 1) return ask(e, hits, true);
+      // No pan behind a pick: the tick panel you armed from would be cleared on the way up.
+      if (hits.length === 1) return planning.pickTarget(hits[0].name);
+    } else if (plan) {
+      const hits = under(e, plan.ships.filter((s) => s.owned)
+                              .map((s) => ({ name: s.name, note: s.ship_type,
+                                             v: w2v(s.x, s.y) })), HIT.ship);
+      if (hits.length > 1) return ask(e, hits, false);
+      pendingShip = hits.length ? hits[0].name : null;
+    }
     begin(e, "pan");
   }
 
@@ -524,6 +593,16 @@
     {/if}
 
     {#if plan}
+      <!-- How far the selected ship notices things, here and at the end of the course. -->
+      {#if layers.scan && selected?.scan_range}
+        {#each scanRings as p, i (i)}
+          {@const v = w2v(p.x, p.y)}
+          <circle class="scanring" class:from={i === 0} cx={v.vx} cy={v.vy}
+                  r={selected.scan_range} stroke-width={upp}
+                  stroke-dasharray="{6 * upp} {8 * upp}" />
+        {/each}
+      {/if}
+
       {#if layers.explosions}
         {#each plan.explosions as e (`${e.tick}:${e.x}:${e.y}:${e.radius}`)}
           {@const v = w2v(e.x, e.y)}
@@ -539,6 +618,22 @@
         <circle class="wreck-core" cx={v.vx} cy={v.vy} r={WRECK_RADIUS * 0.18} />
       {/each}
 
+      <!-- What your own blows did, marked where they landed. -->
+      {#if layers.hits}
+        {#each plan.effects as f (`${f.tick}:${f.target}:${f.part}:${f.outcome}`)}
+          {@const v = w2v(f.x, f.y)}
+          {#if f.outcome === "Breached" && f.part === HULL}
+            <path class="wreck" d={burst(v.vx, v.vy, WRECK_RADIUS)} stroke-width={1.4 * upp} />
+            <circle class="wreck-core" cx={v.vx} cy={v.vy} r={WRECK_RADIUS * 0.18} />
+          {:else if f.outcome === "Breached"}
+            <path class="breach" d={arcAcross(v.vx, v.vy, f.bearing, 90, 15 * upp)}
+                  stroke-width={2.6 * upp} />
+          {:else if f.outcome === "Damaged" && MACHINE.has(f.part)}
+            <circle class="struck" cx={v.vx} cy={v.vy} r={12 * upp} stroke-width={1.6 * upp} />
+          {/if}
+        {/each}
+      {/if}
+
       {#each contacts as c (c.name)}
         {#if layers.tracks && c.track.length > 1}
           <polyline class="track" class:enemy={c.stance === "Foe"}
@@ -549,12 +644,12 @@
           {/each}
         {/if}
         {@const v = lastOf(c)}
-        <polygon class="blip" class:enemy={c.stance === "Foe"}
+        <polygon class="blip" class:enemy={c.stance === "Foe"} class:stale={stale(c)}
                  points={markerFor(c.category_name, v.vx, v.vy, courseOf(c))} />
         {#if planning.aiming}
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <circle class="target-hit" cx={v.vx} cy={v.vy} r={HIT.target * upp}
-                  onpointerdown={(e) => { e.stopPropagation(); planning.pickTarget(c.name); }} />
+          <!-- The reach of a tap, so the cursor says what is aimable. Which one you meant is
+               settled in onDown, where every candidate under the pointer is known. -->
+          <circle class="target-hit" cx={v.vx} cy={v.vy} r={HIT.target * upp} />
         {/if}
       {/each}
 
@@ -598,10 +693,7 @@
         <polygon class="ship" class:own={s.owned}
                  points={markerFor(s.category_name, v.vx, v.vy, s.heading)} />
         {#if s.owned}
-          <!-- Tapping one of your ships is how you switch to planning it. -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <circle class="ship-hit" cx={v.vx} cy={v.vy} r={HIT.ship * upp}
-                  onpointerdown={() => (pendingShip = s.name)} />
+          <circle class="ship-hit" cx={v.vx} cy={v.vy} r={HIT.ship * upp} />
         {/if}
       {/each}
 
@@ -717,6 +809,16 @@
     {/each}
   </svg>
 
+  {#if choosing}
+    <div class="pickone" style="left: {choosing.px}px; top: {choosing.py}px;">
+      {#each choosing.hits as h (h.name)}
+        <button type="button" onclick={() => choose(h.name)}>
+          {h.name}<span>{h.note}</span>
+        </button>
+      {/each}
+    </div>
+  {/if}
+
   <!-- What the drag is doing, because your hand is over the thing it is doing it to. -->
   {#if dragInfo}<p class="readout">{dragInfo}</p>{/if}
 
@@ -742,6 +844,21 @@
   }
   .overlay-msg.err { color: var(--warn); }
 
+  .pickone {
+    position: absolute; z-index: 6; display: flex; flex-direction: column;
+    background: rgba(10, 14, 23, 0.96); border: 1px solid var(--amber); border-radius: 3px;
+    overflow: hidden; min-width: 140px;
+  }
+  .pickone button {
+    display: flex; align-items: baseline; gap: 8px; text-align: left; cursor: pointer;
+    font-family: var(--mono); font-size: 12px; color: var(--ink);
+    background: transparent; border: none; border-bottom: 1px solid var(--edge);
+    padding: 7px 10px; min-height: 34px;
+  }
+  .pickone button:last-child { border-bottom: none; }
+  .pickone button:hover { background: #16203a; color: var(--amber); }
+  .pickone span { margin-left: auto; font-size: 11px; color: var(--ink-faint); }
+
   .readout {
     position: absolute; top: 10px; left: 50%; transform: translateX(-50%); margin: 0;
     padding: 5px 12px; border-radius: 3px; z-index: 5; pointer-events: none;
@@ -759,13 +876,18 @@
   .body { fill: #1a2130; stroke: #2b3648; }
   .wreck { stroke: var(--warn); fill: none; stroke-linecap: round; opacity: 0.9; }
   .wreck-core { fill: #ffd2d6; }
+  .breach { stroke: var(--warn); fill: none; stroke-linecap: round; opacity: 0.95; }
+  .struck { stroke: var(--warn); fill: none; opacity: 0.55; }
   .track { fill: none; stroke: var(--ghost); opacity: 0.75; }
   .track.enemy { stroke: #6d3242; }
   .mark { fill: var(--cyan); opacity: 0.45; }
   .mark.enemy { fill: var(--warn); opacity: 0.4; }
   .blip { fill: var(--cyan); opacity: 0.75; }
   .blip.enemy { fill: var(--warn); opacity: 0.95; }
-  .target-hit { fill: transparent; cursor: crosshair; }
+  .blip.stale { opacity: 0.35; }
+
+  .scanring { fill: none; stroke: var(--cyan); opacity: 0.3; }
+  .scanring.from { opacity: 0.15; }
   .ship { fill: var(--cyan); }
   .ship.own { fill: var(--amber); }
   .halo { fill: none; stroke: var(--cyan); opacity: 0.25; }
@@ -803,6 +925,7 @@
   .cone.other { fill: var(--ink-dim); fill-opacity: 0.05; stroke: var(--ink-dim);
                 stroke-opacity: 0.24; }
   .ship-hit { fill: transparent; cursor: pointer; }
+  .target-hit { fill: transparent; cursor: crosshair; }
   .shot { stroke: #ff7b7b; opacity: 0.4; }
   .shot.cur { opacity: 1; }
   .shot.other { opacity: 0.22; }

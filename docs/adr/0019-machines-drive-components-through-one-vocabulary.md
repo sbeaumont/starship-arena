@@ -90,8 +90,6 @@ Each of these is a spot where a new component would be silently ignored. They ar
 - `Gunner.lasers` filters on `isinstance(weapon, Laser)` (`control.py:100`), so an NPC gunner can
   never fire anything else, and `Gunner.decide` sorts targets with `isinstance(enemy, (Missile,
   Mine))` (`control.py:83`), where `category_name` already answers the question.
-- `Ship.take_damage_from` guards with `hasattr(self, 'outer_defense')` (`ship.py:165`), which is
-  always true because `outer_defense` is a property on the class (`ship.py:64`).
 - `Warhead.explode` reads `ois._type.max_scan_distance` (`warhead.py:80`, `:102`), reaching through
   another object's type and past a private attribute for a question the object could answer.
 

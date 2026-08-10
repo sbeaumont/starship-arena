@@ -17,7 +17,7 @@
   const camera = new Camera();
 
   const layers = $state({
-    grid: true, paths: true, fire: true, tracks: true, explosions: true,
+    grid: true, paths: true, fire: true, scan: true, tracks: true, explosions: true, hits: true,
     enemyOrdnance: true, friendlyOrdnance: true,
   });
 

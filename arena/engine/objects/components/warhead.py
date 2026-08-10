@@ -77,7 +77,7 @@ class Warhead(Component):
         # Generate the explosion: first all who can scan it see it.
         expl_event = ExplosionEvent(self.container.pos, self.damage_type, self.container, self.range)
         for ois in world.objects.values():
-            if ois.distance_to(expl_event.pos) <= ois._type.max_scan_distance:
+            if ois.distance_to(expl_event.pos) <= expl_event.modify_scan_range(ois._type.max_scan_distance):
                 ois.add_event(expl_event)
 
         # The explosion generates hits on ALL in range

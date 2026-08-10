@@ -16,7 +16,8 @@ from typing import Protocol, runtime_checkable, NewType
 from arena.engine.parameter import Parameter
 from .machineinspace import MachineInSpace, MachineType
 from .objectinspace import Impulse, ObjectInSpace, Vector
-from .event import DamageType, ScanEvent, InternalEvent, HitEvent
+from arena.engine.objects.event import (DamageType, Effect, HitEvent, InternalEvent, Outcome,
+                                        ScanEvent)
 from arena.engine.history import Tick, TICK_ZERO
 from arena.engine.world import World
 
@@ -30,6 +31,11 @@ class Replenisher(Protocol):
 
 
 shipType = NewType("ShipType", MachineType)
+
+# What a machine calls the two things of its own that a blow can reach, once the defence
+# components have had their turn. Symbols, so an interface can put words to them.
+HULL = 'hull'
+BATTERY = 'battery'
 
 
 class Ship(MachineInSpace):
@@ -61,10 +67,6 @@ class Ship(MachineInSpace):
         return self.hull <= 0
 
     @property
-    def outer_defense(self):
-        return self.defense[0] if len(self.defense) >= 1 else None
-
-    @property
     def scans(self):
         return self.history.current.scans
 
@@ -76,7 +78,10 @@ class Ship(MachineInSpace):
         return (ois != self) and self.distance_to(ois.xy) < scan_distance
 
     def modify_scan_range(self, scan_range: float) -> float:
-        """Change a scanning object's scan range based on this ship's ECM."""
+        """How far a scanner has to reach for this ship: how big it is, then what it hides behind.
+
+        Size first, because a cloak halves whatever there was to see."""
+        scan_range = super().modify_scan_range(scan_range)
         for e in self.ecm.values():
             scan_range = e.modify_scan_range(scan_range)
         return round(scan_range, 1)
@@ -161,12 +166,16 @@ class Ship(MachineInSpace):
 
         already_killed = self.is_destroyed
 
+        # Inwards along the defence components, each one answering for itself and handing on
+        # whatever it could not hold. The machine is the last layer, and answers the same way.
         amount = hit_event.amount
-        if hasattr(self, 'outer_defense'):
-            for d in self.defense:
-                amount = d.take_damage_from(hit_event)
-                if amount <= 0:
-                    break
+        for d in self.defense:
+            effect = d.take_damage_from(hit_event._type, amount, hit_event.source.pos)
+            hit_event.add_effect(effect)
+            amount = effect.passed_on
+            if amount <= 0:
+                break
+
         if amount > 0:
             if hit_event._type == DamageType.Nanocyte:
                 amount = 2 * amount
@@ -181,21 +190,12 @@ class Ship(MachineInSpace):
                 score = self._damage_hull(amount)
                 self.add_internal_event(f"Hull decreased by {amount} to {self.hull}")
 
-            if hit_event.can_score:
-                hit_event.score += score
-            else:
-                score = 0
-
-            what_was_hit = 'battery' if hit_event._type == DamageType.EMP else 'hull'
-            hit_event.notify_owner(f"{hit_event.source.name} hit {self.name}'s {what_was_hit} for {amount}: ({score} points)")
+            what_was_hit = BATTERY if hit_event._type == DamageType.EMP else HULL
+            hit_event.add_effect(Effect(what_was_hit, Outcome.Damaged, amount, score, 0))
 
         if not already_killed and self.is_destroyed:
             # Only the final blow scores the kill.
-            score = 0
-            if hit_event.can_score:
-                score = self.kill_score
-                hit_event.score += self.kill_score
-            hit_event.notify_owner(f"{hit_event.source.name} landed the killing blow on {self.name}: ({score} points)")
+            hit_event.add_effect(Effect(HULL, Outcome.Breached, 0, self.kill_score, 0))
             self.add_internal_event(f"You were destroyed. Killing blow by {hit_event.source.name}.")
 
     def tick(self, tick: Tick):

@@ -1,8 +1,7 @@
 from arena.engine.objects.component import Component, ComponentParameter, NumberInRangeParameter
 from arena.engine.objects.objectinspace import Point
 from arena.engine.objects.machineinspace import MachineInSpace
-from arena.engine.objects.event import HitEvent
-from ..event import DamageType
+from arena.engine.objects.event import DamageType, Effect, Outcome
 
 
 class QuadrantParameter(ComponentParameter):
@@ -83,54 +82,36 @@ class Shields(Component):
             self.strengths[qdrt] = 2 * self.max_strengths[qdrt]
         self.add_internal_event(f"Boosted shield quadrant {qdrt} to {self.strengths[qdrt]}")
 
-    def take_damage_from(self, hit_event: HitEvent) -> int:
-        """Absorb damage on shield quadrant, return any remaining damage."""
-        shield_quadrant = self.quadrant_of(hit_event.source.pos)
-        old_strength = self.strengths[shield_quadrant]
-        damage_amount = hit_event.amount
+    def take_damage_from(self, damage_type: DamageType, damage: int, struck_from: Point) -> Effect:
+        """Take what reached this shield, and answer with what became of it.
 
-        if old_strength == 0:
-            # Shield is down, just pass through the damage.
-            return damage_amount
+        Handed the kind of harm, how much of it arrived and where from, which is everything a
+        shield needs. It never sees the blow itself, so it cannot know whose it was, whether it
+        scores, or what to call whoever fired: those are not a shield's business."""
+        quadrant = self.quadrant_of(struck_from)
+        strength = self.strengths[quadrant]
 
-        # Nanocytes can not penetrate shields, but if there's no shield there, everything gets passed through... uh oh.
-        if hit_event._type == DamageType.Nanocyte:
-            if old_strength > 0:
-                hit_event.notify_owner(f"Nanocytes splashed harmlessly against {self.container.name}'s shield.")
-                return 0
-            else:
-                return hit_event.amount
-        elif hit_event._type == DamageType.EMP:
-            if old_strength >= damage_amount * 2:
-                # All damage to shield
-                damage_amount = damage_amount * 2
-            else:
-                # Add half of the shield strength to the damage to simulate
-                # double damage to shields, but not anything else.
-                damage_amount += old_strength // 2
+        if strength == 0:
+            return Effect(self.name, Outcome.Unaffected, 0, 0, damage)
 
-        self.strengths[shield_quadrant] -= damage_amount
-        if old_strength >= damage_amount:
-            shield_score = 0
-            if hit_event.can_score:
-                shield_score = (old_strength - self.strengths[shield_quadrant]) // 2
-                hit_event.score += shield_score
-            hit_event.notify_owner(f"{hit_event.source.name} hit {self.container.name}'s shield: ({shield_score} points).")
-            self.add_internal_event(f"Shield {shield_quadrant} hit for {hit_event.amount}. Remaining strength: {self.strengths[shield_quadrant]}")
-            return 0
-        else:
-            shield_score = 0
-            if hit_event.can_score:
-                shield_score = old_strength // 2
-                hit_event.score += shield_score
-            hit_event.notify_owner(f"{hit_event.source.name} hit {self.container.name}'s shield: ({shield_score} points).")
-            if hit_event.can_score:
-                hit_event.score += self.shield_break_score
-                hit_event.notify_owner(f"{hit_event.source.name} broke {self.container.name}'s shield: ({self.shield_break_score} points).")
-            breakthrough_damage = -self.strengths[shield_quadrant]
-            self.strengths[shield_quadrant] = 0
-            self.add_internal_event(f"Hit on shield {shield_quadrant} broke the shield: {breakthrough_damage} passed through.")
-            return breakthrough_damage
+        if damage_type == DamageType.Nanocyte:
+            # Nanocytes cannot get through a shield at all, and blunt themselves trying.
+            return Effect(self.name, Outcome.Unaffected, 0, 0, 0)
+        if damage_type == DamageType.EMP:
+            # Twice the bite against a shield, and no more than the shield can take.
+            damage = damage * 2 if strength >= damage * 2 else damage + strength // 2
+
+        taken = min(strength, damage)
+        self.strengths[quadrant] = strength - taken
+        if damage <= strength:
+            self.add_internal_event(f"Shield {quadrant} hit for {damage}. "
+                                    f"Remaining strength: {self.strengths[quadrant]}")
+            return Effect(self.name, Outcome.Damaged, taken, taken // 2, 0)
+
+        through = damage - taken
+        self.add_internal_event(f"Hit on shield {quadrant} broke the shield: {through} passed through.")
+        return Effect(self.name, Outcome.Breached, taken,
+                      taken // 2 + self.shield_break_score, through)
 
     # ---------------------------------------------------------------------- ENGINE HANDLERS
 

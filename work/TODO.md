@@ -324,6 +324,60 @@ each section.
   `CommandSet.add` keeps all the tick ordering visible in one place, which is what makes it easy
   to move a command between phases while debugging.
 
+- [x] **Damage travels inwards, and every layer answers the same way.** A component that takes
+      damage returns an `Effect`: which layer, `Unaffected`/`Damaged`/`Breached`, what it took,
+      what that was worth, and what carried on. The machine is the last layer and answers in the
+      same words, where `Breached` on the hull is the kill.
+
+      A shield is now handed only the damage type, the amount and the direction, so it cannot read
+      the blow, cannot know whose it was, and cannot write a sentence about whoever fired. That is
+      what pulled the phrasing out of the components: `HitEvent.__str__` composes one line from the
+      symbols, and an interface can take that over one event at a time.
+
+      Three defects went with it. Damage did not actually propagate: each component read
+      `hit_event.amount` again, so a second defence component would have taken the full blow, which
+      is what armour would have hit first. A breach was reported only when it scored, so breaking a
+      faction-mate's shield told the attacker nothing. And `hasattr(self, 'outer_defense')` was
+      always true, which closes one of the entries in
+      [ADR 0019](../docs/adr/0019-machines-drive-components-through-one-vocabulary.md).
+
+      `Event.score` is now derived from the effects, so what points were for survives beside how
+      many there were. That is the material a leaderboard wants.
+
+- [x] **The map marks what your blows did.** `PlayerPlan.effects` carries the engine's `Effect`
+      under the same name, placed from what the target was doing on that tick and carrying the
+      bearing it was struck from. A breached defence layer draws an arc on the face that took it,
+      the machine taking damage draws a ring, and a breached hull draws the burst a wreck of your
+      own already gets. Under a Hits layer, on by default.
+
+      The bearing costs nothing: the layer that answers is always the one pointing at whoever hit
+      it, so the arc needs no knowledge of which way the target was facing, and no fog of war is
+      given away that shooting at something did not already give away.
+
+- [x] **A ship's scan range is drawn.** Two dashed rings around the selected ship: where it is
+      now, and where the course being plotted puts it on tick 10. The far one follows the course
+      as it is dragged, which is what makes it a planning aid rather than a record.
+
+      The radius is `ShipPlan.scan_range`, a real distance that scales with the world; the dashes
+      are an affordance and stay constant on screen. It is the neutral case: what a scanner
+      actually reaches depends on how visible the thing is
+      ([GDDR 0031](../docs/gddr/0031-loud-things-are-seen-from-further-away.md)).
+
+- [ ] **A gravscan cone is drawn at a made-up size.** `coneRadius` returns 7 to 21 screen pixels,
+      so the wedge on the map says nothing about how far the pulse really reaches: 1200 at 30
+      degrees down to 346 at 360. Two things block it.
+
+      The reach cannot be sent as a formula, and it does not need to be: the setting is a
+      `NumberInRangeParameter` over a finite range, so the engine can send the reach for every
+      value it offers and the browser looks it up. That also takes the granularity back off the
+      browser, which invents its own step of 5 in `coneWidthAt` today.
+
+      What it wants first is a home on the component interface. "How far does an order to you
+      reach at each setting it can take" is a question every component could answer, with a
+      neutral empty for the ones whose reach does not move, but a `Gravscan` is a `Weapon` that
+      is not really a weapon and the question deserves better placement than being bolted to
+      `WeaponInfo`. Parked until that is thought through.
+
 ## Application services (`../arena/app`)
 
 - [ ] **`_EngineAccess` is a shared-behaviour base wearing an access name.** It holds `_gd`,
@@ -407,20 +461,12 @@ Ideas from the original readme, kept because they are still wanted.
       them aimable, and a second pass follows if that moves them.
       Detail in [plans/ship-balance-plan.md](plans/ship-balance-plan.md).
 
-- [ ] **See explosions from far away, or from anywhere.** You would know where the fighting is
-      without knowing what is in it, which gives a fleet a reason to move toward something and
-      makes a big map feel occupied rather than empty.
-
-      Today an explosion is handed to whatever is close enough to scan it (`Warhead.explode`
-      checks `distance_to(pos) <= max_scan_distance`), so a battle two scan ranges away is
-      invisible. Loosening that is a change to what fog of war means, so it wants a decision
-      alongside [GDDR 0013](docs/gddr/0013-fog-of-war-from-scans.md) rather than a quiet edit.
-
-      What to settle: whether it is truly global or just a much longer range, and whether a
-      distant blast is degraded to a position and nothing else. `ExplosionEvent` carries its
-      source, damage type and radius, so shown as-is it would tell you what kind of warhead went
-      off and roughly whose it was. Hits stay scan-gated either way: seeing a flash is the point,
-      reading the battle is not.
+- [x] **See explosions from far away.** An explosion carries a visibility of 1000 on the same scale
+      an object's uses, so it is seen at ten times the observer's passive rating: 1560 to 3300
+      against a board about 1000 across. Everybody sees every blast and where it was, and still has
+      to scan to learn what was in it. A starbase went to 500 in the same pass, and a machine's
+      visibility is now a model constant on `MachineType` rather than a fallback in a constructor.
+      [GDDR 0031](../docs/gddr/0031-loud-things-are-seen-from-further-away.md).
 
 - [ ] **A scanner that reveals internal detail** of a scanned ship: ammo, energy levels.
 - [ ] **Point defence**, possibly as something an NPC gunner runs.

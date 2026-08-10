@@ -50,5 +50,9 @@ class StarbaseType(ShipType):
     base_type = Starbase
     category = 'Starbase'
 
+    # Big, bright and bolted down. A scanner reaches five times as far against one, so a base is
+    # something everybody can find and nobody sneaks up on.
+    visibility = 500
+
     max_replenish_distance = None
     max_replenish_speed = None

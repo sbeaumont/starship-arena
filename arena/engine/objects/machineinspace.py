@@ -19,6 +19,10 @@ class MachineType(object):
     leaves_a_wreck = False
     mass = 0
 
+    # How much of a scanner's reach this model is worth to whoever is looking, as a percentage.
+    # A machine is a standard object; the loud ones say so. Same scale as BodyType.
+    visibility = 100
+
     def create(self, name: str, vector: Vector, owner=None, tick: Tick = TICK_ZERO):
         assert self.base_type, f"{self.name} does not have a base_type defined"
         return self.base_type(name, self, vector, owner=owner, tick=tick)

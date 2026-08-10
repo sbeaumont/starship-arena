@@ -48,7 +48,7 @@ class Body(ObjectInSpace):
 
     def __init__(self, name: str, _type: BodyType, vector: Vector, owner=None, tick: Tick = TICK_ZERO):
         assert isinstance(_type, BodyType), f"{_type} is not an instance of BodyType"
-        super().__init__(name, vector, visibility=_type.visibility, tick=tick)
+        super().__init__(name, vector, tick=tick)
         self._type = _type
         # Its own owner, the way a ship is, because plenty of code asks an object's owner for a
         # faction and a body has nobody above it to ask.

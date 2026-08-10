@@ -363,6 +363,9 @@ class ShipPlan:
     player_ready: bool   # whether they have said they are done with the round being planned
     owned: bool          # True = this player's ship (editable); False = faction ally (context)
     limits: ShipLimits
+    # How far this notices a standard object without pinging for it. What a scanner actually
+    # reaches depends on how visible the thing is, so this is the neutral case.
+    scan_range: float
     components: list[ComponentStatus]   # shields, weapons and ECM as they stand
     specs: dict[str, str]               # what the type object says this model can do
     weapons: list[WeaponInfo]
@@ -387,6 +390,27 @@ class Explosion:
 
 
 @dataclass
+class Effect:
+    """What one layer of a target did with a blow the faction landed, and where it happened.
+
+    The engine's word, kept: `part` is the layer as it names itself, a component or `hull` /
+    `battery` for the machine, and `outcome` is `Unaffected`, `Damaged` or `Breached`, where
+    Breached on the hull is a kill. What each of those is worth drawing is the interface's call.
+
+    `bearing` is the direction the target was struck from, which is the face that took it, because
+    the layer that answers is always the one pointing at whoever hit it."""
+    tick: int
+    x: float             # where the target was when it took this
+    y: float
+    bearing: float
+    target: str
+    part: str
+    outcome: str
+    amount: int
+    points: int
+
+
+@dataclass
 class PlayerPlan:
     game: str
     player: str
@@ -398,3 +422,4 @@ class PlayerPlan:
     ships: list[ShipPlan]
     contacts: list[Contact]
     explosions: list[Explosion]
+    effects: list[Effect]   # what the faction's own blows did, tick by tick

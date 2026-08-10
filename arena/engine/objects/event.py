@@ -4,6 +4,8 @@ Event class hierarchy for the event system.
 Events get stored in the history of the relevant game objects to enable reporting.
 """
 
+
+from dataclasses import dataclass, replace
 from enum import Enum
 from typing import Protocol, NewType
 
@@ -24,6 +26,38 @@ class DamageType(Enum):
 
     def __str__(self):
         return f"{self.value}"
+
+
+class Outcome(Enum):
+    """What a layer of a target did with the damage that reached it.
+
+    Damage travels inwards: each defence component in turn, then the machine behind them. Every
+    layer answers in the same three words, so armour or plating added later needs no new one.
+    Damaged always means damaged and still there, because the alternative is Breached, and
+    Breached on the machine itself is the end of it."""
+    Unaffected = 'Unaffected'   # it went through this layer as if it were not there
+    Damaged = 'Damaged'         # this layer took it and held
+    Breached = 'Breached'       # this layer failed, and what was left carried on inwards
+
+    def __str__(self):
+        return f"{self.value}"
+
+
+@dataclass
+class Effect:
+    """What one layer did with a blow that reached it. A component answers with one of these.
+
+    `part` is the layer, as the symbol it calls itself: a component's name, or what of the machine
+    took it. An interface turns these into words; nothing here does.
+
+    What it never carries is the state the layer has left. A breach lets an attacker deduce a
+    quadrant's strength from what carried on, and that is fair: they watched it fail. Handing over
+    the remaining strength is not the same thing."""
+    part: str
+    outcome: Outcome
+    amount: int        # what this layer took
+    points: int        # what that was worth to whoever struck
+    passed_on: int     # what was left over for the next layer inwards
 
 
 class EventLocation(Protocol):
@@ -61,9 +95,28 @@ class Event(object):
         self._type: str = event_type
         self.source: EventSource = source
         self.draw_type: DrawType = draw_type
+        self.effects: list[Effect] = []
 
     def is_drawable(self):
         return self.draw_type is not None
+
+    @property
+    def can_score(self) -> bool:
+        """Whether points off this can be claimed. Most events are worth nothing to anybody."""
+        return False
+
+    @property
+    def score(self) -> int:
+        """What this was worth to whoever caused it.
+
+        Totalled from the effects rather than counted up as it goes, so what the points were for
+        survives beside how many there were."""
+        return sum(e.points for e in self.effects)
+
+    def add_effect(self, effect: Effect) -> None:
+        """Take a layer's answer into the message. Whether it is worth anything is settled here,
+        where the factions are known, so no component has to ask whose side it is on."""
+        self.effects.append(effect if self.can_score else replace(effect, points=0))
 
     @property
     def kind(self) -> str:
@@ -117,7 +170,6 @@ class HitEvent(Event):
         self.target = target
         self.amount = int(round(amount, 0))
         self.message = message
-        self.score = 0
 
     @property
     def kind(self) -> str:
@@ -132,19 +184,30 @@ class HitEvent(Event):
             return True
 
     def __str__(self):
+        """The symbols read out as a sentence, until an interface takes that over."""
         if self.message:
             return self.message
-        else:
-            return f"{self.source.name} hit {self.target.name} with {self._type} for {self.amount}"
-
-    def notify_owner(self, message: str):
-        self.source.owner.add_event(InternalEvent(message))
+        landed = f"{self.source.name} hit {self.target.name} with {self._type} for {self.amount}"
+        if not self.effects:
+            return landed
+        return landed + ": " + ", ".join(
+            f"{e.part} {e.outcome}" + (f" ({e.points} points)" if e.points else "")
+            for e in self.effects)
 
 
 class ExplosionEvent(Event):
+    # The loudest thing in the game, on the same scale an object's visibility uses. A blast
+    # carries about a board width, so a fight anywhere tells everyone something is happening
+    # without telling them what is in it.
+    visibility = 1000
+
     def __init__(self, location, explosion_type, source, radius):
         super().__init__(location, explosion_type, source, DrawType.Circle)
         self.radius = radius
+
+    def modify_scan_range(self, scan_range: float) -> float:
+        """How far a scanner has to reach to see this go off, the way an object answers it."""
+        return scan_range * (self.visibility / 100)
 
     @property
     def kind(self) -> str:
