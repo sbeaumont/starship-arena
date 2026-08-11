@@ -8,6 +8,13 @@ Deploying is `git pull` and a reload, and `./arena-deploy.sh` does both from you
 the pull over ssh, the reload through the host's API. Neither half wants a browser, so a deploy
 never leaves the terminal.
 
+**A pull that changes what a saved world holds needs `./arena-regenerate.sh` on the host after it.**
+The pickles are read as they stand and nothing tolerates an older shape, so new code meeting old
+saved state raises on the first request that reaches it. Login is such a request: it returns the
+games you have ships in, which reads every game's roster out of the world. The console still lets a
+director in, because its gate reads `players.jsonl` and stops there, which is what a game UI stuck
+on its login page and a working console together mean.
+
 ## One application, three jobs
 
 `arena/serve.py` is a switchboard:

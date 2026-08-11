@@ -32,11 +32,11 @@ logger = logging.getLogger('starship-arena')
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("action",
-                        choices=['setup', 'generate', 'manual', 'link', 'players', 'process_due',
-                                 'announce'],
-                        help="Set a game up, generate its unprocessed rounds, build the manual, "
-                             "issue a login link, list who can log in, process the games due "
-                             "this hour, or send a test announcement")
+                        choices=['setup', 'generate', 'regenerate', 'manual', 'link', 'players',
+                                 'process_due', 'announce'],
+                        help="Set a game up, generate its unprocessed rounds, replay games from "
+                             "their orders, build the manual, issue a login link, list who can log "
+                             "in, process the games due this hour, or send a test announcement")
     parser.add_argument("gamedir", nargs='?',
                         help="The name of the game you want to process.")
     parser.add_argument("-n", "--name", help="Who to issue a login link for.")
@@ -86,6 +86,28 @@ def issue_link(name: str, director: bool, url: str):
               "SITE_URL in secret.py.")
 
 
+def regenerate(game_name: str = None) -> int:
+    """Replay games from their ships file and orders, back to the round they were on.
+
+    One game, or every playable one when none is named. Each round it ends on is printed against
+    the round it was on: a game whose orders are missing for a round cannot be replayed past it,
+    and the rounds after that are gone. Returns how many came back short."""
+    admin = AdminService()
+    if game_name:
+        games = [g for g in admin.list_games() + admin.list_solo_games() if g.name == game_name]
+        if not games:
+            sys.exit(f"No playable game called '{game_name}'.")
+    else:
+        games = admin.list_games() + admin.list_solo_games()
+    short = 0
+    for game in games:
+        was = game.current_round - 1
+        now = admin.regenerate_game(game.name)
+        short += (now < was)
+        print(f"  {game.name:24} round {was} -> {now}{'   LOST ROUNDS' if now < was else ''}")
+    return short
+
+
 def process_due():
     """Process every game whose settings name this hour. Run hourly by cron."""
     done = AdminService().process_due()
@@ -127,6 +149,10 @@ def main():
         list_players()
     elif args.action == 'process_due':
         process_due()
+    elif args.action == 'regenerate':
+        logger.info("Regenerating...")
+        if regenerate(args.gamedir):
+            sys.exit("A game came back short. Restore the backup before anything else runs.")
     elif args.action == 'announce':
         announce_test()
     else:

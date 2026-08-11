@@ -89,6 +89,7 @@ uv run python -m arena.cli.main setup <game>       # run as a module, not as a s
 uv run python -m arena.cli.main generate <game>
 ./arena-link.sh                                    # who can log in
 ./arena-link.sh <name> --director                  # a login link, address from SITE_URL
+./arena-regenerate.sh                              # replay every playable game, backup first
 ```
 
 More in [docs/development.md](docs/development.md) and [docs/deployment.md](docs/deployment.md).
