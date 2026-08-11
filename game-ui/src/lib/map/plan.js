@@ -18,7 +18,7 @@ export const NAMED = new Set(["Ship", "Starbase"]);
 export const canMove = (s) => s.category_name === "Ship" && s.alive;
 
 const MOVE_RE = /^\s*(\d+)\s*:\s*([RLA])\s*(-?\d+)\s*$/i;
-const FIRE_RE = /^\s*(\d+)\s*:\s*(?:F|FIRE|SCAN)\s+(\S+)\s*(.*)$/i;
+const FIRE_RE = /^\s*(\d+)\s*:\s*(?:F|FIRE|SCAN|REP|REPLENISH)\s+(\S+)\s*(.*)$/i;
 const COMP_RE = /^\s*(\d+)\s*:\s*([A-Za-z]+)\s+(\S+)\s*(.*)$/;
 
 // Which order a component takes, by the collection its machine carries it in. Shields are

@@ -116,7 +116,7 @@ class Shields(Component):
     # ---------------------------------------------------------------------- ENGINE HANDLERS
 
     def reset(self):
-        self.strengths = self.max_strengths.copy()
+        self.strengths = {q: max(s, self.max_strengths[q]) for q, s in self.strengths.items()}
 
     def post_round_reset(self):
         super().post_round_reset()

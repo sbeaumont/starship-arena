@@ -372,9 +372,17 @@
 
 <h2>Replenishing</h2>
 
-<p>Get within 10 units of a starbase at a speed of 10 or less and give the <b>Replenish</b> order.
-    It fills the hull, fills the battery, restores every shield quadrant, cools every laser and
-    refills every magazine.</p>
+<p>Get within 10 units of a starbase at a speed of 10 or less, and <b>the base gives the order</b>:
+    it names you, and you're filled up. Hull, battery, every shield quadrant, every laser cooled,
+    every magazine. A replenisher takes one ship per tick, so a queue is a queue.</p>
+
+<p>It never takes anything away. A quadrant you've boosted past its maximum stays where it is
+    rather than being pulled back down to it — though it still dissipates at the end of the round,
+    the way boost always does.</p>
+
+<p>That means asking. Whoever commands the base spends one of their orders on you, and they can
+    just as well spend it on somebody in another faction — the base is never asked whose ship it
+    is. Both logs record it either way.</p>
 
 <h2>Scoring</h2>
 
@@ -418,9 +426,9 @@
     </tr>
     <tr>
         <td><b>Replenish</b></td>
-        <td>the ship</td>
-        <td>Restocks at a starbase you're close enough to and slow enough beside. Nothing to
-            set.</td>
+        <td>a starbase's replenisher</td>
+        <td>Restocks one ship that's close enough and slow enough, named in the order. Only a
+            starbase carries one.</td>
     </tr>
     <tr>
         <td><b>Fire</b></td>
@@ -461,8 +469,8 @@
         Whatever happens earliest in the tick happens first, and everything after it is worked out
         against the world it left behind.</li>
     <li>Everything travels whatever's left of its leg.</li>
-    <li>Post-move orders run: weapons fire, then boost and replenish. This is when new missiles and
-        mines appear, and when laser damage is done.</li>
+    <li>Post-move orders run: weapons fire and bases replenish, then boost. This is when new
+        missiles and mines appear, and when laser damage is done.</li>
     <li>Everything scans. Guided missiles pick a target and turn onto an intercept.</li>
     <li>Movement energy is spent, mines slow down, missiles burn a little battery.</li>
     <li>The tick is recorded, and anything destroyed is cleared away.</li>
@@ -533,38 +541,35 @@
 <h2>Starbases</h2>
 
 <p>Starbases can't move, and they carry heavy weapons and deep shields to make up for it. Fly close
-    enough and slow enough, give the Replenish order, and one will restock you.</p>
+    enough and slow enough, and the base can restock you — its replenisher is in the weapons list
+    below, with the reach and the speed it will hold you at.</p>
 
 {% for sbt in starbase_types %}
 <h3>{{ sbt.name }}</h3>
 <table>
     <tr>
-        <td>Replenish distance</td>
-        <td>Replenish speed</td>
         <td>Hull</td>
         <td>Battery</td>
         <td>Generators</td>
         <td>Scan Distance</td>
     </tr>
     <tr>
-        <td>{{sbt.max_replenish_distance}}</td>
-        <td>{{sbt.max_replenish_speed}}</td>
         <td>{{sbt.max_hull}}</td>
         <td>{{sbt.start_battery}}/{{sbt.max_battery}}</td>
         <td>{{sbt.generators}}</td>
         <td>{{sbt.max_scan_distance}}</td>
     </tr>
     <tr>
-        <td colspan="3"><b>Weapons</b></td>
-        <td colspan="3"><b>Defence</b></td>
+        <td colspan="2"><b>Weapons</b></td>
+        <td colspan="2"><b>Defence</b></td>
     </tr>
     <tr>
-        <td colspan="3">
+        <td colspan="2">
             {% for w in sbt.weapons %}
             {{w.name}}: {{w.description}}<br/>
             {% endfor %}
         </td>
-        <td colspan="3">
+        <td colspan="2">
             {% for d in sbt.defense %}
             {{d.description}}<br/>
             {% endfor %}
@@ -572,10 +577,10 @@
     </tr>
     {% if sbt.ecm %}
     <tr>
-        <td colspan="6"><b>ECM</b></td>
+        <td colspan="4"><b>ECM</b></td>
     </tr>
     <tr>
-        <td colspan="6">
+        <td colspan="4">
         {% for e in sbt.ecm %}
             {{e.name}}: {{e.description}}<br/>
         {% endfor %}

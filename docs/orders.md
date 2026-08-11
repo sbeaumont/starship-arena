@@ -27,17 +27,19 @@ value may contain one.
 |---|---|---|
 | accelerate | verb parameter | `1: A-10` |
 | turn | verb parameter | `2: R25` |
-| replenish | verb | `5: Rep` |
 | fire | verb selector parameters | `3: Fire R1 90` |
+| replenish | verb selector parameter | `5: Rep RP Voyager` |
 | boost | verb selector parameters | `4: Boost Shields W 100` |
 | power | verb selector parameter | `2: Power C1 4` |
 | activation | verb selector parameter | `1: Act <component> on` |
 
-The first three address the ship. The rest address one of its components, and take a selector to
+The first two address the ship. The rest address one of its components, and take a selector to
 say which.
 
 Turning is one verb per direction, and the sign composes: `L-90` turns the same way as `R90`.
-`Scan` is a second spelling of `Fire`, for pointing a gravscan.
+`Scan` and `Rep` are second spellings of `Fire`, for pointing a gravscan and for a starbase
+restocking a ship alongside it. A spelling is a courtesy to whoever is typing; the component the
+selector names is what decides what happens.
 
 Nothing offers an on/off at the moment, so `Act` has no valid target. The cloak took one until it
 started taking a power level instead. The verb is kept for whatever wants switching rather than

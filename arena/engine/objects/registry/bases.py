@@ -4,6 +4,7 @@ from arena.engine.objects.registry.missiles import Rocket, Splinter
 from arena.engine.objects.components.defense import Shields
 from arena.engine.objects.components.launcher import Launcher
 from arena.engine.objects.components.laser import Laser
+from arena.engine.objects.components.replenisher import Replenisher
 from arena.engine.objects.components.scanner import Gravscan
 from arena.engine.objects.components.spawner import ShipSpawner
 
@@ -18,8 +19,6 @@ class SB2531(StarbaseType):
     start_battery = 200
     max_hull = 250
     max_scan_distance = max_scan(65)
-    max_replenish_distance = 10
-    max_replenish_speed = 10
 
     @property
     def defense(self):
@@ -37,5 +36,6 @@ class SB2531(StarbaseType):
             Launcher('R1', Rocket(), 5),
             Launcher('R2', Rocket(), 5),
             Gravscan('G'),
-            ShipSpawner('SS', 3)
+            ShipSpawner('SS', 3),
+            Replenisher('RP'),
         ]

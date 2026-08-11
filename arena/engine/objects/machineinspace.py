@@ -128,6 +128,19 @@ class MachineInSpace(ObjectInSpace, ABC):
                  if e is not None]
         return min(found, key=lambda e: e.fraction) if found else None
 
+    def replenish(self):
+        """Back to how it left the yard: full hull, full battery, every component reset.
+
+        The other end of take_damage_from, and it reaches the same three things a machine has.
+
+        **A restock never takes anything away.** Anything already better than what it left the
+        yard with keeps what it has, which is what stops a boosted shield being knocked back to
+        its own maximum by the order meant to help it. Every `reset` holds to that."""
+        self.hull = max(self.hull, self._type.max_hull)
+        self.battery = max(self.battery, self._type.max_battery)
+        for component in self.all_components.values():
+            component.reset()
+
     def stance_towards(self, other: ObjectInSpace) -> Stance:
         """Asked of the owner, because a machine fights for whoever owns it."""
         mine, theirs = self.owner.faction, other.owner.faction

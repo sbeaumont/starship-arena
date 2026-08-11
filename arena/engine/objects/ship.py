@@ -10,7 +10,7 @@ This file also has command parameters that are specific to a ship (not a compone
 import re
 import logging
 from abc import ABC
-from typing import Protocol, runtime_checkable, NewType
+from typing import NewType
 
 
 from arena.engine.parameter import Parameter
@@ -22,12 +22,6 @@ from arena.engine.history import Tick, TICK_ZERO
 from arena.engine.world import World
 
 logger = logging.getLogger(__name__)
-
-
-@runtime_checkable
-class Replenisher(Protocol):
-    def replenish(self, ship):
-        ...
 
 
 shipType = NewType("ShipType", MachineType)
@@ -102,12 +96,6 @@ class Ship(MachineInSpace):
             self.add_internal_event(f"Limiting speed to max speed |{-self._type.max_speed}|")
         if old_speed != self.speed:
             self.add_internal_event(f"Changed speed from {old_speed} to {self.speed}")
-
-    def try_replenish(self, world: World):
-        for replenisher in [ois for ois in world.objects.values() if isinstance(ois, Replenisher)]:
-            replenisher.replenish(self)
-            return
-        self.add_internal_event("Failed to replenish.")
 
     def turn(self, angle):
         if abs(angle) > self._type.max_turn:

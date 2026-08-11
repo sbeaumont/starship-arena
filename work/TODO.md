@@ -130,9 +130,6 @@ each section.
       is the same. Decide whether it is everything you own or only what is still flying.
 - [ ] **Spectator view.** Whole game, tick by tick, with short tails (about three ticks) instead
       of a full round's trail. Wants a player-less view keyed on the game rather than a player.
-- [ ] **Replenish has no control.** It addresses the ship rather than a component, so it takes
-      neither a selector nor parameters and none of the component machinery fits it. It belongs
-      with turn and throttle, not in the tick panel's component list.
 - [ ] **Shield quadrants are not drawn.** Boost is orderable now, but a player picks N/E/S/W off
       a list. Shields are **ship-relative** (N is the front ±45), so the map could draw the four
       faces rotated to the heading at that tick and let the quadrant be clicked.

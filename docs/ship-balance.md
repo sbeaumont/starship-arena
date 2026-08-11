@@ -59,12 +59,12 @@ construction. See below.
 
 ### Shields come back on replenish now
 
-They didn't. `Starbase.replenish` refilled hull and battery and called `reset()` on every *weapon*,
-but shields live in `ship.defense`, so nobody asked them. Shield strength was a one-time pool for
-the whole game, which made `generators` the real long-game defensive stat.
+They didn't. A replenish refilled hull and battery and called `reset()` on every *weapon*, but
+shields live in `ship.defense`, so nobody asked them. Shield strength was a one-time pool for the
+whole game, which made `generators` the real long-game defensive stat.
 
-Fixed: `Shields.reset()` restores `strengths` from `max_strengths`, and replenish now iterates
-`all_components` rather than naming a subset.
+Fixed: `Shields.reset()` restores `strengths` from `max_strengths`, and `MachineInSpace.replenish`
+iterates `all_components` rather than naming a subset.
 
 ### Boost turns energy into shield at 1:1
 

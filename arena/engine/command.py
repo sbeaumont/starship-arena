@@ -67,9 +67,6 @@ class Commandable(Protocol):
     def turn(self, angle: int):
         ...
 
-    def try_replenish(self, world: World):
-        ...
-
     def scan(self, world: World):
         ...
 
@@ -242,20 +239,6 @@ class PowerCommand(ComponentCommand):
         self.selector.value.power_up(power)
 
 
-class ReplenishCommand(Command):
-    key = 'replenish'
-
-    def _init_params(self, params: list) -> bool:
-        if len(params) > 0:
-            self.feedback.append("Replenish command takes no arguments.")
-            return False
-        return True
-
-    def execute(self, tick: Tick):
-        super().execute(tick)
-        self.target.try_replenish(self.world)
-
-
 class TurnCommand(Command):
     key = 'turn'
 
@@ -319,8 +302,8 @@ COMMAND_WORDS = {
     'F': ('fire', {}),
     'FIRE': ('fire', {}),
     'SCAN': ('fire', {}),
-    'REP': ('replenish', {}),
-    'REPLENISH': ('replenish', {}),
+    'REP': ('fire', {}),
+    'REPLENISH': ('fire', {}),
     'B': ('boost', {}),
     'BOOST': ('boost', {}),
     'P': ('power', {}),
@@ -371,7 +354,7 @@ class CommandSet(object):
                 self.weapons[cmd.selector.value] = cmd
             case 'activation' | 'power':
                 self.pre_move.append(cmd)
-            case 'replenish' | 'boost':
+            case 'boost':
                 self.post_move.append(cmd)
             case _:
                 assert False, f"Command {cmd.key} has no place in the tick: {cmd}"

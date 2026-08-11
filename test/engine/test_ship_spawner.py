@@ -180,7 +180,7 @@ class TestFiringTheSpawner(TestCase):
         world = self._run_round_two("1: Fire SS Voyager 90\n")
         base = world.objects['Base']
 
-        base.replenish(base)
+        base.replenish()
 
         self.assertEqual(2, base.weapons['SS'].ammo)
         self.assertEqual(base._type.weapons[2].ammo, base.weapons['S1'].ammo, "a launcher does refill")

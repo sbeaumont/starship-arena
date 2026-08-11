@@ -169,17 +169,22 @@
           const weapon = byName[name];
           const node = chain[t];
           if (!weapon || !node) continue;
-          const listed = Boolean(weapon.inputs[0]?.choices);
-          const kind = listed ? "direction" : weapon.inputs[0]?.kind;
-          // Whatever it puts in space is named in the order, so say that rather than "SS".
-          const label = listed ? params[0] : name;
+          // An arrow when the order was aimed, a line to what it named when it was not. Which of
+          // the two is read off the weapon's inputs: a replenisher names a ship and points nowhere.
+          const kind = directionIndex(weapon) >= 0 ? "direction" : weapon.inputs[0]?.kind;
+          // Whatever it puts in space, or takes alongside, is named in the order: say that
+          // rather than "SS".
+          const label = weapon.inputs[0]?.choices ? params[0] : name;
           const nv = w2v(node.x, node.y);
           const cur = mine && t === planning.selectedTick;
           const key = `${ship.name}:${t}:${name}`;
           if (kind === "object_name") {
+            // A contact is where it was last seen. One of the faction's own is where its plan
+            // puts it at that tick, which is the picture its course is already drawn from.
             const c = plan.contacts.find((x) => x.name === params[0]);
             out.push({ key, ship: ship.name, mine, tick: t, weapon: name, label, kind, node, nv, cur,
-                       target: c ? c.track[c.track.length - 1] : null, targetName: params[0] });
+                       target: c ? c.track[c.track.length - 1] : planning.chains[params[0]]?.[t] ?? null,
+                       targetName: params[0] });
           } else {
             const angle = Number(params[directionIndex(weapon)]) || 0;
             const heading = node.heading + angle;

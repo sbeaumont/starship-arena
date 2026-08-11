@@ -1,7 +1,7 @@
 """
 Starbase based on Ship:
 - can not fly
-- but can Replenish.
+- but carries what a fleet needs, a Replenisher among it.
 """
 
 import logging
@@ -35,16 +35,6 @@ class Starbase(Ship):
         """Starbases do not move."""
         pass
 
-    def replenish(self, ship: Ship):
-        if (self.distance_to(ship.xy) <= self._type.max_replenish_distance) and \
-                (ship.speed <= self._type.max_replenish_speed):
-            ship.hull = ship._type.max_hull
-            ship.battery = ship._type.max_battery
-            for component in ship.all_components.values():
-                component.reset()
-            self.add_internal_event(f"Replenished {ship.name}")
-            ship.add_internal_event(f"Replenished by {self.name}")
-
 
 class StarbaseType(ShipType):
     base_type = Starbase
@@ -53,6 +43,3 @@ class StarbaseType(ShipType):
     # Big, bright and bolted down. A scanner reaches five times as far against one, so a base is
     # something everybody can find and nobody sneaks up on.
     visibility = 500
-
-    max_replenish_distance = None
-    max_replenish_speed = None

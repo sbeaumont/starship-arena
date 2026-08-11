@@ -68,4 +68,4 @@ class Launcher(Weapon):
         return f"Launcher ({self.initial_load} {self.payload_type.name} {fa})"
 
     def reset(self):
-        self.ammo = self.initial_load
+        self.ammo = max(self.ammo, self.initial_load)
