@@ -12,6 +12,10 @@ Svelte 5 and Vite, no SvelteKit. The player's map, planning and log.
 4. **Render what the API sends.** Component names, event kinds and weapon inputs come from the
    server. Never hardcode a ship type, a component name or a weapon.
 5. **Rebuild `dist` before committing.** It is tracked; the host has no build step.
+6. **Two shells, one feature.** Anything the map gains lands in `DesktopMap` and `TouchMap` both,
+   layer toggles included, and anything a finger reaches for gets a finger-sized target. Diverging
+   is allowed and is a decision to write down; it is never an omission. The pages outside the map
+   are one responsive implementation rather than two, and have to hold at phone width.
 
 After changing a component's props, hot reload often cannot swap it. Refresh before believing a bug.
 
@@ -34,18 +38,18 @@ landscape is wide and still wants fingers.
 
 Rules that bind this directory:
 
-6. **A shell never asks which shell it is.** What one does differently arrives as a prop.
+7. **A shell never asks which shell it is.** What one does differently arrives as a prop.
    `grabbable` - `{path, shots, ticks}` - is the whole of it: the desktop lock and the touch
    modes both reduce to it, and `Plot` reads nothing else about who is driving.
-7. **Nothing derived from a plan lives in a shell.** Courses, shots, cones and labels are
+8. **Nothing derived from a plan lives in a shell.** Courses, shots, cones and labels are
    computed once, in `Planning` or in `Plot`. A shell that recomputes one is how the two drift.
-8. **One gesture machine.** Pan, pinch, the wheel and both drags are in `Plot`. A shell that
+9. **One gesture machine.** Pan, pinch, the wheel and both drags are in `Plot`. A shell that
    adds its own pointer handling to the map will fight it.
-9. **Fingers are not cursors.** Hit targets grow with `coarse`, which only works because a mode
-   has already said which of them are live. Adding a hit target means saying which mode owns it.
-10. **A drag reports what it is doing.** Your hand covers the thing you are dragging, and the
+10. **Fingers are not cursors.** Hit targets grow with `coarse`, which only works because a mode
+    has already said which of them are live. Adding a hit target means saying which mode owns it.
+11. **A drag reports what it is doing.** Your hand covers the thing you are dragging, and the
     tables are not always on screen.
-11. **A session is made, never derived.** `MapSession` is keyed on game and player and builds its
+12. **A session is made, never derived.** `MapSession` is keyed on game and player and builds its
     `Planning` and `Camera` with plain `const`. A `$derived` that constructs one may run twice
     and hand the template a different instance from the one that was loaded, which reads as a map
     that never updates.
