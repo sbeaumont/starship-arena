@@ -201,7 +201,7 @@
         {#if solo?.game}
           <h2>My solo game</h2>
           <ul>
-            <li>
+            <li class="solo">
               <!-- Straight into the map: there is nobody else on the standings to look at. -->
               <button type="button" class="pick" onclick={() => onPick(solo.game.name, me.name)}>
                 <span class="head">
@@ -210,6 +210,7 @@
                 </span>
                 <span class="meta next">no deadline · say you are ready and the round runs</span>
               </button>
+              <button type="button" class="corner" onclick={() => onReplay(solo.game.name)}>Replay ›</button>
             </li>
           </ul>
         {/if}
@@ -319,6 +320,18 @@
   /* Standings opened under the game they belong to, when there is no column to put them in. */
   .opened { padding: 12px 0 6px; }
 
+  /* A solo game has no standings for a replay to sit on top of, so it sits in the box itself. */
+  .solo { position: relative; }
+  .solo .pick { padding-bottom: 34px; }
+  .corner {
+    position: absolute; right: 7px; bottom: 6px;
+    display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px;
+    font-family: var(--mono); font-size: 11px; color: #57d98a;
+    background: #0d1320; border: 1px solid var(--edge); border-radius: 3px; cursor: pointer;
+  }
+  .corner:hover { border-color: #57d98a; }
+  .corner:focus-visible { outline: 2px solid #57d98a; outline-offset: 1px; }
+
   .replay {
     display: block; width: 100%; margin-bottom: 14px; padding: 9px 11px;
     font-family: var(--mono); font-size: 12px; text-align: left; color: var(--cyan);
@@ -393,6 +406,8 @@
      done and hollow for still owed, and the ship type goes: it is on the fleet rows already. */
   @media (max-width: 620px) {
     .screen { padding: 16px 12px 28px; }
+    .solo .pick { padding-bottom: 46px; }
+    .corner { min-height: 40px; padding: 0 14px; }
     .faction { --col: 18px; }
     .ship { gap: 8px; padding: 8px 10px; }
     .ship .nm { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }

@@ -43,8 +43,8 @@ export class Playhead {
                                           : `API returned ${res.status}`);
       }
       this.data = await res.json();
-      // A tick out of range in a shared link opens at the end rather than nowhere.
-      this.at = (this.from >= this.first && this.from <= this.last) ? this.from : this.last;
+      // A replay opens where the game did; a tick out of range in a shared link falls back to it.
+      this.at = (this.from >= this.first && this.from <= this.last) ? this.from : this.first;
     } catch (e) {
       this.error = String(e);
     } finally {
