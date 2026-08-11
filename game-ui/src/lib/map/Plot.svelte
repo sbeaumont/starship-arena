@@ -392,9 +392,13 @@
       .sort((a, b) => a.d - b.d);
   }
 
+  // A row has to be worth a fingertip on the shell that has them.
+  const ROW = $derived(coarse ? 44 : 34);
+
   function ask(e, hits, aiming) {
     const { px, py } = localOf(e);
-    choosing = { px: Math.min(px, camera.boxW - 150), py: Math.min(py, camera.boxH - 30 * hits.length),
+    choosing = { px: Math.max(0, Math.min(px, camera.boxW - 170)),
+                 py: Math.max(0, Math.min(py, camera.boxH - ROW * hits.length)),
                  hits, aiming };
   }
 
@@ -810,7 +814,7 @@
   </svg>
 
   {#if choosing}
-    <div class="pickone" style="left: {choosing.px}px; top: {choosing.py}px;">
+    <div class="pickone" style="left: {choosing.px}px; top: {choosing.py}px; --row: {ROW}px;">
       {#each choosing.hits as h (h.name)}
         <button type="button" onclick={() => choose(h.name)}>
           {h.name}<span>{h.note}</span>
@@ -847,13 +851,14 @@
   .pickone {
     position: absolute; z-index: 6; display: flex; flex-direction: column;
     background: rgba(10, 14, 23, 0.96); border: 1px solid var(--amber); border-radius: 3px;
-    overflow: hidden; min-width: 140px;
+    overflow: hidden; min-width: 160px; max-width: 70vw;
   }
   .pickone button {
-    display: flex; align-items: baseline; gap: 8px; text-align: left; cursor: pointer;
+    display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer;
     font-family: var(--mono); font-size: 12px; color: var(--ink);
     background: transparent; border: none; border-bottom: 1px solid var(--edge);
-    padding: 7px 10px; min-height: 34px;
+    padding: 7px 10px; min-height: var(--row);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .pickone button:last-child { border-bottom: none; }
   .pickone button:hover { background: #16203a; color: var(--amber); }

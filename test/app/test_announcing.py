@@ -36,6 +36,21 @@ class Loudspeaker(Channel):
         self.heard.append(message)
 
 
+class TestTheSuiteIsSilent(TestCase):
+    """Nothing here may reach a real channel, whatever secret.py holds."""
+
+    def test_the_default_announcer_has_nowhere_to_send(self):
+        self.assertEqual([], Announcer().configured)
+
+    def test_processing_a_round_the_ordinary_way_says_nothing(self):
+        root = tempfile.mkdtemp()
+        try:
+            admin = AdminService(root)
+            self.assertEqual([], admin.announcer.configured)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+
 class TestAnnouncer(TestCase):
 
     def test_it_says_the_same_thing_on_every_channel(self):

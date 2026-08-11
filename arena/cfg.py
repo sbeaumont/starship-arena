@@ -44,9 +44,10 @@ PLAY_URL = GAME_UI_URL if '://' in GAME_UI_URL else SITE_URL.rstrip('/') + GAME_
 
 # Where announcements go. One webhook for the whole installation: a game says whether it announces,
 # not where to. Empty means nothing is announced anywhere, which is what a test host wants.
-DISCORD_WEBHOOK = os.environ.get('DISCORD_MESSAGE_WEBHOOK', '')
-if (not DISCORD_WEBHOOK) and ('DISCORD_MESSAGE_WEBHOOK' in dir(secret)):
-    DISCORD_WEBHOOK = secret.DISCORD_MESSAGE_WEBHOOK
+# The environment has the last word, and setting it empty is how a host says "nowhere". That is
+# what the test suite does: it must not be able to reach a real channel through secret.py.
+DISCORD_WEBHOOK = os.environ.get('DISCORD_MESSAGE_WEBHOOK',
+                                 getattr(secret, 'DISCORD_MESSAGE_WEBHOOK', ''))
 
 # Only a single process may write here: two preforked workers would both rename the file at
 # rollover and one of them would keep writing to an unlinked inode. So the CLI logs to a file and
