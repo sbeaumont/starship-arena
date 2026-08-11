@@ -34,6 +34,7 @@ export function parseOrders(lines, ship) {
   // Recognised by the selector rather than by the verb, so the words a player may type stay the
   // server's business. Whatever they wrote is kept and written back unchanged.
   const takesOrders = new Set(orderable(ship).map((c) => c.name));
+  const carries = new Set(ship.weapons.map((w) => w.name));
   for (const line of lines) {
     const text = line.trim();
     if (!text) continue;
@@ -45,6 +46,9 @@ export function parseOrders(lines, ship) {
     }
     const fr = text.match(FIRE_RE);
     if (fr && Number(fr[1]) >= 1 && Number(fr[1]) <= N) {
+      // A rebalanced hull loses the launcher an old plan still fires. Nothing on screen can
+      // clear that order, and one line the game refuses stops the whole plan saving.
+      if (!carries.has(fr[2])) continue;
       const t = Number(fr[1]);
       if (!fire[t]) fire[t] = {};
       fire[t][fr[2]] = fr[3].split(/\s+/).filter(Boolean);
@@ -135,10 +139,11 @@ export function defaultDirection(weapon) {
   return Math.round((lo + hi) / 2);
 }
 
-// A weapon whose target is named rather than aimed, and not offered as a list, waits for
-// something on the map to be picked.
-export const needsATarget = (weapon) =>
-  weapon.inputs.some((i) => i.kind === "object_name" && !i.choices);
+// A weapon that names its target waits for one to be picked off the map. A list can only stand
+// in for that where the map draws what is on it: a spawner's wrecks are in the graveyard.
+export const needsATarget = (weapon, drawn) =>
+  weapon.inputs.some((i) => i.kind === "object_name" &&
+                            (!i.choices || i.choices.some((n) => drawn.has(n))));
 
 // The starting parameters for a weapon armed without being aimed first.
 export const defaultParams = (weapon) =>

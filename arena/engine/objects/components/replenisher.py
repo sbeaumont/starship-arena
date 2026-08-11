@@ -5,6 +5,7 @@ import logging
 from arena.engine.history import Tick
 from arena.engine.objects.component import ObjectByNameParameter
 from arena.engine.objects.components.weapon import Weapon
+from arena.engine.objects.event import ReplenishEvent
 from arena.engine.world import Whereabouts, World
 
 logger = logging.getLogger(__name__)
@@ -61,8 +62,8 @@ class Replenisher(Weapon):
             return None
 
         ship.replenish()
-        self.add_internal_event(f"Replenished {ship.name}")
-        ship.add_internal_event(f"Replenished by {self.container.name}")
+        self.owner.add_event(ReplenishEvent(f"Replenished {ship.name}"))
+        ship.add_event(ReplenishEvent(f"Replenished by {self.container.name}"))
         return None
 
     @property

@@ -94,7 +94,7 @@ What a thing tells an interface it is. Abstract on the base, so a subclass canno
 ```python
 type_name       'A2527'
 category_name   'Ship', 'Starbase', 'Missile', 'Mine'
-Event.kind      'internal', 'hit', 'explosion', 'scan'
+Event.kind      'internal', 'hit', 'explosion', 'replenish', 'scan'
 Parameter.kind  'direction', 'number_in_range', 'on_off', 'object_name'
 ```
 

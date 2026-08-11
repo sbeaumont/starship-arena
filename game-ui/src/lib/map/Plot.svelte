@@ -417,8 +417,11 @@
     if (gesture === "pinch" || blocked) return;
     choosing = null;
     if (plan && planning.aiming) {
-      const hits = under(e, contacts.map((c) => ({ name: c.name, note: c.type_name,
-                                                   v: lastOf(c) })), HIT.target);
+      // The faction's own ships are aimable too: a base restocks one of them by name.
+      const hits = under(e, [...contacts.map((c) => ({ name: c.name, note: c.type_name,
+                                                       v: lastOf(c) })),
+                             ...plan.ships.map((s) => ({ name: s.name, note: s.ship_type,
+                                                         v: w2v(s.x, s.y) }))], HIT.target);
       if (hits.length > 1) return ask(e, hits, true);
       // No pan behind a pick: the tick panel you armed from would be cleared on the way up.
       if (hits.length === 1) return planning.pickTarget(hits[0].name);
@@ -701,7 +704,9 @@
                 cx={v.vx} cy={v.vy} r={18 * upp} stroke-width={upp} />
         <polygon class="ship" class:own={s.owned}
                  points={markerFor(s.category_name, v.vx, v.vy, s.heading)} />
-        {#if s.owned}
+        {#if planning.aiming}
+          <circle class="target-hit" cx={v.vx} cy={v.vy} r={HIT.target * upp} />
+        {:else if s.owned}
           <circle class="ship-hit" cx={v.vx} cy={v.vy} r={HIT.ship * upp} />
         {/if}
       {/each}

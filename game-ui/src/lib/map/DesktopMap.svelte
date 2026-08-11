@@ -178,8 +178,7 @@
                       <button type="button" class="wfire"
                               disabled={(left !== null && left <= 0) || (w.inputs[0].choices?.length === 0)}
                               onclick={() => planning.arm(w)}>
-                        {w.inputs[0].choices ? "choose"
-                         : w.inputs[0].kind === "object_name" ? "pick target" : "fire"}
+                        {planning.aims(w) ? "pick target" : w.inputs[0].choices ? "choose" : "fire"}
                       </button>
                     {/if}
                     <span class="wammo" class:out={left !== null && left <= 0}>

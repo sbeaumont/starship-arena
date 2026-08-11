@@ -39,14 +39,13 @@ and they have three replacement hulls to spend over a whole game.
 | what it gives | full hull, full battery, every shield quadrant, every laser cooled, every magazine |
 
 **A restock never takes anything away.** Anything already better than a fresh one keeps what it has,
-so a quadrant boosted to twice its maximum stays there rather than being traded back down by the
-order meant to help it. Boost above the maximum still dissipates at the end of the round, as it
-always did — the replenish does not spend it, the round does.
+so a quadrant boosted to twice its maximum comes through the order meant to help it with the boost
+intact. Boost above the maximum still dissipates at the end of the round, as it always did: the
+replenish does not spend it, the round does.
 
-**It is never asked whose ship it is.** A commander may restock the other side, and that is a move
-rather than an oversight. Colluding costs them the tick their own fleet wanted, and it is visible:
-both ships write the exchange into their logs, so a faction can read what its base did on its
-behalf.
+**It is never asked whose ship it is.** A commander may restock the other side. Colluding costs
+them the tick their own fleet wanted, and it is visible: both ships write the exchange into their
+logs, so a faction can read what its base did on its behalf.
 
 What it will not do is restock the base it is mounted on. Docking with yourself is not a
 manoeuvre, and a base that could do it would repair 250 hull and 1600 of shield every tick it was
@@ -102,5 +101,5 @@ to restock at tick 7 is three hundred units away when you write the order. The l
 in the game, which gives away nothing: the roster is already public.
 
 **Charging for it, or capping it per game** the way the spawner's three replacements are capped.
-Possibly right, and it is a balance change rather than a structural one. The old order was free and
-unlimited, so this one is too until somebody plays enough rounds to say otherwise.
+Possibly right, and it is a balance question this record does not settle. The old order was free
+and unlimited, so this one is too until somebody plays enough rounds to say otherwise.

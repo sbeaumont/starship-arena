@@ -130,6 +130,14 @@ each section.
       is the same. Decide whether it is everything you own or only what is still flying.
 - [ ] **Spectator view.** Whole game, tick by tick, with short tails (about three ticks) instead
       of a full round's trail. Wants a player-less view keyed on the game rather than a player.
+a- [ ] **`internal` does two jobs.** It names a display category and it means "chatter you can
+      switch off", which is why the log filters on `kind !== 'internal'`. `Event.source` already
+      answers the second one on its own: it is None exactly when an object is narrating itself,
+      and set on every hit, explosion and scan. Carrying that through to `TickEvent` would leave
+      `kind` deciding colour alone, and any later event something else causes would be visible
+      without the filter being taught about it. Wants `ReplenishEvent` to carry the base as its
+      source. Not `external` as a kind: a hit is external too, and one name for all three would
+      cost the colours that tell them apart.
 - [ ] **Shield quadrants are not drawn.** Boost is orderable now, but a player picks N/E/S/W off
       a list. Shields are **ship-relative** (N is the front ±45), so the map could draw the four
       faces rotated to the heading at that tick and let the quadrant be clicked.

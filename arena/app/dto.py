@@ -311,7 +311,7 @@ class TickEvent:
     """Something that happened to a ship on a tick. Scans are left out; the map draws those."""
     tick: int
     text: str
-    kind: str   # 'internal' | 'hit' | 'explosion'
+    kind: str   # 'internal' | 'hit' | 'explosion' | 'replenish'
 
 
 @dataclass

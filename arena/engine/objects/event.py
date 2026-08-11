@@ -140,6 +140,14 @@ class InternalEvent(Event):
         return self.message
 
 
+class ReplenishEvent(InternalEvent):
+    """A base restocking a ship. Read like a hit is: without turning every message on."""
+
+    @property
+    def kind(self) -> str:
+        return 'replenish'
+
+
 class ScanEvent(Event):
     """A single instance of one object scanning another."""
     def __init__(self, ois, distance, direction, heading):

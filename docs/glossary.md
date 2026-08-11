@@ -98,7 +98,8 @@ on.
 `TickHistory` is one tick of it.
 
 **Event.** Something that happened to an object during a tick, with a `kind`: `internal`, `hit`,
-`explosion` or `scan`. Everything except scans shows up in the player's log.
+`explosion`, `replenish` or `scan`. Everything except scans shows up in the player's log, and
+everything except `internal` shows there without being asked for.
 
 **Journal.** What the server did to a game and when: rounds processed, by whom, and what set each
 of them going. One file per game, and the director's answer to "did last night run". Not a log:

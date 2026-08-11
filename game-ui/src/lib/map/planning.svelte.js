@@ -102,6 +102,11 @@ export class Planning {
     return out;
   });
 
+  // Every name the map draws, and so everything a tap can reach.
+  drawn = $derived(new Set(this.plan
+    ? [...this.plan.ships.map((s) => s.name), ...this.plan.contacts.map((c) => c.name)]
+    : []));
+
   ship = $derived(this.ownShips.find((s) => s.name === this.selected) ?? null);
   chain = $derived(this.selected ? this.chains[this.selected] ?? null : null);
   shipOrders = $derived(this.selected ? this.orders[this.selected] ?? null : null);
@@ -150,6 +155,9 @@ export class Planning {
 
   ammoLeft = (w) => (w.ammo === null ? null : w.ammo - this.plannedShots(w.name));
 
+  // Whether arming this one waits for a tap, which is what its button has to say.
+  aims = (w) => needsATarget(w, this.drawn);
+
   orderAt = (tick, weaponName) =>
     (this.shipOrders && tick ? this.shipOrders.fire[tick]?.[weaponName] : undefined);
 
@@ -160,9 +168,9 @@ export class Planning {
     if (!this.selectedTick || !this.shipOrders) return;
     const left = this.ammoLeft(weapon);
     if (left !== null && left <= 0) return;
-    // A weapon that names something on the map waits for it to be picked. One that offers a list
-    // picks from that instead: a wreck is not on the map to tap.
-    if (needsATarget(weapon)) {
+    // A weapon that names something on the map waits for it to be tapped, and is armed by the
+    // tap. One whose names are drawn nowhere picks off its list: a wreck is not on the map.
+    if (needsATarget(weapon, this.drawn)) {
       this.aiming = weapon.name;
       return;
     }
