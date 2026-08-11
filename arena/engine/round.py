@@ -15,7 +15,6 @@ class GameRound(object):
     """Takes the correct steps to process a game round."""
     def __init__(self, world: World, round_nr: int):
         self.world = world
-        self.destroyed = dict()
         self.round_nr = round_nr
 
     def pre_move_commands(self, cs: CommandSet, tick: Tick):
@@ -112,7 +111,7 @@ class GameRound(object):
         for ois_name, ois in self.world.objects.copy().items():
             if ois.is_destroyed:
                 logger.info(f"{ois_name} destroyed")
-                self.destroyed[ois_name] = ois
+                self.world.destroyed[ois_name] = ois
                 if ois.leaves_a_wreck:
                     self.world.move_to_graveyard(ois)
                 else:
@@ -120,6 +119,9 @@ class GameRound(object):
 
     def do_round(self, ship_commands: dict):
         """The main execution of the round. Here is where it all happens."""
+        # Last round's dead go here, rather than when this round is opened: a round is opened to
+        # ask the world questions as often as it is opened to run one.
+        self.world.destroyed.clear()
         for ois in self.world.objects.values():
             ois.round_reset()
 

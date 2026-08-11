@@ -24,6 +24,7 @@ from arena.engine.history import Tick
 from arena.engine.objects.registry.builder import all_fielded_types
 from arena.engine.objects.event import ExplosionEvent, HitEvent
 from arena.engine.objects.objectinspace import Stance
+from arena.engine.replay import Replay
 from arena.app import scenarios
 from arena.app.clock import next_occurrence, server_now, zone_name
 from arena.app.naming import SOLO_PREFIX, for_display, is_solo_game_name, solo_game_name
@@ -32,7 +33,7 @@ from arena.app.registrations import Registration, RegistrationFile
 from arena.app.dto import (
     FormingGame, GameSummary, OpenGame, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
-    Effect,
+    Effect, GameReplay, ReplayObject, ObjectTick,
     WeaponInfo, ComponentInput,
     ShipSummary, FactionSummary, GameOverview, GameStanding, ShipTypeInfo, Me, LoginInfo,
     GameSettings, Pulse, GamePulse, JournalEntry, By, ProcessingTrigger, ServerTime, SoloGame,
@@ -429,14 +430,7 @@ class GameService(_EngineAccess):
             raise KeyError(f"{game} has no round {round_nr}")
         world = gd.load_world(round_nr)
         ois = world.objects
-        # Every ship a player commands is theirs to plan, even in the unusual case of ships in
-        # more than one faction. The graveyard is consulted too, so a player who has lost every
-        # ship still has a faction and can look back over earlier rounds.
-        factions = {s.faction for s in ois.values()
-                    if s.is_player_controlled and s.player == player}
-        if not factions:
-            factions = {s.faction for s in world.graveyard.values()
-                        if s.is_player_controlled and s.player == player}
+        factions = self._factions_of(world, player)
         if not factions:
             raise KeyError(f"No ships for player '{player}' in {game}")
 
@@ -475,7 +469,7 @@ class GameService(_EngineAccess):
                          for w in s.weapons.values()],
                 track=[TrackPoint(tick=t.tick, x=s.history[t]['pos'].x, y=s.history[t]['pos'].y)
                        for t in recorded],
-                events=[TickEvent(tick=t.tick, text=str(e), kind=e.kind)
+                events=[TickEvent(tick=t.tick, abs_tick=t.abs_tick, text=str(e), kind=e.kind)
                         for t in recorded for e in s.history[t].non_scan_events],
                 conditions=[self._tick_condition(s, t) for t in recorded],
                 alive=s.name in alive_names,
@@ -548,6 +542,58 @@ class GameService(_EngineAccess):
                           ships=ships, contacts=contacts, explosions=list(blasts.values()),
                           effects=list(landed.values()))
 
+    def player_factions(self, game: str, player: str) -> list[str]:
+        """Which sides a commander flies in a game. Empty for anyone who flies nothing in it."""
+        return sorted(self._factions_of(self._gd(game).load_current_world(), player))
+
+    def game_replay(self, game: str, faction: str = None) -> GameReplay:
+        """Every tick the game has played, per object: where it was and what happened to it.
+
+        One side's war when a faction is named: its own objects as they were, and everything else
+        only where its ships saw it, so what it never saw is not built and cannot be read out of
+        what was sent. Without one this is every side at once.
+
+        One pass over the ticks, because which world knows about a tick is the replay's business
+        and not this one's."""
+        replay = Replay(self._gd(game))
+        objects: dict[str, ReplayObject] = {}
+        for tick in replay.ticks:
+            in_space = replay.objects_at(tick)
+            mine = {name: ois for name, ois in in_space.items()
+                    if faction is None or self._side_of(ois) == faction}
+            for name, ois in mine.items():
+                snapshot = ois.history[tick]
+                self._recorded(objects, ois, contact=False).path.append(
+                    ObjectTick(abs_tick=tick.abs_tick, x=snapshot['pos'].x, y=snapshot['pos'].y,
+                               heading=snapshot['heading'], speed=snapshot['speed']))
+                objects[name].events.extend(
+                    TickEvent(tick=tick.tick, abs_tick=tick.abs_tick, text=str(e), kind=e.kind)
+                    for e in snapshot.non_scan_events)
+            if faction is None:
+                continue
+            # What the side saw of everything else, off the ships whose scans a faction shares.
+            # Several of them see the same object, so a tick gets one point however many looked.
+            for ois in [o for o in mine.values() if o.is_player_controlled]:
+                for scan in ois.history[tick].scans:
+                    if scan.name in mine:
+                        continue
+                    seen = self._recorded(objects, scan.source, contact=True)
+                    if not seen.path or seen.path[-1].abs_tick != tick.abs_tick:
+                        seen.path.append(ObjectTick(abs_tick=tick.abs_tick, x=scan.pos.x,
+                                                    y=scan.pos.y, heading=None, speed=None))
+        return GameReplay(game=game, faction=faction,
+                          first_tick=replay.first.abs_tick, last_tick=replay.last.abs_tick,
+                          objects=list(objects.values()))
+
+    def _recorded(self, objects: dict, ois, contact: bool) -> ReplayObject:
+        """The row this object is building up in a replay, opened the first time it turns up."""
+        if ois.name not in objects:
+            objects[ois.name] = ReplayObject(
+                name=ois.name, type_name=ois.type_name, category_name=ois.category_name,
+                faction=self._side_of(ois), owner=ois.owner.name if ois.owner else None,
+                radius=ois.radius, contact=contact, path=[], events=[])
+        return objects[ois.name]
+
     @staticmethod
     def _where_at(world, name: str, tick: Tick):
         """Where something was at the end of a tick, from its own snapshot. The graveyard counts:
@@ -557,6 +603,26 @@ class GameService(_EngineAccess):
 
     # ---------------------------------------------------------------- internals
 
+
+    @staticmethod
+    def _factions_of(world, player: str) -> set:
+        """Which sides a commander flies, in the unusual case of ships in more than one.
+
+        The graveyard answers when nothing of theirs is left in space, so losing every ship does
+        not take a player's side away and they can still look back over the game."""
+        for where in (world.objects, world.graveyard):
+            flown = {s.faction for s in where.values()
+                     if s.is_player_controlled and s.player == player}
+            if flown:
+                return flown
+        return set()
+
+    @staticmethod
+    def _side_of(ois) -> str | None:
+        """Which side something is on. Ordnance carries no faction of its own and reaches one
+        through its owner, which is how anything a ship puts into space knows whose side it is on.
+        Terrain is on nobody's."""
+        return ois.faction or (ois.owner.faction if ois.owner else None)
 
     @staticmethod
     def _stance(src, factions: set) -> str:

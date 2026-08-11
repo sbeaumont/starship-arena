@@ -12,6 +12,7 @@ class Whereabouts(str, Enum):
     Objects = 'objects'
     Graveyard = 'graveyard'
     Spawns = 'spawns'
+    Destroyed = 'destroyed'
 
     def __str__(self):
         return self.value
@@ -21,11 +22,16 @@ EVERYWHERE = frozenset(Whereabouts)
 
 
 class World(object):
-    def __init__(self, gd, objects: dict = None, graveyard: dict = None, spawns: dict = None):
+    def __init__(self, gd, objects: dict = None, graveyard: dict = None, spawns: dict = None,
+                 destroyed: dict = None):
         self._dir = gd
         self.objects = objects if objects is not None else dict()
         self.graveyard = graveyard if graveyard is not None else dict()
         self.spawns = spawns if spawns is not None else dict()
+        # What died during the round being played, wreck or no wreck, cleared when the next one
+        # starts. A round's world is therefore still able to say what was in space at each of its
+        # ticks, which the graveyard alone cannot: a rocket that goes off leaves no wreck.
+        self.destroyed = destroyed if destroyed is not None else dict()
 
     def __getstate__(self):
         """The directory is where this world is kept, not part of what it is."""
@@ -96,7 +102,8 @@ class World(object):
         """Everything matching, by name. Every filter is optional."""
         collections = {Whereabouts.Objects: self.objects,
                        Whereabouts.Graveyard: self.graveyard,
-                       Whereabouts.Spawns: self.spawns}
+                       Whereabouts.Spawns: self.spawns,
+                       Whereabouts.Destroyed: self.destroyed}
         found = {}
         for part in where:
             found.update(collections[part])

@@ -7,16 +7,20 @@
   import OpenGames from './lib/OpenGames.svelte'
   import Solo from './lib/Solo.svelte'
   import TopBar from './lib/TopBar.svelte'
+  import Replay from './lib/replay/Replay.svelte'
 
   // The whole view lives in the URL: ?game=xke&player=Menno&round=2, or ?page=ships. That way
   // the admin UI can link straight to a player's map, any view can be shared, and back/forward
   // work.
   function readUrl() {
     const q = new URLSearchParams(location.search)
-    const round = q.get('round')
+    const round = q.get('round'), tick = q.get('tick')
     return {
       game: q.get('game'), player: q.get('player'),
       round: round === null ? null : Number(round),
+      // Where a replay is being watched from, as an abs tick, and whose side it is watched from.
+      tick: tick === null ? null : Number(tick),
+      faction: q.get('faction'),
       page: q.get('page'),
       // Which map shell to use. Left off, the browser is asked whether it has fingers.
       ui: q.get('ui'),
@@ -38,14 +42,26 @@
     if (next.game) q.set('game', next.game)
     if (next.player) q.set('player', next.player)
     if (next.round !== null && next.round !== undefined) q.set('round', String(next.round))
+    if (next.tick !== null && next.tick !== undefined) q.set('tick', String(next.tick))
+    if (next.faction) q.set('faction', next.faction)
     if (next.ui) q.set('ui', next.ui)
     history.pushState({}, '', q.size ? `?${q}` : location.pathname)
     route = next
   }
 
+  // A playhead moves too often to push: the tick is written into the URL you are already on, so
+  // the view is still shareable and the back button still goes back where you came from.
+  function goTick(tick) {
+    const q = new URLSearchParams(location.search)
+    q.set('tick', String(tick))
+    history.replaceState({}, '', `?${q}`)
+  }
+
   // `ui` rides along everywhere, so trying the touch shell on a desktop survives navigating.
-  const home = () => go({ game: null, player: null, round: null, page: null, ui: route.ui })
-  const openPage = (page) => go({ game: null, player: null, round: null, page, ui: route.ui })
+  const home = () => go({ game: null, player: null, round: null, tick: null, faction: null,
+                          page: null, ui: route.ui })
+  const openPage = (page) => go({ game: null, player: null, round: null, tick: null, faction: null,
+                                  page, ui: route.ui })
 
   // A game's hours are the server's, so its clock is what a deadline means. Everything the
   // pages show is in the reader's own time; the server's is only ever displayed.
@@ -126,6 +142,14 @@
 
 {#if checking}
   <p class="waiting">…</p>
+{:else if me && route.page === 'replay' && route.game}
+  <!-- A game and a side rather than a player: whose war is being watched decides what the API
+       will even send. Keyed on both, so either one is a fresh playhead. -->
+  {#key `${route.game}/${route.faction}`}
+    <Replay game={route.game} faction={route.faction} tick={route.tick} {directing}
+            onTick={goTick} onFaction={(f) => go({ ...route, faction: f, tick: null })}
+            onLeave={home} />
+  {/key}
 {:else if me && route.game && route.player}
   <FactionMap game={route.game} player={route.player} round={route.round} ui={route.ui}
               onRound={(r) => go({ ...route, round: r })}
@@ -151,6 +175,8 @@
       {:else}
         <Selector {me} {directing} {skew} {nowMs}
                   onPick={(game, player) => go({ game, player, round: null, page: null, ui: route.ui })}
+                  onReplay={(game) => go({ game, player: null, round: null, tick: null,
+                                           page: 'replay', ui: route.ui })}
                   onPage={openPage} />
       {/if}
     </div>

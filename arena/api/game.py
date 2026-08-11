@@ -8,7 +8,7 @@ Backed by the UI-agnostic GameService; returns its DTOs directly (FastAPI serial
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
-from arena.app.dto import (GameSummary, OpenGame, ShipRound, PlayerPlan, GameOverview,
+from arena.app.dto import (GameSummary, OpenGame, ShipRound, PlayerPlan, GameOverview, GameReplay,
                            ShipTypeInfo, Me, Pulse, ServerTime, SoloGame)
 from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE, LOGIN_COOKIE_SECURE, Player
 from arena.app.services import GameService
@@ -183,6 +183,28 @@ def player_plan(game: str, player: str, round: int | None = None,
         return service.get_player_plan(game, player, round)
     except (KeyError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/{game}/replay")
+def game_replay(game: str, faction: str | None = None, as_player: bool = False,
+                me: Player = Depends(require_login)) -> GameReplay:
+    """Every tick the game has played, for a playhead to scrub over.
+
+    A commander gets their own side's war, whichever side they ask for of the ones they fly. Every
+    side at once is more than anybody saw, so it is the director's.
+
+    `as_player` is the director dropping to what one of their commanders sees, which is the same
+    switch the game UI offers. It only ever narrows what is built, so it is safe to take from
+    whoever asked."""
+    if me.is_director and not as_player:
+        return service.game_replay(game, faction)
+    mine = service.player_factions(game, me.name)
+    if not mine:
+        raise HTTPException(status_code=403, detail=f"You fly nothing in {game}.")
+    watching = faction if faction is not None else mine[0]
+    if watching not in mine:
+        raise HTTPException(status_code=403, detail=f"You do not fly for faction {watching}.")
+    return service.game_replay(game, watching)
 
 
 @router.get("/{game}/pulse")

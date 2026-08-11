@@ -1,7 +1,7 @@
 <script>
   // The clock and who is signed in belong to the chrome above; this screen is handed the skew
   // and the ticking now, so its countdowns cannot disagree with the bar's clock.
-  let { me, directing, skew, nowMs, onPick, onPage } = $props();
+  let { me, directing, skew, nowMs, onPick, onPage, onReplay } = $props();
 
   let allGames = $state([]);
   // Kept apart from the shared games rather than mixed in: it is nobody else's, it waits for
@@ -131,6 +131,9 @@
   {:else if !overview}
     <p class="msg quiet">Nothing to show for {game}.</p>
   {:else}
+    <!-- Whoever asks gets the war they were in: a commander their own side and what it saw, the
+         director every side at once. -->
+    <button type="button" class="replay" onclick={() => onReplay(game)}>▶ Replay tick by tick</button>
     {#each overview.factions as f, rank (f.name)}
       <div class="faction">
         <div class="fhead">
@@ -315,6 +318,14 @@
 
   /* Standings opened under the game they belong to, when there is no column to put them in. */
   .opened { padding: 12px 0 6px; }
+
+  .replay {
+    display: block; width: 100%; margin-bottom: 14px; padding: 9px 11px;
+    font-family: var(--mono); font-size: 12px; text-align: left; color: var(--cyan);
+    background: #0d1320; border: 1px solid var(--edge); border-radius: 3px; min-height: 40px;
+  }
+  .replay:hover { border-color: var(--cyan); }
+  .replay:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
 
   .faction { --col: 60px; margin-bottom: 18px; }
   .fhead { display: flex; align-items: baseline; gap: 10px; padding: 0 11px 6px;

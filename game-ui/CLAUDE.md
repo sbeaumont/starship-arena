@@ -27,6 +27,7 @@ landscape is wide and still wants fingers.
 | | |
 |---|---|
 | `plan.js` | Orders parsed, simulated and written back. Pure, no Svelte, no DOM |
+| `markers.js` | The shapes an object in space is drawn as. Pure, and shared with the replay |
 | `camera.svelte.js` | Where the map is looking. Pan, zoom, fit, grid |
 | `planning.svelte.js` | One round: the picture, the orders on top of it, what is selected |
 | `MapSession.svelte` | One game and player: makes the plan and the camera, and picks a shell |
@@ -53,6 +54,32 @@ Rules that bind this directory:
     `Planning` and `Camera` with plain `const`. A `$derived` that constructs one may run twice
     and hand the template a different instance from the one that was loaded, which reads as a map
     that never updates.
+
+## The replay
+
+`lib/replay/` plays a whole game back, a tick at a time. Whose war it is decides what the API will
+even send: a commander gets their own side and the sightings its ships took, the director gets every
+side at once. The side is in the URL and the page is keyed on it, so switching is a fresh playhead
+rather than a filter over something already downloaded.
+
+**View as Player has to reach the API here.** A director with it on asks for `as_player`, so the
+narrowing happens before anything is sent rather than in the browser. Anywhere else the toggle only
+changes what a page offers; a replay is data, and a filter over a payload that holds every side is
+not a player's view of it.
+
+| | |
+|---|---|
+| `playhead.svelte.js` | Which tick, how much trail, whether it is running. Turns an abs tick into a round and a tick |
+| `Replay.svelte` | The two SVG layers, the pointers, and the log of the tick being watched |
+| `Transport.svelte` | Step, rewind, run, scrub, and how long the trail is |
+
+It shares the map's `camera.svelte.js` and `markers.js`, so a starbase is drawn one way. **The
+pointer handling is its own**, and that is a decision rather than an omission: nothing in a replay
+is draggable, so there is no mode to ask about and none of `Plot`'s gesture machine applies. Labels
+are not pushed apart the way the map's are, so names overlap in a tight formation.
+
+One responsive implementation rather than two shells, like the other pages: the log sits beside the
+picture and drops under it when there is no room.
 
 ## The icon
 

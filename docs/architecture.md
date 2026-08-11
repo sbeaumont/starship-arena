@@ -162,10 +162,13 @@ ended, ten times over.
 Every engine hook takes a `World`: `decide`, `scan`, `pre_move`, `post_move`, `fire`, and the
 `Parameter` that validates an order. It is what an object can ask about the game beyond itself.
 
-It holds three collections, each keyed by name: what is in space, the graveyard, and what is due
-to arrive. A component that needs something world-spanning asks the world for it rather than
-taking a wider argument, which is why adding the graveyard to command validation needed no new
-plumbing.
+It holds four collections, each keyed by name: what is in space, the graveyard, what is due to
+arrive, and what died during the round being played. A component that needs something
+world-spanning asks the world for it rather than taking a wider argument, which is why adding the
+graveyard to command validation needed no new plumbing.
+
+The last of the four is cleared when a round starts, so a round's saved world says what was in space
+at each of its own ticks. The graveyard alone cannot: a rocket that goes off leaves no wreck.
 
 The whole thing is pickled once per round, so a round's wrecks are the ones that had died by then
 rather than the ones there are now. It carries the game directory to save itself and keeps that

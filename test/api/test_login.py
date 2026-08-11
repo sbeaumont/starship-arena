@@ -101,6 +101,36 @@ class TestLogin(TestCase):
 
     # ---------------------------------------------------------------- the director
 
+    def test_a_replay_is_the_side_you_fly_for(self):
+        """Whose it is comes from the cookie, so naming a faction cannot get you somebody else's."""
+        self.login_as('Menno')
+        body = self.client.get('/api/game/mygame/replay').json()
+        self.assertEqual('Three', body['faction'])
+        self.assertEqual(['McAve'], [o['name'] for o in body['objects']])
+
+    def test_another_side_is_refused_however_it_is_asked_for(self):
+        self.login_as('Menno')
+        self.assertEqual(403, self.client.get('/api/game/mygame/replay?faction=One').status_code)
+
+    def test_the_director_replays_a_game_that_has_played_nothing_yet(self):
+        self.login_as('Serge', role=DIRECTOR)
+        body = self.client.get('/api/game/mygame/replay').json()
+        self.assertIsNone(body['faction'])
+        self.assertEqual((10, 10), (body['first_tick'], body['last_tick']))
+        self.assertEqual(['McAve', 'Other'], sorted(o['name'] for o in body['objects']))
+
+    def test_a_director_watching_as_a_commander_is_filtered_like_one(self):
+        """The switch the game UI offers has to reach the API, or the browser holds every side."""
+        self.login_as('Menno', role=DIRECTOR)
+        self.assertIsNone(self.client.get('/api/game/mygame/replay').json()['faction'])
+        body = self.client.get('/api/game/mygame/replay?as_player=true').json()
+        self.assertEqual('Three', body['faction'])
+        self.assertEqual(['McAve'], [o['name'] for o in body['objects']])
+
+    def test_a_director_who_flies_nothing_has_no_commander_to_watch_as(self):
+        self.login_as('Serge', role=DIRECTOR)
+        self.assertEqual(403, self.client.get('/api/game/mygame/replay?as_player=true').status_code)
+
     def test_the_director_is_refused_nothing(self):
         self.login_as('Serge', role=DIRECTOR)
         self.assertTrue(self.client.get('/api/game/me').json()['is_director'])

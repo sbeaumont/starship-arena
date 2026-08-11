@@ -3,6 +3,7 @@
     N, NAMED, canMove, clamp, rad, normDelta, w2v,
     directionIndex, clampToArc, coneInput, coneRadius, coneWidthAt, SCAN_REACH,
   } from "./plan.js";
+  import { burst, markerFor, tri } from "./markers.js";
 
   // The map itself: two SVG layers and every gesture that reaches them. Geometry in world
   // coordinates, which pans and zooms; text and leader lines in screen pixels, which do not.
@@ -29,8 +30,6 @@
   const FIRE_LEN = 36;
   const EDIT_LEN = 54;
   const WRECK_RADIUS = 20;   // world units, like a blast
-
-  const SIZE = { Ship: 11, Starbase: 7.5, Missile: 5.5, Mine: 5 };
 
   // The API's symbols for the machine itself, as against one of its defence components. Breaching
   // a defence layer lets the blow through; breaching the hull is the end of the ship.
@@ -94,34 +93,11 @@
     return (Math.atan2(dx, dy) * 180) / Math.PI;
   }
 
-  const pts = (arr) => arr.map((q) => q.join(",")).join(" ");
   // Along a heading by a length in screen pixels, or in world units.
   const along = (vx, vy, headingDeg, rPx) =>
     [vx + Math.sin(rad(headingDeg)) * rPx * upp, vy - Math.cos(rad(headingDeg)) * rPx * upp];
   const alongWorld = (vx, vy, headingDeg, len) =>
     [vx + Math.sin(rad(headingDeg)) * len, vy - Math.cos(rad(headingDeg)) * len];
-
-  function tri(vx, vy, headingDeg, rPx) {
-    const r = rPx * upp, h = rad(headingDeg);
-    const p = (a, k) => [vx + Math.sin(a) * r * k, vy - Math.cos(a) * r * k];
-    return pts([p(h, 1), p(h + 2.5, 0.62), p(h - 2.5, 0.62)]);
-  }
-  function diamond(vx, vy, rPx) {
-    const r = rPx * upp;
-    return pts([[vx, vy - r], [vx + r, vy], [vx, vy + r], [vx - r, vy]]);
-  }
-  function square(vx, vy, rPx) {
-    const r = rPx * upp * 0.85;
-    return pts([[vx - r, vy - r], [vx + r, vy - r], [vx + r, vy + r], [vx - r, vy + r]]);
-  }
-
-  function markerFor(category, vx, vy, course) {
-    const r = SIZE[category] ?? 5;
-    if (category === "Starbase") return square(vx, vy, r);
-    if (category === "Mine") return diamond(vx, vy, r);
-    if (course === null) return diamond(vx, vy, r * 0.5);
-    return tri(vx, vy, course, r);
-  }
 
   // The angular span a weapon covers, drawn at a node and rotated to the heading there. The
   // radius is in world units; a caller wanting a constant screen size passes px * upp.
@@ -141,17 +117,6 @@
     return `M ${a[0]},${a[1]} A ${r},${r} 0 0 1 ${b[0]},${b[1]}`;
   }
 
-  // A ray burst, drawn where something died.
-  function burst(x, y, r) {
-    let d = "";
-    for (let i = 0; i < 12; i++) {
-      const a = (i * Math.PI) / 6;
-      const inner = i % 2 ? r * 0.28 : r * 0.42;
-      d += `M${x + Math.sin(a) * inner} ${y - Math.cos(a) * inner}`
-         + `L${x + Math.sin(a) * r} ${y - Math.cos(a) * r}`;
-    }
-    return d;
-  }
 
   // ===== Every planned shot the faction has on file, so a course and its firing read together
   //       whether or not that ship is the one being planned, and whoever commands it. =====
@@ -657,7 +622,7 @@
         {/if}
         {@const v = lastOf(c)}
         <polygon class="blip" class:enemy={c.stance === "Foe"} class:stale={stale(c)}
-                 points={markerFor(c.category_name, v.vx, v.vy, courseOf(c))} />
+                 points={markerFor(c.category_name, v.vx, v.vy, courseOf(c), upp)} />
         {#if planning.aiming}
           <!-- The reach of a tap, so the cursor says what is aimable. Which one you meant is
                settled in onDown, where every candidate under the pointer is known. -->
@@ -703,7 +668,7 @@
         <circle class="halo" class:own={s.owned} class:sel={s.name === planning.selected}
                 cx={v.vx} cy={v.vy} r={18 * upp} stroke-width={upp} />
         <polygon class="ship" class:own={s.owned}
-                 points={markerFor(s.category_name, v.vx, v.vy, s.heading)} />
+                 points={markerFor(s.category_name, v.vx, v.vy, s.heading, upp)} />
         {#if planning.aiming}
           <circle class="target-hit" cx={v.vx} cy={v.vy} r={HIT.target * upp} />
         {:else if s.owned}
@@ -758,7 +723,7 @@
                       stroke-width={2 * upp} />
             {:else}
               <polygon class="shot-tip" class:other={!sh.mine}
-                       points={tri(sh.end[0], sh.end[1], sh.heading, 4)} />
+                       points={tri(sh.end[0], sh.end[1], sh.heading, 4, upp)} />
             {/if}
           {/if}
         {/each}

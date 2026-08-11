@@ -308,8 +308,12 @@ class TickCondition:
 
 @dataclass
 class TickEvent:
-    """Something that happened to a ship on a tick. Scans are left out; the map draws those."""
+    """Something that happened to a ship on a tick. Scans are left out; the map draws those.
+
+    Both numbers for the one moment, as `Tick` itself holds them: `tick` reads as the round shows
+    it, `abs_tick` orders across rounds, which is what a playhead scrubs on."""
     tick: int
+    abs_tick: int
     text: str
     kind: str   # 'internal' | 'hit' | 'explosion' | 'replenish'
 
@@ -408,6 +412,54 @@ class Effect:
     outcome: str
     amount: int
     points: int
+
+
+@dataclass
+class ObjectTick:
+    """Where one object was at one tick. `abs_tick` orders across rounds.
+
+    Heading and speed are None where it was seen rather than known: a scan records a position and
+    never a course."""
+    abs_tick: int
+    x: float
+    y: float
+    heading: float | None
+    speed: float | None
+
+
+@dataclass
+class ReplayObject:
+    """One object over a whole game: what it is, and where it was at every tick it is known for.
+
+    `owner` is what put it there, so a salvo reads as one ship's: a missile's owner is the ship
+    that fired it, and a ship's owner is itself.
+
+    `contact` says the path is a track of sightings rather than the object's own record, which is
+    what a faction knows about anything it does not own. The end of such a path is losing sight of
+    it and not its end."""
+    name: str
+    type_name: str
+    category_name: str
+    faction: str | None
+    owner: str | None
+    radius: float             # above 0 is terrain, drawn at its true size
+    contact: bool
+    path: list[ObjectTick]
+    events: list[TickEvent]
+
+
+@dataclass
+class GameReplay:
+    """A game as it was played, for a playhead to scrub over.
+
+    `faction` is whose war it is. Only that side is built, and everything else is in it as the
+    sightings its ships took, so nothing it never saw is there to be read out of what was sent.
+    None is every side at once, which is more than anybody saw and is the director's alone."""
+    game: str
+    faction: str | None
+    first_tick: int
+    last_tick: int
+    objects: list[ReplayObject]
 
 
 @dataclass

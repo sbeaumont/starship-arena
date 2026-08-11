@@ -106,6 +106,11 @@ of them going. One file per game, and the director's answer to "did last night r
 that word already means the ops log and the ship events a player reads.
 [ADR 0026](adr/0026-a-game-keeps-a-journal.md).
 
+**Replay.** Every saved round of a game, keyed by round number, so any tick of it can be asked what
+was in space. The world that knows about a tick is the one saved for that tick's round: ask an
+earlier one and the tick has not happened yet, ask a later one and its copy of an object has moved
+on. Being in space at a tick is having a snapshot for it, which is the whole of the rule.
+
 **Contact.** Something a faction has scanned but does not own, as a track of sightings. A scan
 records where something was, never its heading, so a contact's course is inferred from its last
 two sightings and single sightings have no course at all.
@@ -116,5 +121,10 @@ world-spanning goes when it is added later.
 
 **Graveyard.** Destroyed ships and starbases, kept so their score still counts and whoever was
 flying them can look back at their history. Part of the world, so each round holds the graveyard as
-it stood at the end of that round. Spent ordnance is not kept: a machine says whether it
+it stood at the end of that round. Spent ordnance never reaches it: a machine says whether it
 `leaves_a_wreck`, and only ships do.
+
+**This round's dead.** Everything destroyed while the round was played, wreck or no wreck, cleared
+when the next round starts. `World.destroyed`. It is what lets a round's own world say what was in
+space at each of its ticks, since the ordnance that went off during it is in neither the objects
+nor the graveyard.
