@@ -415,6 +415,24 @@ class Effect:
 
 
 @dataclass
+class Beam:
+    """A hit that arrived along a line, as the line. What a blast is as a circle.
+
+    Both numbers for the one moment, as `TickEvent` carries them. Placed from where each end was
+    on that tick, so it is drawn between two ships rather than at whatever they are doing now.
+
+    Nameless, like a blast and for the same reason: whoever catches one going off sees that it
+    happened and where, and who was at either end of it still has to be scanned."""
+    tick: int
+    abs_tick: int
+    x1: float            # where it was fired from
+    y1: float
+    x2: float            # where it landed
+    y2: float
+    damage_type: str
+
+
+@dataclass
 class ObjectTick:
     """Where one object was at one tick. `abs_tick` orders across rounds.
 
@@ -460,6 +478,7 @@ class GameReplay:
     first_tick: int
     last_tick: int
     objects: list[ReplayObject]
+    beams: list[Beam]
 
 
 @dataclass
@@ -475,3 +494,4 @@ class PlayerPlan:
     contacts: list[Contact]
     explosions: list[Explosion]
     effects: list[Effect]   # what the faction's own blows did, tick by tick
+    beams: list[Beam]       # and the lines the beams among them arrived along

@@ -327,7 +327,7 @@
   header {
     display: flex; align-items: baseline; gap: 14px;
     padding: 14px 20px; border-bottom: 1px solid var(--edge);
-    background: linear-gradient(#0d1322, #0a0e17);
+    background: linear-gradient(#0d1322, var(--bg));
   }
   header h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: 0.18em;
               text-transform: uppercase; color: var(--hull); }
@@ -421,12 +421,12 @@
            border: 1px solid var(--cyan); border-radius: 2px; padding: 1px 4px; }
 
   /* Ready or not, per commander. Dim rather than red: not being ready yet is normal. */
-  .lamp { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: #33405f; }
+  .lamp { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--ghost); }
   .lamp.lit { background: #79b894; box-shadow: 0 0 5px rgba(121, 184, 148, 0.6); }
 
   .weapons { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   .weapons li { border: 1px solid var(--edge); border-radius: 3px; padding: 7px 9px; background: #0d1320; }
-  .weapons li.armed { border-color: #ff7b7b; }
+  .weapons li.armed { border-color: var(--beam); }
   /* A name is the selector a player types, so it is never shortened: short codes like R1 hold the
      column at 30px and keep the buttons in line, a Shields or a Cloak pushes it out. */
   .wrow { display: grid; grid-template-columns: minmax(30px, auto) 74px 1fr; align-items: center;
@@ -439,13 +439,13 @@
     text-transform: uppercase; color: var(--ink); background: #121a2b;
     border: 1px solid var(--edge); border-radius: 3px; padding: 4px 0; cursor: pointer;
   }
-  .wfire:hover:not(:disabled) { border-color: #ff7b7b; color: #ff7b7b; }
+  .wfire:hover:not(:disabled) { border-color: var(--beam); color: var(--beam); }
   .wfire:disabled { opacity: 0.35; cursor: not-allowed; }
-  .wfire.on { border-color: #ff7b7b; color: #ff7b7b; }
+  .wfire.on { border-color: var(--beam); color: var(--beam); }
   .worder { display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap; font-size: 12px; }
-  .at { color: #ff9d9d; font-variant-numeric: tabular-nums; }
+  .at { color: var(--beam); font-variant-numeric: tabular-nums; }
   .slider { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-dim); padding: 0; }
-  .slider input { width: 90px; accent-color: #ff7b7b; }
+  .slider input { width: 90px; accent-color: var(--beam); }
   .slider.aim { flex: 1 1 100%; }
   .slider.aim input { flex: 1; width: auto; }
   .slider b { color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -464,15 +464,15 @@
   .sw.own { background: var(--amber); opacity: 0.55; }
   .sw.sel-sw { background: var(--amber); }
   .sw.ally { background: var(--cyan); }
-  .sw.enemy { background: var(--warn); }
-  .sw.course-sw { background: #57d98a; }
-  .sw.blast-sw { background: #ff9d4a; opacity: 0.35; border: 1px solid #04070d; }
+  .sw.enemy { background: var(--foe); }
+  .sw.course-sw { background: var(--laid); }
+  .sw.blast-sw { background: var(--hit); opacity: 0.35; border: 1px solid #04070d; }
 
   label { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 3px 0; cursor: pointer; }
   input[type="checkbox"] { accent-color: var(--amber); }
 
   .tally { margin: 0 0 12px; font-size: 12px; color: var(--ink-dim); }
-  .enemy-txt { color: var(--warn); }
+  .enemy-txt { color: var(--foe); }
 
   .fold summary {
     cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 0.16em;

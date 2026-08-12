@@ -24,7 +24,7 @@ ones that bite:
 | touching | read |
 |---|---|
 | a component, or anything a machine asks its parts | [ADR 0019](docs/adr/0019-machines-drive-components-through-one-vocabulary.md) |
-| the tick's order, or anything timing-dependent | [ADR 0002](docs/adr/0002-deterministic-rounds.md), [ADR 0023](docs/adr/0023-a-tick-advances-by-encounters.md), and invariant 1 |
+| the tick's order, or anything timing-dependent | [ADR 0002](docs/adr/0002-deterministic-rounds.md), [ADR 0023](docs/adr/0023-a-tick-advances-by-encounters.md), and [order never changes a tick's outcome](docs/architecture.md#invariants) |
 | damage, warheads, blasts | [GDDR 0020](docs/gddr/0020-explosions-do-not-take-sides.md) |
 | terrain, collisions, what a bounce costs | [ADR 0023](docs/adr/0023-a-tick-advances-by-encounters.md), [GDDR 0025](docs/gddr/0025-terrain-bounces-you-and-costs-hull.md) |
 | orders, validation, what a weapon asks for | [ADR 0005](docs/adr/0005-commands-validated-before-execution.md), [ADR 0004](docs/adr/0004-components-own-their-parameters.md) |
@@ -41,22 +41,11 @@ already tried and abandoned. Ask before rebalancing anything.
 
 ## Never break these
 
-1. Nothing in `arena/engine` imports anything above it.
-2. Nothing above `arena/app` handles an engine object or a file path.
-3. No interface imports another interface. The console goes through `AdminService`; only the CLI
-   may reach the engine directly.
-4. Every path is anchored to the repository, never to the working directory.
-5. Nothing creates a thread, event loop or pool at import time. The host preforks.
-6. Snapshots hold values, never references.
-7. An object says what it is through its own properties, not through class attributes or
-   inspection of its class hierarchy.
-8. A machine asks all its components the same questions, and names none of them. Composition is
-   what the engine is for; a lookup by key or an `isinstance` makes the next component a special
-   case. See [ADR 0019](docs/adr/0019-machines-drive-components-through-one-vocabulary.md).
-9. Stale game data is regenerated, never read through a compatibility shim.
-10. Round processing stays deterministic: no clock, no random numbers.
+The invariants are in [docs/architecture.md](docs/architecture.md#invariants), and that is the only
+place they are written. Read them there before the first engine change.
 
-See [docs/architecture.md](docs/architecture.md).
+Refer to one by name, never by number. A rule added in the middle renumbers every reference at
+once and nothing complains.
 
 ## How to write
 

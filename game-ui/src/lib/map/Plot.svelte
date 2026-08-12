@@ -595,8 +595,14 @@
         <circle class="wreck-core" cx={v.vx} cy={v.vy} r={WRECK_RADIUS * 0.18} />
       {/each}
 
-      <!-- What your own blows did, marked where they landed. -->
+      <!-- What your own blows did: the gap each one crossed, then what it did where it landed. -->
       {#if layers.hits}
+        {#each plan.beams as bm (`${bm.tick}:${bm.x1},${bm.y1}:${bm.x2},${bm.y2}`)}
+          {@const from = w2v(bm.x1, bm.y1)}
+          {@const to = w2v(bm.x2, bm.y2)}
+          <line class="beam" x1={from.vx} y1={from.vy} x2={to.vx} y2={to.vy}
+                stroke-width={1.2 * upp} />
+        {/each}
         {#each plan.effects as f (`${f.tick}:${f.target}:${f.part}:${f.outcome}`)}
           {@const v = w2v(f.x, f.y)}
           {#if f.outcome === "Breached" && f.part === HULL}
@@ -705,7 +711,7 @@
           {#if sh.kind === "object_name"}
             {#if sh.target}
               {@const tv = w2v(sh.target.x, sh.target.y)}
-              <line class="beam" class:cur={sh.cur} class:other={!sh.mine}
+              <line class="shot-line" class:cur={sh.cur} class:other={!sh.mine}
                     x1={sh.nv.vx} y1={sh.nv.vy} x2={tv.vx} y2={tv.vy}
                     stroke-width={(sh.cur ? 1.6 : 1.1) * upp} />
             {/if}
@@ -854,16 +860,16 @@
   .blast { fill-opacity: 0.13; stroke: #04070d; }
   /* Terrain is something to fly around, not something to read. Muted on purpose. */
   .body { fill: #1a2130; stroke: #2b3648; }
-  .wreck { stroke: var(--warn); fill: none; stroke-linecap: round; opacity: 0.9; }
-  .wreck-core { fill: #ffd2d6; }
-  .breach { stroke: var(--warn); fill: none; stroke-linecap: round; opacity: 0.95; }
-  .struck { stroke: var(--warn); fill: none; opacity: 0.55; }
+  .wreck { stroke: var(--hit); fill: none; stroke-linecap: round; opacity: 0.9; }
+  .wreck-core { fill: #ffdcae; }
+  .breach { stroke: var(--hit); fill: none; stroke-linecap: round; opacity: 0.95; }
+  .struck { stroke: var(--hit); fill: none; opacity: 0.55; }
   .track { fill: none; stroke: var(--ghost); opacity: 0.75; }
-  .track.enemy { stroke: #6d3242; }
+  .track.enemy { stroke: var(--foe); opacity: 0.3; }
   .mark { fill: var(--cyan); opacity: 0.45; }
-  .mark.enemy { fill: var(--warn); opacity: 0.4; }
+  .mark.enemy { fill: var(--foe); opacity: 0.4; }
   .blip { fill: var(--cyan); opacity: 0.75; }
-  .blip.enemy { fill: var(--warn); opacity: 0.95; }
+  .blip.enemy { fill: var(--foe); opacity: 0.95; }
   .blip.stale { opacity: 0.35; }
 
   .scanring { fill: none; stroke: var(--cyan); opacity: 0.3; }
@@ -873,27 +879,27 @@
   .halo { fill: none; stroke: var(--cyan); opacity: 0.25; }
   .halo.own { stroke: var(--amber); opacity: 0.4; }
   .halo.sel { stroke: var(--amber); opacity: 0.9; }
-  /* Your other ships plan in green, so their courses read as distinct from the one you are
-     working on without competing with the amber of the selected ship. */
-  .course { fill: none; stroke: #57d98a; opacity: 0.6; stroke-linejoin: round; }
+  /* A course of yours already laid in, so it reads as distinct from the one you are working
+     on without competing with its amber. The ship itself stays amber either way. */
+  .course { fill: none; stroke: var(--laid); opacity: 0.6; stroke-linejoin: round; }
   .course.sel { stroke: var(--amber); opacity: 1; }
-  .course-dot { fill: #57d98a; opacity: 0.75; }
+  .course-dot { fill: var(--laid); opacity: 0.75; }
   /* A faction mate's plan is drawn in the cyan they are, so whose course it is reads off the
      colour rather than off the labels. */
   .course.ally { stroke: var(--cyan); opacity: 0.45; }
   .course-dot.ally { fill: var(--cyan); opacity: 0.55; }
   /* The route already flown: same colour family as the plan, but thinner and quieter so past
      reads as past without breaking the line up. */
-  .wake { fill: none; stroke: #57d98a; opacity: 0.4; }
+  .wake { fill: none; stroke: var(--laid); opacity: 0.4; }
   .wake.sel { stroke: var(--amber); opacity: 0.6; }
   .wake.ally { stroke: var(--cyan); opacity: 0.3; }
-  .wake-dot { fill: #57d98a; opacity: 0.5; }
+  .wake-dot { fill: var(--laid); opacity: 0.5; }
   .wake-dot.sel { fill: var(--amber); opacity: 0.75; }
   .wake-dot.ally { fill: var(--cyan); opacity: 0.4; }
   .grab { fill: transparent; cursor: grab; }
   .grab:active { cursor: grabbing; }
   .grab.tap-only { cursor: pointer; }
-  .joint { fill: #0a0e17; stroke: var(--cyan); pointer-events: none; }
+  .joint { fill: var(--bg); stroke: var(--cyan); pointer-events: none; }
   .joint.limit { stroke: var(--warn); }
   .joint.cur { fill: var(--cyan); }
   /* Arcs and cones are decoration: they must never intercept a drag on a handle. */
@@ -906,16 +912,18 @@
                 stroke-opacity: 0.24; }
   .ship-hit { fill: transparent; cursor: pointer; }
   .target-hit { fill: transparent; cursor: crosshair; }
-  .shot { stroke: #ff7b7b; opacity: 0.4; }
+  .shot { stroke: var(--beam); opacity: 0.4; }
   .shot.cur { opacity: 1; }
   .shot.other { opacity: 0.22; }
-  .beam { stroke: #ff7b7b; opacity: 0.3; stroke-dasharray: 6 4; }
-  .beam.cur { opacity: 0.75; }
-  .beam.other { opacity: 0.18; }
+  /* A beam that was fired, against the dashed line of a shot that is only planned. */
+  .beam { stroke: var(--beam); opacity: 0.6; }
+  .shot-line { stroke: var(--beam); opacity: 0.3; stroke-dasharray: 6 4; }
+  .shot-line.cur { opacity: 0.75; }
+  .shot-line.other { opacity: 0.18; }
   .shot-grab { fill: transparent; cursor: grab; }
   .shot-grab:active { cursor: grabbing; }
-  .shot-handle { fill: #0a0e17; stroke: #ff7b7b; pointer-events: none; }
-  .shot-tip { fill: #ff7b7b; opacity: 0.55; pointer-events: none; }
+  .shot-handle { fill: var(--bg); stroke: var(--beam); pointer-events: none; }
+  .shot-tip { fill: var(--beam); opacity: 0.55; pointer-events: none; }
   .shot-tip.other { opacity: 0.28; }
 
   /* text overlay */
@@ -923,16 +931,16 @@
   .label.sel { fill: var(--amber); font-weight: 700; }
   .label.own { fill: var(--amber); opacity: 0.75; }
   .label.ally { fill: var(--cyan); }
-  .label.enemy { fill: var(--warn); }
+  .label.enemy { fill: var(--foe); }
   .leader { stroke: var(--ink-faint); stroke-width: 1; }
   .glyph { font-family: var(--mono); fill: var(--cyan); opacity: 0.8; pointer-events: auto; }
-  .glyph.enemy { fill: var(--warn); }
+  .glyph.enemy { fill: var(--foe); }
   .tick-label { font-family: var(--mono); fill: var(--cyan); opacity: 0.65;
                 dominant-baseline: middle; }
   .grid-label { font-family: var(--mono); fill: var(--ink-faint); }
   .scalebar { stroke: var(--ink-faint); stroke-width: 1; }
   .cursor-label { font-family: var(--mono); fill: var(--ink-dim); font-variant-numeric: tabular-nums; }
-  .shot-label { font-family: var(--mono); fill: #ff9d9d; opacity: 0.45; dominant-baseline: middle; }
+  .shot-label { font-family: var(--mono); fill: var(--beam); opacity: 0.45; dominant-baseline: middle; }
   .shot-label.cur { opacity: 1; font-weight: 600; }
   .shot-label.other { opacity: 0.25; }
 </style>

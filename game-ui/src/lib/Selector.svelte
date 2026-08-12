@@ -314,7 +314,7 @@
   .gauge .cnt { font-variant-numeric: tabular-nums; }
   .gauge .bar { flex: 1; height: 3px; background: var(--grid); border-radius: 2px;
                 overflow: hidden; }
-  .gauge .bar i { display: block; height: 100%; background: #57d98a; }
+  .gauge .bar i { display: block; height: 100%; background: var(--ok); }
   .gauge .bar.ready i { background: var(--cyan); }
 
   /* Standings opened under the game they belong to, when there is no column to put them in. */
@@ -326,11 +326,11 @@
   .corner {
     position: absolute; right: 7px; bottom: 6px;
     display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px;
-    font-family: var(--mono); font-size: 11px; color: #57d98a;
+    font-family: var(--mono); font-size: 11px; color: var(--ok);
     background: #0d1320; border: 1px solid var(--edge); border-radius: 3px; cursor: pointer;
   }
-  .corner:hover { border-color: #57d98a; }
-  .corner:focus-visible { outline: 2px solid #57d98a; outline-offset: 1px; }
+  .corner:hover { border-color: var(--ok); }
+  .corner:focus-visible { outline: 2px solid var(--ok); outline-offset: 1px; }
 
   .replay {
     display: block; width: 100%; margin-bottom: 14px; padding: 9px 11px;
@@ -388,7 +388,7 @@
      late until the deadline. */
   .st { min-width: var(--col); text-align: right; font-size: 11.5px; color: var(--amber);
         flex-shrink: 0; }
-  .st.ok { color: #57d98a; }
+  .st.ok { color: var(--ok); }
   .st.out { color: var(--ink-faint); }
   .dot { display: none; }
 

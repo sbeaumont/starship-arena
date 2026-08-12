@@ -154,7 +154,7 @@
   button.go:hover { border-color: var(--cyan); }
 
   .hint, .in { font-size: 11.5px; color: var(--ink-faint); }
-  .in { color: #57d98a; }
+  .in { color: var(--ok); }
   .err { margin: 10px 0 0; font-size: 12px; color: var(--warn); }
 
   @media (max-width: 820px) {

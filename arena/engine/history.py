@@ -84,6 +84,7 @@ class TickHistory(object):
 
     @property
     def scans(self):
+        # ADR0019-c
         return [e for e in self.events if isinstance(e, ScanEvent)]
 
     def scans_sorted_by(self, attribute_name):
@@ -91,6 +92,7 @@ class TickHistory(object):
 
     @property
     def hits(self):
+        # ADR0019-d
         return [e for e in self.events if isinstance(e, HitEvent)]
 
     @property
@@ -106,6 +108,7 @@ class TickHistory(object):
 
     @property
     def non_scan_events(self):
+        # ADR0019-e
         return [e for e in self.events if not isinstance(e, ScanEvent)]
 
     # ---------------------------------------------------------------------- COMMANDS
@@ -114,6 +117,7 @@ class TickHistory(object):
         self.data.update(snapshot)
 
     def add_event(self, event):
+        # ADR0019-f
         if isinstance(event, ScanEvent):
             scanned_names = [s.name for s in self.scans]
             if event.name in scanned_names:
@@ -171,6 +175,7 @@ class History(object):
 
     def add_event(self, event):
         assert event is not None
+        # ADR0019-g
         # Bit of a hack to ensure we don't score an event twice for scoring...
         if event not in self.current.events:
             # Make sure the event first processed "take damage from" to ensure it has a score.

@@ -101,8 +101,9 @@ wedged is. Each pass therefore either advances an object or finishes it.
 knows how much of the tick it has used; that is per-tick state of the same kind as `moved_from`,
 written by `move` and meaningless on its own.
 
-`Leg.position_at` is a fraction of that leg and nothing more. The two agree only for something that
-flew its whole leg, and a caller that wants a moment in a tick wants the object.
+A fraction a `Leg` hands back is a fraction of that leg and nothing more. `leg_from` builds one
+that starts partway through the tick, so the two agree only for something with its whole leg still
+ahead of it. A caller holding a leg fraction converts before it asks the object where that was.
 
 ### Contact transmits an impulse, and the receiver decides
 

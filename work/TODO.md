@@ -165,6 +165,22 @@ each section.
 
 ## Engine
 
+- [ ] **Five event filters ask what class an event is**, `ADR0019-c` to `ADR0019-g` in
+      `../arena/engine/history.py`. `Event.kind` is abstract on the base and already answers it
+      ([ADR 0010](../docs/adr/0010-objects-describe-themselves.md)), so the cheap fix is reading
+      `kind`. The question worth settling first is whether that is the right question at all: what
+      `History.add_event` wants to know is what an event counts towards, not what it is, and a
+      component that scores some new way would want the same answer. Decide the question, then
+      change the five together. Anchored, so the check is quiet until somebody adds a sixth.
+- [ ] **A blast and a beam do the same three things twice.** `Warhead.explode` and `Laser.fire`
+      each build a loud event, hand it to whoever it happened to, then loop every object in the
+      world handing it to anyone whose passive reach catches it; `ExplosionEvent` and `BeamEvent`
+      each answer `modify_scan_range` off their own `visibility`. Two callers is where a shared
+      name starts being worth it and not before, so this is a note rather than a refactor: decide
+      once whether being noticed is a question the world answers, an event answers, or neither.
+      The loop also reaches through `ois._type.max_scan_distance`, which is the "reaching through
+      an object's type" shape in [docs/information.md](docs/information.md), so whatever takes it
+      over should ask the object instead.
 - [ ] **A Gunner, and the Engage standing order.** Lasers are unaimable, not weak. Orders are
       plotted ten ticks ahead against a captain choosing their own course, so nobody can know they
       will be 15 units away on tick 7. A missile forgives a bad prediction because it steers; a
@@ -408,6 +424,39 @@ and never renumbered, and **edited whenever the decision moves**, because a reco
 no longer take reads as current. **The rejected alternatives are the anti-drift payload**: "we use
 DTOs" prevents nothing, "passing engine objects upward was rejected, and here is what it cost last
 time" prevents the re-proposal.
+
+- [x] **The rules that can be checked are checked.** Three tests, and a `PostToolUse` hook in
+      `../.claude/settings.json` that runs them against the file just edited and hands back what it
+      finds. `../test/engine/test_vocabulary.py` fails on branching by class in the engine unless
+      the site carries an anchor; `../test/docs/test_references.py` fails on prose pointing at
+      something that is gone, or citing an invariant by number, and prints what will rot next;
+      `../test/docs/test_comments.py` fails on a comment narrating its own change. Written because
+      the rule broken most often was the one stated in the most places, and restating it again
+      would have changed nothing. Conventions in [docs/writing.md](../docs/writing.md).
+
+- [ ] **Nine citations still point at a line number**, all in
+      [ADR 0019](../docs/adr/0019-machines-drive-components-through-one-vocabulary.md), listed by
+      `python -m test.docs.test_references`. Convert them to a symbol or an anchor. Worth doing
+      before anything else here: while that report always prints nine, nobody reads it, and the
+      whole value is that it prints only what is new.
+
+- [ ] **Split [ADR 0023](../docs/adr/0023-a-tick-advances-by-encounters.md).** It is two records
+      fused, which is what the 0024 gap is, and at 14kB it is larger than `architecture.md`. The
+      decision stays; the sections explaining how the geometry works are a manual and belong in
+      `../docs/`. Every reference that had rotted in this repo was in the explaining half of a
+      record, because a rejected alternative stays rejected and an explanation does not.
+
+- [ ] **One principle, three records.** [0004](../docs/adr/0004-components-own-their-parameters.md),
+      [0010](../docs/adr/0010-objects-describe-themselves.md) and
+      [0019](../docs/adr/0019-machines-drive-components-through-one-vocabulary.md) all say a thing
+      answers for itself and nobody inspects its class. Needs a call before any editing: numbers
+      are never reused or renumbered here, and there is no shape in that convention for
+      consolidating three decisions that are all still taken. Parked until that is decided.
+
+- [ ] **Generate `../docs/adr/README.md`** from the records rather than maintaining the table by
+      hand, with a topic on each so the list groups instead of running flat. Kills a whole class of
+      drift, and answers the real complaint: 31 records in one append-only list with no structure
+      is unreadable long before it is wrong.
 
 - [x] **24 ADRs written**, covering the layering, determinism, type objects, components,
       commands, file storage, the single WSGI app, laziness and statelessness, anchored paths,

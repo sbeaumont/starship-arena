@@ -239,7 +239,7 @@
   header {
     display: flex; align-items: center; gap: 10px; flex-shrink: 0;
     padding: 6px 10px; padding-top: max(6px, env(safe-area-inset-top));
-    border-bottom: 1px solid var(--edge); background: linear-gradient(#0d1322, #0a0e17);
+    border-bottom: 1px solid var(--edge); background: linear-gradient(#0d1322, var(--bg));
   }
   .burger {
     display: flex; flex-direction: column; justify-content: center; gap: 4px;
@@ -313,7 +313,7 @@
   .prow .nm { flex: 1; }
   .prow .ty { color: var(--ink-dim); font-size: 11.5px; }
   .prow .sp { font-variant-numeric: tabular-nums; font-size: 12px; }
-  .lamp { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: #33405f; }
+  .lamp { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--ghost); }
   .lamp.lit { background: #79b894; box-shadow: 0 0 5px rgba(121, 184, 148, 0.6); }
 
   .bar {
@@ -377,9 +377,9 @@
   .sw.own { background: var(--amber); opacity: 0.55; }
   .sw.sel-sw { background: var(--amber); }
   .sw.ally { background: var(--cyan); }
-  .sw.enemy { background: var(--warn); }
-  .sw.course-sw { background: #57d98a; }
-  .sw.blast-sw { background: #ff9d4a; opacity: 0.35; border: 1px solid #04070d; }
+  .sw.enemy { background: var(--foe); }
+  .sw.course-sw { background: var(--laid); }
+  .sw.blast-sw { background: var(--hit); opacity: 0.35; border: 1px solid #04070d; }
   .hint { margin: 10px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--ink-dim); }
 
   /* sheet contents */

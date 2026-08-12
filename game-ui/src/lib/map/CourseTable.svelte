@@ -62,7 +62,7 @@
     border: none; padding: 0 2px; cursor: pointer; text-decoration: underline dotted;
   }
   .tick-pick:hover { color: var(--cyan); }
-  .fire-cell { color: #ff9d9d; text-align: left; font-size: 11px; }
+  .fire-cell { color: var(--beam); text-align: left; font-size: 11px; }
   .turn { color: var(--cyan); }
   .accel { color: var(--amber); }
   .pinned { color: var(--warn); }

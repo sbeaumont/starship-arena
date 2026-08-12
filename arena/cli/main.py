@@ -91,20 +91,22 @@ def regenerate(game_name: str = None) -> int:
 
     One game, or every playable one when none is named. Each round it ends on is printed against
     the round it was on: a game whose orders are missing for a round cannot be replayed past it,
-    and the rounds after that are gone. Returns how many came back short."""
+    and the rounds after that are gone. Returns how many came back short.
+
+    Read off the file names rather than through a listing, because a listing loads every world to
+    say what each game is waiting for, and a world too old for this code to read is the whole
+    reason to be here."""
     admin = AdminService()
+    games = admin.playable_games_on_disk()
     if game_name:
-        games = [g for g in admin.list_games() + admin.list_solo_games() if g.name == game_name]
-        if not games:
+        if game_name not in games:
             sys.exit(f"No playable game called '{game_name}'.")
-    else:
-        games = admin.list_games() + admin.list_solo_games()
+        games = {game_name: games[game_name]}
     short = 0
-    for game in games:
-        was = game.current_round - 1
-        now = admin.regenerate_game(game.name)
+    for name, was in games.items():
+        now = admin.regenerate_game(name)
         short += (now < was)
-        print(f"  {game.name:24} round {was} -> {now}{'   LOST ROUNDS' if now < was else ''}")
+        print(f"  {name:24} round {was} -> {now}{'   LOST ROUNDS' if now < was else ''}")
     return short
 
 

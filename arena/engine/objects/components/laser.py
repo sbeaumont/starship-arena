@@ -1,7 +1,7 @@
 from arena.engine.history import Tick
 from arena.engine.world import World
 from arena.engine.objects.components.weapon import Weapon
-from arena.engine.objects.event import DamageType, HitEvent, DrawType
+from arena.engine.objects.event import BeamEvent, DamageType
 from arena.engine.objects.component import ObjectByNameParameter
 
 
@@ -68,9 +68,16 @@ class Laser(Weapon):
             return None
 
         if target_ship and self.can_fire_at(target_ship):
-            hit_event = HitEvent((self.container.pos, target_ship.pos), DamageType.Laser, self.owner, target_ship, self.damage_to(target_ship), DrawType.Line)
+            hit_event = BeamEvent(target_ship.pos, DamageType.Laser, self.owner, target_ship,
+                                  self.damage_to(target_ship))
             target_ship.take_damage_from(hit_event)
             self.owner.add_event(hit_event)
+            # Loud enough to be seen from off the field, the way a blast is: you do not have to
+            # be looking to catch one going off. Whoever already holds it keeps the one copy.
+            for ois in world.objects.values():
+                reach = hit_event.modify_scan_range(ois._type.max_scan_distance)
+                if ois.distance_to(hit_event.pos) <= reach:
+                    ois.add_event(hit_event)
         else:
             temp_status = 'Overheated' if not self.temperature_ok else ''
             battery_status = 'Low Battery' if not self.energy_ok else ''

@@ -115,7 +115,7 @@
   .gk { font-size: 11px; color: var(--ink-dim); }
   .gbar { height: 5px; background: #0d1320; border: 1px solid var(--edge); border-radius: 3px;
           overflow: hidden; }
-  .gbar i { display: block; height: 100%; background: #57d98a; }
+  .gbar i { display: block; height: 100%; background: var(--ok); }
   .gbar i.power { background: var(--cyan); }
   .gbar i.low { background: var(--warn); }
   .gv { font-size: 11px; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
@@ -135,9 +135,9 @@
 
   ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
   li { font-size: 11.5px; line-height: 1.45; color: var(--ink-dim); }
-  li.hit { color: var(--warn); }
+  li.hit { color: var(--hit); }
   li.explosion { color: var(--amber); }
-  li.replenish { color: #57d98a; }
+  li.replenish { color: var(--ok); }
   .who { color: var(--cyan); margin-right: 6px; }
 
   label.all { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-dim);

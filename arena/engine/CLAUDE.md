@@ -10,8 +10,8 @@ The game itself. Knows nothing about interfaces, HTTP or storage locations.
    are cleared only when the tick ends. So two gunners can overkill one missile and neither wasted
    the shot, and a warhead still goes off inside a ship that died earlier in the same tick. Both
    are intended. Anything that makes one object's action depend on whether another has already
-   acted breaks this, and it is invariant 1 in
-   [docs/architecture.md](../../docs/architecture.md).
+   acted breaks this, and it is the invariant that
+   [order never changes a tick's outcome](../../docs/architecture.md#invariants).
 4. **Snapshots hold values, never references.** A snapshot that shares a mutable object records
    how the round ended, once per tick.
 5. **Objects answer for themselves.** `type_name`, `category_name`, `Event.kind`, `Parameter.kind`
@@ -37,3 +37,11 @@ A model is a type object in `objects/registry/`, and the registry loads by refle
 [docs/information.md](../../docs/information.md).** Six places a fact can live, what each one
 claims, and how to choose. Getting it wrong is not a style slip: a model constant says no two
 ships can ever differ, and instance state says they can.
+
+**The model is finished until you have proved otherwise.** What an interface needs is nearly always
+already here under another name, so grep for it and say what you found before proposing a field.
+The neutral default in rule 6 is a licence for `Component` and for nothing else: an event says what
+it is by being a subclass, so a beam is a `BeamEvent` rather than a flag on `Event`, and both its
+ends were already on `HitEvent` as `source` and `target`. A property added to an abstract base
+claims every subclass has an answer, which is a claim about the whole model made while looking at
+one caller.

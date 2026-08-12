@@ -119,10 +119,10 @@
     padding: 0 6px;
   }
 
-  input[type="range"] { flex: 1 1 0; min-width: 0; height: 34px; accent-color: #ff7b7b; }
+  input[type="range"] { flex: 1 1 0; min-width: 0; height: 34px; accent-color: var(--beam); }
   b { flex-shrink: 0; min-width: 30px; text-align: right; font-size: 12.5px; color: var(--ink);
       font-variant-numeric: tabular-nums; }
-  .at { flex: 1 1 auto; min-width: 0; font-size: 12.5px; color: #ff9d9d;
+  .at { flex: 1 1 auto; min-width: 0; font-size: 12.5px; color: var(--beam);
         overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .hint { flex: 1 1 0; min-width: 0; font-size: 11px; color: var(--ink-faint);
           overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

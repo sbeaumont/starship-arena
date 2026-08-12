@@ -196,17 +196,24 @@ Rules a change should not break.
 1. The order objects are processed in must never change the outcome of a tick.
 2. Nothing in `arena/engine` imports anything above it.
 3. Nothing above the services layer handles an engine object or a file path.
-4. No interface imports another interface.
+4. No interface imports another interface. The console goes through `AdminService`; only the CLI
+   may reach the engine directly.
 5. Every path is anchored to the repository, never to the working directory.
 6. Nothing creates a thread, event loop or pool at import time. The host preforks.
 7. Snapshots hold values, never references.
 8. An object says what it is through its own properties, not through class attributes or
    inspection of its class hierarchy.
-9. Stale game data is regenerated, never read through a compatibility shim.
-10. Round processing stays deterministic: no clock, no random numbers.
+9. A machine asks all its components the same questions, and names none of them. Composition is
+   what the engine is for; a lookup by key or an `isinstance` makes the next component a special
+   case. See [ADR 0019](adr/0019-machines-drive-components-through-one-vocabulary.md).
+10. Stale game data is regenerated, never read through a compatibility shim.
+11. Round processing stays deterministic: no clock, no random numbers.
 
-These are the general rules. Rules that only bind one part of the codebase live in that
-directory's `CLAUDE.md`, close to the code they govern.
+This is the list. Nothing restates it, and nothing cites one of these by number: a rule added in
+the middle renumbers every reference at once, silently. Name the rule and link to this section.
+
+Rules that only bind one part of the codebase live in that directory's `CLAUDE.md`, close to the
+code they govern.
 
 Rule 1 is currently broken: weapons fire post-move, so whether a freshly launched missile is in
 space when something explodes depends on iteration order. On the backlog.

@@ -9,7 +9,11 @@ export const roundOf = (abs) => Math.floor((abs - 1) / N);
 export const tickOf = (abs) => abs - roundOf(abs) * N;
 
 // One hue per faction, taken in the order the payload lists them, so nothing here names a faction.
-const SIDES = ["#ffb454", "#57d8ff", "#57d98a", "#c98cff", "#ff8f5d"];
+// The side being watched takes the amber the map draws your own ships in and the next one takes
+// the red it draws theirs, so a two-sided war reads here the way it does on the map. None of them
+// is the orange of a blast or the light a beam is drawn in: a faction is not something that
+// happened. Order is worth as much as the hues, since a war of three uses only the first three.
+const SIDES = ["#ffb454", "#ff4d5e", "#57d8ff", "#57d98a", "#ff5fd0"];
 const NOBODY = "#7b86a4";
 
 export class Playhead {
@@ -92,6 +96,9 @@ export class Playhead {
     }
     return out;
   });
+
+  // The gaps blows crossed on this tick, and only this one: a beam is gone by the next.
+  beams = $derived((this.data?.beams ?? []).filter((b) => b.abs_tick === this.at));
 
   // What the tick being watched did, whoever it happened to.
   log = $derived.by(() =>

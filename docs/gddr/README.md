@@ -20,6 +20,7 @@ One decision per file, numbered in the order they were accepted.
 | [0028](0028-deadlines-are-part-of-the-game.md) | A round lands on the clock, and missing it costs you the round |
 | [0031](0031-loud-things-are-seen-from-further-away.md) | Loud things are seen from further away |
 | [0032](0032-a-starbase-replenishes-you.md) | A starbase replenishes you, and picks who |
+| [0033](0033-colour-answers-one-question.md) | Colour answers one question |
 
 ## What belongs here
 

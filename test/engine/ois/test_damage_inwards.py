@@ -2,7 +2,7 @@
 from unittest import TestCase
 
 from arena.engine.objects.components.defense import Shields
-from arena.engine.objects.event import DamageType, DrawType, HitEvent, Outcome
+from arena.engine.objects.event import DamageType, HitEvent, Outcome
 from arena.engine.objects.registry.builder import create
 from arena.engine.objects.ship import BATTERY, HULL
 
@@ -14,7 +14,7 @@ def struck(target, damage, damage_type=DamageType.Laser, faction='Two'):
     shooter = create('Blaster', 'H2545', (0, 0))
     shooter.faction = 'One'
     target.faction = faction
-    hit = HitEvent((shooter.pos, target.pos), damage_type, shooter, target, damage, DrawType.Line)
+    hit = HitEvent(target.pos, damage_type, shooter, target, damage)
     target.take_damage_from(hit)
     return hit
 

@@ -22,7 +22,7 @@ from arena.engine.game import Game
 from arena.engine.gamedirectory import BodyFile, GameDirectory, ShipFile
 from arena.engine.history import Tick
 from arena.engine.objects.registry.builder import all_fielded_types
-from arena.engine.objects.event import ExplosionEvent, HitEvent
+from arena.engine.objects.event import BeamEvent, ExplosionEvent, HitEvent
 from arena.engine.objects.objectinspace import Stance
 from arena.engine.replay import Replay
 from arena.app import scenarios
@@ -33,7 +33,7 @@ from arena.app.registrations import Registration, RegistrationFile
 from arena.app.dto import (
     FormingGame, GameSummary, OpenGame, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
-    Effect, GameReplay, ReplayObject, ObjectTick,
+    Effect, Beam, GameReplay, ReplayObject, ObjectTick,
     WeaponInfo, ComponentInput,
     ShipSummary, FactionSummary, GameOverview, GameStanding, ShipTypeInfo, Me, LoginInfo,
     GameSettings, Pulse, GamePulse, JournalEntry, By, ProcessingTrigger, ServerTime, SoloGame,
@@ -133,6 +133,16 @@ class _EngineAccess:
 
     def withdraw(self, game: str, player: str) -> None:
         RegistrationFile(self.dirs.registering / game).remove(player)
+
+    def playable_games_on_disk(self) -> dict[str, int]:
+        """Shared games and everybody's own, each against the round it is on.
+
+        Read from the file names and nothing else, where a summary would load every world to
+        count what it is waiting for. That is the difference that matters to a regenerate: worlds
+        it cannot read are the case it exists for."""
+        return {d.name: GameDirectory(str(root), d.name).last_round_number
+                for root in (self.dirs.games, self.dirs.solo) if root.exists()
+                for d in sorted(p for p in root.iterdir() if p.is_dir())}
 
     @classmethod
     def _games_in(cls, root: Path) -> list[GameSummary]:
@@ -517,6 +527,25 @@ class GameService(_EngineAccess):
         # What the faction's own blows did. Read off the striker's history, and placed from what
         # the target was doing on that tick: you hit it, so where it was is not fog of war. A
         # faction mate who watched the same hit holds the same event, hence the dedup.
+        # Beams the faction was an end of, which is the two it is: a laser goes to whoever fired
+        # it and whoever it hit, and to nobody else. Read off the event the way a blast is, so
+        # both copies of it say the same thing and the dedup has something to collapse.
+        beams: dict[tuple, Beam] = {}
+        for s in faction_ships:
+            for t in round_ticks:
+                if t in s.history:
+                    for e in s.history[t].events:
+                        if not isinstance(e, BeamEvent):
+                            continue
+                        a = self._where_at(world, e.source.name, t)
+                        b = self._where_at(world, e.target.name, t)
+                        if a is None or b is None:
+                            continue
+                        beams.setdefault(
+                            (t.tick, a.x, a.y, b.x, b.y),
+                            Beam(tick=t.tick, abs_tick=t.abs_tick, x1=a.x, y1=a.y,
+                                 x2=b.x, y2=b.y, damage_type=str(e._type)))
+
         landed: dict[tuple, Effect] = {}
         for s in faction_ships:
             for t in round_ticks:
@@ -540,7 +569,7 @@ class GameService(_EngineAccess):
         return PlayerPlan(game=game, player=player, factions=sorted(factions), round=round_nr,
                           last_round=last_round, ready=gd.is_ready(player, last_round + 1),
                           ships=ships, contacts=contacts, explosions=list(blasts.values()),
-                          effects=list(landed.values()))
+                          effects=list(landed.values()), beams=list(beams.values()))
 
     def player_factions(self, game: str, player: str) -> list[str]:
         """Which sides a commander flies in a game. Empty for anyone who flies nothing in it."""
@@ -557,6 +586,7 @@ class GameService(_EngineAccess):
         and not this one's."""
         replay = Replay(self._gd(game))
         objects: dict[str, ReplayObject] = {}
+        beams: dict[tuple, Beam] = {}
         for tick in replay.ticks:
             in_space = replay.objects_at(tick)
             mine = {name: ois for name, ois in in_space.items()
@@ -569,6 +599,7 @@ class GameService(_EngineAccess):
                 objects[name].events.extend(
                     TickEvent(tick=tick.tick, abs_tick=tick.abs_tick, text=str(e), kind=e.kind)
                     for e in snapshot.non_scan_events)
+                self._beams_in(snapshot, in_space, tick, beams)
             if faction is None:
                 continue
             # What the side saw of everything else, off the ships whose scans a faction shares.
@@ -583,7 +614,26 @@ class GameService(_EngineAccess):
                                                     y=scan.pos.y, heading=None, speed=None))
         return GameReplay(game=game, faction=faction,
                           first_tick=replay.first.abs_tick, last_tick=replay.last.abs_tick,
-                          objects=list(objects.values()))
+                          objects=list(objects.values()), beams=list(beams.values()))
+
+    @staticmethod
+    def _beams_in(snapshot, in_space: dict, tick: Tick, into: dict) -> None:
+        """Beams this snapshot holds, keyed so the shooter's copy and the target's are one.
+
+        Read off the event and never off whoever is holding it, which is what makes the two
+        copies identical. Both ends have to be in space at the tick to be ends of a line, and
+        the tick something died on still counts as being there."""
+        for e in snapshot.non_scan_events:
+            if not isinstance(e, BeamEvent):
+                continue
+            here, there = in_space.get(e.source.name), in_space.get(e.target.name)
+            if here is None or there is None:
+                continue
+            a, b = here.history[tick]['pos'], there.history[tick]['pos']
+            into.setdefault(
+                (tick.abs_tick, a.x, a.y, b.x, b.y),
+                Beam(tick=tick.tick, abs_tick=tick.abs_tick, x1=a.x, y1=a.y,
+                     x2=b.x, y2=b.y, damage_type=str(e._type)))
 
     def _recorded(self, objects: dict, ois, contact: bool) -> ReplayObject:
         """The row this object is building up in a replay, opened the first time it turns up."""

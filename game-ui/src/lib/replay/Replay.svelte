@@ -191,6 +191,14 @@
           <circle class="body-mark" cx={v.vx} cy={v.vy} r={o.radius} stroke-width={upp} />
         {/each}
 
+        <!-- Under the markers, so a beam runs to the ship rather than over it. -->
+        {#each ph.beams as b (`${b.x1},${b.y1}:${b.x2},${b.y2}`)}
+          {@const from = w2v(b.x1, b.y1)}
+          {@const to = w2v(b.x2, b.y2)}
+          <line class="beam" x1={from.vx} y1={from.vy} x2={to.vx} y2={to.vy}
+                stroke-width={1.6 * upp} />
+        {/each}
+
         {#each ph.shown.filter((o) => !o.radius) as o (o.name)}
           {@const v = w2v(o.now.x, o.now.y)}
           {#if o.trail.length > 1}
@@ -253,7 +261,7 @@
   header {
     display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
     padding: 12px 16px; border-bottom: 1px solid var(--edge);
-    background: linear-gradient(#0d1322, #0a0e17);
+    background: linear-gradient(#0d1322, var(--bg));
   }
   header h1 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 0.16em;
               text-transform: uppercase; color: var(--hull); }
@@ -297,7 +305,9 @@
   .mark.seen { opacity: 0.5; }
   .trail.seen { opacity: 0.3; }
   .label.seen { opacity: 0.6; }
-  .wreck { stroke: var(--warn); fill: none; stroke-linecap: round; opacity: 0.9; }
+  .wreck { stroke: var(--hit); fill: none; stroke-linecap: round; opacity: 0.9; }
+  /* One tick's worth, so it reads as a flash rather than a line on the map. */
+  .beam { stroke: var(--beam); opacity: 0.95; stroke-linecap: round; }
   .label { font-family: var(--mono); dominant-baseline: middle; opacity: 0.9; }
   .bar { stroke: var(--ink-faint); stroke-width: 1; }
   .bar-label { font-family: var(--mono); fill: var(--ink-faint); }
@@ -320,9 +330,9 @@
   input[type="checkbox"] { accent-color: var(--amber); }
   ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
   li { font-size: 11.5px; line-height: 1.45; color: var(--ink-dim); }
-  li.hit { color: var(--warn); }
+  li.hit { color: var(--hit); }
   li.explosion { color: var(--amber); }
-  li.replenish { color: #57d98a; }
+  li.replenish { color: var(--ok); }
   .who { color: var(--cyan); margin-right: 6px; }
 
   /* Narrow enough that the log cannot sit beside the picture: it goes under it, shallow, so the

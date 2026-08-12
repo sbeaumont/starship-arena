@@ -76,6 +76,7 @@ class Gunner(Controller):
         return {'Target Mode': self.target_mode}
 
     def decide(self, world: World, tick: Tick):
+        # ADR0019-b
         enemies = [s.source for s in self.container.scans_sorted_by('distance') if s.source.faction != self.container.faction]
         for name, laser in self.lasers.items():
             took_a_shot = False
@@ -97,4 +98,5 @@ class Gunner(Controller):
 
     @property
     def lasers(self) -> dict:
+        # ADR0019-a
         return {name: weapon for name, weapon in self.container.weapons.items() if isinstance(weapon, Laser)}

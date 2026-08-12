@@ -10,12 +10,6 @@ from enum import Enum
 from typing import Protocol, NewType
 
 
-class DrawType(Enum):
-    Point = 'Point'
-    Circle = 'Circle'
-    Line = 'Line'
-
-
 class DamageType(Enum):
     """What kind of harm a HitEvent carries, which is what decides how a target answers it."""
     Explosion = 'Explosion'
@@ -90,15 +84,11 @@ class EventSource(Protocol):
 
 
 class Event(object):
-    def __init__(self, location: EventLocation, event_type: str, source: EventSource, draw_type: DrawType=None):
+    def __init__(self, location: EventLocation, event_type: str, source: EventSource):
         self.pos: EventLocation = location
         self._type: str = event_type
         self.source: EventSource = source
-        self.draw_type: DrawType = draw_type
         self.effects: list[Effect] = []
-
-    def is_drawable(self):
-        return self.draw_type is not None
 
     @property
     def can_score(self) -> bool:
@@ -151,7 +141,7 @@ class ReplenishEvent(InternalEvent):
 class ScanEvent(Event):
     """A single instance of one object scanning another."""
     def __init__(self, ois, distance, direction, heading):
-        super().__init__(ois.pos, 'Scan', ois, DrawType.Point)
+        super().__init__(ois.pos, 'Scan', ois)
         self.name = ois.name
         self.distance = distance
         self.direction = direction
@@ -173,8 +163,8 @@ class ScanEvent(Event):
 
 
 class HitEvent(Event):
-    def __init__(self, location, hit_type, source, target, amount: int, draw_type: DrawType = None, message: str = None):
-        super().__init__(location, hit_type, source, draw_type)
+    def __init__(self, location, hit_type, source, target, amount: int, message: str = None):
+        super().__init__(location, hit_type, source)
         self.target = target
         self.amount = int(round(amount, 0))
         self.message = message
@@ -203,6 +193,21 @@ class HitEvent(Event):
             for e in self.effects)
 
 
+class BeamEvent(HitEvent):
+    """A hit that arrived along a line, where a blast arrives as a circle.
+
+    A hit in every other way, and it reads as one: what it adds is that the two ends are worth
+    drawing, and every hit already knows its source and its target."""
+
+    # Loud, on the scale in GDDR 0031, though quieter than the blast that follows a warhead in.
+    # A firefight is meant to be worth flying towards from a sector away.
+    visibility = 500
+
+    def modify_scan_range(self, scan_range: float) -> float:
+        """How far a scanner has to reach to catch this going off, the way an object answers it."""
+        return scan_range * (self.visibility / 100)
+
+
 class ExplosionEvent(Event):
     # The loudest thing in the game, on the same scale an object's visibility uses. A blast
     # carries about a board width, so a fight anywhere tells everyone something is happening
@@ -210,7 +215,7 @@ class ExplosionEvent(Event):
     visibility = 1000
 
     def __init__(self, location, explosion_type, source, radius):
-        super().__init__(location, explosion_type, source, DrawType.Circle)
+        super().__init__(location, explosion_type, source)
         self.radius = radius
 
     def modify_scan_range(self, scan_range: float) -> float:

@@ -17,6 +17,11 @@ Svelte 5 and Vite, no SvelteKit. The player's map, planning and log.
    is allowed and is a decision to write down; it is never an omission. The pages outside the map
    are one responsive implementation rather than two, and have to hold at phone width.
 
+**Colour answers one question**, and the questions are in
+[GDDR 0033](../docs/gddr/0033-colour-answers-one-question.md). A new mark picks its question before
+it picks a colour, and one that answers two is two marks. Values live in `app.css`;
+`test/docs/test_colours.py` fails any style block that spells one out instead of naming it.
+
 After changing a component's props, hot reload often cannot swap it. Refresh before believing a bug.
 
 ## The map

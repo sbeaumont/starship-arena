@@ -11,7 +11,15 @@
   --amber:    #ffb454;   /* the planned vector — the one bold hue */
   --cyan:     #57d8ff;   /* handles */
   --ghost:    #33405f;   /* original, un-edited path */
-  --warn:     #ff5d6c;   /* a command pinned to its limit */
+  /* One colour, one question, and the questions are in GDDR 0033. Whose it is, which of your
+     plans your hand is on, what happened to it, what a weapon did, what the interface is telling
+     you. A mark picks its question before it picks a colour. */
+  --foe:      #ff4d5e;   /* whoever you are fighting, and nothing else is this red */
+  --hit:      #ff9d4a;   /* a wreck, a breach, a blow landing: the blast band */
+  --beam:     #fff2cc;   /* a shot, planned or fired. Energy reads as light, not as a side */
+  --laid:     #57d98a;   /* a course of yours already laid in, against the one under your hand */
+  --ok:       #57d98a;   /* the interface saying yes, and what --warn answers to */
+  --warn:     #ff5d6c;   /* an interface saying no: a bad command, a pinned limit */
   --hull:     #eef2fb;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 

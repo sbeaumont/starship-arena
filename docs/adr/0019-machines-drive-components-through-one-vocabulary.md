@@ -27,7 +27,7 @@ The vocabulary is what `Component` declares (`component.py:14-66`): `status`,
 `reset`, `round_reset`, `post_round_reset`. Each has a neutral default on the base, so a component
 stays silent about what does not apply to it.
 
-Three rules follow.
+The rules that follow from it:
 
 **A machine iterates, it never indexes.** `Ship.tick` and `Ship.use_energy` loop
 `all_components.values()` (`ship.py:181-192`). `Mine.decide` loops every weapon it carries
@@ -82,18 +82,33 @@ ask across the seam, not what a component does inside itself.
 
 ### Where the code does not do this yet
 
-Each of these is a spot where a new component would be silently ignored. They are in TODO.md.
+Each of these is a spot where a new component or a new subclass would be silently ignored.
 
-- `Missile.decide` calls `self.warhead.decide(...)` (`missile.py:60`), reaching for one part by the
-  literal key `'warhead'` (`missile.py:39`, `mine.py:28`). A missile with a second component never
-  gets asked. `Mine` loops and is correct.
-- `Gunner.lasers` filters on `isinstance(weapon, Laser)` (`control.py:100`), so an NPC gunner can
-  never fire anything else, and `Gunner.decide` sorts targets with `isinstance(enemy, (Missile,
-  Mine))` (`control.py:83`), where `category_name` already answers the question.
-- `Warhead.explode` reads `ois._type.max_scan_distance` (`warhead.py:80`, `:102`), reaching through
-  another object's type and past a private attribute for a question the object could answer.
+The ones that branch on a class carry an anchor comment at the site, and
+`test/engine/test_vocabulary.py` fails on any that does not, so a new one cannot be added quietly
+and a fixed one leaves an anchor pointing at nothing.
 
-`BoostCommand` was the fifth. It found its shield with `isinstance(d, Shields)`; splitting the
+| | |
+|---|---|
+| `ADR0019-a` | `Gunner.lasers` filters weapons on `isinstance(weapon, Laser)`, so an NPC gunner can never fire anything else |
+| `ADR0019-b` | `Gunner.decide` sorts targets by class, where `category_name` already answers it |
+| `ADR0019-c` | `TickHistory.scans` filters events on `ScanEvent` |
+| `ADR0019-d` | `TickHistory.hits` filters events on `HitEvent` |
+| `ADR0019-e` | `TickHistory.non_scan_events`, the same question inverted |
+| `ADR0019-f` | `TickHistory.add_event` branches on `ScanEvent` to deduplicate |
+| `ADR0019-g` | `History.add_event` branches on `HitEvent` to score |
+
+The five in `history.py` are one question asked five times: `Event.kind` is abstract on the base
+([ADR 0010](0010-objects-describe-themselves.md)) and already answers it. Whether the fix is
+reading `kind` or giving `Event` a question about what it counts towards is open.
+
+Two more are not a class test and so have no anchor:
+
+- `Missile.decide` reaches for one part by the literal key `'warhead'`. A missile with a second
+  component never gets asked. `Mine` loops and is correct.
+- `Warhead.explode` reads another object's `_type` for a question the object could answer.
+
+`BoostCommand` was on this list and came off it. It found its shield with `isinstance(d, Shields)`; splitting the
 boost parameter into a quadrant and an amount removed the override entirely, and there is no
 `isinstance` left in `command.py`.
 
@@ -112,7 +127,7 @@ stateful component, and the machine that holds it.
 
 **`isinstance` at the call site.** It works, it is obvious, and it is the reason a `ShipSpawner`
 would otherwise need `BoostCommand`, `Gunner` and `Missile.decide` all edited before it could
-exist. Every one of the five spots listed above is an argument that has already been lost once.
+exist. Every spot on the list above is an argument that has already been lost once.
 
 **Fewer, larger components.** Fold the behaviour into `Missile` and `Ship` and drop the component
 seam. Cheaper today, and it gives up the thing the game is for: a new model is a registry class

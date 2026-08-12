@@ -98,8 +98,12 @@ on.
 `TickHistory` is one tick of it.
 
 **Event.** Something that happened to an object during a tick, with a `kind`: `internal`, `hit`,
-`explosion`, `replenish` or `scan`. Everything except scans shows up in the player's log, and
-everything except `internal` shows there without being asked for.
+`beam`, `explosion`, `replenish` or `scan`. Everything except scans shows up in the player's log,
+and everything except `internal` shows there without being asked for.
+
+**Beam.** A hit that arrived along a line, where a blast arrives as a circle. A laser makes one,
+and so would anything else that reaches its target instantly. Both ends are the two ships, so an
+interface draws it without being told any weapon's name.
 
 **Journal.** What the server did to a game and when: rounds processed, by whom, and what set each
 of them going. One file per game, and the director's answer to "did last night run". Not a log:

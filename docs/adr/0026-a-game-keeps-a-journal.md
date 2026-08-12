@@ -54,7 +54,8 @@ a line, and a reader never sees half of one.
 ## Alternatives rejected
 
 **Timestamping inside the engine.** It is where the detail is, and it would put a clock in the one
-place that must not have one. Invariant 10 exists because regenerate depends on it.
+place that must not have one. [Round processing stays
+deterministic](../architecture.md#invariants) because regenerate depends on it.
 
 **Capturing the log records emitted during a round and attaching them to the entry.** Richer, and
 it answers a question nobody asked: the director wants to know that the round ran and who was

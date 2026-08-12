@@ -44,8 +44,8 @@ No new dependency. `urllib.request` posts JSON perfectly well, and the alternati
 for one call.
 
 The POST happens inside whatever request or cron run processed the round. Discord answers in well
-under a second. A thread would be the way to stop paying for it, and invariant 6 exists to keep
-threads out of a preforked host.
+under a second. A thread would be the way to stop paying for it, and [nothing creates a thread at
+import](../architecture.md#invariants) exists to keep threads out of a preforked host.
 
 A host that cannot reach Discord gets a warning in the ops log and a game that ran fine. Silence
 is the only symptom, so `python -m arena.cli.main announce` exists to ask the question directly.
@@ -70,7 +70,8 @@ in the one method that was written to not care what the event is.
 **A webhook URL per game, in `settings.jsonl`.** Worth having when there are several Discord
 servers. There is one, and a game's settings file is not a place to keep a secret.
 
-**Posting on a background thread.** Invariant 6.
+**Posting on a background thread.** [Nothing creates a thread at
+import](../architecture.md#invariants).
 
 **Sending each player their own message.** That is email, and email is a channel with a recipient
 list, retries and an unsubscribe. Its own decision, on its own day.

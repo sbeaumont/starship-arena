@@ -41,7 +41,7 @@
     background: rgba(18, 26, 43, 0.94); border: 1px solid var(--edge); border-radius: 4px;
   }
   .chip:disabled { opacity: 0.35; }
-  .chip.on { color: #ff7b7b; border-color: #ff7b7b; background: rgba(36, 20, 25, 0.96); }
+  .chip.on { color: var(--beam); border-color: var(--beam); background: rgba(38, 33, 20, 0.96); }
   .chip.aiming { color: var(--cyan); border-color: var(--cyan); background: rgba(16, 32, 44, 0.96); }
   .chip.comp.on { color: var(--amber); border-color: var(--amber); background: rgba(31, 24, 8, 0.96); }
   .nm { white-space: nowrap; }
