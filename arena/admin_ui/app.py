@@ -12,6 +12,7 @@ import re
 from dataclasses import asdict
 from flask import Flask, abort, render_template, request, g, jsonify, send_file, redirect, url_for
 
+from arena.errors import UnreadableWorld
 from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE, LOGIN_COOKIE_SECURE
 from arena.cfg import WEB_ROOT, GAME_UI_URL, PLAY_URL
 from arena.app import scenarios
@@ -30,6 +31,12 @@ app.jinja_env.globals['play_url'] = PLAY_URL
 # screen does.
 JOURNAL_LINES = 20
 COMBINED_JOURNAL_LINES = 60
+
+
+@app.errorhandler(UnreadableWorld)
+def unreadable_world(e: UnreadableWorld):
+    return render_template('unreadable.html', game=e.game, display=for_display(e.game),
+                           reason=str(e)), 500
 
 
 # ---------------------------------------------------------------------- HELPERS
@@ -351,7 +358,7 @@ def force_process(game: str):
 
 @app.route('/regenerate/<game>', methods=['POST'])
 def regenerate(game: str):
-    was = facade().standing(game).round_nr - 1
+    was = facade().rounds_played(game)
     now = facade().regenerate_game(game)
     told = f"Replayed to round {now}."
     if now < was:

@@ -13,13 +13,13 @@ from math import atan2, degrees
 from pathlib import Path
 
 from arena.announce import Announcer
-from arena.cfg import (ADMIN_UI_URL, COMMANDS_DIR, GAMES_ROOT, GamesRoot, INIT_FILE_NAME,
-                       MANUAL_FILENAME, PLAY_URL, REGISTRATION_FILE_NAME, SCENARIO_FILE_NAME,
-                       STATUS_FILE_TEMPLATE)
+from arena.cfg import (ADMIN_UI_URL, COMMANDS_DIR, INIT_FILE_NAME, MANUAL_FILENAME, PLAY_URL,
+                       REGISTRATION_FILE_NAME, SCENARIO_FILE_NAME, STATUS_FILE_TEMPLATE)
 from arena.engine.admin import GameSetup, regenerate_game as engine_regenerate_game
 from arena.engine.command import parse_commands
 from arena.engine.game import Game
-from arena.engine.gamedirectory import BodyFile, GameDirectory, ShipFile
+from arena.engine.gamedirectory import (BodyFile, GAMES_ROOT, GameDirectory, GamesIn, GamesRoot,
+                                        ShipFile)
 from arena.engine.history import Tick
 from arena.engine.objects.registry.builder import all_fielded_types
 from arena.engine.objects.event import BeamEvent, ExplosionEvent, HitEvent
@@ -56,11 +56,8 @@ class _EngineAccess:
         self.announcer = announcer if announcer is not None else Announcer()
 
     def _gd(self, game: str) -> GameDirectory:
-        """A game, wherever it is playable from: shared in `games/`, or somebody's own in `solo/`.
-
-        Resolving it here is what lets one set of operations serve both, so nothing above this
-        line asks which kind of game it is holding."""
-        return GameDirectory(str(self.dirs.holding(game)), game)
+        """A playable game, so nothing above this line asks which root it is kept in."""
+        return self.dirs.directory(game)
 
     def _build_game(self, gd: GameDirectory, scenario, ships: list[dict]) -> None:
         """Deploy a roster over a scenario's terrain, and save the world that makes.
@@ -86,17 +83,17 @@ class _EngineAccess:
         return [_entry(raw) for raw in reversed(self._gd(game).read_journal(limit))]
 
     def list_games(self) -> list[GameSummary]:
-        return self._games_in(self.dirs.games)
+        return self._summaries(GamesIn.Playing)
 
     def list_archived_games(self) -> list[GameSummary]:
-        return self._games_in(self.dirs.archived)
+        return self._summaries(GamesIn.Archived)
 
     def list_registering_games(self) -> list[GameSummary]:
-        return self._games_in(self.dirs.registering)
+        return self._summaries(GamesIn.Registering)
 
     def list_solo_games(self) -> list[GameSummary]:
         """Every player's own game. Not shown beside the shared ones anywhere."""
-        return self._games_in(self.dirs.solo)
+        return self._summaries(GamesIn.Solo)
 
     def game_names_in_use(self) -> set[str]:
         """Played, archived, registering or somebody's own. All of them claim the name."""
@@ -135,21 +132,14 @@ class _EngineAccess:
         RegistrationFile(self.dirs.registering / game).remove(player)
 
     def playable_games_on_disk(self) -> dict[str, int]:
-        """Shared games and everybody's own, each against the round it is on.
+        """Every playable game against the round it is on, read from the file names alone.
 
-        Read from the file names and nothing else, where a summary would load every world to
-        count what it is waiting for. That is the difference that matters to a regenerate: worlds
-        it cannot read are the case it exists for."""
-        return {d.name: GameDirectory(str(root), d.name).last_round_number
-                for root in (self.dirs.games, self.dirs.solo) if root.exists()
-                for d in sorted(p for p in root.iterdir() if p.is_dir())}
+        A summary loads every world to count what it is waiting for, and a world it cannot read
+        is the case a regenerate exists for."""
+        return {gd.game_name: gd.last_round_number for gd in self.dirs.playable()}
 
-    @classmethod
-    def _games_in(cls, root: Path) -> list[GameSummary]:
-        if not root.exists():
-            return []
-        return [cls._summary_of(GameDirectory(str(root), d.name))
-                for d in sorted(p for p in root.iterdir() if p.is_dir())]
+    def _summaries(self, where: GamesIn) -> list[GameSummary]:
+        return [self._summary_of(gd) for gd in self.dirs.directories_in(where)]
 
     @classmethod
     def _summary_of(cls, gd: GameDirectory) -> GameSummary:
@@ -158,7 +148,7 @@ class _EngineAccess:
         return GameSummary(name=gd.game_name, current_round=gd.last_round_number + 1,
                            process_hours=hours,
                            next_processing=due.isoformat(timespec='seconds') if due else None,
-                           standing=cls._standing_of(gd))
+                           standing=cls._standing_of(gd) if gd.planned else None)
 
     def standing(self, game: str) -> GameStanding:
         return self._standing_of(self._gd(game))
@@ -358,7 +348,7 @@ class GameService(_EngineAccess):
 
     def solo_game(self, player: str) -> SoloGame:
         """The one game this player may run on their own, started or not."""
-        gd = GameDirectory(str(self.dirs.solo), solo_game_name(player))
+        gd = self.dirs.directory_in(GamesIn.Solo, solo_game_name(player))
         return SoloGame(scenario=scenarios.SOLO.name, blurb=scenarios.SOLO.blurb,
                         max_ships=scenarios.SOLO.max_ships,
                         game=self._summary_of(gd) if gd.exists else None)
@@ -375,7 +365,7 @@ class GameService(_EngineAccess):
         theirs = self.dirs.solo / name
         if theirs.exists():
             shutil.rmtree(theirs)
-        self._build_game(GameDirectory(str(self.dirs.solo), name), scenario, ships)
+        self._build_game(self.dirs.directory_in(GamesIn.Solo, name), scenario, ships)
         self.save_settings(name, GameSettings(on_all_ready=True, process_hours=[], announce=False))
         return self.solo_game(player)
 
@@ -865,7 +855,7 @@ class AdminService(_EngineAccess):
         """Name a game and build it: its roster deployed, its terrain in place."""
         self._claim_name(name)
         self.dirs.games.mkdir(parents=True, exist_ok=True)
-        self._build_game(GameDirectory(str(self.dirs.games), name),
+        self._build_game(self.dirs.directory_in(GamesIn.Playing, name),
                          scenarios.by_key(scenario), ships)
 
     # ---------------------------------------------------------------------- BEFORE IT STARTS
@@ -880,7 +870,7 @@ class AdminService(_EngineAccess):
 
     def is_reopenable(self, name: str) -> bool:
         """Built from registrations and no round played yet, so the roster can still be redealt."""
-        gd = GameDirectory(str(self.dirs.games), name)
+        gd = self.dirs.directory_in(GamesIn.Playing, name)
         return (gd.last_round_number <= 0
                 and (self.dirs.games / name / REGISTRATION_FILE_NAME).exists())
 
@@ -889,7 +879,7 @@ class AdminService(_EngineAccess):
 
         Only before its first round: after that the roster is what people have been playing."""
         source = self.dirs.games / name
-        gd = GameDirectory(str(self.dirs.games), name)
+        gd = self.dirs.directory_in(GamesIn.Playing, name)
         if gd.last_round_number > 0:
             raise ValueError(f"'{name}' has played rounds. Archive it instead.")
         if not (source / REGISTRATION_FILE_NAME).exists():
@@ -910,7 +900,7 @@ class AdminService(_EngineAccess):
         scenario = self.scenario_of(name)
         shutil.move(str(self.dirs.registering / name), str(target))
         # The name was claimed when registrations opened, and the directory is already here.
-        self._build_game(GameDirectory(str(self.dirs.games), name),
+        self._build_game(self.dirs.directory_in(GamesIn.Playing, name),
                          scenarios.by_key(scenario), ships)
         self.save_settings(name, settings)
 

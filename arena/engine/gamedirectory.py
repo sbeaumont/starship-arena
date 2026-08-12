@@ -11,19 +11,96 @@ import re
 import shutil
 import pickle
 from dataclasses import dataclass
+from enum import Enum
+from pathlib import Path
 from abc import ABC
 
 from arena.cfg import *
+from arena.errors import UnreadableWorld
 from arena.engine.world import World
 import logging
 
 logger = logging.getLogger('starship-arena.gamedirectory')
 
 
+class GamesIn(str, Enum):
+    """One of the roots a game can be in, named after it."""
+    Playing = GAMES_DIR_NAME
+    Archived = ARCHIVE_DIR_NAME
+    Registering = REGISTERING_DIR_NAME
+    Solo = SOLO_DIR_NAME
+
+    def __str__(self):
+        return self.value
+
+    @property
+    def planned(self) -> bool:
+        """Whether a round is being planned in here. Nothing is owed for the other two."""
+        return self in (GamesIn.Playing, GamesIn.Solo)
+
+
+@dataclass(frozen=True)
+class GamesRoot:
+    """A data root, and the four places a game directory can be in it."""
+
+    root: Path
+
+    def path(self, where: GamesIn) -> Path:
+        return self.root / where.value
+
+    @property
+    def games(self) -> Path:
+        return self.path(GamesIn.Playing)
+
+    @property
+    def archived(self) -> Path:
+        return self.path(GamesIn.Archived)
+
+    @property
+    def registering(self) -> Path:
+        return self.path(GamesIn.Registering)
+
+    @property
+    def solo(self) -> Path:
+        return self.path(GamesIn.Solo)
+
+    def directory_in(self, where: GamesIn, game: str) -> 'GameDirectory':
+        return GameDirectory(str(self.path(where)), game, where)
+
+    def directory(self, game: str) -> 'GameDirectory':
+        """A playable game, wherever it is playable from.
+
+        There is nothing to disambiguate: a shared game may not be named what a solo game is or
+        could be called. Resolving it here is what lets one set of operations serve both, so a
+        solo game is planned, ordered and processed through exactly the calls a shared game is.
+        See docs/adr/0030-solo-games-live-in-their-own-root.md."""
+        where = GamesIn.Solo if (self.solo / game).is_dir() else GamesIn.Playing
+        return self.directory_in(where, game)
+
+    def directories_in(self, where: GamesIn) -> list['GameDirectory']:
+        """Every game in one root, in name order. Empty while the root has never been made."""
+        root = self.path(where)
+        if not root.exists():
+            return []
+        return [self.directory_in(where, d.name)
+                for d in sorted(p for p in root.iterdir() if p.is_dir())]
+
+    def playable(self) -> list['GameDirectory']:
+        """Shared games and everybody's own, which are the two a round is planned in."""
+        return [gd for where in GamesIn if where.planned
+                for gd in self.directories_in(where)]
+
+
 class GameDirectory(object):
-    def __init__(self, data_root: str, game_name: str):
+    def __init__(self, data_root: str, game_name: str, where: GamesIn = GamesIn.Playing):
         self._dir = os.path.join(data_root, game_name)
         self.game_name = game_name
+        self.where = where
+
+    @property
+    def planned(self) -> bool:
+        """Whether a round is being planned here, which is a fact about where it is kept."""
+        return self.where.planned
 
     @property
     def has_been_setup(self):
@@ -335,7 +412,10 @@ class StatusFile(GameFile):
 
     def load(self) -> World:
         with open(self.full_name, 'rb') as f:
-            world = pickle.load(f)
+            try:
+                world = pickle.load(f)
+            except Exception as e:
+                raise UnreadableWorld(self.gd.game_name, self.name) from e
         world.kept_in(self.gd)
         return world
 
@@ -355,3 +435,6 @@ class CommandFile(GameFile):
     @property
     def name(self):
         return COMMAND_FILE_TEMPLATE.format(self.ship_name, self.round_nr)
+
+
+GAMES_ROOT = GamesRoot(Path(GAME_DATA_DIR))

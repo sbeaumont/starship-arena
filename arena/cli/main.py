@@ -15,7 +15,7 @@ import sys
 import os
 
 from arena.announce import Announcer
-from arena.cfg import GAMES_ROOT, LOG_FILE_NAME, PLAY_URL
+from arena.cfg import LOG_FILE_NAME, PLAY_URL
 from arena.log import configure_logger
 
 from arena.app.clock import server_now
@@ -23,7 +23,7 @@ from arena.app.players import PlayerRegistry, DIRECTOR, PLAYER
 from arena.app.services import AdminService
 from arena.engine.admin import setup_game
 from arena.engine.game import Game
-from arena.engine.gamedirectory import GameDirectory
+from arena.engine.gamedirectory import GAMES_ROOT, GameDirectory, GamesIn
 from arena.engine.reporting.manual import generate_manual
 
 logger = logging.getLogger('starship-arena')
@@ -160,7 +160,7 @@ def main():
     else:
         if not args.gamedir:
             sys.exit("Which game? Give its name.")
-        game_dir = GameDirectory(str(GAMES_ROOT.games), args.gamedir)
+        game_dir = GAMES_ROOT.directory_in(GamesIn.Playing, args.gamedir)
         game_dir.check_ok()
 
         if args.action == 'setup':

@@ -9,13 +9,12 @@ import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
 
 from arena.app.clock import server_now, zone_name
 from arena.app.dto import By, GameSettings, GameStanding, ProcessingTrigger
 from arena.app.naming import for_display
 from arena.app.services import AdminService
-from arena.cfg import GAME_DATA_DIR, GamesRoot, MANUAL_FILENAME
+from arena.cfg import GAME_DATA_DIR, MANUAL_FILENAME
 
 logger = logging.getLogger('starship-arena.facade')
 
@@ -92,8 +91,7 @@ class AppFacade(object):
     """Object that hides specifics from the web interface."""
 
     def __init__(self):
-        self.dirs = GamesRoot(Path(GAME_DATA_DIR))
-        self.admin = AdminService(self.dirs.root)
+        self.admin = AdminService(GAME_DATA_DIR)
 
     # ---------------------------------------------------------------------- QUERIES - Reference
 
@@ -119,6 +117,10 @@ class AppFacade(object):
     def game_lines(self) -> list:
         """Every game being played, each with what its round is waiting for."""
         return self.admin.list_games()
+
+    def rounds_played(self, game: str) -> int:
+        """Read off the file names, so it answers for a game whose rounds cannot be loaded."""
+        return self.admin.playable_games_on_disk()[game]
 
     def game_detail(self, game: str) -> GameDetail:
         overview = self.admin.game_overview(game)

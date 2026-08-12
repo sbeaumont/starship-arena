@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ display }}{% endblock %}
+{% block content %}
+<h1>{{ display }}</h1>
+<p class="lede">{{ reason }}</p>
+<div class="act">
+    <form method="POST" action="{{ url_for('regenerate', game=game) }}">
+        <button class="go" type="submit">Regenerate</button>
+    </form>
+    <a class="quiet" href="{{ url_for('overview') }}">Games</a>
+</div>
+{% endblock content %}
