@@ -14,6 +14,22 @@
     <div class="games">
         {% for g in games %}
             {% set s = g.standing %}
+            {% if not s %}
+            <div class="game">
+                <span class="dot idle"></span>
+                <span class="name"><a href="{{ url_for('unreadable', game=g.name) }}">{{ g.display }}</a></span>
+                <span class="round">no rounds this code can read</span>
+                <span></span>
+                <span class="act">
+                    <form method="POST" action="{{ url_for('regenerate', game=g.name) }}">
+                        <button class="go" type="submit">Regenerate</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('archive', game=g.name) }}">
+                        <button type="submit" class="quiet">Archive</button>
+                    </form>
+                </span>
+            </div>
+            {% else %}
             <div class="game">
                 <span class="dot {{ 'ready' if s.all_in else ('idle' if not s.ships else 'waiting') }}"></span>
                 <span class="name"><a href="{{ url_for('game_overview', game_name=g.name) }}">{{ g.display }}</a></span>
@@ -45,6 +61,7 @@
                     <span class="waiting-for">no orders from {{ s.missing|join(', ') }}</span>
                 {% endif %}
             </div>
+            {% endif %}
         {% endfor %}
     </div>
 {% endif %}

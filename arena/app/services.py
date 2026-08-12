@@ -15,6 +15,7 @@ from pathlib import Path
 from arena.announce import Announcer
 from arena.cfg import (ADMIN_UI_URL, COMMANDS_DIR, INIT_FILE_NAME, MANUAL_FILENAME, PLAY_URL,
                        REGISTRATION_FILE_NAME, SCENARIO_FILE_NAME, STATUS_FILE_TEMPLATE)
+from arena.errors import UnreadableWorld
 from arena.engine.admin import GameSetup, regenerate_game as engine_regenerate_game
 from arena.engine.command import parse_commands
 from arena.engine.game import Game
@@ -33,7 +34,7 @@ from arena.app.registrations import Registration, RegistrationFile
 from arena.app.dto import (
     FormingGame, GameSummary, OpenGame, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
-    Effect, Beam, GameReplay, ReplayObject, ObjectTick,
+    Effect, Beam, GameReplay, ReplayObject, ObjectTick, StaleRound,
     WeaponInfo, ComponentInput,
     ShipSummary, FactionSummary, GameOverview, GameStanding, ShipTypeInfo, Me, LoginInfo,
     GameSettings, Pulse, GamePulse, JournalEntry, By, ProcessingTrigger, ServerTime, SoloGame,
@@ -148,7 +149,20 @@ class _EngineAccess:
         return GameSummary(name=gd.game_name, current_round=gd.last_round_number + 1,
                            process_hours=hours,
                            next_processing=due.isoformat(timespec='seconds') if due else None,
-                           standing=cls._standing_of(gd) if gd.planned else None)
+                           standing=cls._listed_standing(gd))
+
+    @classmethod
+    def _listed_standing(cls, gd: GameDirectory) -> GameStanding | None:
+        """A game's standing as a list can report it: None for one it cannot read.
+
+        A list is where a game gets fixed from, so one bad round leaves the rest of it standing.
+        Asking a game for its standing on its own still raises."""
+        if not gd.planned:
+            return None
+        try:
+            return cls._standing_of(gd)
+        except UnreadableWorld:
+            return None
 
     def standing(self, game: str) -> GameStanding:
         return self._standing_of(self._gd(game))
@@ -294,7 +308,8 @@ class _EngineAccess:
         return specs
 
     def games_for_player(self, name: str) -> list[str]:
-        return [g.name for g in self.list_games() if name in self._roster(g.name).values()]
+        return [g.name for g in self.list_games()
+                if g.standing and name in self._roster(g.name).values()]
 
 
 class GameService(_EngineAccess):
@@ -963,6 +978,17 @@ class AdminService(_EngineAccess):
         self._append_journal(game, 'processed', **detail)
         self._announce_round_processed(game, round_nr)
         return silent
+
+    def stale_rounds(self, game: str) -> list[StaleRound]:
+        """Every saved round of a game read against today's code, oldest first."""
+        gd = self._gd(game)
+        out = []
+        for nr in range(gd.last_round_number + 1):
+            try:
+                out.append(StaleRound(round_nr=nr, missing=gd.missing_in(nr)))
+            except UnreadableWorld as e:
+                out.append(StaleRound(round_nr=nr, missing={}, error=str(e)))
+        return out
 
     def regenerate_game(self, game: str) -> int:
         """Replay from the plans, back to the round it was on. Returns the round it ended on."""

@@ -23,6 +23,25 @@ import logging
 logger = logging.getLogger('starship-arena.gamedirectory')
 
 
+class _Stubbing(pickle.Unpickler):
+    """Reads a world by standing in for whatever the code has dropped, and counting it.
+
+    Diagnosis only: what it builds has holes where the stand-ins are, and the regenerate
+    invariant is why no caller may keep it. See docs/architecture.md."""
+
+    def __init__(self, f):
+        super().__init__(f)
+        self.absent = {}
+
+    def find_class(self, module: str, name: str):
+        try:
+            return super().find_class(module, name)
+        except (AttributeError, ImportError):
+            self.absent[f"{module}.{name}"] = self.absent.get(f"{module}.{name}", 0) + 1
+            return type(name, (), {'__init__': lambda s, *a, **kw: None,
+                                   '__setstate__': lambda s, state: None})
+
+
 class GamesIn(str, Enum):
     """One of the roots a game can be in, named after it."""
     Playing = GAMES_DIR_NAME
@@ -214,6 +233,10 @@ class GameDirectory(object):
 
     def load_world(self, round_nr) -> World:
         return StatusFile(self, round_nr).load()
+
+    def missing_in(self, round_nr) -> dict:
+        """What one saved round names that the code no longer has, and how often."""
+        return StatusFile(self, round_nr).missing()
 
     def load_spawns(self) -> list[dict]:
         return SpawnFile(self).load()
@@ -423,6 +446,16 @@ class StatusFile(GameFile):
         assert isinstance(world, World)
         with open(self.full_name, 'wb') as status_file:
             pickle.dump(world, status_file)
+
+    def missing(self) -> dict:
+        """What this round names that the code no longer has, and how often."""
+        with open(self.full_name, 'rb') as f:
+            reader = _Stubbing(f)
+            try:
+                reader.load()
+            except Exception as e:
+                raise UnreadableWorld(self.gd.game_name, self.name) from e
+        return reader.absent
 
 
 class CommandFile(GameFile):

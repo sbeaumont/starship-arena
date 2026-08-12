@@ -226,6 +226,21 @@ class ProcessingTrigger(str, Enum):
 
 
 @dataclass
+class StaleRound:
+    """One saved round, read against the code as it is now.
+
+    `missing` is what the round names that has since gone, against how many times it appears.
+    `error` is filled when not even a stand-in got it open, and then nothing else is known."""
+    round_nr: int
+    missing: dict[str, int]
+    error: str = ''
+
+    @property
+    def reads(self) -> bool:
+        return not (self.missing or self.error)
+
+
+@dataclass
 class JournalEntry:
     """One thing that happened to a game, and when.
 

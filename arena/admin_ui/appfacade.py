@@ -122,6 +122,9 @@ class AppFacade(object):
         """Read off the file names, so it answers for a game whose rounds cannot be loaded."""
         return self.admin.playable_games_on_disk()[game]
 
+    def stale_rounds(self, game: str) -> list:
+        return self.admin.stale_rounds(game)
+
     def game_detail(self, game: str) -> GameDetail:
         overview = self.admin.game_overview(game)
         return GameDetail(name=game,

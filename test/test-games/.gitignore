@@ -3,3 +3,7 @@
 **/*.pdf
 **/*.pickle
 round-*/
+
+# Every other pickle here is rebuilt by a regenerate. This one is the fixture: a round saved by
+# code that has since moved on, which no regenerate may repair.
+!unreadable/*.pickle

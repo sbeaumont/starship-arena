@@ -54,8 +54,9 @@
         const res = await fetch("/api/game/games");
         if (!res.ok) throw new Error(`API returned ${res.status}`);
         // A game that has been set up can be played: at round 0 there is nothing to look
-        // back on yet, but that is exactly when the first round gets planned.
-        allGames = (await res.json()).filter((g) => g.current_round > 0);
+        // back on yet, but that is exactly when the first round gets planned. No standing is
+        // the server saying it cannot read the game, which the console is where you fix.
+        allGames = (await res.json()).filter((g) => g.current_round > 0 && g.standing);
       } catch (e) {
         error = String(e);
       } finally {

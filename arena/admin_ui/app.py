@@ -35,8 +35,7 @@ COMBINED_JOURNAL_LINES = 60
 
 @app.errorhandler(UnreadableWorld)
 def unreadable_world(e: UnreadableWorld):
-    return render_template('unreadable.html', game=e.game, display=for_display(e.game),
-                           reason=str(e)), 500
+    return redirect(url_for('unreadable', game=e.game))
 
 
 # ---------------------------------------------------------------------- HELPERS
@@ -289,6 +288,13 @@ def start_game(game: str):
                         hours=[int(h) for h in request.form.getlist('hour')],
                         announce=bool(request.form.get('announce')))
     return redirect(url_for('game_overview', game_name=game))
+
+
+@app.route('/unreadable/<game>')
+def unreadable(game: str):
+    """What a game's saved rounds hold that this code no longer has."""
+    return render_template('unreadable.html', game=game, display=for_display(game),
+                           rounds=facade().stale_rounds(game))
 
 
 @app.route('/game_overview/<game_name>')

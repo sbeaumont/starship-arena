@@ -2,11 +2,26 @@
 {% block title %}{{ display }}{% endblock %}
 {% block content %}
 <h1>{{ display }}</h1>
-<p class="lede">{{ reason }}</p>
-<div class="act">
+<p class="lede">Saved rounds read against the code as it is now.</p>
+<div class="games">
+    {% for r in rounds %}
+        <div class="game">
+            <span class="dot {{ 'ready' if r.reads else 'idle' }}"></span>
+            <span class="name">Round {{ r.round_nr }}</span>
+            <span class="round">
+                {%- if r.error %}{{ r.error }}
+                {%- elif r.reads %}reads
+                {%- else %}{% for name, count in r.missing.items() %}{{ name }} &times;{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}
+                {%- endif %}
+            </span>
+        </div>
+    {% else %}
+        <div class="empty">No saved rounds.</div>
+    {% endfor %}
+</div>
+<div class="rowactions">
     <form method="POST" action="{{ url_for('regenerate', game=game) }}">
         <button class="go" type="submit">Regenerate</button>
     </form>
-    <a class="quiet" href="{{ url_for('overview') }}">Games</a>
 </div>
 {% endblock content %}

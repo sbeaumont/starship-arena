@@ -399,6 +399,28 @@ each section.
 
 ## Application services (`../arena/app`)
 
+- [ ] **An archive format that outlives the object model.** A pickle is this month's classes on
+      disk, so a game saved before `DrawType` went is unreadable now and the only cure is a
+      replay from its orders. That works while the orders are there, and an archived game whose
+      orders went with it is gone for good.
+
+      Export a whole game as text, versioned, and an old game stays playable back whatever the
+      engine does next. **`GameReplay` is already most of it**: plain values, no engine objects,
+      every tick of every object with its events, and the interface that reads it exists. What is
+      missing is a version stamp, a reader that plays a file rather than a directory, and the
+      discipline that a version once written is never reinterpreted.
+
+      Two things fall out of it. Deleting the pickles of a game nobody is playing stops losing
+      anything, which is the space back. And the replay screen becomes the way you watch a game
+      from three engine versions ago, which is worth having for its own sake.
+
+      Wants a decision record before code: what a version promises, and what happens when a
+      later engine cannot honour an older file.
+
+- [ ] **`inspect` from the shell.** `AdminService.stale_rounds` already reports, per round, what a
+      saved world names that the code no longer has. A CLI action over it answers the same
+      question when the console will not start, which is exactly when it is wanted.
+
 - [ ] **`_EngineAccess` is a shared-behaviour base wearing an access name.** It holds `_gd`,
       `list_games` and `_archive`, which is what the name promises, and then `settings`,
       `save_settings`, `all_ready`, `is_ready`, `set_ready`, `pulse`, `games_for_player` and
