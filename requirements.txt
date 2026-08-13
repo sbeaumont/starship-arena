@@ -1,0 +1,20 @@
+# What the host installs. The same lines as [project].dependencies in pyproject.toml, which is
+# where they are decided; test/docs/test_dependencies.py fails if the two drift apart.
+#
+# Two files because the host cannot read the one that matters. It runs Python 3.10, which has no
+# tomllib, and pip has no way to install a project that is not built as a package. Development
+# reads pyproject through uv and never opens this.
+#
+# Specifiers rather than pinned versions, so the host resolves for its own Python. uv.lock is
+# resolved for 3.14 and exporting it here would pin versions that 3.10 cannot install.
+#
+# Installed by arena-sync.sh, which arena-deploy.sh runs on the host after every pull.
+flask>=3.1
+jinja2>=3.1
+weasyprint>=63
+wtforms>=3.2
+fastapi>=0.115
+uvicorn[standard]>=0.34
+pydantic>=2.10
+a2wsgi>=1.10
+jsonschema

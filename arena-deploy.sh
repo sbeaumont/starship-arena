@@ -48,6 +48,12 @@ fi
 echo "Pulling on $PA_USER@ssh.pythonanywhere.com:$PA_PATH..."
 "${SSH[@]}" "$PA_USER@ssh.pythonanywhere.com" "git -C '$PA_PATH' pull"
 
+# Before the reload, or a release that needs a new package reloads into an import error. Nothing
+# already installed is touched, so this is a few seconds of nothing on most deploys.
+echo
+echo "Syncing dependencies..."
+"${SSH[@]}" "$PA_USER@ssh.pythonanywhere.com" "cd '$PA_PATH' && ./arena-sync.sh"
+
 echo
 echo "Reloading $PA_DOMAIN..."
 curl --fail-with-body -sS -X POST -H "Authorization: Token $TOKEN" "$RELOAD"

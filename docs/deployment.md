@@ -97,6 +97,29 @@ is what makes a browser fetch the new code instead of serving the old from cache
 `index.html` is served with the same 12-hour cache as everything else, so a returning player can
 keep an old page for a while after a deploy. Telling people to refresh is the current answer.
 
+## No uv on the host, so dependencies are a text file
+
+The host has a plain virtualenv at `~/.virtualenvs/starship-arena` running Python 3.10, which is
+why `requires-python` is `>=3.10` while development is on the latest. `arena-sync.sh` installs
+into whichever of the two it finds itself on:
+
+```bash
+./arena-sync.sh          # uv sync where there is uv, pip -r requirements.txt where there is not
+```
+
+`arena-deploy.sh` runs it on the host between the pull and the reload, so adding a dependency is
+one edit and a deploy. Nothing already installed is touched, and a release that needs a new
+package cannot reload into an `ImportError`.
+
+The dependency list therefore exists twice: `[project].dependencies` in `pyproject.toml`, where it
+is decided, and `requirements.txt`, which is the copy the host can read. Two files because 3.10 has
+no `tomllib` and pip cannot install a project that is not built as a package.
+`test/docs/test_dependencies.py` fails when they disagree, so the copy cannot go stale unnoticed.
+
+They hold specifiers rather than pinned versions, because each machine resolves for its own Python.
+`uv.lock` is resolved for the development interpreter, so exporting it here would pin versions the
+host cannot install.
+
 ## Per-host settings
 
 `secret.py` is gitignored, so each machine has its own. Everything here is read from the
@@ -146,11 +169,17 @@ is. [ADR 0027](adr/0027-the-server-keeps-one-timezone.md).
 ## Processing on the clock
 
 A game names the hours it processes on, and cron is what makes those hours happen. Hourly, on the
-hour:
+hour, with the reminders on the half hour so they reach people in time for it:
 
 ```
-0 * * * * /home/you/starship-arena/arena-cron.sh
+0  * * * * /home/you/starship-arena/arena-cron.sh
+30 * * * * /home/you/starship-arena/arena-cron.sh remind_due
 ```
+
+The script takes the action and defaults to `process_due`, so one copy of the virtualenv hunt
+serves both. The reminder pass keeps to one poke each per round through the game's journal rather
+than through the clock, which leaves how often you run it a decision made here and nowhere else.
+[ADR 0037](adr/0037-players-are-reminded-before-a-deadline.md).
 
 No redirect. The run logs itself to `logs/arena.log`, and what happens before logging is
 configured, a missing virtualenv or a broken import, goes to the host's own capture of the task's

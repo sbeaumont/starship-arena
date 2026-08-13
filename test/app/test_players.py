@@ -99,3 +99,46 @@ class TestPlayerRegistry(TestCase):
     def test_a_deactivated_stranger_survives_the_file(self):
         self.registry.set_active('Menno', False)
         self.assertEqual([False], [p.active for p in PlayerRegistry(self.root).all()])
+
+    def test_both_reminders_are_off_until_they_are_asked_for(self):
+        self.write('{"name": "Menno"}\n')
+        menno = self.registry.by_name('Menno')
+        self.assertEqual('', menno.discord_id)
+        self.assertEqual(0, menno.remind_hours_before)
+        self.assertFalse(menno.wants_deadline_reminder)
+        self.assertFalse(menno.wants_daily_reminder)
+
+    def test_a_deadline_reminder_survives_the_file(self):
+        self.write('{"name": "Menno", "discord_id": "4242", "remind_hours_before": 6}\n')
+        menno = PlayerRegistry(self.root).by_name('Menno')
+        self.assertTrue(menno.wants_deadline_reminder)
+        self.assertFalse(menno.wants_daily_reminder)
+        self.assertEqual('4242', menno.discord_id)
+        self.assertEqual(6, menno.remind_hours_before)
+
+    def test_a_daily_reminder_survives_the_file(self):
+        self.write('{"name": "Menno", "discord_id": "4242", "remind_daily_hour": 8,'
+                   ' "timezone": "Europe/Amsterdam"}\n')
+        menno = PlayerRegistry(self.root).by_name('Menno')
+        self.assertTrue(menno.wants_daily_reminder)
+        self.assertFalse(menno.wants_deadline_reminder)
+        self.assertEqual(8, menno.remind_daily_hour)
+
+    def test_midnight_is_an_hour_like_any_other(self):
+        """Nought is a real answer here, which is why absence is what says nobody asked."""
+        self.write('{"name": "Menno", "discord_id": "4242", "remind_daily_hour": 0,'
+                   ' "timezone": "Europe/Amsterdam"}\n')
+        self.assertTrue(PlayerRegistry(self.root).by_name('Menno').wants_daily_reminder)
+
+    def test_the_two_reminders_are_asked_for_separately(self):
+        self.write('{"name": "Menno", "discord_id": "4242", "remind_daily_hour": 8}\n')
+        # An hour with no clock under it is not an hour of anything.
+        self.assertFalse(self.registry.by_name('Menno').wants_daily_reminder)
+
+    def test_a_new_link_keeps_the_reminders(self):
+        self.write('{"name": "Menno", "discord_id": "4242", "remind_hours_before": 6,'
+                   ' "remind_daily_hour": 8, "timezone": "Europe/Amsterdam"}\n')
+        self.registry.issue('Menno')
+        menno = PlayerRegistry(self.root).by_name('Menno')
+        self.assertTrue(menno.wants_deadline_reminder)
+        self.assertTrue(menno.wants_daily_reminder)

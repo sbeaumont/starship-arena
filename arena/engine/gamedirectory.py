@@ -181,6 +181,53 @@ class GameDirectory(object):
         with open(os.path.join(self._dir, REPLAY_FILE_NAME)) as f:
             return f.read()
 
+    def copy_roster_to(self, other: 'GameDirectory') -> None:
+        """The ships file, into a museum directory beside the export: who flew what, in one
+        small file that outlives the game directory."""
+        shutil.copy(os.path.join(self._dir, INIT_FILE_NAME),
+                    os.path.join(other._dir, INIT_FILE_NAME))
+
+    def write_synopsis(self, text: str) -> None:
+        """What the director made of the game. Beside the export, never in it: ADR 0036."""
+        with open(os.path.join(self._dir, SYNOPSIS_FILE_NAME), 'w') as f:
+            f.write(text)
+
+    def read_synopsis(self) -> str:
+        path = os.path.join(self._dir, SYNOPSIS_FILE_NAME)
+        if not os.path.exists(path):
+            return ''
+        with open(path) as f:
+            return f.read()
+
+    def write_stories(self, stories: list[dict]) -> None:
+        """Every commander's account of the game, one line each, in the order they arrived."""
+        with open(os.path.join(self._dir, STORIES_FILE_NAME), 'w') as f:
+            f.writelines(json.dumps(story) + '\n' for story in stories)
+
+    def read_stories(self) -> list[dict]:
+        path = os.path.join(self._dir, STORIES_FILE_NAME)
+        if not os.path.exists(path):
+            return []
+        with open(path) as f:
+            return [json.loads(line) for line in f if line.strip()]
+
+    def write_win_story(self, story: dict) -> None:
+        """How the side that won says it was won. One per game, by whoever on it wrote it last."""
+        with open(os.path.join(self._dir, WIN_STORY_FILE_NAME), 'w') as f:
+            f.write(json.dumps(story) + '\n')
+
+    def read_win_story(self) -> dict | None:
+        path = os.path.join(self._dir, WIN_STORY_FILE_NAME)
+        if not os.path.exists(path):
+            return None
+        with open(path) as f:
+            return json.loads(f.read())
+
+    def remove_win_story(self) -> None:
+        path = os.path.join(self._dir, WIN_STORY_FILE_NAME)
+        if os.path.exists(path):
+            os.remove(path)
+
     def append_journal(self, entry: dict) -> None:
         """One line about something that happened to this game. The caller stamps the time."""
         with open(os.path.join(self._dir, JOURNAL_FILE_NAME), 'a') as f:

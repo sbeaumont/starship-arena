@@ -31,7 +31,7 @@
                 <span>
                     {{ ship.player }}
                     {%- if ship.player %}
-                        <a href="{{ game_ui_url }}/?game={{ game|urlencode }}&amp;player={{ ship.player|urlencode }}"
+                        <a href="{{ game_ui_url }}/games/{{ game|urlencode }}/{{ ship.player|urlencode }}"
                            target="_blank" rel="noopener" title="Open this player's interactive map">map</a>
                     {%- endif %}
                 </span>

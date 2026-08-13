@@ -77,12 +77,16 @@ class Announcer:
     def configured(self) -> list:
         return [c for c in self.channels if c.is_configured]
 
-    def announce(self, message: str) -> None:
+    def announce(self, message: str) -> list:
+        """The channels that took it. A caller with nothing riding on delivery can ignore that."""
+        taken = []
         for channel in self.configured:
             # The round is already processed and saved by the time this runs. A webhook that is
             # down, or a host that will not let the call out, must not turn that into a failure.
             try:
                 channel.send(message)
                 logger.info(f"Announced on {channel.name}: {message}")
+                taken.append(channel)
             except Exception as e:
                 logger.warning(f"{channel.name} took nothing: {e}")
+        return taken

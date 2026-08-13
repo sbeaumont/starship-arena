@@ -34,6 +34,12 @@ says so, and shows the server's current time beside them.
 An interface may show a reader their own time next to the server's, because that is presentation.
 The moment a converted hour could be saved, the setting stops meaning what the crontab means.
 
+One thing is kept on a player's own clock: the hour of their day they asked to be reminded at. It
+is stored unconverted, as a wall-clock time beside the name of the zone it is an hour of, and
+resolved on the day it is compared. That is the shape this ADR asks for rather than the one it
+turns down, and no game's hours are affected.
+[ADR 0037](0037-players-are-reminded-before-a-deadline.md).
+
 Daylight saving bites only where the host has it. A UTC host has none, so the repeated hour and
 the skipped one are a laptop's problem rather than the deployment's.
 

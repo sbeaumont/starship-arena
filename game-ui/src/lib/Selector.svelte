@@ -132,8 +132,8 @@
   {:else if !overview}
     <p class="msg quiet">Nothing to show for {game}.</p>
   {:else}
-    <!-- Whoever asks gets the war they were in: a commander their own side and what it saw, the
-         director every side at once. -->
+    <!-- Whoever asks gets the game as they were in it: a commander their own side and what it
+         saw, the director every side at once. -->
     <button type="button" class="replay" onclick={() => onReplay(game)}>▶ Replay tick by tick</button>
     {#each overview.factions as f, rank (f.name)}
       <div class="faction">

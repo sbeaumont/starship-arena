@@ -43,6 +43,8 @@ we already moved away from.
 | [0029](0029-announcements-leave-through-channels.md) | Announcements leave the game through channels |
 | [0030](0030-solo-games-live-in-their-own-root.md) | A solo game is a game in a root of its own |
 | [0034](0034-a-finished-game-is-exported-to-a-schema-of-its-own.md) | A finished game is exported to a schema of its own |
+| [0036](0036-a-game-in-valhalla-is-written-up.md) | A game in Valhalla is written up |
+| [0037](0037-players-are-reminded-before-a-deadline.md) | Players are reminded before a deadline |
 
 ## Template
 

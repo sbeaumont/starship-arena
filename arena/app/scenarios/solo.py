@@ -1,6 +1,6 @@
 """One commander, three pirate hulls, and the five rocks everybody flies around.
 
-A game a player starts on their own, so there is something to fly before a war is being set up.
+A game a player starts on their own, so there is something to fly before a game is being set up.
 Nobody else has to be ready, so a round runs the moment they say so.
 See docs/adr/0030-solo-games-live-in-their-own-root.md.
 """
@@ -29,13 +29,13 @@ class SoloGame:
     name = 'Solo Game'
     blurb = ("A ship or two of your own against three pirate hulls among the asteroids. Nobody "
              "else has to be ready: say you are done and the round runs. Somewhere to learn the "
-             "map, the orders and the weapons before a war starts.")
+             "map, the orders and the weapons before a game starts.")
     factions = list(SPOTS)
     max_ships = len(SPOTS[PLAYER_FACTION])
     registers = False
 
     def bodies(self) -> list[dict]:
-        """The same five rocks the war is fought over, so practice is practice for that."""
+        """The same five rocks the game is fought over, so practice is practice for that."""
         return asteroid_ring(RING_RADIUS)
 
     def deal(self, entries, rng) -> list[dict]:

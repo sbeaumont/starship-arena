@@ -125,6 +125,17 @@ one text file per game rather than a directory of pickles. The file is written i
 version of a schema kept for that purpose alone, so it still reads when the classes that played the
 game have gone. [ADR 0034](adr/0034-a-finished-game-is-exported-to-a-schema-of-its-own.md).
 
+**Synopsis.** The director's account of a game that is over, met by whoever opens its entry in
+Valhalla. One per game, optional, and written in the console.
+
+**Story.** One commander's account of a game they played, under their own name. Theirs alone to
+write and to change, and read by anybody, like everything else in Valhalla.
+[ADR 0036](adr/0036-a-game-in-valhalla-is-written-up.md).
+
+**Win story.** How the side that took a game says it was taken. One per game, and every commander
+who flew for that side shares it: any of them may write over it, and the name on it is whoever
+wrote it last.
+
 **Contact.** Something a faction has scanned but does not own, as a track of sightings. A scan
 records where something was, never its heading, so a contact's course is inferred from its last
 two sightings and single sightings have no course at all.

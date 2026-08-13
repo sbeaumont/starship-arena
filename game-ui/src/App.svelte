@@ -5,27 +5,49 @@
   import Lore from './lib/Lore.svelte'
   import Login from './lib/Login.svelte'
   import OpenGames from './lib/OpenGames.svelte'
+  import Profile from './lib/Profile.svelte'
   import Solo from './lib/Solo.svelte'
   import TopBar from './lib/TopBar.svelte'
   import Valhalla from './lib/Valhalla.svelte'
   import Replay from './lib/replay/Replay.svelte'
 
-  // The whole view lives in the URL: ?game=xke&player=Menno&round=2, or ?page=ships. That way
-  // the admin UI can link straight to a player's map, any view can be shared, and back/forward
-  // work.
+  // The whole view lives in the URL, and it lives in the path: /valhalla/xke/Two is a game and
+  // the side it is watched from, /games/xke/Menno/2 is a commander's map at a round. So a link
+  // somebody sends reads as what it opens, and the admin UI can point straight at either.
+  //
+  // Two things ride outside the path. The tick a replay is parked on is the fragment, since it
+  // is a place inside the page and the playhead rewrites it as it runs. Which map shell to use
+  // is `?ui=`, a preference rather than a view, and it rides along everywhere.
+  const PAGES = ['ships', 'lore', 'register', 'solo', 'valhalla', 'replay', 'profile']
+
   function readUrl() {
-    const q = new URLSearchParams(location.search)
-    const round = q.get('round'), tick = q.get('tick')
-    return {
-      game: q.get('game'), player: q.get('player'),
-      round: round === null ? null : Number(round),
-      // Where a replay is being watched from, as an abs tick, and whose side it is watched from.
-      tick: tick === null ? null : Number(tick),
-      faction: q.get('faction'),
-      page: q.get('page'),
-      // Which map shell to use. Left off, the browser is asked whether it has fingers.
-      ui: q.get('ui'),
+    const [head, ...rest] = location.pathname.split('/').filter(Boolean).map(decodeURIComponent)
+    const at = location.hash.slice(1)
+    const view = {
+      game: null, player: null, round: null, faction: null, page: null,
+      tick: at ? Number(at) : null,
+      ui: new URLSearchParams(location.search).get('ui'),
     }
+    if (head === 'games') {
+      view.game = rest[0] ?? null
+      view.player = rest[1] ?? null
+      view.round = rest[2] === undefined ? null : Number(rest[2])
+    } else if (PAGES.includes(head)) {
+      view.page = head
+      // The two pages that play a game back take one, and the side it is watched from.
+      view.game = rest[0] ?? null
+      view.faction = rest[1] ?? null
+    }
+    return view
+  }
+
+  function urlFor(view) {
+    const parts = view.page ? [view.page, view.game, view.faction]
+                : view.game ? ['games', view.game, view.player, view.round]
+                : []
+    const path = parts.filter((p) => p !== null && p !== undefined && p !== '')
+                      .map((p) => encodeURIComponent(p)).join('/')
+    return `/${path}${view.ui ? `?ui=${view.ui}` : ''}`
   }
 
   let route = $state(readUrl())
@@ -38,24 +60,14 @@
   const directing = $derived(!!me?.is_director && !asPlayer)
 
   function go(next) {
-    const q = new URLSearchParams()
-    if (next.page) q.set('page', next.page)
-    if (next.game) q.set('game', next.game)
-    if (next.player) q.set('player', next.player)
-    if (next.round !== null && next.round !== undefined) q.set('round', String(next.round))
-    if (next.tick !== null && next.tick !== undefined) q.set('tick', String(next.tick))
-    if (next.faction) q.set('faction', next.faction)
-    if (next.ui) q.set('ui', next.ui)
-    history.pushState({}, '', q.size ? `?${q}` : location.pathname)
+    history.pushState({}, '', urlFor(next))
     route = next
   }
 
   // A playhead moves too often to push: the tick is written into the URL you are already on, so
   // the view is still shareable and the back button still goes back where you came from.
   function goTick(tick) {
-    const q = new URLSearchParams(location.search)
-    q.set('tick', String(tick))
-    history.replaceState({}, '', `?${q}`)
+    history.replaceState({}, '', `${location.pathname}${location.search}#${tick}`)
   }
 
   // `ui` rides along everywhere, so trying the touch shell on a desktop survives navigating.
@@ -97,7 +109,8 @@
       body: JSON.stringify({ token }),
     })
     q.delete('login')
-    history.replaceState({}, '', q.size ? `?${q}` : location.pathname)
+    history.replaceState({}, '',
+                         `${location.pathname}${q.size ? `?${q}` : ''}${location.hash}`)
     route = readUrl()
     if (res.ok) return await res.json()
     notice = (await res.json()).detail ?? 'That link did not work.'
@@ -151,7 +164,7 @@
             onLeave={() => openPage('valhalla')} />
   {/key}
 {:else if me && route.page === 'replay' && route.game}
-  <!-- A game and a side rather than a player: whose war is being watched decides what the API
+  <!-- A game and a side rather than a player: whose game is being watched decides what the API
        will even send. Keyed on both, so either one is a fresh playhead. -->
   {#key `${route.game}/${route.faction}`}
     <Replay game={route.game} faction={route.faction} tick={route.tick} {directing}
@@ -176,13 +189,16 @@
       {:else if route.page === 'lore'}
         <Lore />
       {:else if route.page === 'valhalla'}
-        <Valhalla onOpen={(game) => go({ game, player: null, round: null, tick: null,
+        <Valhalla {me}
+                  onOpen={(game) => go({ game, player: null, round: null, tick: null,
                                          faction: null, page: 'valhalla', ui: route.ui })} />
       {:else if route.page === 'register' && me}
         <!-- Registering is its own page: it matters for a week and would sit on the list forever. -->
         <OpenGames />
       {:else if route.page === 'solo' && me}
         <Solo onOpen={(game) => go({ game, player: me.name, round: null, page: null, ui: route.ui })} />
+      {:else if route.page === 'profile' && me}
+        <Profile {me} onSaved={(who) => (me = who)} />
       {:else}
         <Selector {me} {directing} {skew} {nowMs}
                   onPick={(game, player) => go({ game, player, round: null, page: null, ui: route.ui })}

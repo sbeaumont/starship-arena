@@ -106,6 +106,9 @@ SETTINGS_FILE_NAME = "settings.jsonl"
 JOURNAL_FILE_NAME = "journal.jsonl"
 SCENARIO_FILE_NAME = "scenario.json"
 REPLAY_FILE_NAME = "replay.json"
+SYNOPSIS_FILE_NAME = "synopsis.txt"
+STORIES_FILE_NAME = "stories.jsonl"
+WIN_STORY_FILE_NAME = "win-story.json"
 
 # ============================================= SHIP CORE METRICS
 

@@ -2,8 +2,10 @@
 
 Svelte 5 and Vite, no SvelteKit. The player's map, planning and log.
 
-1. **The whole view lives in the URL.** `?game=&player=&round=` or `?page=`, plus `?ui=` to force
-   a map shell, written with `pushState`, so views are shareable and back works.
+1. **The whole view lives in the URL, as a path.** `/games/xke/Menno/2`, `/valhalla/xke/Two`,
+   `/ships`. The tick a replay is parked on is the fragment and `?ui=` forces a map shell; nothing
+   else rides outside the path. Written with `pushState`, so views are shareable and back works.
+   [ADR 0016](../docs/adr/0016-the-view-lives-in-the-url.md)
 2. **Ask the API, don't infer.** If the UI needs to know whether something is allowed, the API
    says so in the data it returns. No rules duplicated in the browser.
 3. **Two SVG layers.** Geometry in world coordinates, which pans and zooms; text and leader lines
@@ -62,7 +64,7 @@ Rules that bind this directory:
 
 ## The replay
 
-`lib/replay/` plays a whole game back, a tick at a time. Whose war it is decides what the API will
+`lib/replay/` plays a whole game back, a tick at a time. Whose side it is decides what the API will
 even send: a commander gets their own side and the sightings its ships took, the director gets every
 side at once. The side is in the URL and the page is keyed on it, so switching is a fresh playhead
 rather than a filter over something already downloaded.

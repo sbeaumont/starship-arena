@@ -33,12 +33,12 @@ class TestRegistrationApi(TestCase):
     def test_what_is_open(self):
         answer = self.client.get('/api/game/open')
         self.assertEqual(200, answer.status_code)
-        [war] = answer.json()
-        self.assertEqual('war', war['name'])
-        self.assertEqual('The Five Faction War', war['scenario'])
-        self.assertEqual(3, war['max_ships'])
-        self.assertEqual([], war['my_ships'])
-        self.assertEqual(0, war['players'])
+        [game] = answer.json()
+        self.assertEqual('war', game['name'])
+        self.assertEqual('The Five Faction War', game['scenario'])
+        self.assertEqual(3, game['max_ships'])
+        self.assertEqual([], game['my_ships'])
+        self.assertEqual(0, game['players'])
 
     def test_registering(self):
         answer = self.client.put('/api/game/open/war', json={'names': ['Voyager', 'Pathfinder']})

@@ -80,8 +80,8 @@ class CommanderScore:
 
 
 @dataclass
-class FinishedSide:
-    """One side of a finished game: what it earned, and who flew for it, best first.
+class ValhallaSide:
+    """One side of a game in Valhalla: what it earned, and who flew for it, best first.
 
     A side with nothing under `commanders` was flown by nobody, which a scenario's own ships are,
     and it still earned what it earned."""
@@ -91,14 +91,38 @@ class FinishedSide:
 
 
 @dataclass
-class FinishedGame(Named):
-    """A game that is over and on show, as the list of them reads before one is opened.
+class Story:
+    """One commander's account of a game they played, in their own words."""
+    player: str
+    text: str
+
+
+@dataclass
+class WinStory:
+    """How the side that took a game says it was taken. One per game, and anybody who flew for
+    that side may write it, so the name on it is whoever wrote it last."""
+    faction: str
+    player: str
+    text: str
+
+
+@dataclass
+class ValhallaGame(Named):
+    """A game in Valhalla, whole: how it ended and what has been written about it since.
 
     Read out of the file it was exported to, so it says what that file holds and not what the
     game directory does. Every side and every commander, since there is nobody left to keep
-    anything from."""
+    anything from.
+
+    The writing sits beside that file rather than in it, so exporting again keeps it: the
+    director's synopsis, the winning side's account of how it was taken, and a story from
+    whichever commanders told one.
+    See docs/adr/0036-a-game-in-valhalla-is-written-up.md."""
     rounds: int = 0
-    sides: list[FinishedSide] = field(default_factory=list)
+    sides: list[ValhallaSide] = field(default_factory=list)
+    synopsis: str = ''
+    win_story: WinStory | None = None
+    stories: list[Story] = field(default_factory=list)
 
 
 @dataclass
@@ -255,6 +279,15 @@ class ProcessingTrigger(str, Enum):
         return self.value
 
 
+class ReminderTrigger(str, Enum):
+    """Which reminder a player asked for. Separate settings, so both can reach the same person."""
+    DEADLINE = 'deadline'
+    DAILY = 'daily'
+
+    def __str__(self):
+        return self.value
+
+
 @dataclass
 class StaleRound:
     """One saved round, read against the code as it is now.
@@ -292,6 +325,21 @@ class LoginInfo:
 
 
 @dataclass
+class Reminders:
+    """When somebody asked to be told they still owe orders, and where to tell them.
+
+    Two settings asked for separately, both needing somewhere to send: a lead time on a game's
+    deadline, and an hour of their own day. Empty throughout is what everyone starts as.
+    See docs/adr/0037-players-are-reminded-before-a-deadline.md."""
+    discord_id: str = ''
+    hours_before: int = 0
+    # An hour of their own day, 0 to 23, and the IANA name of the clock it is an hour of. Whole
+    # hours because the cron pass is the resolution: minutes would be a promise nothing keeps.
+    daily_hour: int | None = None
+    timezone: str = ''
+
+
+@dataclass
 class Me:
     """Who the caller is. `games` are the games they have ships in, theirs to plan.
 
@@ -301,6 +349,7 @@ class Me:
     is_director: bool
     games: list[str]
     admin_url: str
+    reminders: Reminders = field(default_factory=Reminders)
 
 
 @dataclass
@@ -517,11 +566,7 @@ class ReplayObject:
 
 @dataclass
 class GameReplay:
-    """A game as it was played, for a playhead to scrub over.
-
-    `faction` is whose war it is. Only that side is built, and everything else is in it as the
-    sightings its ships took, so nothing it never saw is there to be read out of what was sent.
-    None is every side at once, which is more than anybody saw and is the director's alone."""
+    """A game as it was played, for a playhead to scrub over."""
     game: str
     faction: str | None
     first_tick: int

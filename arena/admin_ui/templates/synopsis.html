@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ game.display }} synopsis{% endblock %}
+
+{% block content %}
+<h1>{{ game.display }}</h1>
+<p class="lede">Your account of this game, read by anybody who opens it in Valhalla. Optional, and
+    yours to come back and change.</p>
+
+<div class="panel">
+    <form method="POST">
+        <label for="synopsis">Synopsis</label>
+        <textarea id="synopsis" name="synopsis" autofocus>{{ game.synopsis }}</textarea>
+        <p class="hint"># heading, **bold**, *italic*, - bullets, and a blank line between
+            paragraphs.</p>
+        <div class="rowactions">
+            <button class="go" type="submit">Save</button>
+            <a class="quiet" href="{{ url_for('overview', _anchor='valhalla') }}">Back</a>
+        </div>
+    </form>
+</div>
+
+{% if game.win_story or game.stories %}
+    <h2>What the commanders wrote</h2>
+    <p class="lede">Theirs to write and theirs to change.</p>
+    {% if game.win_story %}
+        <div class="panel">
+            <h3>How {{ game.win_story.faction }} took it · {{ game.win_story.player }}</h3>
+            <p class="blurb">{{ game.win_story.text }}</p>
+        </div>
+    {% endif %}
+    {% for s in game.stories %}
+        <div class="panel">
+            <h3>{{ s.player }}</h3>
+            <p class="blurb">{{ s.text }}</p>
+        </div>
+    {% endfor %}
+{% endif %}
+{% endblock content %}

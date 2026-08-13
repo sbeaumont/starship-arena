@@ -51,6 +51,7 @@
     <button type="button" class:here={page === "lore"} onclick={() => shut(() => onPage("lore"))}>Lore</button>
     <button type="button" onclick={() => shut(() => window.open("/api/game/manual", "_blank"))}>Manual</button>
     {#if me}
+      <button type="button" class:here={page === "profile"} onclick={() => shut(() => onPage("profile"))}>Profile</button>
       <button type="button" onclick={() => shut(onSignOut)}>Sign out</button>
     {:else}
       <button type="button" onclick={() => shut(onHome)}>Sign in</button>

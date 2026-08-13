@@ -9,14 +9,14 @@ ships and whatever their side scanned, and the director alone gets every side at
 that is more than anybody in the game saw.
 
 Those rules protect a game that is still being played. A game that is over has nobody left to keep
-anything from, and it has the opposite problem: nothing to show. A war fought over six weeks ends
+anything from, and it has the opposite problem: nothing to show. A game played over six weeks ends
 up as a directory of pickles that only its own players ever looked at, one side at a time.
 
 ## Decision
 
 A game that has been exported to Valhalla is public, and it is watched the way it was fought.
 
-Anybody, signed in or not, may open one and pick a side. Faction Two's war shows Two's ships as
+Anybody, signed in or not, may open one and pick a side. Faction Two's game shows Two's ships as
 they were and everything else only where Two's commanders scanned it, dashed and course-less,
 exactly as it looked to them at the time. Picking every side at once shows all of it: every ship,
 every course, nothing dashed.
@@ -30,7 +30,7 @@ check it against.
 
 ## Consequences
 
-The museum is the front door. Somebody who has never played can watch a whole war before deciding
+The museum is the front door. Somebody who has never played can watch a whole game before deciding
 whether to ask for a name, which no page could offer while every replay needed a login.
 
 A commander can finally see what the other side was doing while they were guessing, which is most
@@ -41,7 +41,7 @@ Exporting is what makes a game public, and it is a button. A game the director e
 still being played is a game whose fog is now readable by both sides from any browser. That is the
 one thing to know before pressing it: the export is a copy, and the copy has no secrets.
 
-Every side is offered, including sides with nobody left alive. A war of three where one was wiped
+Every side is offered, including sides with nobody left alive. A game of three where one was wiped
 out in round two is watchable from inside that faction, which is its own kind of story.
 
 ## Alternatives rejected

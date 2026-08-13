@@ -8,7 +8,7 @@ How far out, how many and which rock is the scenario's to say.
 from math import cos, radians, sin
 
 # The ring everybody has learned to fly. A solo game is played over the same five rocks as the
-# war is, so what a new commander practices against is what they will meet.
+# game is, so what a new commander practices against is what they will meet.
 STANDARD_BODIES = 5
 
 # How big a rock is belongs to the rock, not to the ring: it is a model constant on the body type

@@ -41,10 +41,25 @@ class Player:
     token: str = ''
     role: str = PLAYER
     active: bool = True
+    discord_id: str = ''
+    remind_hours_before: int = 0
+    # An hour of their day, 0 to 23. None is nobody asking; midnight is an hour like any other.
+    remind_daily_hour: int | None = None
+    timezone: str = ''
 
     @property
     def is_director(self) -> bool:
         return self.role == DIRECTOR
+
+    @property
+    def wants_deadline_reminder(self) -> bool:
+        """Somewhere to reach them, and how long before a game's deadline they want it."""
+        return bool(self.discord_id) and self.remind_hours_before > 0
+
+    @property
+    def wants_daily_reminder(self) -> bool:
+        """Somewhere to reach them, an hour of their day, and the clock that hour is on."""
+        return bool(self.discord_id and self.timezone) and self.remind_daily_hour is not None
 
 
 class PlayerRegistry:
@@ -68,7 +83,11 @@ class PlayerRegistry:
                     raise ValueError(f"{self.path} line {number}: {e}") from e
                 players.append(Player(name=record['name'], token=record.get('token', ''),
                                       role=record.get('role', PLAYER),
-                                      active=record.get('active', True)))
+                                      active=record.get('active', True),
+                                      discord_id=record.get('discord_id', ''),
+                                      remind_hours_before=record.get('remind_hours_before', 0),
+                                      remind_daily_hour=record.get('remind_daily_hour'),
+                                      timezone=record.get('timezone', '')))
         return players
 
     def by_token(self, token: str) -> Player | None:
@@ -84,13 +103,18 @@ class PlayerRegistry:
         return next((p for p in self.all() if p.name == name), None)
 
     def issue(self, name: str, role: str = PLAYER) -> Player:
-        """A fresh token, replacing any they had. Rotating a leaked link is the same call."""
+        """A fresh token, replacing any they had. Rotating a leaked link is the same call.
+
+        Everything else on the row survives it, so rotating a link does not cost somebody the
+        settings they chose."""
         check_name(name)
-        had = self.by_name(name)
-        players = [p for p in self.all() if p.name != name]
-        issued = Player(name=name, token=secrets.token_urlsafe(TOKEN_BYTES), role=role,
-                        active=had.active if had else True)
-        players.append(issued)
+        players = self.all()
+        issued = next((p for p in players if p.name == name), None)
+        if issued is None:
+            issued = Player(name=name)
+            players.append(issued)
+        issued.token = secrets.token_urlsafe(TOKEN_BYTES)
+        issued.role = role
         self._save(players)
         logger.info(f"Issued a login token for {name}{' (director)' if issued.is_director else ''}")
         return issued
@@ -109,6 +133,21 @@ class PlayerRegistry:
         theirs.token = ''
         self._save(players)
         logger.info(f"Took away {name}'s link")
+
+    def set_reminders(self, name: str, discord_id: str, hours_before: int,
+                      daily_hour: int | None, timezone: str) -> Player:
+        """What somebody asked to be reminded by. The rest of their row is left alone."""
+        players = self.all()
+        theirs = next((p for p in players if p.name == name), None)
+        if theirs is None:
+            raise ValueError(f"Nobody called '{name}' is registered.")
+        theirs.discord_id = discord_id
+        theirs.remind_hours_before = hours_before
+        theirs.remind_daily_hour = daily_hour
+        theirs.timezone = timezone
+        self._save(players)
+        logger.info(f"{name} set their reminders")
+        return theirs
 
     def set_active(self, name: str, active: bool) -> None:
         """Someone who has never held a link gets a row here, so any name can be put aside."""
@@ -131,6 +170,14 @@ class PlayerRegistry:
             record['role'] = p.role
         if not p.active:
             record['active'] = False
+        if p.discord_id:
+            record['discord_id'] = p.discord_id
+        if p.remind_hours_before:
+            record['remind_hours_before'] = p.remind_hours_before
+        if p.remind_daily_hour is not None:
+            record['remind_daily_hour'] = p.remind_daily_hour
+        if p.timezone:
+            record['timezone'] = p.timezone
         return record
 
     def _save(self, players: list[Player]) -> None:

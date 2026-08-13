@@ -1,4 +1,4 @@
-"""Five factions, one war. Everybody who plays is dealt into one of them."""
+"""Five factions, one game. Everybody who plays is dealt into one of them."""
 
 from arena.app.registrations import Registration
 from arena.app.scenarios.placement import distribute_factions

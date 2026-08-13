@@ -66,19 +66,23 @@
     </div>
 {% endif %}
 
-{% if finished %}
+{% if valhalla %}
     <h2 id="valhalla">Valhalla</h2>
-    <p class="lede">Over and on show, to anybody, signed in or not. Exporting again overwrites.</p>
+    <p class="lede">Over and on show, to anybody, signed in or not. Exporting again overwrites the
+        game; what has been written about it stays.</p>
     <div class="games">
-        {% for g in finished %}
+        {% for g in valhalla %}
             <div class="game">
                 <span class="dot idle"></span>
                 <span class="name">
-                    <a href="{{ play_url }}?page=valhalla&game={{ g.name }}">{{ g.display }}</a>
+                    <a href="{{ play_url }}/valhalla/{{ g.name|urlencode }}">{{ g.display }}</a>
                 </span>
                 <span class="round">{{ g.rounds }} rounds played</span>
                 <span class="sides">{% for s in g.sides %}{{ s.faction }} {{ s.score }}{{ ' · ' if not loop.last }}{% endfor %}</span>
-                <span class="act"></span>
+                <span class="act">
+                    <a class="quiet" href="{{ url_for('synopsis', game=g.name) }}">
+                        {{ 'Synopsis' if g.synopsis else 'Write a synopsis' }}</a>
+                </span>
             </div>
         {% endfor %}
     </div>

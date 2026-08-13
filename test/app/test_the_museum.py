@@ -54,14 +54,14 @@ class TestTheTwoBuildersAgree(TestCase):
             self.game.valhalla_replay('duel', 'Three')
 
     def test_the_museum_lists_what_is_in_it(self):
-        listed = self.game.list_finished_games()
+        listed = self.game.list_valhalla_games()
         self.assertEqual(['duel'], [g.name for g in listed])
         self.assertEqual(1, listed[0].rounds)
         self.assertEqual(['One', 'Two'], [s.faction for s in listed[0].sides])
 
     def test_a_side_is_what_its_commanders_earned(self):
         """Alpha killed Beta, so One is ahead of Two and Menno holds all of One's points."""
-        one, two = self.game.list_finished_games()[0].sides
+        one, two = self.game.list_valhalla_games()[0].sides
         self.assertGreater(one.score, two.score)
         self.assertEqual(['Menno'], [c.name for c in one.commanders])
         self.assertEqual(one.score, one.commanders[0].score)

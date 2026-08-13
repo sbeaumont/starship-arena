@@ -6,7 +6,7 @@
   import Transport from "./Transport.svelte";
 
   // A game played back, one tick at a time. Never anybody's tactical picture: no orders, nothing
-  // to drag. Whose war it is decides what the API sends, and a game that is over sends any of it
+  // to drag. Whose side it is decides what the API sends, and a game that is over sends any of it
   // to anybody.
   //
   // The shapes come from the map's own `markers.js` and the camera is the map's camera. The
@@ -158,14 +158,14 @@
       {#if directing || museum}
         <!-- Every side at once is more than anybody saw, so while a game is on it is the
              director's alone. Once it is over there is nobody left to keep it from. The picker
-             says whose war this is, so nothing beside it repeats that. -->
+             says whose side this is, so nothing beside it repeats that. -->
         <span class="spacer"></span>
         <select value={ph.data.faction ?? ""} onchange={(e) => onFaction(e.currentTarget.value || null)}>
           <option value="">Every side</option>
           {#each ph.sides as f (f)}<option value={f}>Faction {f}</option>{/each}
         </select>
       {:else}
-        <!-- No picker: a commander watches their own war and nothing says which one it was. -->
+        <!-- No picker: a commander watches their own side and nothing says which one it was. -->
         <span class="sub">faction {ph.data.faction}, and what it saw</span>
         <span class="spacer"></span>
       {/if}

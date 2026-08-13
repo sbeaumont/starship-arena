@@ -66,3 +66,65 @@ class TestValhallaIsOpen(unittest.TestCase):
 
     def test_a_game_that_is_not_in_there_is_not_found(self):
         self.assertEqual(404, self.client.get('/api/game/valhalla/ghost/replay').status_code)
+
+
+class TestOnlyTheCommandersWriteAWarUp(unittest.TestCase):
+    """Reading Valhalla asks nobody who they are. Writing to it does: a story is signed, so it
+    takes a login, and it is only ever the caller's own account of a game they were in."""
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        admin = AdminService(str(self.root))
+        self.service = GameService(str(self.root))
+        admin.create_game('duel', DUEL, 'generic')
+        self.service.save_commands('duel', 'Alpha', ['1: Fire L1 Beta'])
+        self.service.save_commands('duel', 'Beta', ['1: Scan'])
+        admin.process_turn('duel')
+        admin.export_to_valhalla('duel')
+        self.original, game_api.service = game_api.service, self.service
+        self.client = TestClient(app, base_url="https://testserver")
+
+    def tearDown(self):
+        game_api.service = self.original
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def login_as(self, name):
+        self.client.post('/api/game/login',
+                         json={'token': self.service.players.issue(name).token})
+
+    def tell(self, text):
+        return self.client.put('/api/game/valhalla/duel/story', json={'text': text})
+
+    def test_a_stranger_is_not_invited_to_tell_one(self):
+        self.assertEqual(401, self.tell('I was there.').status_code)
+
+    def test_a_commander_of_that_game_tells_theirs(self):
+        self.login_as('Rik')
+        answer = self.tell('I never saw it coming.')
+        self.assertEqual(200, answer.status_code)
+        self.assertEqual([['Rik', 'I never saw it coming.']],
+                         [[s['player'], s['text']] for s in answer.json()['stories']])
+
+    def test_somebody_who_flew_nothing_there_is_refused(self):
+        self.login_as('Bystander')
+        self.assertEqual(403, self.tell('I was there, honest.').status_code)
+
+    def test_the_side_that_took_it_writes_the_win_story(self):
+        """Alpha killed Beta, so One took the game and Menno flew for One."""
+        self.login_as('Menno')
+        answer = self.client.put('/api/game/valhalla/duel/win-story', json={'text': 'We shot first.'})
+        self.assertEqual(200, answer.status_code)
+        self.assertEqual(['One', 'Menno', 'We shot first.'],
+                         [answer.json()['win_story'][k] for k in ('faction', 'player', 'text')])
+
+    def test_the_side_that_lost_is_refused_it(self):
+        self.login_as('Rik')
+        answer = self.client.put('/api/game/valhalla/duel/win-story', json={'text': 'We won.'})
+        self.assertEqual(403, answer.status_code)
+
+    def test_what_is_told_is_read_by_anybody(self):
+        self.login_as('Rik')
+        self.tell('I never saw it coming.')
+        self.client.post('/api/game/logout')
+        listed = self.client.get('/api/game/valhalla').json()
+        self.assertEqual(['Rik'], [s['player'] for s in listed[0]['stories']])

@@ -23,12 +23,20 @@ def _api():
 
 
 def _dispatch(environ, start_response):
-    """Whatever the game UI has no file for: the API, or nothing at all.
+    """Whatever the game UI has no file for: the API, or the game UI itself.
 
-    Matched rather than mounted: mounting would strip the /api the routes already carry."""
-    if environ.get('PATH_INFO', '').startswith('/api/'):
+    Matched rather than mounted: mounting would strip the /api the routes already carry.
+
+    Anything else is a view rather than a file, since the whole view is in the path
+    (ADR 0016), so the app is served and reads the path itself. A path whose last segment
+    names a file is a file that is missing, and that is a 404 rather than a page."""
+    path = environ.get('PATH_INFO', '')
+    if path.startswith('/api/'):
         return _api()(environ, start_response)
-    return NotFound()(environ, start_response)
+    if '.' in path.rsplit('/', 1)[-1]:
+        return NotFound()(environ, start_response)
+    environ['PATH_INFO'] = '/index.html'
+    return _static(environ, start_response)
 
 
 # The console is mounted, and that is what makes Flask put /director in front of every URL it

@@ -20,8 +20,8 @@
         <a href="{{ url_for('overview') }}" class="{{ 'here' if request.endpoint == 'overview' }}">Games</a>
         <a href="{{ url_for('processing') }}" class="{{ 'here' if request.endpoint == 'processing' }}">Processing</a>
         <span class="sep"></span>
-        <a href="{{ game_ui_url }}/?page=ships" target="_blank" rel="noopener">Ships</a>
-        <a href="{{ game_ui_url }}/?page=lore" target="_blank" rel="noopener">Lore</a>
+        <a href="{{ game_ui_url }}/ships" target="_blank" rel="noopener">Ships</a>
+        <a href="{{ game_ui_url }}/lore" target="_blank" rel="noopener">Lore</a>
         <a href="{{ url_for('manual_pdf') }}">Manual</a>
     </nav>
     <span class="clock">Server time: {{ server_time }} {{ server_zone }}</span>

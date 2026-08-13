@@ -1,6 +1,6 @@
 <script>
-  // A game of your own, so there is something to fly before a war is being set up. Its own page
-  // rather than a row on the games list: you set it up once and then you play it.
+  // A game of your own, so there is something to fly before a shared one is being set up. Its
+  // own page rather than a row on the games list: you set it up once and then you play it.
   let { onOpen } = $props();
 
   let solo = $state(null);

@@ -8,8 +8,8 @@ Backed by the UI-agnostic GameService; returns its DTOs directly (FastAPI serial
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
-from arena.app.dto import (FinishedGame, GameSummary, OpenGame, ShipRound, PlayerPlan, GameOverview,
-                           GameReplay, ShipTypeInfo, Me, Pulse, ServerTime, SoloGame)
+from arena.app.dto import (ValhallaGame, GameSummary, OpenGame, ShipRound, PlayerPlan, GameOverview,
+                           GameReplay, ShipTypeInfo, Me, Pulse, Reminders, ServerTime, SoloGame)
 from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE, LOGIN_COOKIE_SECURE, Player
 from arena.app.services import GameService
 
@@ -39,6 +39,18 @@ class SoloShipBody(BaseModel):
 
 class SoloBody(BaseModel):
     ships: list[SoloShipBody]
+
+
+class StoryBody(BaseModel):
+    text: str
+
+
+class RemindersBody(BaseModel):
+    """Everything off is the shape of asking for nothing, which is how a setting is turned off."""
+    discord_id: str = ''
+    hours_before: int = 0
+    daily_hour: int | None = None
+    timezone: str = ''
 
 
 def logged_in(request: Request) -> Player | None:
@@ -89,6 +101,18 @@ def whoami(me: Player = Depends(require_login)) -> Me:
     return service.me(me)
 
 
+@router.put("/me/reminders")
+def save_reminders(body: RemindersBody, me: Player = Depends(require_login)) -> Me:
+    """When this player wants telling that they owe orders. Their own row, from the cookie."""
+    try:
+        return service.save_reminders(me, Reminders(discord_id=body.discord_id,
+                                                    hours_before=body.hours_before,
+                                                    daily_hour=body.daily_hour,
+                                                    timezone=body.timezone))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.post("/logout")
 def logout(response: Response) -> dict:
     response.delete_cookie(LOGIN_COOKIE)
@@ -112,9 +136,35 @@ def list_ship_types() -> list[ShipTypeInfo]:
 
 
 @router.get("/valhalla")
-def finished_games() -> list[FinishedGame]:
-    """The games that are over and on show. Open, like the replay of any of them."""
-    return service.list_finished_games()
+def valhalla_games() -> list[ValhallaGame]:
+    """The games that are over and on show, and everything written about them. Open, like the
+    replay of any of them."""
+    return service.list_valhalla_games()
+
+
+@router.put("/valhalla/{game}/story")
+def save_story(game: str, body: StoryBody, me: Player = Depends(require_login)) -> ValhallaGame:
+    """The caller's own account of a game they played. Never anybody else's: the name comes from
+    the cookie, and the game's own file says who flew there."""
+    return _write_up(game, lambda: service.save_story(game, me.name, body.text))
+
+
+@router.put("/valhalla/{game}/win-story")
+def save_win_story(game: str, body: StoryBody, me: Player = Depends(require_login)) -> ValhallaGame:
+    """The winning side's account of the game, from one of the side that took it."""
+    return _write_up(game, lambda: service.save_win_story(game, me.name, body.text))
+
+
+def _write_up(game: str, write) -> ValhallaGame:
+    """Both write-ups answer the same way: 404 for a game that is not in there, 403 for somebody
+    it is not theirs to write, and the game itself once it is written."""
+    try:
+        write()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"{game} is not in Valhalla.")
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    return service.valhalla_game(game)
 
 
 @router.get("/valhalla/{game}/replay")
@@ -210,7 +260,7 @@ def game_replay(game: str, faction: str | None = None, as_player: bool = False,
                 me: Player = Depends(require_login)) -> GameReplay:
     """Every tick the game has played, for a playhead to scrub over.
 
-    A commander gets their own side's war, whichever side they ask for of the ones they fly. Every
+    A commander gets their own side's game, whichever side they ask for of the ones they fly. Every
     side at once is more than anybody saw, so it is the director's.
 
     `as_player` is the director dropping to what one of their commanders sees, which is the same

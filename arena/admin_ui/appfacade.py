@@ -192,8 +192,11 @@ class AppFacade(object):
     def archived_games(self) -> list:
         return self.admin.list_archived_games()
 
-    def finished_games(self) -> list:
-        return self.admin.list_finished_games()
+    def valhalla_games(self) -> list:
+        return self.admin.list_valhalla_games()
+
+    def valhalla_game(self, name: str):
+        return self.admin.valhalla_game(name)
 
     def registering_games(self) -> list:
         return self.admin.list_registering_games()
@@ -235,6 +238,9 @@ class AppFacade(object):
 
     def export_to_valhalla(self, name: str) -> str:
         return self.admin.export_to_valhalla(name)
+
+    def save_synopsis(self, game: str, text: str) -> None:
+        self.admin.save_synopsis(game, text)
 
     # ---------------------------------------------------------------------- LOGINS
 

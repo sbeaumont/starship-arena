@@ -9,9 +9,10 @@ import random
 import re
 import shutil
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, time, timedelta
 from math import atan2, degrees
 from pathlib import Path
+from zoneinfo import available_timezones
 
 from arena.announce import Announcer
 from arena.cfg import (ADMIN_UI_URL, COMMANDS_DIR, INIT_FILE_NAME, MANUAL_FILENAME, PLAY_URL,
@@ -28,18 +29,19 @@ from arena.engine.objects.event import BeamEvent, ExplosionEvent, HitEvent
 from arena.engine.objects.objectinspace import Stance
 from arena.engine.replay import Replay
 from arena.app import from_valhalla, scenarios, valhalla
-from arena.app.clock import next_occurrence, server_now, zone_name
+from arena.app.clock import next_occurrence, server_now, their_hour_today, zone_name
 from arena.app.naming import SOLO_PREFIX, for_display, is_solo_game_name, solo_game_name
 from arena.app.players import DIRECTOR, LOGIN_COOKIE, PLAYER, Player, PlayerRegistry
 from arena.app.registrations import Registration, RegistrationFile
 from arena.app.dto import (
-    CommanderScore, FinishedGame, FinishedSide, FormingGame, GameSummary, OpenGame, ShipLimits,
+    CommanderScore, ValhallaGame, ValhallaSide, FormingGame, GameSummary, OpenGame, ShipLimits,
     ScanInfo, TickState, ShipRound, CommandCheck,
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
     Effect, Beam, GameReplay, ReplayObject, ObjectTick, StaleRound,
     WeaponInfo, ComponentInput,
     ShipSummary, FactionSummary, GameOverview, GameStanding, ShipTypeInfo, Me, LoginInfo,
-    GameSettings, Pulse, GamePulse, JournalEntry, By, ProcessingTrigger, ServerTime, SoloGame,
+    GameSettings, Pulse, GamePulse, JournalEntry, By, ProcessingTrigger, ReminderTrigger,
+    Reminders, ServerTime, SoloGame, Story, WinStory,
 )
 
 logger = logging.getLogger('starship-arena.services')
@@ -98,23 +100,31 @@ class _EngineAccess:
         """Every player's own game. Not shown beside the shared ones anywhere."""
         return self._summaries(GamesIn.Solo)
 
-    def list_finished_games(self) -> list[FinishedGame]:
+    def list_valhalla_games(self) -> list[ValhallaGame]:
         """Everything in Valhalla, read out of the files themselves. Nothing else is left of one.
 
-        A summary of a playable game loads its worlds to count what it is waiting for. A finished
-        game is waiting for nothing, and its pickles may be gone, so this reads the export."""
-        return sorted((self._finished(gd.game_name)
+        A summary of a playable game loads its worlds to count what it is waiting for. A game in
+        Valhalla is waiting for nothing, and its pickles may be gone, so this reads the export."""
+        return sorted((self.valhalla_game(gd.game_name)
                        for gd in self.dirs.directories_in(GamesIn.Valhalla)),
                       key=lambda g: g.name)
 
-    def _finished(self, game: str) -> FinishedGame:
+    def valhalla_game(self, game: str) -> ValhallaGame:
+        """One game out of Valhalla, whole, the way `game_overview` is the whole of a playable
+        one. Everything else asks this rather than opening the files again for one field."""
         document = self.read_valhalla(game)
-        return FinishedGame(name=document['game'],
+        gd = self.dirs.directory_in(GamesIn.Valhalla, game)
+        sides = self._sides_of(document)
+        won = gd.read_win_story()
+        return ValhallaGame(name=document['game'],
                             rounds=Tick.from_abs(document['last_tick']).round,
-                            sides=self._sides_of(document))
+                            sides=sides,
+                            synopsis=gd.read_synopsis(),
+                            win_story=WinStory(faction=sides[0].faction, **won) if won else None,
+                            stories=[Story(**s) for s in gd.read_stories()])
 
     @staticmethod
-    def _sides_of(document: dict) -> list[FinishedSide]:
+    def _sides_of(document: dict) -> list[ValhallaSide]:
         """The final standing, best first. What each side earned, and each commander in it.
 
         A tick says what its object earned on it, so the total is the sum, and a ship is credited
@@ -129,7 +139,7 @@ class _EngineAccess:
             if o['player']:
                 crews[o['faction']][o['player']] += total
         return sorted(
-            (FinishedSide(faction=faction, score=score,
+            (ValhallaSide(faction=faction, score=score,
                           commanders=sorted(
                               (CommanderScore(name=who, score=theirs)
                                for who, theirs in crews[faction].items()),
@@ -148,7 +158,7 @@ class _EngineAccess:
         so nothing later can be set up that a museum link would then point at."""
         return {g.name for g in (self.list_games() + self.list_archived_games()
                                  + self.list_registering_games() + self.list_solo_games()
-                                 + self.list_finished_games())}
+                                 + self.list_valhalla_games())}
 
     def scenario_of(self, game: str) -> str:
         return json.loads((self.dirs.registering / game / SCENARIO_FILE_NAME).read_text())['scenario']
@@ -217,7 +227,23 @@ class _EngineAccess:
         return self._standing_of(self._gd(game))
 
     @staticmethod
-    def _standing_of(gd: GameDirectory) -> GameStanding | None:
+    def _fleets_in(game: Game) -> dict[str, list[str]]:
+        """The ships each player commands. A fleet is what a person answers for, not one hull."""
+        fleets: dict[str, list[str]] = {}
+        for ship in game.player_ships:
+            fleets.setdefault(ship.player, []).append(ship.name)
+        return fleets
+
+    @classmethod
+    def _players_owing_orders(cls, gd: GameDirectory) -> list[str]:
+        """Who still has a ship without a command file for the round being planned."""
+        game = Game(gd)
+        orders = game.command_file_status
+        return sorted(player for player, ships in cls._fleets_in(game).items()
+                      if not all(orders[ship] for ship in ships))
+
+    @classmethod
+    def _standing_of(cls, gd: GameDirectory) -> GameStanding | None:
         """Who is owed what for the round being planned, or None while there is no round yet.
 
         Whether it can run is the engine's own verdict rather than something counted here, so
@@ -226,9 +252,7 @@ class _EngineAccess:
             return None
         game = Game(gd)
         orders = game.command_file_status
-        fleets: dict[str, list[str]] = {}
-        for ship in game.player_ships:
-            fleets.setdefault(ship.player, []).append(ship.name)
+        fleets = cls._fleets_in(game)
         return GameStanding(
             round_nr=game.current_round_nr,
             all_in=game.current_round_ready,
@@ -391,7 +415,29 @@ class GameService(_EngineAccess):
     def me(self, player: Player) -> Me:
         return Me(name=player.name, is_director=player.is_director,
                   games=self.games_for_player(player.name),
-                  admin_url=ADMIN_UI_URL if player.is_director else '')
+                  admin_url=ADMIN_UI_URL if player.is_director else '',
+                  reminders=Reminders(discord_id=player.discord_id,
+                                      hours_before=player.remind_hours_before,
+                                      daily_hour=player.remind_daily_hour,
+                                      timezone=player.timezone))
+
+    def save_reminders(self, player: Player, asked: Reminders) -> Me:
+        """When this person wants telling that they owe orders. Their own row and nobody else's.
+
+        The hour is stored as they gave it, beside the name of the zone it is an hour of, so
+        daylight saving moves it with their morning rather than away from it."""
+        if asked.hours_before < 0:
+            raise ValueError("A lead time is a number of hours before a deadline.")
+        if asked.timezone and asked.timezone not in available_timezones():
+            raise ValueError(f"'{asked.timezone}' is not a timezone this host knows.")
+        if asked.daily_hour is not None:
+            if not 0 <= asked.daily_hour <= 23:
+                raise ValueError(f"Hours run from 0 to 23: {asked.daily_hour}")
+            if not asked.timezone:
+                raise ValueError("An hour of the day needs the zone it is an hour of.")
+        return self.me(self.players.set_reminders(player.name, asked.discord_id.strip(),
+                                                  asked.hours_before, asked.daily_hour,
+                                                  asked.timezone))
 
     def ship_owner(self, game: str, ship: str) -> str | None:
         return self._roster(game).get(ship)
@@ -629,14 +675,7 @@ class GameService(_EngineAccess):
         return sorted(self._factions_of(self._gd(game).load_current_world(), player))
 
     def game_replay(self, game: str, faction: str = None) -> GameReplay:
-        """Every tick the game has played, per object: where it was and what happened to it.
-
-        One side's war when a faction is named: its own objects as they were, and everything else
-        only where its ships saw it, so what it never saw is not built and cannot be read out of
-        what was sent. Without one this is every side at once.
-
-        One pass over the ticks, because which world knows about a tick is the replay's business
-        and not this one's."""
+        """Every tick the game has played, per object: where it was and what happened to it."""
         replay = Replay(self._gd(game))
         objects: dict[str, ReplayObject] = {}
         beams: dict[tuple, Beam] = {}
@@ -674,11 +713,37 @@ class GameService(_EngineAccess):
 
     def valhalla_replay(self, game: str, faction: str = None) -> GameReplay:
         """The same picture for a game that is over, read out of its own file.
-
-        Whose war it is narrows it exactly as above, and here anybody may ask for any side: a
-        finished game has nobody left to keep anything from.
         See docs/gddr/0035-a-finished-game-is-watched-from-any-side.md."""
         return from_valhalla.replay(self.read_valhalla(game), faction)
+
+    def save_story(self, game: str, player: str, text: str) -> None:
+        """One commander's account of a game they played, replacing whatever they had said before.
+
+        Theirs alone, and only of a game they were in: the commanders of a game in Valhalla are
+        the ones its own file says flew there. Empty text takes a story down again."""
+        if player not in {c.name for side in self.valhalla_game(game).sides
+                          for c in side.commanders}:
+            raise ValueError(f"{player} flew nothing in {for_display(game)}.")
+        gd = self.dirs.directory_in(GamesIn.Valhalla, game)
+        stories = [s for s in gd.read_stories() if s['player'] != player]
+        if text.strip():
+            stories.append({'player': player, 'text': text.strip()})
+        gd.write_stories(stories)
+
+    def save_win_story(self, game: str, player: str, text: str) -> None:
+        """How the side that took the game says it was taken.
+
+        One per game, and the whole winning side shares it: any of them may write over what
+        another wrote, and the name on it is whoever wrote it last. Empty text takes it down."""
+        won = self.valhalla_game(game).sides[0]
+        if player not in {c.name for c in won.commanders}:
+            raise ValueError(f"{for_display(game)} was taken by {won.faction}, "
+                             f"and {player} did not fly for them.")
+        gd = self.dirs.directory_in(GamesIn.Valhalla, game)
+        if text.strip():
+            gd.write_win_story({'player': player, 'text': text.strip()})
+        else:
+            gd.remove_win_story()
 
     @staticmethod
     def _beams_in(snapshot, tick: Tick, into: dict) -> None:
@@ -866,6 +931,79 @@ class AdminService(_EngineAccess):
                                      by=By.CRON, trigger=ProcessingTrigger.DEADLINE, error=str(e))
         return run
 
+    def remind_due(self) -> list[str]:
+        """Poke the players who still owe orders and asked to be poked.
+
+        Run by cron on a schedule of its own, so a run at half past reaches people in time for the
+        hour a game processes on. What stops a second run repeating itself is the journal rather
+        than the clock, which leaves how often this runs a crontab decision alone."""
+        now = server_now()
+        done = []
+        for game in self.list_games():
+            try:
+                done += self._remind_in_game(game, now)
+            except Exception as e:
+                # One unreadable game must not stop the rest of the run.
+                done.append(f"{game.name}: FAILED, {e}")
+        return done
+
+    def _remind_in_game(self, game: GameSummary, now: datetime) -> list[str]:
+        """Remind whoever still owes orders here, each by the reminder they asked for.
+
+        The two are independent settings, so a run can fire both, and for the same person."""
+        if not (game.standing and game.next_processing) or game.standing.all_in:
+            return []
+        if not self.settings(game.name).announce:
+            return []
+        # Back into the host's own zone, which is the one that can say it is called CEST. Parsed
+        # out of the summary, the offset is all a tzinfo has to spell itself with.
+        due = datetime.fromisoformat(game.next_processing).astimezone()
+        owing = set(self._players_owing_orders(self._gd(game.name)))
+        theirs = sorted((p for p in self.players.all() if p.name in owing), key=lambda p: p.name)
+        return (self._remind(game, ReminderTrigger.DEADLINE, due,
+                             lambda raw: raw['round'] == game.current_round,
+                             [p for p in theirs if p.wants_deadline_reminder
+                              and due - now <= timedelta(hours=p.remind_hours_before)])
+                + self._remind(game, ReminderTrigger.DAILY, due,
+                               lambda raw: datetime.fromisoformat(raw['at']).date() == now.date(),
+                               [p for p in theirs if p.wants_daily_reminder
+                                and now >= their_hour_today(p.remind_daily_hour, p.timezone,
+                                                            now)]))
+
+    def _remind(self, game: GameSummary, trigger: ReminderTrigger, due: datetime,
+                still_counts, candidates: list[Player]) -> list[str]:
+        """Say it once to each of these, dropping whoever this trigger has already reached.
+
+        One line back for a message sent, so a log says which of the two went out."""
+        already = self._already_reminded(game.name, trigger, still_counts)
+        poke = [p for p in candidates if p.name not in already]
+        if not poke:
+            return []
+        names = ', '.join(p.name for p in poke)
+        taken = self.announcer.announce(
+            f"**{for_display(game.name)}** - round {game.current_round} closes at "
+            f"{due:%H:%M %Z}, and is still waiting on "
+            f"{', '.join(f'<@{p.discord_id}>' for p in poke)}: {PLAY_URL}")
+        if not taken:
+            # Nothing was said, so nothing is recorded and the next pass tries again. Marking
+            # somebody reminded by a message that never left costs them the round's reminder.
+            return [f"{game.name}: {trigger} reminder to {names} went nowhere"]
+        self._append_journal(game.name, 'reminded', round=game.current_round,
+                             trigger=trigger, players=names)
+        return [f"{game.name}: {trigger} reminder to {names}"]
+
+    def _already_reminded(self, game: str, trigger: ReminderTrigger, still_counts) -> set[str]:
+        """Who this game has already poked this way, for as long as that poke still counts.
+
+        Named rather than counted: one person wanting a day's warning and another an hour's are
+        two pokes for the same round, and the first must not silence the second."""
+        reminded = set()
+        for raw in self._gd(game).read_journal():
+            if (raw.get('event') == 'reminded' and raw.get('trigger') == trigger
+                    and still_counts(raw)):
+                reminded.update(name.strip() for name in raw['players'].split(','))
+        return reminded
+
     def _deadline_already_fired(self, game: str, now: datetime) -> bool:
         """Whether this game's deadline has already run this hour. Nothing else is asked."""
         for raw in reversed(self._gd(game).read_journal()):
@@ -904,9 +1042,18 @@ class AdminService(_EngineAccess):
         See docs/adr/0034-a-finished-game-is-exported-to-a-schema-of-its-own.md."""
         into = self.dirs.valhalla / name
         into.mkdir(parents=True, exist_ok=True)
+        museum = self.dirs.directory_in(GamesIn.Valhalla, name)
         text = valhalla.export(Replay(self._gd(name)), name)
-        self.dirs.directory_in(GamesIn.Valhalla, name).write_replay(text)
+        museum.write_replay(text)
+        self._gd(name).copy_roster_to(museum)
         return str(into)
+
+    def save_synopsis(self, game: str, text: str) -> None:
+        """The director's account of a game, which is what its entry in Valhalla is introduced by.
+
+        Beside the export rather than in it, so exporting the game again keeps it.
+        See docs/adr/0036-a-game-in-valhalla-is-written-up.md."""
+        self.dirs.directory_in(GamesIn.Valhalla, game).write_synopsis(text)
 
     # ---------------------------------------------------------------------- LOGINS
 

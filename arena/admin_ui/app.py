@@ -89,7 +89,7 @@ def overview():
     return render_template('index.html',
                            games=facade().game_lines(),
                            archived=facade().archived_games(),
-                           finished=facade().finished_games())
+                           valhalla=facade().valhalla_games())
 
 
 @app.route('/processing')
@@ -121,6 +121,15 @@ def to_valhalla(game: str):
     """Put a copy of a game on show. It carries on being whatever it was."""
     facade().export_to_valhalla(game)
     return redirect(url_for('overview', _anchor='valhalla'))
+
+
+@app.route('/valhalla/<game>/synopsis', methods=['GET', 'POST'])
+def synopsis(game: str):
+    """What the director makes of a game that is over, and what a reader meets it by."""
+    if request.method == 'POST':
+        facade().save_synopsis(game, request.form.get('synopsis', ''))
+        return redirect(url_for('overview', _anchor='valhalla'))
+    return render_template('synopsis.html', game=facade().valhalla_game(game))
 
 
 @app.route('/archive/<game>', methods=['POST'])

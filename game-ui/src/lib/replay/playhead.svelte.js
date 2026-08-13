@@ -10,9 +10,9 @@ export const tickOf = (abs) => abs - roundOf(abs) * N;
 
 // One hue per faction, taken in the order the payload lists them, so nothing here names a faction.
 // The side being watched takes the amber the map draws your own ships in and the next one takes
-// the red it draws theirs, so a two-sided war reads here the way it does on the map. None of them
+// the red it draws theirs, so a two-sided game reads here the way it does on the map. None of them
 // is the orange of a blast or the light a beam is drawn in: a faction is not something that
-// happened. Order is worth as much as the hues, since a war of three uses only the first three.
+// happened. Order is worth as much as the hues, since a game of three uses only the first three.
 const SIDES = ["#ffb454", "#ff4d5e", "#57d8ff", "#57d98a", "#ff5fd0"];
 const NOBODY = "#7b86a4";
 

@@ -55,7 +55,7 @@
   <section class="open">
     {#if !games.length}
       <p class="none">No game is taking registrations right now. The director opens one when the
-        next war is being set up.</p>
+        next game is being set up.</p>
     {/if}
     {#each games as g (g.name)}
       <div class="card">

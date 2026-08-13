@@ -68,7 +68,7 @@ map and one is a word in a panel, so the day either wants tuning, it moves witho
 other with it.
 
 The replay has no friend and no foe, so it rings factions in payload order and the side being
-watched comes first: amber, then red, then cyan, green, magenta. The first two mean a war of two
+watched comes first: amber, then red, then cyan, green, magenta. The first two mean a game of two
 sides reads there the way it reads on the map. None of the five is the blast orange or the beam's
 light, because a faction is not something that happened.
 

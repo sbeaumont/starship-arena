@@ -5,7 +5,7 @@
 ## Context
 
 Somebody who registers a name today gets an empty list and a sentence saying the director will
-add them to a game. They wait days for a war to be set up, and when it starts they are learning
+add them to a game. They wait days for a game to be set up, and when it starts they are learning
 the map, the orders and the weapons against people who already know all three.
 
 Everything needed to fly a round already exists. The map plans it, `process_on_all_ready`
@@ -26,7 +26,7 @@ One per player, named `Solo_<player>`, so the name says whose it is and there ca
 Starting another throws away the one they had.
 
 `arena/app/scenarios/solo.py` builds it: the one or two hulls the player picked, three pirate
-hulls drawn from the registry, and the standard five asteroids that the war is fought over. Its
+hulls drawn from the registry, and the standard five asteroids that the game is fought over. Its
 settings are `process_on_all_ready` with no hours and no announcement, so saying ready runs the
 round and nobody else hears about it.
 

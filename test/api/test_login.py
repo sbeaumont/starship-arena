@@ -59,7 +59,9 @@ class TestLogin(TestCase):
         r = self.client.post('/api/game/register', json={'name': 'Newcomer'})
         self.assertEqual(200, r.status_code)
         # No admin_url: the console is not theirs, so they are not told where it is.
-        self.assertEqual({'name': 'Newcomer', 'is_director': False, 'games': [], 'admin_url': ''},
+        self.assertEqual({'name': 'Newcomer', 'is_director': False, 'games': [], 'admin_url': '',
+                          'reminders': {'discord_id': '', 'hours_before': 0,
+                                        'daily_hour': None, 'timezone': ''}},
                          r.json())
         self.assertEqual('Newcomer', self.client.get('/api/game/me').json()['name'])
 

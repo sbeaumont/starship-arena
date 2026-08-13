@@ -30,6 +30,27 @@ for theirs by itself. No shared game may take a name starting with `Solo`, so wh
 directory is in is never in doubt.
 [ADR 0030](adr/0030-solo-games-live-in-their-own-root.md).
 
+A fifth, `valhalla/`, holds the games that are over and on show. Nothing moved into it: the export
+copies a game out as text that still reads when the classes that played it have gone, and the game
+carries on being whatever it was.
+
+```
+<data root>/
+    valhalla/<game name>/
+        replay.json          the record: the whole game, in a numbered version of a schema kept
+                             for this alone
+        ships.jsonl          the roster it started from, copied in with the export
+        synopsis.txt         the record: what the director made of it
+        win-story.json       the record: how the side that took it says it was taken
+        stories.jsonl        the record: one commander's account per line
+```
+
+`replay.json` is written whole and overwritten by the next export, which is how a game already in
+there picks up a schema that has grown since. The write-ups are not in it, so that overwriting
+leaves them alone.
+[ADR 0034](adr/0034-a-finished-game-is-exported-to-a-schema-of-its-own.md),
+[ADR 0036](adr/0036-a-game-in-valhalla-is-written-up.md).
+
 ## Plan, state, and record
 
 Almost every file here is a plan or state, and which one decides everything about how it is
@@ -45,9 +66,11 @@ graveyard, and what has arrived. Nobody writes it by hand. It is a pickle, it is
 every round, and it can always be rebuilt by replaying the plans, because [the game is
 deterministic](architecture.md#processing-a-round). So it is gitignored and disposable.
 
-**A record is what the server did.** `journal.jsonl` is the only one: which rounds were processed,
-when, and what set each of them going. Nothing replays from it, so losing it loses no game, and
-nothing can rebuild it, because a replay has no idea what time anything happened at.
+**A record is what happened, written down for people rather than for the engine.** `journal.jsonl`
+is which rounds were processed, when, and what set each of them going. The write-ups in Valhalla
+are what the people who were there made of a game. Nothing replays from either, so losing one loses
+no game, and nothing can rebuild them: a replay has no idea what time anything happened at, and
+none whatever of what a commander thought of it.
 
 The test that decides which one a new file is: **could the engine produce it again from what is
 left after you delete it?** If yes it is state. If no, ask whether anything reads it back to
@@ -154,11 +177,21 @@ What the server did to this game. One object per line, appended and never rewrit
 ```jsonl
 {"at": "2026-08-08T15:14:22+02:00", "event": "processed", "round": 5, "by": "cron", "trigger": "deadline", "no_orders_from": "Cronny, Dewey"}
 {"at": "2026-08-08T15:14:33+02:00", "event": "regenerated", "round": 6, "by": "director"}
+{"at": "2026-08-09T14:30:04+02:00", "event": "reminded", "round": 7, "trigger": "daily", "players": "Dewey"}
 ```
 
-`at` is in server time, with the offset written out. `event` is `processed`, `failed` or
-`regenerated`. `by` says who and `trigger` says what, which are different questions: cron is a who,
-a deadline is a what.
+`at` is in server time, with the offset written out. `event` is `processed`, `failed`,
+`regenerated` or `reminded`. `by` says who and `trigger` says what, which are different questions:
+cron is a who, a deadline is a what.
+
+Two passes read this back to decide something: a deadline asks whether it has already run this
+hour, and a reminder asks who it has already reached. A `deadline` reminder counts for the round it
+names, a `daily` one for the day it was written, which is why the entry says which it was. Neither
+rebuilds any part of a game, so losing the file costs a repeat and no more.
+[ADR 0037](adr/0037-players-are-reminded-before-a-deadline.md).
+
+A reminder that no channel took is not written here at all, so the next pass tries those people
+again rather than counting them as reached.
 
 Everything after those is the entry's own to name. A screen prints the pairs it finds, so a new
 detail needs no template edit. [ADR 0026](adr/0026-a-game-keeps-a-journal.md).
@@ -231,12 +264,13 @@ Gitignored, because the tokens are secrets.
 ```jsonl
 {"name": "Dennis", "token": "3R5iNHN5ROLvLG3VpoMocQ"}
 {"name": "Menno", "active": false}
-{"name": "Serge", "token": "Br-A2Ly1XYYF65yHFo2cQA", "role": "director"}
+{"name": "Serge", "token": "Br-A2Ly1XYYF65yHFo2cQA", "role": "director", "discord_id": "31337", "remind_daily_hour": 8, "timezone": "Europe/Amsterdam"}
 ```
 
 Only `name` is required. `token` absent means no link has been issued, `role` defaults to
-`player`, `active` defaults to true. Writing only what differs from the default keeps a line
-readable, and it is what lets somebody exist here with no token at all.
+`player`, `active` defaults to true, and both reminders default to off. Writing only what differs
+from the default keeps a line readable, and it is what lets somebody exist here with no token at
+all.
 
 That last part is why this is JSON rather than columns. A tokenless row cannot be written in
 positional whitespace: the empty field collapses into the gap and the role is read as the token.
@@ -246,6 +280,17 @@ aside.
 `active: false` is someone deactivated: they keep their name, old games still name them, and
 nobody else can claim it, but no token of theirs resolves to anyone and the scenario screens do
 not offer them.
+
+`discord_id` is where a reminder reaches them, and the other three say when. `remind_hours_before`
+is a lead time on a game's deadline. `remind_daily_hour` with `timezone` is an hour of their own
+day, 0 to 23, the zone written by name so daylight saving moves that hour with their morning. Whole
+hours like `process_hours`, since the pass that sends these runs on the hour. The two are asked for
+separately and both can be on. Each needs everything it takes: an hour with no zone under it, or
+either without an id, is nobody being reminded. Rotating a login link leaves all four alone.
+[ADR 0037](adr/0037-players-are-reminded-before-a-deadline.md).
+
+`remind_daily_hour` is the one field whose absence means something its zero does not: midnight is
+an hour somebody can choose, so the key is left out rather than written as `0` when nobody has.
 
 Three things you can do to a row, and they are separate on purpose. **Removing the link** clears
 `token` and keeps the person. **Deactivating** sets `active` and keeps everything. **Removing**

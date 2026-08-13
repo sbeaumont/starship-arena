@@ -33,11 +33,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("action",
                         choices=['setup', 'generate', 'regenerate', 'manual', 'link', 'players',
-                                 'process_due', 'announce', 'export'],
+                                 'process_due', 'remind_due', 'announce', 'export'],
                         help="Set a game up, generate its unprocessed rounds, replay games from "
                              "their orders, build the manual, issue a login link, list who can log "
-                             "in, process the games due this hour, send a test announcement, or "
-                             "export a game to the museum")
+                             "in, process the games due this hour, remind whoever still owes "
+                             "orders, send a test announcement, or export a game to the museum")
     parser.add_argument("gamedir", nargs='?',
                         help="The name of the game you want to process.")
     parser.add_argument("-n", "--name", help="Who to issue a login link for.")
@@ -120,6 +120,15 @@ def process_due():
         logger.info(f"Nothing due at {server_now():%H:00 %Z}")
 
 
+def remind_due():
+    """Poke whoever still owes orders and asked to be poked. Run by cron, on its own schedule."""
+    done = AdminService().remind_due()
+    for line in done:
+        logger.info(line)
+    if not done:
+        logger.info(f"Nobody to remind at {server_now():%H:%M %Z}")
+
+
 def announce_test():
     """Say something harmless on every channel. This is how a host proves it can reach them."""
     announcer = Announcer()
@@ -130,6 +139,16 @@ def announce_test():
     print(f"Sent to: {', '.join(c.name for c in announcer.configured)}")
 
 
+def _reminders_of(p) -> str:
+    """What this person asked to be reminded by. Somewhere to reach them counts as something."""
+    if not p.discord_id:
+        return ''
+    asked = ([f"{p.remind_hours_before}h ahead"] if p.wants_deadline_reminder else []) \
+        + ([f"daily at {p.remind_daily_hour:02d}:00 {p.timezone}"]
+           if p.wants_daily_reminder else [])
+    return f"   reminded {', '.join(asked)}" if asked else '   reachable, no reminder set'
+
+
 def list_players():
     players = PlayerRegistry(GAMES_ROOT.root).all()
     if not players:
@@ -137,7 +156,8 @@ def list_players():
         print("  python arena/cli/main.py link --name <you> --director")
         return
     for p in players:
-        print(f"  {p.name:20} {p.role}{'' if p.active else '   deactivated'}")
+        print(f"  {p.name:20} {p.role}{'' if p.active else '   deactivated'}"
+              f"{_reminders_of(p)}")
 
 
 def main():
@@ -152,6 +172,8 @@ def main():
         list_players()
     elif args.action == 'process_due':
         process_due()
+    elif args.action == 'remind_due':
+        remind_due()
     elif args.action == 'regenerate':
         logger.info("Regenerating...")
         if regenerate(args.gamedir):
