@@ -23,15 +23,19 @@
 
   $effect(() => { ph.load(); });
 
-  // Framed once, over everywhere the game went, which is what you want to see first.
+  // What a frame is drawn around: whatever owns itself, which is the ships and the starbases.
+  // Ordnance belongs to whoever fired it and flies far enough to show the fighting as a speck.
+  const framing = (objects) => objects.filter((o) => o.owner === o.name);
+
+  // Framed once, over everywhere the ships went, which is what you want to see first.
   let framed = $state(false);
   $effect(() => {
     if (framed || !ph.data || !camera.boxW || !camera.boxH) return;
-    camera.fitTo(ph.data.objects.flatMap((o) => o.path.map((r) => w2v(r.x, r.y))));
+    camera.fitTo(framing(ph.data.objects).flatMap((o) => o.path.map((r) => w2v(r.x, r.y))));
     framed = true;
   });
 
-  const fit = () => camera.fitTo(ph.shown.map((o) => w2v(o.now.x, o.now.y)));
+  const fit = () => camera.fitTo(framing(ph.shown).map((o) => w2v(o.now.x, o.now.y)));
 
   $effect(() => {
     if (!ph.playing) return;
