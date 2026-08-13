@@ -29,8 +29,8 @@ def tokens() -> dict:
 def styled() -> list:
     """Every stylesheet the UI has, and the style block of every component.
 
-    A `.svelte` file is cut down to its `<style>` because the faction ramp and the blast colours
-    live in script, where a CSS variable cannot reach and a literal is the only spelling."""
+    A `.svelte` file is cut down to its `<style>` because the faction ramp lives in script, where a
+    CSS variable cannot reach and a literal is the only spelling."""
     out = []
     for path in walk(frozenset({'.css', '.svelte'})):
         if 'game-ui' not in path.parts or path == TOKENS:

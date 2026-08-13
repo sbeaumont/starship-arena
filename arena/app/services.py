@@ -8,6 +8,7 @@ import logging
 import random
 import re
 import shutil
+from collections import defaultdict
 from datetime import datetime
 from math import atan2, degrees
 from pathlib import Path
@@ -32,8 +33,8 @@ from arena.app.naming import SOLO_PREFIX, for_display, is_solo_game_name, solo_g
 from arena.app.players import DIRECTOR, LOGIN_COOKIE, PLAYER, Player, PlayerRegistry
 from arena.app.registrations import Registration, RegistrationFile
 from arena.app.dto import (
-    FinishedGame, FormingGame, GameSummary, OpenGame, ShipLimits, ScanInfo, TickState, ShipRound,
-    CommandCheck,
+    CommanderScore, FinishedGame, FinishedSide, FormingGame, GameSummary, OpenGame, ShipLimits,
+    ScanInfo, TickState, ShipRound, CommandCheck,
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
     Effect, Beam, GameReplay, ReplayObject, ObjectTick, StaleRound,
     WeaponInfo, ComponentInput,
@@ -108,11 +109,33 @@ class _EngineAccess:
 
     def _finished(self, game: str) -> FinishedGame:
         document = self.read_valhalla(game)
-        return FinishedGame(
-            name=document['game'],
-            rounds=Tick.from_abs(document['last_tick']).round,
-            factions=sorted({o['faction'] for o in document['objects'] if o['faction']}),
-            players=sorted({o['player'] for o in document['objects'] if o['player']}))
+        return FinishedGame(name=document['game'],
+                            rounds=Tick.from_abs(document['last_tick']).round,
+                            sides=self._sides_of(document))
+
+    @staticmethod
+    def _sides_of(document: dict) -> list[FinishedSide]:
+        """The final standing, best first. What each side earned, and each commander in it.
+
+        A tick says what its object earned on it, so the total is the sum, and a ship is credited
+        with what its ordnance did: an event scores to whoever owns the thing that struck."""
+        earned: dict[str, int] = defaultdict(int)
+        crews: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        for o in document['objects']:
+            if not o['faction']:
+                continue                    # terrain is on nobody's side and earns nothing
+            total = sum(t['score'] for t in o['ticks'])
+            earned[o['faction']] += total
+            if o['player']:
+                crews[o['faction']][o['player']] += total
+        return sorted(
+            (FinishedSide(faction=faction, score=score,
+                          commanders=sorted(
+                              (CommanderScore(name=who, score=theirs)
+                               for who, theirs in crews[faction].items()),
+                              key=lambda c: (-c.score, c.name)))
+             for faction, score in earned.items()),
+            key=lambda side: (-side.score, side.faction))
 
     def read_valhalla(self, game: str) -> dict:
         """A finished game's own file, in the shape the version it says it is promises."""
@@ -553,8 +576,9 @@ class GameService(_EngineAccess):
                         if isinstance(e, ExplosionEvent):
                             at, radius = e.shape.centre, e.shape.radius
                             key = (t.tick, at.x, at.y, radius)
-                            blasts.setdefault(key, Explosion(tick=t.tick, x=at.x, y=at.y,
-                                                             radius=radius, damage_type=str(e._type)))
+                            blasts.setdefault(key, Explosion(tick=t.tick, abs_tick=t.abs_tick,
+                                                             x=at.x, y=at.y, radius=radius,
+                                                             damage_type=str(e._type)))
 
         # Beams the faction was an end of, which is the two it is: a laser goes to whoever fired
         # it and whoever it hit, and to nobody else. The line is the event's own shape, so both
@@ -616,6 +640,7 @@ class GameService(_EngineAccess):
         replay = Replay(self._gd(game))
         objects: dict[str, ReplayObject] = {}
         beams: dict[tuple, Beam] = {}
+        blasts: dict[tuple, Explosion] = {}
         for tick in replay.ticks:
             in_space = replay.objects_at(tick)
             mine = {name: ois for name, ois in in_space.items()
@@ -629,6 +654,7 @@ class GameService(_EngineAccess):
                     TickEvent(tick=tick.tick, abs_tick=tick.abs_tick, text=str(e), kind=e.kind)
                     for e in snapshot.non_scan_events)
                 self._beams_in(snapshot, tick, beams)
+                self._blasts_in(snapshot, tick, blasts)
             if faction is None:
                 continue
             # What the side saw of everything else, off the ships whose scans a faction shares.
@@ -643,7 +669,8 @@ class GameService(_EngineAccess):
                                                     y=scan.pos.y, heading=None, speed=None))
         return GameReplay(game=game, faction=faction,
                           first_tick=replay.first.abs_tick, last_tick=replay.last.abs_tick,
-                          objects=list(objects.values()), beams=list(beams.values()))
+                          objects=list(objects.values()), beams=list(beams.values()),
+                          explosions=list(blasts.values()))
 
     def valhalla_replay(self, game: str, faction: str = None) -> GameReplay:
         """The same picture for a game that is over, read out of its own file.
@@ -667,6 +694,21 @@ class GameService(_EngineAccess):
                 (tick.abs_tick, a.x, a.y, b.x, b.y),
                 Beam(tick=tick.tick, abs_tick=tick.abs_tick, x1=a.x, y1=a.y,
                      x2=b.x, y2=b.y, damage_type=str(e._type)))
+
+    @staticmethod
+    def _blasts_in(snapshot, tick: Tick, into: dict) -> None:
+        """Blasts this snapshot holds, keyed so every witness's copy is one.
+
+        The engine hands an explosion to everything close enough to scan it, so a blast turns up
+        in as many histories as saw it, and the circle it covered is what they all agree on."""
+        for e in snapshot.non_scan_events:
+            if not isinstance(e, ExplosionEvent):
+                continue
+            at, radius = e.shape.centre, e.shape.radius
+            into.setdefault(
+                (tick.abs_tick, at.x, at.y, radius),
+                Explosion(tick=tick.tick, abs_tick=tick.abs_tick, x=at.x, y=at.y,
+                          radius=radius, damage_type=str(e._type)))
 
     def _recorded(self, objects: dict, ois, contact: bool) -> ReplayObject:
         """The row this object is building up in a replay, opened the first time it turns up."""

@@ -57,8 +57,14 @@ class TestTheTwoBuildersAgree(TestCase):
         listed = self.game.list_finished_games()
         self.assertEqual(['duel'], [g.name for g in listed])
         self.assertEqual(1, listed[0].rounds)
-        self.assertEqual(['One', 'Two'], listed[0].factions)
-        self.assertEqual(['Menno', 'Rik'], listed[0].players)
+        self.assertEqual(['One', 'Two'], [s.faction for s in listed[0].sides])
+
+    def test_a_side_is_what_its_commanders_earned(self):
+        """Alpha killed Beta, so One is ahead of Two and Menno holds all of One's points."""
+        one, two = self.game.list_finished_games()[0].sides
+        self.assertGreater(one.score, two.score)
+        self.assertEqual(['Menno'], [c.name for c in one.commanders])
+        self.assertEqual(one.score, one.commanders[0].score)
 
     def test_a_finished_game_keeps_its_name(self):
         self.admin.archive_game('duel')
@@ -106,6 +112,12 @@ class TestAFileWrittenEarlierStillPlays(TestCase):
                 self.assertEqual((0, -20, 0, 20), (beam.x1, beam.y1, beam.x2, beam.y2))
                 self.assertEqual((1, 11), (beam.tick, beam.abs_tick))
                 self.assertEqual('Laser', beam.damage_type)
+
+    def test_a_blast_is_the_circle_it_covered(self):
+        blast = from_valhalla.replay(self.doc).explosions[0]
+        self.assertEqual((0, 20, 30), (blast.x, blast.y, blast.radius))
+        self.assertEqual((1, 11), (blast.tick, blast.abs_tick))
+        self.assertEqual('Explosion', blast.damage_type)
 
     def test_a_version_nothing_here_builds_is_refused(self):
         with self.assertRaises(KeyError):

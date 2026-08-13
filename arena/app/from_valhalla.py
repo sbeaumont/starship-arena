@@ -12,7 +12,7 @@ See docs/adr/0034-a-finished-game-is-exported-to-a-schema-of-its-own.md.
 from collections import defaultdict
 
 from arena.engine.history import Tick
-from arena.app.dto import Beam, GameReplay, ObjectTick, ReplayObject, TickEvent
+from arena.app.dto import Beam, Explosion, GameReplay, ObjectTick, ReplayObject, TickEvent
 from arena.app.valhalla import v1
 
 
@@ -29,6 +29,7 @@ def _v1(document: dict, faction: str | None) -> GameReplay:
 
     objects: dict[str, ReplayObject] = dict()
     beams: dict[tuple, Beam] = dict()
+    blasts: dict[tuple, Explosion] = dict()
     at_tick = _at(document)
     for at in _ticks(document):
         in_space = [(name, row) for name, row in at_tick[at.abs_tick] if name in mine]
@@ -39,7 +40,7 @@ def _v1(document: dict, faction: str | None) -> GameReplay:
             objects[name].events.extend(
                 TickEvent(tick=at.tick, abs_tick=at.abs_tick, text=e['text'], kind=e['kind'])
                 for e in row['events'])
-            _beams_in(row, at, beams)
+            _shapes_in(row, at, beams, blasts)
         if faction is None:
             continue
         # What the side saw of everything else, off the ships whose scans a faction shares.
@@ -54,7 +55,8 @@ def _v1(document: dict, faction: str | None) -> GameReplay:
                                                 heading=None, speed=None))
     return GameReplay(game=document['game'], faction=faction,
                       first_tick=document['first_tick'], last_tick=document['last_tick'],
-                      objects=list(objects.values()), beams=list(beams.values()))
+                      objects=list(objects.values()), beams=list(beams.values()),
+                      explosions=list(blasts.values()))
 
 
 def _ticks(document: dict) -> list[Tick]:
@@ -85,19 +87,25 @@ def _recorded(objects: dict, o: dict, contact: bool) -> ReplayObject:
     return objects[o['name']]
 
 
-def _beams_in(row: dict, at: Tick, into: dict) -> None:
-    """Blows that ran along a line, keyed so the shooter's copy and the target's are one.
+def _shapes_in(row: dict, at: Tick, beams: dict, blasts: dict) -> None:
+    """What the tick's blows covered, keyed so every copy of one collapses into it.
 
     A shape is what an event manifested as, under its own name and its own measurements, so this
-    asks whether one is a line rather than what sort of event was carrying it."""
+    asks what one is rather than what sort of event was carrying it."""
     for e in row['events']:
-        line = e['shape'].get('line')
+        line, circle = e['shape'].get('line'), e['shape'].get('circle')
         if line:
-            into.setdefault(
+            beams.setdefault(
                 (at.abs_tick, line['x1'], line['y1'], line['x2'], line['y2']),
                 Beam(tick=at.tick, abs_tick=at.abs_tick,
                      x1=line['x1'], y1=line['y1'], x2=line['x2'], y2=line['y2'],
                      damage_type=e['damage_type']))
+        if circle:
+            blasts.setdefault(
+                (at.abs_tick, circle['x'], circle['y'], circle['radius']),
+                Explosion(tick=at.tick, abs_tick=at.abs_tick,
+                          x=circle['x'], y=circle['y'], radius=circle['radius'],
+                          damage_type=e['damage_type']))
 
 
 _BUILDERS = {v1.VERSION: _v1}

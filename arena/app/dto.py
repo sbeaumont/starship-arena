@@ -72,6 +72,25 @@ class FormingGame(Named):
 
 
 @dataclass
+class CommanderScore:
+    """What one commander earned in a game that is over. Their ships added up, since a fleet is
+    what a person flies."""
+    name: str
+    score: int
+
+
+@dataclass
+class FinishedSide:
+    """One side of a finished game: what it earned, and who flew for it, best first.
+
+    A side with nothing under `commanders` was flown by nobody, which a scenario's own ships are,
+    and it still earned what it earned."""
+    faction: str
+    score: int
+    commanders: list[CommanderScore]
+
+
+@dataclass
 class FinishedGame(Named):
     """A game that is over and on show, as the list of them reads before one is opened.
 
@@ -79,8 +98,7 @@ class FinishedGame(Named):
     game directory does. Every side and every commander, since there is nobody left to keep
     anything from."""
     rounds: int = 0
-    factions: list[str] = field(default_factory=list)
-    players: list[str] = field(default_factory=list)
+    sides: list[FinishedSide] = field(default_factory=list)
 
 
 @dataclass
@@ -411,9 +429,13 @@ class ShipPlan:
 
 @dataclass
 class Explosion:
-    """An explosion one of the faction's ships witnessed. The radius is a real world
-    distance, set by the warhead of the ordnance that went off."""
+    """A blow that arrived as a circle, where a beam arrives as a line. The radius is a real world
+    distance, set by the warhead of the ordnance that went off.
+
+    Both numbers for the one moment, as `Beam` and `TickEvent` carry them: `tick` reads as the
+    round shows it, `abs_tick` orders across rounds."""
     tick: int
+    abs_tick: int
     x: float
     y: float
     radius: float
@@ -506,6 +528,7 @@ class GameReplay:
     last_tick: int
     objects: list[ReplayObject]
     beams: list[Beam]
+    explosions: list[Explosion]
 
 
 @dataclass

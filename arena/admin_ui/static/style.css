@@ -121,9 +121,7 @@ p { font-family: var(--sans); line-height: 1.6; color: var(--ink); }
 .game .name a::after { content: ""; position: absolute; inset: 0; border-radius: 8px; }
 .game .act { position: relative; }
 .game .name a:hover { color: var(--cyan); }
-.game .round { color: var(--ink-dim); font-size: 12px; }
-/* Lines under the name: who is still owed, and who has not said they are done. */
-.game .waiting-for { grid-column: 2 / -1; margin-top: -6px; }
+.game .round, .game .sides { color: var(--ink-dim); font-size: 12px; }
 
 .game .act { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
 .game .act form { display: inline; }
@@ -156,7 +154,6 @@ button.danger:hover { border-color: var(--warn); color: var(--warn); background:
 .orders .bar i { display: block; height: 100%; background: var(--green); }
 .orders .bar.ready i { background: var(--cyan); }
 
-.waiting-for { color: var(--ink-faint); font-size: 11px; font-style: normal; }
 
 /* ---------------------------------------------------------------- CONTROLS */
 
@@ -438,3 +435,60 @@ nav.tabs button.here { color: var(--amber); border-bottom-color: var(--amber); }
 }
 .ship_attribute label { margin: 0 0 4px; }
 .attribute_value { color: var(--hull); font-size: 15px; }
+
+/* ---------------------------------------------------------------- ON A SMALL SCREEN */
+/* The console is a desk tool, and the games list is the one page you open standing up: is the
+   round in, and can it run. The width where the desk layout stops fitting is around 820px, so
+   the switch is here rather than at a phone's width - a phone held sideways is 844.
+   The wide tables keep their columns and scroll inside their own box. */
+
+@media (max-width: 900px) {
+    .topbar {
+        position: static;      /* wrapped, it is three lines tall, which is no place to pin it */
+        height: auto;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        padding: 10px 14px;
+    }
+    .topbar nav { flex-wrap: wrap; gap: 6px 14px; }
+    .topbar nav .sep { display: none; }
+    .topbar .clock { margin-left: 0; }
+
+    .main { padding: 18px 14px 48px; }
+    #footer { padding: 0 14px 24px; }
+
+    /* A card: the dot, the name and the round on one line, everything else stacked under them.
+       Every cell is placed, because a game row and a Valhalla row hold different things and
+       auto-placement would drop one of them into whatever cell was free. */
+    .game { grid-template-columns: 10px 1fr auto; gap: 10px 12px; padding: 12px 14px; }
+    .game > * { grid-column: 2 / -1; min-width: 0; }
+    .game .dot { grid-column: 1; grid-row: 1; }
+    .game .name { grid-column: 2; grid-row: 1; }
+    /* No nowrap: the unreadable-game page puts a list of missing classes in this cell, and it
+       would push the row off the side rather than wrap. */
+    .game .round { grid-column: 3; grid-row: 1; text-align: right; max-width: 45%; }
+    .game > span:empty { display: none; }
+    .game .act { justify-content: flex-start; flex-wrap: wrap; gap: 6px; }
+    .orders .count { min-width: 0; }
+
+    /* A table keeps its columns and scrolls in its own box, so the page never scrolls sideways.
+       Fixed widths rather than fractions: a fraction cannot outgrow the box, so the columns
+       would squeeze into each other instead of running off the side where they can be reached. */
+    .grid { overflow-x: auto; }
+    .ships     { grid-template-columns: 120px 70px 110px 90px 90px; }
+    .graveyard { grid-template-columns: 120px 70px 110px; }
+    .logins    { grid-template-columns: 30px 110px 110px 300px 190px; }
+    .forming   { grid-template-columns: 140px 120px 70px 70px 100px; }
+
+    /* The ship table is rows in a column, so the column scrolls and a row sets the width. */
+    .shiptable { overflow-x: auto; }
+    .shiprow { min-width: 640px; }
+    .spawnrow.three, .spawnrow.four { grid-template-columns: 1fr; }
+
+    .runlog { overflow-x: auto; }
+
+    /* Twelve hours across is wider than a phone. Six and six is the same question, twice as tall. */
+    .hours { grid-template-columns: repeat(6, 1fr); }
+
+    .bulkbar, .rowactions { flex-wrap: wrap; }
+}

@@ -1,10 +1,11 @@
 <script>
-  // The controls under a replay: where you are, how you get somewhere else, and how much trail
-  // is drawn. Every target is a fingertip wide, since this is one implementation for both.
+  // The controls under a replay: where you are, and how you get somewhere else. Every target is a
+  // fingertip wide, since this is one implementation for both.
+  //
+  // Nothing else. This bar is the one thing always on a phone's screen, so how much trail is
+  // drawn and how fast it runs sit in the log panel with the other question about how a tick is
+  // shown, rather than taking a row here that a thumb never presses twice.
   let { ph } = $props();
-
-  const TAILS = [1, 3, 10];
-  const SPEEDS = [1, 3, 6];
 </script>
 
 <div class="transport">
@@ -30,20 +31,6 @@
   <input class="scrub" type="range" min={ph.first} max={ph.last} value={ph.at}
          aria-label="Which tick"
          oninput={(e) => { ph.playing = false; ph.goTo(Number(e.currentTarget.value)); }} />
-
-  <label>
-    tail
-    <select value={ph.tail} onchange={(e) => (ph.tail = Number(e.currentTarget.value))}>
-      {#each TAILS as t (t)}<option value={t}>{t === 10 ? "a round" : `${t} tick${t === 1 ? "" : "s"}`}</option>{/each}
-    </select>
-  </label>
-
-  <label>
-    speed
-    <select value={ph.perSecond} onchange={(e) => (ph.perSecond = Number(e.currentTarget.value))}>
-      {#each SPEEDS as s (s)}<option value={s}>{s}/s</option>{/each}
-    </select>
-  </label>
 </div>
 
 <style>
@@ -70,9 +57,14 @@
      enough of it to drag. */
   .scrub { flex: 1 1 220px; min-width: 160px; accent-color: var(--amber); height: 40px; }
 
-  label { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-dim); }
-  select {
-    font: inherit; font-size: 12px; color: var(--ink); background: #0d1320;
-    border: 1px solid var(--edge); border-radius: 3px; padding: 6px 4px; min-height: 36px;
+  /* Two rows on a phone, and no more: the keys across the top, the scrub under them. Anything
+     that wrapped a third time would be a third of the screen the map is not getting. */
+  @media (max-width: 760px) {
+    .transport { gap: 8px 10px; padding: 8px 10px max(8px, env(safe-area-inset-bottom)); }
+    .keys { flex: 1 1 100%; justify-content: space-between; gap: 0; }
+    button { min-width: 42px; }
+    .scrub { flex: 1 1 100%; }
+    /* The drawer's handle sits directly above and says the same thing, where there is room for it. */
+    .where { display: none; }
   }
 </style>

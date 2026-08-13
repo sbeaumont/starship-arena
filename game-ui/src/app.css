@@ -16,6 +16,9 @@
      you. A mark picks its question before it picks a colour. */
   --foe:      #ff4d5e;   /* whoever you are fighting, and nothing else is this red */
   --hit:      #ff9d4a;   /* a wreck, a breach, a blow landing: the blast band */
+  --nanocyte: #7ef0a0;   /* the same band, for harm that eats a hull instead of opening it */
+  --emp:      #8fb4ff;   /* the same band, for harm that takes the lights out */
+  --kill:     #ffdcae;   /* the heart of a burst: the same band, at the moment it went */
   --beam:     #fff2cc;   /* a shot, planned or fired. Energy reads as light, not as a side */
   --laid:     #57d98a;   /* a course of yours already laid in, against the one under your hand */
   --ok:       #57d98a;   /* the interface saying yes, and what --warn answers to */

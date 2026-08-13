@@ -5,7 +5,7 @@ Verbatim, in the order and under the headings it was written in.
 Game UI (`../game-ui`)
 ======================
 
-- [x] **A solo game, so a new player has something to fly.** They pick one or two hulls, and get
+- [x] **A solo gamle, so a new player has something to fly.** They pick one or two hulls, and get
       the standard five asteroids, three drifting pirate hulls and a game that processes the
       moment they say they are ready. One per player, in `solo-games/` beside the other three
       roots, named `Solo_<player>`.

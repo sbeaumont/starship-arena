@@ -51,7 +51,16 @@
   let everyMessage = $state(false);
   const lines = $derived(everyMessage ? ph.log : ph.log.filter((e) => e.kind !== "internal"));
 
-  const WRECK = 20;   // world units, like a blast radius
+  // Narrow, the log is a drawer rather than a band under the map: it would take a third of a
+  // phone whether or not anything happened on the tick. Wide, it is always beside the picture and
+  // this does nothing.
+  let logOpen = $state(false);
+
+  // The map's KILL_RADIUS, so the moment something was killed reads the same size in both.
+  const KILL_RADIUS = 20;
+
+  const TAILS = [1, 3, 10];
+  const SPEEDS = [1, 3, 6];
 
   const trailOf = (o) =>
     o.trail.map((r) => { const v = w2v(r.x, r.y); return `${v.vx},${v.vy}`; }).join(" ");
@@ -146,21 +155,27 @@
     <button type="button" class="back" onclick={onLeave} title="Back to the games">←</button>
     <h1>{game}</h1>
     {#if ph.data}
-      <span class="sub">
-        {#if ph.data.faction}faction {ph.data.faction}, and what it saw{:else}every side{/if}
-      </span>
-      <span class="spacer"></span>
       {#if directing || museum}
         <!-- Every side at once is more than anybody saw, so while a game is on it is the
-             director's alone. Once it is over there is nobody left to keep it from. -->
+             director's alone. Once it is over there is nobody left to keep it from. The picker
+             says whose war this is, so nothing beside it repeats that. -->
+        <span class="spacer"></span>
         <select value={ph.data.faction ?? ""} onchange={(e) => onFaction(e.currentTarget.value || null)}>
           <option value="">Every side</option>
           {#each ph.sides as f (f)}<option value={f}>Faction {f}</option>{/each}
         </select>
+      {:else}
+        <!-- No picker: a commander watches their own war and nothing says which one it was. -->
+        <span class="sub">faction {ph.data.faction}, and what it saw</span>
+        <span class="spacer"></span>
       {/if}
-      {#each ph.sides as f (f)}
-        <span class="side"><i style="background: {ph.hue[f]}"></i>{f}</span>
-      {/each}
+      <!-- Whole, on a line of its own: a legend that wraps puts two of the sides under the
+           other three and reads as two different things. -->
+      <span class="legend">
+        {#each ph.sides as f (f)}
+          <span class="side"><i style="background: {ph.hue[f]}"></i>{f}</span>
+        {/each}
+      </span>
     {/if}
   </header>
 
@@ -194,6 +209,14 @@
           <circle class="body-mark" cx={v.vx} cy={v.vy} r={o.radius} stroke-width={upp} />
         {/each}
 
+        <!-- Real distances, so a blast covers the ground it actually took in. Under everything,
+             since what it caught is drawn on top of it. -->
+        {#each ph.explosions as b (`${b.x},${b.y}:${b.radius}`)}
+          {@const v = w2v(b.x, b.y)}
+          <circle class="blast {b.damage_type.toLowerCase()}" cx={v.vx} cy={v.vy} r={b.radius}
+                  stroke-width={upp} />
+        {/each}
+
         <!-- Under the markers, so a beam runs to the ship rather than over it. -->
         {#each ph.beams as b (`${b.x1},${b.y1}:${b.x2},${b.y2}`)}
           {@const from = w2v(b.x1, b.y1)}
@@ -212,8 +235,9 @@
           <polygon class="mark" class:named={NAMED.has(o.category_name)} class:seen={o.contact}
                    fill={ph.colourOf(o)}
                    points={markerFor(o.category_name, v.vx, v.vy, courseOf(o), upp)} />
-          {#if o.gone}
-            <path class="wreck" d={burst(v.vx, v.vy, WRECK)} stroke-width={1.4 * upp} />
+          {#if o.killed}
+            <path class="kill" d={burst(v.vx, v.vy, KILL_RADIUS)} stroke-width={1.4 * upp} />
+            <circle class="kill-core" cx={v.vx} cy={v.vy} r={KILL_RADIUS * 0.18} />
           {/if}
         {/each}
       </svg>
@@ -240,8 +264,22 @@
       </div>
     </div>
 
-    <aside class="log">
+    <aside class="log" class:open={logOpen}>
       <h2>Round {ph.round} · tick {ph.tick}</h2>
+      <div class="shown">
+        <label>
+          tail
+          <select value={ph.tail} onchange={(e) => (ph.tail = Number(e.currentTarget.value))}>
+            {#each TAILS as t (t)}<option value={t}>{t === 10 ? "a round" : `${t} tick${t === 1 ? "" : "s"}`}</option>{/each}
+          </select>
+        </label>
+        <label>
+          speed
+          <select value={ph.perSecond} onchange={(e) => (ph.perSecond = Number(e.currentTarget.value))}>
+            {#each SPEEDS as s (s)}<option value={s}>{s}/s</option>{/each}
+          </select>
+        </label>
+      </div>
       <label><input type="checkbox" bind:checked={everyMessage} /> every message</label>
       {#if !lines.length}
         <p class="quiet">Nothing on this tick{everyMessage ? "" : " worth reading"}.</p>
@@ -254,6 +292,13 @@
       {/if}
     </aside>
   </div>
+
+  <!-- The one line that is always on a phone's screen, so it carries where the playhead is: the
+       transport under it is buttons and a scrub, and nothing to read. -->
+  <button type="button" class="handle" aria-expanded={logOpen} onclick={() => (logOpen = !logOpen)}>
+    <span>round <b>{ph.round}</b> · tick <b>{ph.tick}</b></span>
+    <span class="chev">{lines.length || "nothing"} {logOpen ? "▼" : "▲"}</span>
+  </button>
 
   <Transport {ph} />
 </div>
@@ -270,6 +315,9 @@
               text-transform: uppercase; color: var(--hull); }
   .sub { font-size: 12px; color: var(--ink-dim); }
   .spacer { flex: 1; }
+  /* Under the picker it belongs to, rather than under the game's name. */
+  .legend { flex-basis: 100%; display: flex; flex-wrap: wrap; justify-content: flex-end;
+            gap: 4px 14px; }
   .side { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink-dim); }
   .side i { width: 9px; height: 9px; border-radius: 50%; }
   header select {
@@ -308,9 +356,15 @@
   .mark.seen { opacity: 0.5; }
   .trail.seen { opacity: 0.3; }
   .label.seen { opacity: 0.6; }
-  .wreck { stroke: var(--hit); fill: none; stroke-linecap: round; opacity: 0.9; }
+  .kill { stroke: var(--hit); fill: none; stroke-linecap: round; opacity: 0.9; }
+  .kill-core { fill: var(--kill); }
   /* One tick's worth, so it reads as a flash rather than a line on the map. */
   .beam { stroke: var(--beam); opacity: 0.95; stroke-linecap: round; }
+  /* A blast's colour answers what kind of harm it carried, and nothing else. A type this has
+     never heard of is drawn as an ordinary explosion rather than not drawn at all. */
+  .blast { fill: var(--hit); fill-opacity: 0.13; stroke: #04070d; }
+  .blast.nanocyte { fill: var(--nanocyte); }
+  .blast.emp { fill: var(--emp); }
   .label { font-family: var(--mono); dominant-baseline: middle; opacity: 0.9; }
   .bar { stroke: var(--ink-faint); stroke-width: 1; }
   .bar-label { font-family: var(--mono); fill: var(--ink-faint); }
@@ -331,6 +385,15 @@
   label { display: flex; align-items: center; gap: 6px; margin-bottom: 10px;
           font-size: 11px; color: var(--ink-dim); }
   input[type="checkbox"] { accent-color: var(--amber); }
+
+  /* How the tick is drawn rather than what it says, so it sits with the message filter and not
+     in the transport, which stays the size of the buttons a thumb actually presses. */
+  .shown { display: flex; gap: 12px; margin-bottom: 10px; }
+  .shown label { margin: 0; }
+  select {
+    font: inherit; font-size: 12px; color: var(--ink); background: #0d1320;
+    border: 1px solid var(--edge); border-radius: 3px; padding: 6px 4px; min-height: 36px;
+  }
   ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
   li { font-size: 11.5px; line-height: 1.45; color: var(--ink-dim); }
   li.hit { color: var(--hit); }
@@ -338,10 +401,25 @@
   li.replenish { color: var(--ok); }
   .who { color: var(--cyan); margin-right: 6px; }
 
-  /* Narrow enough that the log cannot sit beside the picture: it goes under it, shallow, so the
-     map keeps most of the screen. */
+  /* Beside the picture there is always room for the log, so there is nothing to pull. */
+  .handle { display: none; }
+
+  /* Narrow enough that the log cannot sit beside the picture. Under it, a band deep enough to
+     read is a third of the screen that the transport then has to share, so it becomes a drawer
+     and the map keeps everything it is not using. */
   @media (max-width: 760px) {
     .body { flex-direction: column; }
-    .log { width: auto; max-height: 32%; border-left: none; border-top: 1px solid var(--edge); }
+    .log { display: none; width: auto; max-height: 45%;
+           border-left: none; border-top: 1px solid var(--edge); }
+    .log.open { display: block; }
+
+    .handle {
+      display: flex; align-items: center; justify-content: space-between; width: 100%;
+      padding: 0 16px; min-height: 38px;
+      font-family: var(--mono); font-size: 11.5px; color: var(--ink-dim);
+      background: var(--panel); border: none; border-top: 1px solid var(--edge);
+    }
+    .handle b { color: var(--amber); font-weight: 400; }
+    .handle .chev { color: var(--cyan); }
   }
 </style>

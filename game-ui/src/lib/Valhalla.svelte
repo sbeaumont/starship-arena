@@ -46,8 +46,17 @@
                 <span class="nm">{g.display}</span>
                 <span class="rnd">{g.rounds} rounds</span>
               </span>
-              <span class="meta">{g.factions.length} sides · {g.factions.join(", ")}</span>
-              <span class="meta who">{g.players.join(", ")}</span>
+              <!-- The final standing, best side first. A side with nobody under it was flown by
+                   the scenario, and it still earned what it earned. -->
+              {#each g.sides as s (s.faction)}
+                <span class="side">
+                  <span class="fname">{s.faction}</span>
+                  <span class="fscore">{s.score}</span>
+                  <span class="crew">
+                    {s.commanders.map((c) => `${c.name} (${c.score})`).join(", ")}
+                  </span>
+                </span>
+              {/each}
             </button>
           </li>
         {/each}
@@ -75,11 +84,16 @@
   }
   .pick:hover { border-color: var(--cyan); color: var(--cyan); }
   .pick:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
-  .head { display: flex; align-items: baseline; gap: 10px; }
+  .head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
   .head .nm { flex: 1; min-width: 0; }
   .rnd { font-size: 11px; color: var(--ink-dim); white-space: nowrap; }
-  .meta { font-size: 11px; color: var(--ink-dim); margin-top: 2px; }
-  .who { color: var(--ink-faint); }
+
+  /* One row per side, the scores in their own column so they read down the list. */
+  .side { display: flex; align-items: baseline; gap: 8px; font-size: 11px; }
+  .fname { min-width: 74px; color: var(--hull); }
+  .fscore { min-width: 44px; text-align: right; color: var(--amber);
+            font-variant-numeric: tabular-nums; }
+  .crew { flex: 1; min-width: 0; color: var(--ink-dim); }
 
   .msg { font-size: 13px; color: var(--ink); line-height: 1.6; }
   .msg.err { color: var(--warn); }

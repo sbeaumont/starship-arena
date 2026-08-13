@@ -24,12 +24,13 @@
   const CHAR_W = LABEL_PX * 0.6;
   const LINE_H = LABEL_PX + 3;
 
-  const BLAST = { Explosion: "#ff9d4a", Nanocyte: "#7ef0a0", EMP: "#8fb4ff" };
   // Screen px, for the controls rather than for distances: the radius the firing arc is drawn at,
   // and the handle length for the shot being planned.
   const FIRE_LEN = 36;
   const EDIT_LEN = 54;
-  const WRECK_RADIUS = 20;   // world units, like a blast
+  // World units, like a blast. The mark is the moment something was killed, not the wreck it
+  // leaves: a wreck sits in space afterwards and is nothing this draws.
+  const KILL_RADIUS = 20;
 
   // The API's symbols for the machine itself, as against one of its defence components. Breaching
   // a defence layer lets the blow through; breaching the hull is the end of the ship.
@@ -583,16 +584,16 @@
       {#if layers.explosions}
         {#each plan.explosions as e (`${e.tick}:${e.x}:${e.y}:${e.radius}`)}
           {@const v = w2v(e.x, e.y)}
-          <circle class="blast" cx={v.vx} cy={v.vy} r={e.radius}
-                  fill={BLAST[e.damage_type] ?? BLAST.Explosion} stroke-width={upp} />
+          <circle class="blast {e.damage_type.toLowerCase()}" cx={v.vx} cy={v.vy} r={e.radius}
+                  stroke-width={upp} />
         {/each}
       {/if}
 
       {#each plan.ships.filter((s) => !s.alive && s.track.length) as s (s.name)}
         {@const last = s.track[s.track.length - 1]}
         {@const v = w2v(last.x, last.y)}
-        <path class="wreck" d={burst(v.vx, v.vy, WRECK_RADIUS)} stroke-width={1.4 * upp} />
-        <circle class="wreck-core" cx={v.vx} cy={v.vy} r={WRECK_RADIUS * 0.18} />
+        <path class="kill" d={burst(v.vx, v.vy, KILL_RADIUS)} stroke-width={1.4 * upp} />
+        <circle class="kill-core" cx={v.vx} cy={v.vy} r={KILL_RADIUS * 0.18} />
       {/each}
 
       <!-- What your own blows did: the gap each one crossed, then what it did where it landed. -->
@@ -606,8 +607,8 @@
         {#each plan.effects as f (`${f.tick}:${f.target}:${f.part}:${f.outcome}`)}
           {@const v = w2v(f.x, f.y)}
           {#if f.outcome === "Breached" && f.part === HULL}
-            <path class="wreck" d={burst(v.vx, v.vy, WRECK_RADIUS)} stroke-width={1.4 * upp} />
-            <circle class="wreck-core" cx={v.vx} cy={v.vy} r={WRECK_RADIUS * 0.18} />
+            <path class="kill" d={burst(v.vx, v.vy, KILL_RADIUS)} stroke-width={1.4 * upp} />
+            <circle class="kill-core" cx={v.vx} cy={v.vy} r={KILL_RADIUS * 0.18} />
           {:else if f.outcome === "Breached"}
             <path class="breach" d={arcAcross(v.vx, v.vy, f.bearing, 90, 15 * upp)}
                   stroke-width={2.6 * upp} />
@@ -857,11 +858,15 @@
   .grid { stroke: #16203a; }
   .grid.axis { stroke: #26375e; }
   .origin { fill: none; stroke: #3d5384; }
-  .blast { fill-opacity: 0.13; stroke: #04070d; }
+  /* A blast's colour answers what kind of harm it carried, and nothing else. A type this has
+     never heard of is drawn as an ordinary explosion rather than not drawn at all. */
+  .blast { fill: var(--hit); fill-opacity: 0.13; stroke: #04070d; }
+  .blast.nanocyte { fill: var(--nanocyte); }
+  .blast.emp { fill: var(--emp); }
   /* Terrain is something to fly around, not something to read. Muted on purpose. */
   .body { fill: #1a2130; stroke: #2b3648; }
-  .wreck { stroke: var(--hit); fill: none; stroke-linecap: round; opacity: 0.9; }
-  .wreck-core { fill: #ffdcae; }
+  .kill { stroke: var(--hit); fill: none; stroke-linecap: round; opacity: 0.9; }
+  .kill-core { fill: var(--kill); }
   .breach { stroke: var(--hit); fill: none; stroke-linecap: round; opacity: 0.95; }
   .struck { stroke: var(--hit); fill: none; opacity: 0.55; }
   .track { fill: none; stroke: var(--ghost); opacity: 0.75; }

@@ -60,9 +60,6 @@
                         <button type="submit" class="quiet">Archive</button>
                     </form>
                 </span>
-                {% if s.missing %}
-                    <span class="waiting-for">no orders from {{ s.missing|join(', ') }}</span>
-                {% endif %}
             </div>
             {% endif %}
         {% endfor %}
@@ -80,7 +77,7 @@
                     <a href="{{ play_url }}?page=valhalla&game={{ g.name }}">{{ g.display }}</a>
                 </span>
                 <span class="round">{{ g.rounds }} rounds played</span>
-                <span class="round">{{ g.factions|length }} sides · {{ g.players|join(', ') }}</span>
+                <span class="sides">{% for s in g.sides %}{{ s.faction }} {{ s.score }}{{ ' · ' if not loop.last }}{% endfor %}</span>
                 <span class="act"></span>
             </div>
         {% endfor %}

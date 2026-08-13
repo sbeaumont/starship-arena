@@ -42,7 +42,8 @@ class TestValhallaIsOpen(unittest.TestCase):
     def test_a_stranger_is_told_what_is_in_there(self):
         listed = self.client.get('/api/game/valhalla').json()
         self.assertEqual(['duel'], [g['name'] for g in listed])
-        self.assertEqual(['Menno', 'Rik'], listed[0]['players'])
+        self.assertEqual(['One', 'Two'], [s['faction'] for s in listed[0]['sides']])
+        self.assertEqual(['Menno'], [c['name'] for c in listed[0]['sides'][0]['commanders']])
 
     def test_a_stranger_may_watch_every_side_at_once(self):
         replay = self.client.get('/api/game/valhalla/duel/replay').json()

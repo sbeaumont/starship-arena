@@ -39,11 +39,16 @@ marker while the lines say which plan is live.
 | `--laid` | `#57d98a` | a course of yours already laid in |
 | `--cyan` | `#57d8ff` | a faction mate's saved plan, the colour they already are |
 
-**What happened to it.** One band, the orange a blast already used.
+**What happened to it.** One band, the orange a blast already used, and two hues inside it for harm
+that is not ordinary. A blast says what it carried, and a kind nobody has heard of is drawn as an
+ordinary one rather than not drawn.
 
 | | | |
 |---|---|---|
-| `--hit` | `#ff9d4a` | a wreck, a breach, a blow landing, and the explosion itself |
+| `--hit` | `#ff9d4a` | a kill, a breach, a blow landing, and the explosion itself |
+| `--kill` | `#ffdcae` | the heart of the burst that marks one |
+| `--nanocyte` | `#7ef0a0` | a blast that eats a hull instead of opening it |
+| `--emp` | `#8fb4ff` | a blast that takes the lights out |
 
 **What a weapon did.** Light, which is no hue at all.
 

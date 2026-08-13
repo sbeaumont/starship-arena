@@ -1,4 +1,4 @@
-import { N } from "../map/plan.js";
+import { N, NAMED } from "../map/plan.js";
 
 // Where a game is being watched from: which tick, how much trail behind it, and whether it is
 // running. The whole record is fetched once, so stepping and playing never wait for the server.
@@ -82,7 +82,11 @@ export class Playhead {
 
   // Everything known at the playhead, with the trail behind it. Nothing is drawn for a tick it has
   // no row for: a sighting every third tick reads as a dot, then a trail, then nothing, which is
-  // exactly what was known. `gone` is where something of your own died.
+  // exactly what was known.
+  //
+  // `killed` is the moment something died, and only the things that leave a wreck can. Anything
+  // else that runs out of path was spent rather than killed: a rocket that burned out has simply
+  // stopped being there, and the map marks that with nothing at all.
   shown = $derived.by(() => {
     if (!this.data) return [];
     const out = [];
@@ -95,14 +99,17 @@ export class Playhead {
         // By tick rather than by row, so a trail is always the same span of time. Sightings are
         // sparse, and the row before this one can be from ten ticks ago.
         trail: o.path.filter((r) => r.abs_tick > this.at - this.tail && r.abs_tick <= this.at),
-        gone: !o.contact && o.path[o.path.length - 1] === now && !this.atEnd,
+        killed: !o.contact && NAMED.has(o.category_name)
+                && o.path[o.path.length - 1] === now && !this.atEnd,
       });
     }
     return out;
   });
 
-  // The gaps blows crossed on this tick, and only this one: a beam is gone by the next.
+  // What blows covered on this tick, and only this one: both are gone by the next. A beam is the
+  // gap it crossed, a blast is the ground it took in.
   beams = $derived((this.data?.beams ?? []).filter((b) => b.abs_tick === this.at));
+  explosions = $derived((this.data?.explosions ?? []).filter((b) => b.abs_tick === this.at));
 
   // What the tick being watched did, whoever it happened to.
   log = $derived.by(() =>
