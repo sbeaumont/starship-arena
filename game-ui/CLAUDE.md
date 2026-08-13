@@ -67,6 +67,14 @@ even send: a commander gets their own side and the sightings its ships took, the
 side at once. The side is in the URL and the page is keyed on it, so switching is a fresh playhead
 rather than a filter over something already downloaded.
 
+**Two sources, one payload.** A game being played comes off its saved worlds; a game that is over
+comes out of Valhalla, `museum` in the props and one different path in `Playhead`. Both arrive as
+the same `GameReplay`, and nothing here knows the museum's format exists - a reader per version of
+it is kept in Python, forever, and one in JavaScript would be that obligation twice
+([ADR 0034](../docs/adr/0034-a-finished-game-is-exported-to-a-schema-of-its-own.md)). A finished
+game is watched from any side by anybody, which is why the side switcher is not the director's
+there ([GDDR 0035](../docs/gddr/0035-a-finished-game-is-watched-from-any-side.md)).
+
 **View as Player has to reach the API here.** A director with it on asks for `as_player`, so the
 narrowing happens before anything is sent rather than in the browser. Anywhere else the toggle only
 changes what a page offers; a replay is data, and a filter over a payload that holds every side is

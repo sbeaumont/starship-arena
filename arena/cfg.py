@@ -83,6 +83,7 @@ ARCHIVE_DIR_NAME = "archived"
 REGISTERING_DIR_NAME = "registering"
 GAMES_DIR_NAME = "games"
 SOLO_DIR_NAME = "solo-games"
+VALHALLA_DIR_NAME = "valhalla"
 PLAYERS_FILE_NAME = "players.jsonl"
 
 
@@ -104,6 +105,7 @@ REGISTRATION_FILE_NAME = "registrations.jsonl"
 SETTINGS_FILE_NAME = "settings.jsonl"
 JOURNAL_FILE_NAME = "journal.jsonl"
 SCENARIO_FILE_NAME = "scenario.json"
+REPLAY_FILE_NAME = "replay.json"
 
 # ============================================= SHIP CORE METRICS
 

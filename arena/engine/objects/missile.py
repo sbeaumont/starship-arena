@@ -9,7 +9,8 @@ import logging
 from dataclasses import replace
 
 from .event import InternalEvent
-from .objectinspace import ObjectInSpace, Stance, Vector
+from arena.engine.objects.geometry import Vector
+from arena.engine.objects.objectinspace import ObjectInSpace, Stance
 from .machineinspace import MachineInSpace, MachineType
 from arena.engine.history import Tick, TICK_ZERO
 from arena.engine.world import World

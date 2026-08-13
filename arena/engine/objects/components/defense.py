@@ -1,5 +1,5 @@
 from arena.engine.objects.component import Component, ComponentParameter, NumberInRangeParameter
-from arena.engine.objects.objectinspace import Point
+from arena.engine.objects.geometry import Point
 from arena.engine.objects.machineinspace import MachineInSpace
 from arena.engine.objects.event import DamageType, Effect, Outcome
 

@@ -7,6 +7,7 @@
   import OpenGames from './lib/OpenGames.svelte'
   import Solo from './lib/Solo.svelte'
   import TopBar from './lib/TopBar.svelte'
+  import Valhalla from './lib/Valhalla.svelte'
   import Replay from './lib/replay/Replay.svelte'
 
   // The whole view lives in the URL: ?game=xke&player=Menno&round=2, or ?page=ships. That way
@@ -142,6 +143,13 @@
 
 {#if checking}
   <p class="waiting">…</p>
+{:else if route.page === 'valhalla' && route.game}
+  <!-- A game that is over, and no login: the museum is the one replay anybody may open. -->
+  {#key `${route.game}/${route.faction}`}
+    <Replay game={route.game} faction={route.faction} tick={route.tick} museum
+            onTick={goTick} onFaction={(f) => go({ ...route, faction: f, tick: null })}
+            onLeave={() => openPage('valhalla')} />
+  {/key}
 {:else if me && route.page === 'replay' && route.game}
   <!-- A game and a side rather than a player: whose war is being watched decides what the API
        will even send. Keyed on both, so either one is a fresh playhead. -->
@@ -167,6 +175,9 @@
         <ShipTypes />
       {:else if route.page === 'lore'}
         <Lore />
+      {:else if route.page === 'valhalla'}
+        <Valhalla onOpen={(game) => go({ game, player: null, round: null, tick: null,
+                                         faction: null, page: 'valhalla', ui: route.ui })} />
       {:else if route.page === 'register' && me}
         <!-- Registering is its own page: it matters for a week and would sit on the list forever. -->
         <OpenGames />

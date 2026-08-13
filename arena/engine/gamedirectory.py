@@ -48,19 +48,20 @@ class GamesIn(str, Enum):
     Archived = ARCHIVE_DIR_NAME
     Registering = REGISTERING_DIR_NAME
     Solo = SOLO_DIR_NAME
+    Valhalla = VALHALLA_DIR_NAME
 
     def __str__(self):
         return self.value
 
     @property
     def planned(self) -> bool:
-        """Whether a round is being planned in here. Nothing is owed for the other two."""
+        """Whether a round is being planned in here. Nothing is owed for the other three."""
         return self in (GamesIn.Playing, GamesIn.Solo)
 
 
 @dataclass(frozen=True)
 class GamesRoot:
-    """A data root, and the four places a game directory can be in it."""
+    """A data root, and the five places a game directory can be in it."""
 
     root: Path
 
@@ -82,6 +83,10 @@ class GamesRoot:
     @property
     def solo(self) -> Path:
         return self.path(GamesIn.Solo)
+
+    @property
+    def valhalla(self) -> Path:
+        return self.path(GamesIn.Valhalla)
 
     def directory_in(self, where: GamesIn, game: str) -> 'GameDirectory':
         return GameDirectory(str(self.path(where)), game, where)
@@ -166,6 +171,15 @@ class GameDirectory(object):
     def write_settings(self, settings: dict) -> None:
         with open(os.path.join(self._dir, SETTINGS_FILE_NAME), 'w') as f:
             f.write(json.dumps(settings, sort_keys=True) + '\n')
+
+    def write_replay(self, text: str) -> None:
+        """The game as text, which is the whole of it once the pickles are gone. ADR 0034."""
+        with open(os.path.join(self._dir, REPLAY_FILE_NAME), 'w') as f:
+            f.write(text)
+
+    def read_replay(self) -> str:
+        with open(os.path.join(self._dir, REPLAY_FILE_NAME)) as f:
+            return f.read()
 
     def append_journal(self, entry: dict) -> None:
         """One line about something that happened to this game. The caller stamps the time."""

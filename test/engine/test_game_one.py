@@ -24,7 +24,7 @@ import unittest
 from collections import defaultdict
 
 from arena.engine.command import parse_commands, CommandSet
-from arena.engine.objects.objectinspace import Point
+from arena.engine.objects.geometry import Point
 from arena.engine.objects.registry.builder import create
 from arena.engine.round import GameRound
 from .ois.ois_fixtures import world_of

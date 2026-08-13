@@ -8,8 +8,8 @@ Backed by the UI-agnostic GameService; returns its DTOs directly (FastAPI serial
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
-from arena.app.dto import (GameSummary, OpenGame, ShipRound, PlayerPlan, GameOverview, GameReplay,
-                           ShipTypeInfo, Me, Pulse, ServerTime, SoloGame)
+from arena.app.dto import (FinishedGame, GameSummary, OpenGame, ShipRound, PlayerPlan, GameOverview,
+                           GameReplay, ShipTypeInfo, Me, Pulse, ServerTime, SoloGame)
 from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE, LOGIN_COOKIE_SECURE, Player
 from arena.app.services import GameService
 
@@ -109,6 +109,26 @@ def server_time() -> ServerTime:
 @router.get("/ship-types")
 def list_ship_types() -> list[ShipTypeInfo]:
     return service.list_ship_types()
+
+
+@router.get("/valhalla")
+def finished_games() -> list[FinishedGame]:
+    """The games that are over and on show. Open, like the replay of any of them."""
+    return service.list_finished_games()
+
+
+@router.get("/valhalla/{game}/replay")
+def valhalla_replay(game: str, faction: str | None = None) -> GameReplay:
+    """Every tick a finished game played, from one side or from all of them at once.
+
+    Nobody has to be logged in and any side may be asked for: a game that is over has nobody left
+    to keep anything from. See docs/gddr/0035-a-finished-game-is-watched-from-any-side.md."""
+    try:
+        return service.valhalla_replay(game, faction)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"{game} is not in Valhalla.")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/manual")

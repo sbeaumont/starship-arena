@@ -7,7 +7,7 @@ import arena.engine.objects.registry.builder as builder
 from arena.engine.history import Tick
 from arena.engine.objects.component import DirectionParameter, ObjectByNameParameter
 from arena.engine.objects.components.weapon import Weapon
-from arena.engine.objects.objectinspace import Vector
+from arena.engine.objects.geometry import Vector
 from arena.engine.world import Whereabouts, World
 
 logger = logging.getLogger(__name__)

@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from arena.engine.history import TICK_ZERO, Tick
-from arena.engine.objects.objectinspace import Point, Vector
+from arena.engine.objects.geometry import Point, Vector
 from arena.engine.objects.registry import builder
 from arena.engine.objects.registry.missiles import Splinter
 

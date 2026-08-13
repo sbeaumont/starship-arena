@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from arena.engine.objects.objectinspace import Point, Vector
+from arena.engine.objects.geometry import Point, Vector
 
 
 def vector(heading, speed):

@@ -2,7 +2,7 @@ from arena.engine.history import Tick, TICK_ZERO
 from arena.engine.objects.components.warhead import SplinterWarhead, NanocyteWarhead
 from arena.engine.objects.machineinspace import MachineType
 from arena.engine.objects.mine import Mine
-from arena.engine.objects.objectinspace import Vector
+from arena.engine.objects.geometry import Vector
 
 
 class MineType(MachineType):

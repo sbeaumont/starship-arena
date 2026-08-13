@@ -33,10 +33,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("action",
                         choices=['setup', 'generate', 'regenerate', 'manual', 'link', 'players',
-                                 'process_due', 'announce'],
+                                 'process_due', 'announce', 'export'],
                         help="Set a game up, generate its unprocessed rounds, replay games from "
                              "their orders, build the manual, issue a login link, list who can log "
-                             "in, process the games due this hour, or send a test announcement")
+                             "in, process the games due this hour, send a test announcement, or "
+                             "export a game to the museum")
     parser.add_argument("gamedir", nargs='?',
                         help="The name of the game you want to process.")
     parser.add_argument("-n", "--name", help="Who to issue a login link for.")
@@ -157,6 +158,10 @@ def main():
             sys.exit("A game came back short. Restore the backup before anything else runs.")
     elif args.action == 'announce':
         announce_test()
+    elif args.action == 'export':
+        if not args.gamedir:
+            sys.exit("Which game? Give its name.")
+        print(f"Written to {AdminService(GAMES_ROOT.root).export_to_valhalla(args.gamedir)}")
     else:
         if not args.gamedir:
             sys.exit("Which game? Give its name.")

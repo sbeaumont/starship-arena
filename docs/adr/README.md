@@ -42,6 +42,7 @@ we already moved away from.
 | [0027](0027-the-server-keeps-one-timezone.md) | The server keeps one timezone, and shifting is a UI concern |
 | [0029](0029-announcements-leave-through-channels.md) | Announcements leave the game through channels |
 | [0030](0030-solo-games-live-in-their-own-root.md) | A solo game is a game in a root of its own |
+| [0034](0034-a-finished-game-is-exported-to-a-schema-of-its-own.md) | A finished game is exported to a schema of its own |
 
 ## Template
 

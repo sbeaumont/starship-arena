@@ -1,0 +1,106 @@
+{
+ "version": 1,
+ "game": "Skirmish",
+ "first_tick": 10,
+ "last_tick": 11,
+ "objects": [
+  {
+   "name": "Alpha",
+   "type_name": "H2545",
+   "category_name": "Ship",
+   "faction": "One",
+   "owner": "Alpha",
+   "player": "Menno",
+   "radius": 0,
+   "ticks": [
+    {
+     "tick": 10,
+     "x": 0, "y": -20,
+     "heading": 0, "speed": 0,
+     "hull": 100, "battery": 120, "score": 0,
+     "components": {
+      "Shields": {"N": 140, "E": 105, "S": 95, "W": 105},
+      "L1": {"Temperature": "0/100"}
+     },
+     "scans": [
+      {"name": "Beta", "x": 0, "y": 20},
+      {"name": "Rock", "x": 60, "y": 0}
+     ],
+     "events": []
+    },
+    {
+     "tick": 11,
+     "x": 0, "y": -20,
+     "heading": 0, "speed": 0,
+     "hull": 100, "battery": 113, "score": 167,
+     "components": {
+      "Shields": {"N": 140, "E": 105, "S": 95, "W": 105},
+      "L1": {"Temperature": "20/100"}
+     },
+     "scans": [
+      {"name": "Rock", "x": 60, "y": 0}
+     ],
+     "events": [
+      {"kind": "hit", "damage_type": "Laser", "x": 0, "y": 20,
+       "text": "Alpha hit Beta with Laser for 134: Shields Breached, hull Breached",
+       "shape": {"line": {"x1": 0, "y1": -20, "x2": 0, "y2": 20}}},
+      {"kind": "explosion", "damage_type": "Explosion", "x": 0, "y": 20,
+       "text": "Beta exploded at (0, 20)",
+       "shape": {"circle": {"x": 0, "y": 20, "radius": 30}}}
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Beta",
+   "type_name": "A2527",
+   "category_name": "Ship",
+   "faction": "Two",
+   "owner": "Beta",
+   "player": "Rik",
+   "radius": 0,
+   "ticks": [
+    {
+     "tick": 10,
+     "x": 0, "y": 20,
+     "heading": 180, "speed": 0,
+     "hull": 105, "battery": 90, "score": 0,
+     "components": {"Shields": {"N": 115, "E": 100, "S": 90, "W": 100}},
+     "scans": [
+      {"name": "Alpha", "x": 0, "y": -20}
+     ],
+     "events": []
+    }
+   ]
+  },
+  {
+   "name": "Rock",
+   "type_name": "Asteroid",
+   "category_name": "Terrain",
+   "faction": null,
+   "owner": null,
+   "player": null,
+   "radius": 15,
+   "ticks": [
+    {
+     "tick": 10,
+     "x": 60, "y": 0,
+     "heading": 0, "speed": 0,
+     "hull": null, "battery": null, "score": 0,
+     "components": {},
+     "scans": [],
+     "events": []
+    },
+    {
+     "tick": 11,
+     "x": 60, "y": 0,
+     "heading": 0, "speed": 0,
+     "hull": null, "battery": null, "score": 0,
+     "components": {},
+     "scans": [],
+     "events": []
+    }
+   ]
+  }
+ ]
+}

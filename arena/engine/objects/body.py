@@ -7,7 +7,8 @@ anything stop at it. See docs/adr/0023-a-tick-advances-by-encounters.md.
 
 from math import cos, radians, sin
 
-from .objectinspace import Impulse, ObjectInSpace, Vector
+from arena.engine.objects.geometry import Vector
+from arena.engine.objects.objectinspace import Impulse, ObjectInSpace
 from arena.engine.history import Tick, TICK_ZERO
 
 # How much of the arrival a body gives back. Nothing below a crawl, so a mine that drifts into

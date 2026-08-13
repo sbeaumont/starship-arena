@@ -3,7 +3,7 @@ from unittest import TestCase
 from arena.engine.objects.registry import builder
 from arena.engine.objects.registry.mines import SplinterMine
 from arena.engine.objects.registry.missiles import Rocket
-from arena.engine.objects.objectinspace import Point, Vector
+from arena.engine.objects.geometry import Point, Vector
 
 
 class TestH2545(TestCase):

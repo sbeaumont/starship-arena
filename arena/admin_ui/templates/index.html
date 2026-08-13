@@ -52,6 +52,9 @@
                           onsubmit="return confirm('Process round {{ s.round_nr }} of {{ g.display }} now? Anyone without orders gets an empty file and does nothing.')">
                         <button type="submit" class="quiet">Force</button>
                     </form>
+                    <form method="POST" action="{{ url_for('to_valhalla', game=g.name) }}">
+                        <button type="submit" class="quiet">To Valhalla</button>
+                    </form>
                     <form method="POST" action="{{ url_for('archive', game=g.name) }}"
                           onsubmit="return confirm('Archive {{ g.display }}? It leaves every list; nothing is deleted.')">
                         <button type="submit" class="quiet">Archive</button>
@@ -62,6 +65,24 @@
                 {% endif %}
             </div>
             {% endif %}
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% if finished %}
+    <h2 id="valhalla">Valhalla</h2>
+    <p class="lede">Over and on show, to anybody, signed in or not. Exporting again overwrites.</p>
+    <div class="games">
+        {% for g in finished %}
+            <div class="game">
+                <span class="dot idle"></span>
+                <span class="name">
+                    <a href="{{ play_url }}?page=valhalla&game={{ g.name }}">{{ g.display }}</a>
+                </span>
+                <span class="round">{{ g.rounds }} rounds played</span>
+                <span class="round">{{ g.factions|length }} sides · {{ g.players|join(', ') }}</span>
+                <span class="act"></span>
+            </div>
         {% endfor %}
     </div>
 {% endif %}

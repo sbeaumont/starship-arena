@@ -17,6 +17,7 @@ dependencies = [
     # Lets the ASGI API run inside the WSGI app, so one WSGI entry point can serve everything
     # on a WSGI-only host.
     "a2wsgi>=1.10",
+    "jsonschema",
 ]
 
 # Test-only dependencies. httpx2 backs FastAPI's TestClient.

@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from arena.engine.history import Tick
-from arena.engine.objects.objectinspace import Leg, Point, Vector
+from arena.engine.objects.geometry import Leg, Point, Vector
 from arena.engine.objects.registry import builder
 from arena.engine.objects.registry.missiles import Rocket
 from arena.engine.round import GameRound

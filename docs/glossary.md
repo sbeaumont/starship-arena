@@ -101,6 +101,11 @@ on.
 `beam`, `explosion`, `replenish` or `scan`. Everything except scans shows up in the player's log,
 and everything except `internal` shows there without being asked for.
 
+**Shape.** What something manifests as in the world: a line between two points, a circle around a
+centre. Whole on its own, and it says its own name and its own measurements, so a reader renders
+one without holding a list of them. An event answers with one where it covered more than the point
+it happened at, and a hit answers with nothing.
+
 **Beam.** A hit that arrived along a line, where a blast arrives as a circle. A laser makes one,
 and so would anything else that reaches its target instantly. Both ends are the two ships, so an
 interface draws it without being told any weapon's name.
@@ -114,6 +119,11 @@ that word already means the ops log and the ship events a player reads.
 was in space. The world that knows about a tick is the one saved for that tick's round: ask an
 earlier one and the tick has not happened yet, ask a later one and its copy of an object has moved
 on. Being in space at a tick is having a snapshot for it, which is the whole of the rule.
+
+**Valhalla.** Where a game goes to be looked at after it is over: a root beside the others, holding
+one text file per game rather than a directory of pickles. The file is written in a numbered
+version of a schema kept for that purpose alone, so it still reads when the classes that played the
+game have gone. [ADR 0034](adr/0034-a-finished-game-is-exported-to-a-schema-of-its-own.md).
 
 **Contact.** Something a faction has scanned but does not own, as a track of sightings. A scan
 records where something was, never its heading, so a contact's course is inferred from its last

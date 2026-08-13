@@ -5,18 +5,20 @@
   import { Playhead } from "./playhead.svelte.js";
   import Transport from "./Transport.svelte";
 
-  // A game played back, one tick at a time. Ground truth for every faction, so this is the
-  // director's view and not anybody's tactical picture: no orders, no fog, nothing to drag.
+  // A game played back, one tick at a time. Never anybody's tactical picture: no orders, nothing
+  // to drag. Whose war it is decides what the API sends, and a game that is over sends any of it
+  // to anybody.
   //
   // The shapes come from the map's own `markers.js` and the camera is the map's camera. The
   // pointer handling is this view's own, and simpler on purpose: nothing here is draggable, so
   // there is no mode machine to share.
-  let { game, faction = null, tick = null, directing = false, onTick, onFaction, onLeave } = $props();
+  let { game, faction = null, tick = null, directing = false, museum = false,
+        onTick, onFaction, onLeave } = $props();
 
   // The initial value is the only value: App keys this on the game and the side being watched, so
   // either of those is another instance rather than a change to this one.
   // svelte-ignore state_referenced_locally
-  const ph = new Playhead(game, { faction, from: tick, asPlayer: !directing });
+  const ph = new Playhead(game, { faction, from: tick, asPlayer: !directing, museum });
   const camera = new Camera();
 
   $effect(() => { ph.load(); });
@@ -148,8 +150,9 @@
         {#if ph.data.faction}faction {ph.data.faction}, and what it saw{:else}every side{/if}
       </span>
       <span class="spacer"></span>
-      {#if directing}
-        <!-- Every side at once is more than anybody saw, so it is the director's own view. -->
+      {#if directing || museum}
+        <!-- Every side at once is more than anybody saw, so while a game is on it is the
+             director's alone. Once it is over there is nobody left to keep it from. -->
         <select value={ph.data.faction ?? ""} onchange={(e) => onFaction(e.currentTarget.value || null)}>
           <option value="">Every side</option>
           {#each ph.sides as f (f)}<option value={f}>Faction {f}</option>{/each}

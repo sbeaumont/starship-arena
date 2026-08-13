@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from arena.engine.history import TICK_ZERO
-from arena.engine.objects.objectinspace import Point, Vector
+from arena.engine.objects.geometry import Point, Vector
 from arena.engine.objects.registry.mines import SplinterMine
 
 from .ois_fixtures import create_ship_fixture, run_ticks, world_of

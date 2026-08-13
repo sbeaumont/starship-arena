@@ -69,7 +69,7 @@ class Laser(Weapon):
 
         if target_ship and self.can_fire_at(target_ship):
             hit_event = BeamEvent(target_ship.pos, DamageType.Laser, self.owner, target_ship,
-                                  self.damage_to(target_ship))
+                                  self.damage_to(target_ship), fired_from=self.owner.pos)
             target_ship.take_damage_from(hit_event)
             self.owner.add_event(hit_event)
             # Loud enough to be seen from off the field, the way a blast is: you do not have to

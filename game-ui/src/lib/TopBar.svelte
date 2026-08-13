@@ -45,6 +45,8 @@
         {open.length ? `Register (${open.length})` : "Register"}
       </button>
     {/if}
+    <!-- Open to everybody, signed in or not: a game that is over has nothing left to protect. -->
+    <button type="button" class:here={page === "valhalla"} onclick={() => shut(() => onPage("valhalla"))}>Valhalla</button>
     <button type="button" class:here={page === "ships"} onclick={() => shut(() => onPage("ships"))}>Ships</button>
     <button type="button" class:here={page === "lore"} onclick={() => shut(() => onPage("lore"))}>Lore</button>
     <button type="button" onclick={() => shut(() => window.open("/api/game/manual", "_blank"))}>Manual</button>

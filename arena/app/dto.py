@@ -72,6 +72,18 @@ class FormingGame(Named):
 
 
 @dataclass
+class FinishedGame(Named):
+    """A game that is over and on show, as the list of them reads before one is opened.
+
+    Read out of the file it was exported to, so it says what that file holds and not what the
+    game directory does. Every side and every commander, since there is nobody left to keep
+    anything from."""
+    rounds: int = 0
+    factions: list[str] = field(default_factory=list)
+    players: list[str] = field(default_factory=list)
+
+
+@dataclass
 class OpenGame(Named):
     """A game collecting registrations, and what the player asking put down for it."""
     scenario: str = ''

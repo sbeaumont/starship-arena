@@ -54,6 +54,7 @@ you go when the seam itself is what is broken.
 | `arena/engine/objects` | Objects in space, built from components | A new kind of thing goes here |
 | `arena/engine/objects/registry` | Ship and machine types | Data, expressed as Python |
 | `arena/app` | `GameService`, `AdminService`, DTOs, the player registry | Operations an interface needs, in domain terms |
+| `arena/app/valhalla` | The text a finished game is kept as, one package per version | A schema, and the translation into it |
 | `arena/api` | HTTP shape: routes, status codes, cookies | Translation only, no game logic |
 | `arena/admin_ui` | The director's Flask pages and its own facade | One UI's semantics |
 | `arena/cli` | Setting up, generating rounds, issuing links | The tool for a shell on the host |
@@ -215,5 +216,8 @@ the middle renumbers every reference at once, silently. Name the rule and link t
 Rules that only bind one part of the codebase live in that directory's `CLAUDE.md`, close to the
 code they govern.
 
-Rule 1 is currently broken: weapons fire post-move, so whether a freshly launched missile is in
-space when something explodes depends on iteration order. On the backlog.
+The rule that order never changes a tick's outcome is currently broken in one place. A warhead whose
+container died goes off in `decide`, and the decide phase is a single pass: an object whose turn has
+been taken is still in the world for a later blast to kill, but is never asked again, so it dies
+without going off. A chain of detonations needs the resolve-then-look-again loop `resolve_encounters`
+already uses. On the backlog.

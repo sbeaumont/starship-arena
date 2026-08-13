@@ -21,6 +21,7 @@ One decision per file, numbered in the order they were accepted.
 | [0031](0031-loud-things-are-seen-from-further-away.md) | Loud things are seen from further away |
 | [0032](0032-a-starbase-replenishes-you.md) | A starbase replenishes you, and picks who |
 | [0033](0033-colour-answers-one-question.md) | Colour answers one question |
+| [0035](0035-a-finished-game-is-watched-from-any-side.md) | A finished game is watched from any side |
 
 ## What belongs here
 

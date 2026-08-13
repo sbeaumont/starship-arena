@@ -9,6 +9,8 @@ from dataclasses import dataclass, replace
 from enum import Enum
 from typing import Protocol, NewType
 
+from arena.engine.objects.geometry import Circle, Line, Shape
+
 
 class DamageType(Enum):
     """What kind of harm a HitEvent carries, which is what decides how a target answers it."""
@@ -94,6 +96,11 @@ class Event(object):
     def can_score(self) -> bool:
         """Whether points off this can be claimed. Most events are worth nothing to anybody."""
         return False
+
+    @property
+    def shape(self) -> Shape | None:
+        """What this covered beyond the point it happened at. Nothing, for most events."""
+        return None
 
     @property
     def score(self) -> int:
@@ -203,6 +210,15 @@ class BeamEvent(HitEvent):
     # A firefight is meant to be worth flying towards from a sector away.
     visibility = 500
 
+    def __init__(self, location, hit_type, source, target, amount: int, fired_from,
+                 message: str = None):
+        super().__init__(location, hit_type, source, target, amount, message)
+        self.fired_from = fired_from
+
+    @property
+    def shape(self) -> Shape:
+        return Line(self.fired_from, self.pos)
+
     def modify_scan_range(self, scan_range: float) -> float:
         """How far a scanner has to reach to catch this going off, the way an object answers it."""
         return scan_range * (self.visibility / 100)
@@ -217,6 +233,10 @@ class ExplosionEvent(Event):
     def __init__(self, location, explosion_type, source, radius):
         super().__init__(location, explosion_type, source)
         self.radius = radius
+
+    @property
+    def shape(self) -> Shape:
+        return Circle(self.pos, self.radius)
 
     def modify_scan_range(self, scan_range: float) -> float:
         """How far a scanner has to reach to see this go off, the way an object answers it."""

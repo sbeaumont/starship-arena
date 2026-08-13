@@ -15,7 +15,8 @@ from typing import NewType
 
 from arena.engine.parameter import Parameter
 from .machineinspace import MachineInSpace, MachineType
-from .objectinspace import Impulse, ObjectInSpace, Vector
+from arena.engine.objects.geometry import Vector
+from arena.engine.objects.objectinspace import Impulse, ObjectInSpace
 from arena.engine.objects.event import (DamageType, Effect, HitEvent, InternalEvent, Outcome,
                                         ScanEvent)
 from arena.engine.history import Tick, TICK_ZERO

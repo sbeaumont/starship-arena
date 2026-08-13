@@ -7,7 +7,7 @@ import importlib
 import os
 import pkgutil
 from arena.engine.history import Tick
-from arena.engine.objects.objectinspace import Point, Vector
+from arena.engine.objects.geometry import Point, Vector
 from arena.engine.objects.body import BodyType
 from arena.engine.objects.ship import ShipType
 from arena.engine.objects.starbase import StarbaseType

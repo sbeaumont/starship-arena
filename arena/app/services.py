@@ -26,13 +26,14 @@ from arena.engine.objects.registry.builder import all_fielded_types
 from arena.engine.objects.event import BeamEvent, ExplosionEvent, HitEvent
 from arena.engine.objects.objectinspace import Stance
 from arena.engine.replay import Replay
-from arena.app import scenarios
+from arena.app import from_valhalla, scenarios, valhalla
 from arena.app.clock import next_occurrence, server_now, zone_name
 from arena.app.naming import SOLO_PREFIX, for_display, is_solo_game_name, solo_game_name
 from arena.app.players import DIRECTOR, LOGIN_COOKIE, PLAYER, Player, PlayerRegistry
 from arena.app.registrations import Registration, RegistrationFile
 from arena.app.dto import (
-    FormingGame, GameSummary, OpenGame, ShipLimits, ScanInfo, TickState, ShipRound, CommandCheck,
+    FinishedGame, FormingGame, GameSummary, OpenGame, ShipLimits, ScanInfo, TickState, ShipRound,
+    CommandCheck,
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
     Effect, Beam, GameReplay, ReplayObject, ObjectTick, StaleRound,
     WeaponInfo, ComponentInput,
@@ -96,10 +97,35 @@ class _EngineAccess:
         """Every player's own game. Not shown beside the shared ones anywhere."""
         return self._summaries(GamesIn.Solo)
 
+    def list_finished_games(self) -> list[FinishedGame]:
+        """Everything in Valhalla, read out of the files themselves. Nothing else is left of one.
+
+        A summary of a playable game loads its worlds to count what it is waiting for. A finished
+        game is waiting for nothing, and its pickles may be gone, so this reads the export."""
+        return sorted((self._finished(gd.game_name)
+                       for gd in self.dirs.directories_in(GamesIn.Valhalla)),
+                      key=lambda g: g.name)
+
+    def _finished(self, game: str) -> FinishedGame:
+        document = self.read_valhalla(game)
+        return FinishedGame(
+            name=document['game'],
+            rounds=Tick.from_abs(document['last_tick']).round,
+            factions=sorted({o['faction'] for o in document['objects'] if o['faction']}),
+            players=sorted({o['player'] for o in document['objects'] if o['player']}))
+
+    def read_valhalla(self, game: str) -> dict:
+        """A finished game's own file, in the shape the version it says it is promises."""
+        return valhalla.load(self.dirs.directory_in(GamesIn.Valhalla, game).read_replay())
+
     def game_names_in_use(self) -> set[str]:
-        """Played, archived, registering or somebody's own. All of them claim the name."""
+        """Played, archived, registering, finished or somebody's own. All of them claim the name.
+
+        Valhalla counts for as long as anything does: a game that is over keeps its name forever,
+        so nothing later can be set up that a museum link would then point at."""
         return {g.name for g in (self.list_games() + self.list_archived_games()
-                                 + self.list_registering_games() + self.list_solo_games())}
+                                 + self.list_registering_games() + self.list_solo_games()
+                                 + self.list_finished_games())}
 
     def scenario_of(self, game: str) -> str:
         return json.loads((self.dirs.registering / game / SCENARIO_FILE_NAME).read_text())['scenario']
@@ -525,16 +551,14 @@ class GameService(_EngineAccess):
                 if t in s.history:
                     for e in s.history[t].events:
                         if isinstance(e, ExplosionEvent):
-                            key = (t.tick, e.pos.x, e.pos.y, e.radius)
-                            blasts.setdefault(key, Explosion(tick=t.tick, x=e.pos.x, y=e.pos.y,
-                                                             radius=e.radius, damage_type=str(e._type)))
+                            at, radius = e.shape.centre, e.shape.radius
+                            key = (t.tick, at.x, at.y, radius)
+                            blasts.setdefault(key, Explosion(tick=t.tick, x=at.x, y=at.y,
+                                                             radius=radius, damage_type=str(e._type)))
 
-        # What the faction's own blows did. Read off the striker's history, and placed from what
-        # the target was doing on that tick: you hit it, so where it was is not fog of war. A
-        # faction mate who watched the same hit holds the same event, hence the dedup.
         # Beams the faction was an end of, which is the two it is: a laser goes to whoever fired
-        # it and whoever it hit, and to nobody else. Read off the event the way a blast is, so
-        # both copies of it say the same thing and the dedup has something to collapse.
+        # it and whoever it hit, and to nobody else. The line is the event's own shape, so both
+        # copies of it say the same thing and the dedup has something to collapse.
         beams: dict[tuple, Beam] = {}
         for s in faction_ships:
             for t in round_ticks:
@@ -542,15 +566,15 @@ class GameService(_EngineAccess):
                     for e in s.history[t].events:
                         if not isinstance(e, BeamEvent):
                             continue
-                        a = self._where_at(world, e.source.name, t)
-                        b = self._where_at(world, e.target.name, t)
-                        if a is None or b is None:
-                            continue
+                        a, b = e.shape.p1, e.shape.p2
                         beams.setdefault(
                             (t.tick, a.x, a.y, b.x, b.y),
                             Beam(tick=t.tick, abs_tick=t.abs_tick, x1=a.x, y1=a.y,
                                  x2=b.x, y2=b.y, damage_type=str(e._type)))
 
+        # What the faction's own blows did. Read off the striker's history, and placed from what
+        # the target was doing on that tick: you hit it, so where it was is not fog of war. A
+        # faction mate who watched the same hit holds the same event, hence the dedup.
         landed: dict[tuple, Effect] = {}
         for s in faction_ships:
             for t in round_ticks:
@@ -604,7 +628,7 @@ class GameService(_EngineAccess):
                 objects[name].events.extend(
                     TickEvent(tick=tick.tick, abs_tick=tick.abs_tick, text=str(e), kind=e.kind)
                     for e in snapshot.non_scan_events)
-                self._beams_in(snapshot, in_space, tick, beams)
+                self._beams_in(snapshot, tick, beams)
             if faction is None:
                 continue
             # What the side saw of everything else, off the ships whose scans a faction shares.
@@ -621,20 +645,24 @@ class GameService(_EngineAccess):
                           first_tick=replay.first.abs_tick, last_tick=replay.last.abs_tick,
                           objects=list(objects.values()), beams=list(beams.values()))
 
+    def valhalla_replay(self, game: str, faction: str = None) -> GameReplay:
+        """The same picture for a game that is over, read out of its own file.
+
+        Whose war it is narrows it exactly as above, and here anybody may ask for any side: a
+        finished game has nobody left to keep anything from.
+        See docs/gddr/0035-a-finished-game-is-watched-from-any-side.md."""
+        return from_valhalla.replay(self.read_valhalla(game), faction)
+
     @staticmethod
-    def _beams_in(snapshot, in_space: dict, tick: Tick, into: dict) -> None:
+    def _beams_in(snapshot, tick: Tick, into: dict) -> None:
         """Beams this snapshot holds, keyed so the shooter's copy and the target's are one.
 
-        Read off the event and never off whoever is holding it, which is what makes the two
-        copies identical. Both ends have to be in space at the tick to be ends of a line, and
-        the tick something died on still counts as being there."""
+        The line is the event's own shape rather than anything read off whoever is holding it,
+        which is what makes the two copies identical."""
         for e in snapshot.non_scan_events:
             if not isinstance(e, BeamEvent):
                 continue
-            here, there = in_space.get(e.source.name), in_space.get(e.target.name)
-            if here is None or there is None:
-                continue
-            a, b = here.history[tick]['pos'], there.history[tick]['pos']
+            a, b = e.shape.p1, e.shape.p2
             into.setdefault(
                 (tick.abs_tick, a.x, a.y, b.x, b.y),
                 Beam(tick=tick.tick, abs_tick=tick.abs_tick, x1=a.x, y1=a.y,
@@ -826,6 +854,17 @@ class AdminService(_EngineAccess):
     def delete_archived_game(self, name: str) -> None:
         """Delete for good. Only reaches into the archive, so a live game cannot be lost here."""
         shutil.rmtree(self.dirs.archived / name)
+
+    def export_to_valhalla(self, name: str) -> str:
+        """Write a playable game into the museum as text, and answer where it landed.
+
+        A copy rather than a move, so exporting again overwrites.
+        See docs/adr/0034-a-finished-game-is-exported-to-a-schema-of-its-own.md."""
+        into = self.dirs.valhalla / name
+        into.mkdir(parents=True, exist_ok=True)
+        text = valhalla.export(Replay(self._gd(name)), name)
+        self.dirs.directory_in(GamesIn.Valhalla, name).write_replay(text)
+        return str(into)
 
     # ---------------------------------------------------------------------- LOGINS
 

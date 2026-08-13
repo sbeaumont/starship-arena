@@ -90,7 +90,7 @@ it can be rather than refused outright. That matters for `Pilot`, which asks for
 to its target and would otherwise never turn at all.
 
 Low risk, because the game UI already clamps plotted turns to `±max_turn`
-(`game-ui/src/lib/FactionMap.svelte:699`). Only a hand-written command file could reach the
+(`limits.max_turn` in `plan.js`). Only a hand-written command file could reach the
 exemption.
 
 ## Step 5: the cloak draws the power it is given - done
@@ -208,17 +208,19 @@ whole circle in 30 degree pulses reaches 1200 but costs 120 energy against 10 fo
 so where to look is a real choice. Scaling energy with the cone was the other lever considered and
 is not needed: the reach curve already makes the lazy option worthless.
 
-## Step 7: arcs, and the registry rewrite - next
+## Step 7: arcs, and the registry rewrite - largely done
 
-Two thirds of the fleet's weapons and 64% of its round damage sit on 360 degree arcs, and the
-whole registry uses only three widths: 360, 180 and 90. Narrowing them is the single largest
-source of variety available, and it turns `max_turn` into a stat that decides fights: worst case
+Every hull laser now carries an arc it was given rather than the 360 it inherited, the widths run
+30 to 90, reach varies by hull, cloaks differ by race, mine loads run from none to twenty, and
+three hulls carry no rocket at all. `max_turn` decides fights the way it was meant to: worst case
 turning to bring a 30 degree arc to bear is 9 ticks for a Swarm and 4 for a Tiger.
 
-**This runs first, with the tools that exist.** The registry is generic enough that any character
-is an improvement, so the order is: a hull pass now, then the Gunner and disabling to make lasers
-work as intended, then a second hull pass if those move the laser numbers. Laser damage and reach
-are therefore provisional until the Gunner lands, and everything else is not.
+What is left is uniformity nobody has spent yet: `heat_per_shot` is still a class attribute so
+every laser fires 8 times a round, the starbase keeps two placeholder lasers with no arc, and every
+guided payload but the EMP still shares one airframe. Tracked as an idea in
+[../TODO.md](../TODO.md) rather than here, because none of it blocks anything.
+
+Laser damage and reach stay provisional until the Gunner lands, and everything else is not.
 
 `../../docs/balance.py` is reference, not a gate. Its `arc_weight` is flat and knows nothing about `max_turn`,
 so it will score a narrowed arc as a straight loss. Read the census and the loadouts from it, not
@@ -227,10 +229,9 @@ the verdict.
 **No `arc()` helper.** Considered and dropped: the firing arcs in the registry are the only
 hand-written tuples left in the game, and a helper for forty of them earns less than it costs.
 
-**The NPC gunner does not check arcs.** `Laser.can_fire_at` tests heat, energy, scan and damage
-but not `in_firing_arc`, so it will offer shots that `Laser.fire` then refuses. Invisible today
-because almost every laser is 360; it becomes noisy the moment arcs narrow, and it goes in with
-the Gunner.
+**The NPC gunner checks arcs now.** `Laser.can_fire_at` tests `in_firing_arc` along with heat,
+energy, scan and damage, so it no longer offers shots that `Laser.fire` refuses. That mattered the
+moment arcs narrowed.
 
 ### What each race is for
 
@@ -483,27 +484,22 @@ every component at once is not "lose a turret". The object decides what an incom
 for it, the way ADR 0023 has it decide what an impulse means, so `Ship` answers this differently
 from `Missile` when ships become targets. Not needed while only ordnance can be disabled.
 
-**A laser disables, and that needs no new concept.** `DamageType.Laser` joins Explosion,
-Nanocyte, EMP and Impact, saying what hit you like the other four do. Ordnance answers it by
-setting `DISABLED` on its own components as well as dying, so the warhead does not fire. A ship
-answers the same hit as plain damage. Nothing has to model "disabling" as a kind of harm, because
-it is what a missile decides a laser means, which is `take_damage_from`'s existing shape and ADR
-0023's rule one level up.
+**A laser disables, and that needs no new concept.** `DamageType.Laser` sits beside Explosion,
+Nanocyte, EMP and Impact, saying what hit you like the other four do, and `Laser.fire` already puts
+it on the event it hands the target. Ordnance answers it by setting `DISABLED` on its own components
+as well as dying, so the warhead does not fire. A ship answers the same hit as plain damage. Nothing
+has to model "disabling" as a kind of harm, because it is what a missile decides a laser means,
+which is `take_damage_from`'s existing shape and ADR 0023's rule one level up.
 
 That makes every laser a missile-killer, not only a point defence mount. The families stay
 distinct on arc, heat and damage instead, which is a better split anyway: a duellist that happens
 to swat a Splinter on the way in is fine, a duellist that is also the best anti-missile gun is not.
 
-**A bug on the way in.** `laser.py:70` passes the string `'Laser'` where every other `HitEvent`
-passes a `DamageType`:
-
-```python
-HitEvent((self.container.pos, target_ship.pos), 'Laser', self.owner, target_ship, ...)
-```
-
-So a laser hit is the only one whose `_type` is not a member of the enum, and every
-`hit_event._type == DamageType.X` comparison quietly does not match it. That costs nothing today
-and would break this the moment a laser hit is meant to be recognised.
+**The minimal form is a bug fix, not a feature.** `Warhead.decide` asks only whether its container
+died, so a lasered missile detonates where it stands and point defence sets off what it shoots at.
+`Missile.take_damage_from` holds the damage type in its hand when it zeroes the hull and discards
+it. Marking the warhead spent there is two lines and buys the whole intent; `status_effects` is
+what the rest of this section is for.
 
 ## Not in this plan
 

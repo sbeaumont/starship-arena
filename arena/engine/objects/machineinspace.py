@@ -4,7 +4,8 @@ A machine holds hull, battery and components, and asks its MachineType for anyth
 model. See docs/adr/0003-type-objects-for-machines.md."""
 
 from abc import ABC
-from .objectinspace import Encounter, Impulse, ObjectInSpace, Stance, Vector
+from arena.engine.objects.geometry import Vector
+from arena.engine.objects.objectinspace import Encounter, Impulse, ObjectInSpace, Stance
 from .event import DamageType, HitEvent
 from arena.engine.objects.component import Component
 from arena.engine.history import Tick, TICK_ZERO

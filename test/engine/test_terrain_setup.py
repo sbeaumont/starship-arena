@@ -11,7 +11,7 @@ from arena.app.scenarios.five_faction_war import FiveFactionWar, RING_RADIUS
 from arena.app.scenarios.terrain import STANDARD_BODIES
 from arena.engine.admin import regenerate_game, setup_game
 from arena.engine.gamedirectory import GameDirectory
-from arena.engine.objects.objectinspace import Point
+from arena.engine.objects.geometry import Point
 
 ROSTER = [
     {'name': 'Alpha', 'type': 'H2545', 'faction': 'One', 'player': 'Rik', 'x': 400, 'y': 0},

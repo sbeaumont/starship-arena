@@ -88,7 +88,8 @@ def overview():
     """Every game, and whether its round can be processed."""
     return render_template('index.html',
                            games=facade().game_lines(),
-                           archived=facade().archived_games())
+                           archived=facade().archived_games(),
+                           finished=facade().finished_games())
 
 
 @app.route('/processing')
@@ -113,6 +114,13 @@ def reopen(game: str):
     except ValueError as e:
         return redirect(url_for('game_overview', game_name=game, msg=str(e), _anchor='processing'))
     return redirect(url_for('assign', game=game))
+
+
+@app.route('/valhalla/<game>', methods=['POST'])
+def to_valhalla(game: str):
+    """Put a copy of a game on show. It carries on being whatever it was."""
+    facade().export_to_valhalla(game)
+    return redirect(url_for('overview', _anchor='valhalla'))
 
 
 @app.route('/archive/<game>', methods=['POST'])

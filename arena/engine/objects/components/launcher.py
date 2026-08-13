@@ -3,7 +3,7 @@ from typing import Protocol, runtime_checkable
 from arena.engine.history import Tick, TICK_ZERO
 from arena.engine.world import World
 from arena.engine.objects.components.weapon import Weapon
-from arena.engine.objects.objectinspace import Vector
+from arena.engine.objects.geometry import Vector
 from arena.engine.objects.component import DirectionParameter
 
 

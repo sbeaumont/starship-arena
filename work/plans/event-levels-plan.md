@@ -19,7 +19,7 @@ class from it. A new kind costs one colour rule, and a kind with no rule reads a
 ## The fact that decides the shape
 
 **A `HitEvent` is one object in two ships' histories.** `Laser.fire` adds it to the shooter
-(`laser.py:73`) and `Ship.take_damage_from` adds that same object to the target (`ship.py:153`).
+and `Ship.take_damage_from` adds that same object to the target.
 `Warhead.explode` does both as well. The text reads identically in both logs.
 
 So tone cannot live on an event. That one object is a triumph in one log and a disaster in the

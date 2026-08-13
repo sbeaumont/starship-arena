@@ -26,11 +26,14 @@ export class Playhead {
   playing = $state(false);
   perSecond = $state(3);
 
-  constructor(game, { faction = null, from = null, asPlayer = false } = {}) {
+  // `museum` is a game that is over, read out of Valhalla. The same payload either way: which
+  // shelf it came off is the server's business, and it is the only thing this knows about it.
+  constructor(game, { faction = null, from = null, asPlayer = false, museum = false } = {}) {
     this.game = game;
     this.faction = faction;
     this.from = from;
     this.asPlayer = asPlayer;
+    this.museum = museum;
   }
 
   async load() {
@@ -38,10 +41,11 @@ export class Playhead {
     if (this.faction) asked.set("faction", this.faction);
     // A director watching as one of their commanders is filtered like one, rather than being
     // handed every side and shown a slice of it.
-    if (this.asPlayer) asked.set("as_player", "true");
+    if (this.asPlayer && !this.museum) asked.set("as_player", "true");
+    const where = this.museum ? `/api/game/valhalla/${this.game}/replay`
+                              : `/api/game/${this.game}/replay`;
     try {
-      const res = await fetch(`/api/game/${this.game}/replay`
-                              + (asked.size ? `?${asked}` : ""));
+      const res = await fetch(where + (asked.size ? `?${asked}` : ""));
       if (!res.ok) {
         throw new Error(res.status === 403 ? "A replay is the director's to open."
                                           : `API returned ${res.status}`);

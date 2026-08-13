@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Starship Arena replay, version 1",
+  "description": "A game as it was played, from every side and including what each of them saw, so it can be watched whole or from inside one side's fog. Frozen: a field here means today what it meant the day the first file was written, and a different answer is a later version rather than an edit to this one.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "game", "first_tick", "last_tick", "objects"],
+  "properties": {
+    "version": {"const": 1},
+    "game": {"type": "string", "description": "What the game was called."},
+    "first_tick": {"type": "integer", "description": "The setup state, where every game's timeline opens. Ticks count from the start of the game, ten to the round."},
+    "last_tick": {"type": "integer"},
+    "objects": {"type": "array", "items": {"$ref": "#/$defs/object"}}
+  },
+  "$defs": {
+    "object": {
+      "description": "Everything that was ever in space, whether it came out again or not.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type_name", "category_name", "faction", "owner", "player", "radius", "ticks"],
+      "properties": {
+        "name": {"type": "string"},
+        "type_name": {"type": "string", "description": "The model it was built to, as the game named it."},
+        "category_name": {"type": "string", "description": "The kind of thing it was: a ship, a starbase, a missile, a mine, terrain."},
+        "faction": {"type": ["string", "null"], "description": "The side it was on. Ordnance is on the side of whoever fired it; terrain is on nobody's."},
+        "owner": {"type": ["string", "null"], "description": "What put it there, so a salvo reads as one ship's. A ship owns itself."},
+        "player": {"type": ["string", "null"], "description": "Who flew it, for the ships somebody did."},
+        "radius": {"type": "number", "description": "Above zero is terrain, which is drawn at its true size."},
+        "ticks": {"type": "array", "items": {"$ref": "#/$defs/tick"}}
+      }
+    },
+    "tick": {
+      "description": "One object at one tick. A tick it has no entry for is a tick it was not in space.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tick", "x", "y", "heading", "speed", "hull", "battery", "score", "components", "scans", "events"],
+      "properties": {
+        "tick": {"type": "integer"},
+        "x": {"type": "number"},
+        "y": {"type": "number"},
+        "heading": {"type": ["number", "null"]},
+        "speed": {"type": ["number", "null"]},
+        "hull": {"type": ["number", "null"], "description": "What it had left. Null where the thing was never built, which is terrain."},
+        "battery": {"type": ["number", "null"]},
+        "score": {"type": "integer", "description": "What it earned that tick. The total is the sum of them."},
+        "components": {
+          "description": "What each part reported about itself, by the name it calls itself: names it chose, values it chose. Open on purpose, so a file still reads after the component that wrote it has gone from the code. Empty for anything that was never built.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {"type": ["string", "number"]}
+          }
+        },
+        "scans": {
+          "description": "What this one saw on this tick, empty for anything that saw nothing and for anything that cannot look. A side's picture is rebuilt from the scans its commanders took, which is what lets a finished game be watched from inside one side's fog.",
+          "type": "array",
+          "items": {"$ref": "#/$defs/scan"}
+        },
+        "events": {"type": "array", "items": {"$ref": "#/$defs/event"}}
+      }
+    },
+    "scan": {
+      "description": "Something seen, and where it was. A scan records a position and never a course, so a contact's heading is whatever two sightings imply. How far off and in what direction it was is not written down: the scanner's own position on this tick already says.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "x", "y"],
+      "properties": {
+        "name": {"type": "string", "description": "What was seen, by the name it is filed under here."},
+        "x": {"type": "number"},
+        "y": {"type": "number"}
+      }
+    },
+    "event": {
+      "description": "Something that happened, as the sentence a reader is shown. Scans are not events here.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "damage_type", "text", "x", "y", "shape"],
+      "properties": {
+        "kind": {"type": "string", "description": "What sort of thing it was, in the game's own vocabulary. Open, because a game may have been played with kinds this file's reader has never heard of."},
+        "damage_type": {"type": "string", "description": "What it carried: the kind of harm a blow did, and for anything that harmed nobody, what sort of thing it was instead. Open the way kind is."},
+        "text": {"type": "string"},
+        "x": {"type": ["number", "null"], "description": "Where it happened. Null for something that happened nowhere in particular, such as a line in a ship's own log."},
+        "y": {"type": ["number", "null"]},
+        "shape": {
+          "description": "What it manifested as in the world, as the shape's own name and its measurements. Empty for something that happened at the point it says it did. Open the way components are: a shape a reader has never heard of is one it does not draw.",
+          "type": "object",
+          "maxProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {"type": "number"}
+          }
+        }
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from arena.engine.history import Tick, TICK_ZERO
 from arena.engine.objects.event import ExplosionEvent
-from arena.engine.objects.objectinspace import Point, Vector
+from arena.engine.objects.geometry import Point, Vector
 from arena.engine.objects.registry import builder
 from arena.engine.objects.registry.missiles import Rocket
 

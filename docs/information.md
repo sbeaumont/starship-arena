@@ -228,6 +228,7 @@ Every information element in the engine, classified.
 | `class_name`, `type_name`, `mass` | derived answer | `MachineInSpace`, from its type |
 | `scans` | derived answer | `Ship` |
 | `score` | derived answer | `Event`, from its effects |
+| `shape` | derived answer, neutral default | `Event`, from where it happened and how far it carried |
 | `is_destroyed` | derived answer | every machine, from `hull` and `battery` |
 | `type_name`, `category_name` | self-description | `ObjectInSpace`, abstract |
 | `kind` | self-description | `Event`, `Parameter`, abstract |
