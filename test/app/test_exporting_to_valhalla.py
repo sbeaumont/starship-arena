@@ -123,6 +123,18 @@ class TestExportingToValhalla(TestCase):
         with self.assertRaises(ValidationError):
             valhalla.load(json.dumps(self.exported))
 
+    def test_a_file_is_held_against_the_schema_once_and_says_so(self):
+        """The walk is a quarter of a second on a big game, and only an export changes the file."""
+        marker = self.where / 'replay.validated'
+        self.assertFalse(marker.exists())
+        self.game.read_valhalla('duel')
+        self.assertTrue(marker.exists())
+
+    def test_exporting_again_takes_the_marker_with_it(self):
+        self.game.read_valhalla('duel')
+        self.admin.export_to_valhalla('duel')
+        self.assertFalse((self.where / 'replay.validated').exists())
+
 
 class TestAFileWrittenEarlierStillReads(TestCase):
     """A v1 file that no current code produced. Change what v1 means and this stops working."""

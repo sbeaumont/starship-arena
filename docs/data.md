@@ -39,6 +39,8 @@ carries on being whatever it was.
     valhalla/<game name>/
         replay.json          the record: the whole game, in a numbered version of a schema kept
                              for this alone
+        replay.validated     that replay.json has been through that schema, so a read need not
+                             walk it again. Disposable, and an export takes it away
         ships.jsonl          the roster it started from, copied in with the export
         synopsis.txt         the record: what the director made of it
         win-story.json       the record: how the side that took it says it was taken

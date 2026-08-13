@@ -18,10 +18,13 @@ def export(replay, game: str) -> str:
     return json.dumps(NEWEST.write(replay, game), indent=1)
 
 
-def load(text: str) -> dict:
-    """A file, in the shape its own version promises. Any other version is refused by number."""
+def load(text: str, validate: bool = True) -> dict:
+    """A file, in the shape its own version promises. Any other version is refused by number.
+
+    `validate=False` is a caller saying this exact text has been held against the schema already,
+    which only a marker kept beside the file may say."""
     raw = json.loads(text)
     version = raw.get('version')
     if version not in READERS:
         raise ValueError(f"Valhalla format version {version} is not one this code can read.")
-    return READERS[version].read(raw)
+    return READERS[version].read(raw, validate)

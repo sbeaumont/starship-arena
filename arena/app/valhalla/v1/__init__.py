@@ -7,7 +7,7 @@ See docs/adr/0034-a-finished-game-is-exported-to-a-schema-of-its-own.md.
 import json
 from pathlib import Path
 
-from jsonschema import validate
+import jsonschema
 
 from arena.app.valhalla.v1 import from_engine
 
@@ -18,11 +18,12 @@ VERSION = SCHEMA['properties']['version']['const']
 def write(replay, game: str) -> dict:
     """A played game as a v1 document, or nothing at all."""
     document = {'version': VERSION, 'game': game} | from_engine.document(replay)
-    validate(document, SCHEMA)
+    jsonschema.validate(document, SCHEMA)
     return document
 
 
-def read(raw: dict) -> dict:
-    """A document, once it is one."""
-    validate(raw, SCHEMA)
+def read(raw: dict, validate: bool = True) -> dict:
+    """A document, once it is one. Held against the schema unless it already has been."""
+    if validate:
+        jsonschema.validate(raw, SCHEMA)
     return raw

@@ -91,6 +91,12 @@ Deleting a finished game's pickles then loses nothing the file holds. Measured o
 and 112 objects: 2.0 MB of indented JSON against 2.7 MB of pickles, most of the growth being the
 scans.
 
+**The walk on the way in happens once per file, not once per read.** It is 245 ms on `xke`,
+against 5 ms to parse the same file, and the museum's list page reads every game in there. So a
+file that has passed keeps a `replay.validated` marker beside it, and writing a replay takes the
+marker away, a new export being a different file. Losing a marker costs one walk and nothing else,
+which is what lets it be a bare empty file rather than something that has to be kept true.
+
 Two shapes now describe one picture, the schema and `GameReplay`, each with its own walk over the
 histories. That is the price, and it is the point: the map can change without changing what a file
 written last year means.

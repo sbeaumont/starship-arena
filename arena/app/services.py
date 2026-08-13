@@ -148,8 +148,17 @@ class _EngineAccess:
             key=lambda side: (-side.score, side.faction))
 
     def read_valhalla(self, game: str) -> dict:
-        """A finished game's own file, in the shape the version it says it is promises."""
-        return valhalla.load(self.dirs.directory_in(GamesIn.Valhalla, game).read_replay())
+        """A finished game's own file, in the shape the version it says it is promises.
+
+        Held against the schema once per file rather than once per read, since only an export
+        changes it. See docs/adr/0034-a-finished-game-is-exported-to-a-schema-of-its-own.md."""
+        gd = self.dirs.directory_in(GamesIn.Valhalla, game)
+        if gd.replay_validated():
+            document = valhalla.load(gd.read_replay(), validate=False)
+        else:
+            document = valhalla.load(gd.read_replay(), validate=True)
+            gd.mark_replay_validated()
+        return document
 
     def game_names_in_use(self) -> set[str]:
         """Played, archived, registering, finished or somebody's own. All of them claim the name.

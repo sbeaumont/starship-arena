@@ -173,13 +173,23 @@ class GameDirectory(object):
             f.write(json.dumps(settings, sort_keys=True) + '\n')
 
     def write_replay(self, text: str) -> None:
-        """The game as text, which is the whole of it once the pickles are gone. ADR 0034."""
+        """The game as text, which is the whole of it once the pickles are gone. ADR 0034.
+
+        A different file, so whatever was said about the last one no longer holds."""
         with open(os.path.join(self._dir, REPLAY_FILE_NAME), 'w') as f:
             f.write(text)
+        Path(self._dir, VALIDATED_FILE_NAME).unlink(missing_ok=True)
 
     def read_replay(self) -> str:
         with open(os.path.join(self._dir, REPLAY_FILE_NAME)) as f:
             return f.read()
+
+    def replay_validated(self) -> bool:
+        """Whether the export as it stands has been held against its schema."""
+        return self.file_exists(VALIDATED_FILE_NAME)
+
+    def mark_replay_validated(self) -> None:
+        Path(self._dir, VALIDATED_FILE_NAME).touch()
 
     def copy_roster_to(self, other: 'GameDirectory') -> None:
         """The ships file, into a museum directory beside the export: who flew what, in one
