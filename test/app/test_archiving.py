@@ -51,7 +51,7 @@ class TestArchiving(TestCase):
 
     def test_unarchiving_puts_it_back(self):
         self.admin.archive_game('old')
-        self.admin.unarchive_game('old')
+        self.admin.activate_game('old')
         self.assertEqual(['live', 'old'], self.names(self.admin.list_games()))
         self.assertEqual([], self.names(self.admin.list_archived_games()))
 
@@ -65,7 +65,7 @@ class TestArchiving(TestCase):
         self.admin.archive_game('old')
         os.makedirs(os.path.join(self.games, 'old'))
         with self.assertRaises(ValueError):
-            self.admin.unarchive_game('old')
+            self.admin.activate_game('old')
 
     def test_delete_only_reaches_into_the_archive(self):
         self.admin.archive_game('old')

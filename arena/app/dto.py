@@ -51,8 +51,31 @@ class GameStanding:
         return bool(self.players) and self.players_ready == self.players
 
 
+class GameState(str, Enum):
+    """Where a game is in its life. Spelled the 3.10-compatible way; the host has no StrEnum."""
+    REGISTERING = 'registering'
+    ACTIVE = 'active'
+    FINISHED = 'finished'
+    ARCHIVED = 'archived'
+
+    def __str__(self):
+        return self.value
+
+
+@dataclass
+class Outcome:
+    """How a game ended, once its scenario says it has.
+
+    `points` is what the objective was worth and to whom, which is a separate tally from the
+    combat score: nobody shot anything to earn it."""
+    faction: str
+    reason: str
+    points: dict[str, int] = field(default_factory=dict)   # commander -> what they were paid
+
+
 @dataclass
 class GameSummary(Named):
+    state: GameState = GameState.ACTIVE
     current_round: int = 0
     process_hours: list[int] = field(default_factory=list)  # hours of server time it runs on
     # When it next will, ISO 8601 with the offset. None when the director processes it by hand.
@@ -60,6 +83,9 @@ class GameSummary(Named):
     next_processing: str | None = None
     # None while a game is still collecting registrations: nothing is being planned yet.
     standing: GameStanding | None = None
+    # How it ended, once a scenario has said so. None for one still being played, and for one the
+    # director closed by hand.
+    outcome: Outcome | None = None
 
 
 @dataclass
@@ -168,6 +194,7 @@ class FactionSummary:
 @dataclass
 class GameOverview(Named):
     """Who is playing a game and how they are doing, enough to pick whose view to open."""
+    state: GameState = GameState.ACTIVE
     last_round: int = 0
     factions: list[FactionSummary] = field(default_factory=list)
 
@@ -584,6 +611,7 @@ class PlayerPlan:
     round: int           # the round this picture is drawn from
     last_round: int      # the newest round there is. Orders can only be changed while
                          # looking at it, since that is what the current round plans from.
+    state: GameState     # anything but ACTIVE takes no orders at all
     ready: bool          # the player has said they are done with the round being planned
     ships: list[ShipPlan]
     contacts: list[Contact]

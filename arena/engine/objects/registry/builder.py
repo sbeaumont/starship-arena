@@ -8,6 +8,7 @@ import os
 import pkgutil
 from arena.engine.history import Tick
 from arena.engine.objects.geometry import Point, Vector
+from arena.engine.objects.beacon import BeaconType
 from arena.engine.objects.body import BodyType
 from arena.engine.objects.ship import ShipType
 from arena.engine.objects.starbase import StarbaseType
@@ -42,11 +43,14 @@ def _models(root, *filed_elsewhere) -> dict:
 all_starbase_types = _models(StarbaseType)
 all_ship_types = _models(ShipType, StarbaseType)
 all_body_types = _models(BodyType)
+all_beacon_types = _models(BeaconType)
 
-# What a director fields, as against the terrain a game is played over. Both are models and both
-# are spawned by name, but only one of them has a hull to describe or a player to fly it.
+# What a director fields, as against the fixtures a game is played among. All of them are models
+# and all are spawned by name, but only the fielded ones have a hull to describe or a player to
+# fly them.
 all_fielded_types = all_ship_types | all_starbase_types
-all_types = all_fielded_types | all_body_types
+all_fixture_types = all_body_types | all_beacon_types
+all_types = all_fielded_types | all_fixture_types
 
 
 def spawn(type_name: str, name: str, vector: Vector, **kwargs):

@@ -298,6 +298,17 @@ code { color: var(--cyan); font-size: 12px; }
 .who .nm { display: block; color: var(--hull); font-size: 12.5px; }
 .who .fleet { display: block; color: var(--ink-faint); font-size: 11px; margin-top: 2px; }
 
+/* One row per player: who they are, what they fly, and the way out. */
+.signups { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; margin-bottom: 24px;
+           align-items: center; }
+.signup { display: flex; align-items: center; gap: 8px; }
+.signup .nm { color: var(--hull); font-size: 12.5px; flex: 0 0 120px; }
+/* Both controls carry width:100% from the base rule, which in a flex row makes the first of
+   them eat the whole thing. */
+.signup select { flex: 0 0 120px; width: auto; }
+.signup input[type=text] { flex: 1 1 auto; width: auto; }
+.signup.out { justify-self: end; }
+
 .picks { display: flex; flex-wrap: wrap; gap: 6px; }
 .pick {
     margin: 0; padding: 7px 12px; cursor: pointer;

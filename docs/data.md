@@ -19,12 +19,13 @@ the root. There's no database.
         status_round_<n>.pickle              the state: the world at the end of a round
 ```
 
-Two more directories sit beside `games/` and hold the ones that are not in play. `archived/` is a
-game that is over, `registering/` is one that has been named and is collecting registrations. A
-game directory is the same thing in all three places, and moving between them is a `shutil.move`.
+More directories sit beside `games/` and hold the ones that are not in play. `finished/` is a
+game that is over and still open to whoever played it, `archived/` is one out of sight, and
+`registering/` is one that has been named and is collecting registrations. A game directory is the
+same thing in all of them, and moving between them is a `shutil.move`.
 [ADR 0022](adr/0022-a-game-directory-moves-between-three-places.md).
 
-A fourth, `solo-games/`, holds the game a player runs on their own, one each and named
+`solo-games/` holds the game a player runs on their own, one each and named
 `Solo_<player>`. Same files, same rounds, and it never appears in a list of games: a player asks
 for theirs by itself. No shared game may take a name starting with `Solo`, so which root a
 directory is in is never in doubt.

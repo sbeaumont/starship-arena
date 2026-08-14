@@ -1,4 +1,4 @@
-# 0022. A game directory moves between three places
+# 0022. A game's state is the root it is kept in
 
 **Status:** Accepted
 
@@ -15,14 +15,20 @@ because of where it is.
 
 ## Decision
 
-A game directory lives in exactly one of three places, all of them children of the data root:
+A game directory lives in exactly one place, a child of the data root:
 
     <data root>/games/<game>          being played
-    <data root>/archived/<game>       over
+    <data root>/finished/<game>       over, and still open to everyone who played it
+    <data root>/archived/<game>       out of sight
     <data root>/registering/<game>    named, collecting registrations, not started
 
-`cfg.GamesRoot` holds a root and names its three children, so the layout is written once and
+`cfg.GamesRoot` holds a root and names its children, so the layout is written once and
 `AdminService` carries one of these rather than a path it does arithmetic on.
+
+**Where it is kept is what it is.** `GamesIn.active` says a round can still be planned there and
+`GamesIn.readable` says a player can still open it, so no operation asks a game for a status and
+none can disagree with the directory it is in. A game moves between `games/`, `finished/` and
+`archived/` freely, in any direction.
 
 It is the same directory throughout, holding the same kinds of file. `registering/` adds
 `scenario.json`, saying which scenario it is being built from, and `registrations.jsonl`, holding
@@ -35,8 +41,8 @@ deletes the roster, the round-zero pickle and the empty commands directory.
 `game_names_in_use()` spans them all, so a name in registration cannot be claimed twice and the
 move at the end cannot collide.
 
-These three are the stages of one game's life. A game a player runs on their own is not a stage of
-it, and sits in a fourth root of its own:
+These are the stages of one game's life. A game a player runs on their own is not a stage of
+it, and sits in a root of its own:
 [0030](0030-solo-games-live-in-their-own-root.md).
 
 The registrations travel with the directory and stay in the live game. They are a plan under
@@ -44,14 +50,15 @@ The registrations travel with the directory and stay in the live game. They are 
 
 ## Consequences
 
-Every list stays a directory listing. `list_games`, `list_archived_games` and
-`list_registering_games` are the same function pointed at a different root.
+Every list stays a directory listing. `list_games`, `list_finished_games`,
+`list_archived_games` and `list_registering_games` are the same function pointed at a different
+root.
 
 A game that has been started can go back into registration as long as no round has been played,
 because nothing has been consumed yet. After the first round the roster is what people have been
 playing, so it is refused.
 
-The three roots have to be created on demand, and a stray directory in any of them is a game. That
+The roots have to be created on demand, and a stray directory in any of them is a game. That
 is the same bargain archiving already made.
 
 ## Alternatives rejected

@@ -26,7 +26,9 @@ class TestTheTwoBuildersAgree(TestCase):
         self.root = Path(tempfile.mkdtemp())
         self.admin = AdminService(str(self.root))
         self.game = GameService(str(self.root))
-        self.admin.create_game('duel', DUEL, 'generic')
+        # Over the ring, so the two builders are held to agreeing about terrain as well. Both
+        # ships carry coordinates, so deploying keeps them where the duel wants them.
+        self.admin.create_game('duel', DUEL, 'five-faction-war')
         self.game.save_commands('duel', 'Alpha',
                                 [f'{t}: Fire R1 0' for t in range(1, 6)] + ['1: Fire L1 Beta'])
         self.game.save_commands('duel', 'Beta', ['1: Scan'])
@@ -91,18 +93,17 @@ class TestAFileWrittenEarlierStillPlays(TestCase):
         self.assertFalse(self.shown(replay, 'Alpha').contact)
         self.assertEqual([10], [p.abs_tick for p in self.shown(replay, 'Beta').path])
         self.assertTrue(self.shown(replay, 'Beta').contact)
-        # Seen at both ticks, by the one commander that looked.
-        self.assertEqual([10, 11], [p.abs_tick for p in self.shown(replay, 'Rock').path])
 
     def test_a_sighting_says_where_and_never_which_way(self):
         seen = self.shown(from_valhalla.replay(self.doc, 'One'), 'Beta').path[0]
         self.assertEqual((0, 20), (seen.x, seen.y))
         self.assertEqual((None, None), (seen.heading, seen.speed))
 
-    def test_what_a_side_never_looked_at_is_not_in_its_picture(self):
-        """Beta scanned Alpha and never the rock, so the rock is not in Two's war at all."""
+    def test_terrain_is_on_every_side_s_chart_whether_it_looked_or_not(self):
+        """Beta never scanned the rock, and still flew a map with the rock on it."""
         replay = from_valhalla.replay(self.doc, 'Two')
-        self.assertEqual({'Beta', 'Alpha'}, {o.name for o in replay.objects})
+        self.assertEqual({'Beta', 'Alpha', 'Rock'}, {o.name for o in replay.objects})
+        self.assertFalse(self.shown(replay, 'Rock').contact)
         self.assertTrue(self.shown(replay, 'Alpha').contact)
 
     def test_a_beam_is_the_line_it_ran_along_whoever_is_watching(self):

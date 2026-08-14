@@ -90,9 +90,9 @@ class Gunner(Controller):
                 self.add_internal_event(f"{self.name}: Firing at closest enemy.")
                 self.fire_laser(laser, enemies[0], tick, world)
 
-    def fire_laser(self, laser, enemy, tick, ois):
-        if not enemy.is_destroyed and laser.can_fire_at(enemy):
-            self.add_command(tick.tick + 1, f"Fire {laser.name} {enemy.name}", ois)
+    def fire_laser(self, laser, enemy, tick, world):
+        if not enemy.is_destroyed and laser.can_fire_at(enemy, world):
+            self.add_command(tick.tick + 1, f"Fire {laser.name} {enemy.name}", world)
             return True
         return False
 

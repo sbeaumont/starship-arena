@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from arena.app.clock import server_now, zone_name
-from arena.app.dto import By, GameSettings, GameStanding, ProcessingTrigger
+from arena.app.dto import By, GameSettings, GameStanding, GameState, ProcessingTrigger
 from arena.app.naming import for_display
 from arena.app.services import AdminService
 from arena.cfg import GAME_DATA_DIR, MANUAL_FILENAME
@@ -78,6 +78,7 @@ class GameDetail:
     """One game as the console's own page shows it: the living ships by faction, the dead, and
     what the round is waiting for."""
     name: str
+    state: GameState
     standing: GameStanding
     factions: dict[str, list]   # faction -> its living ships, best faction first
     dead: list                  # what is in the graveyard, whatever faction it flew for
@@ -128,6 +129,7 @@ class AppFacade(object):
     def game_detail(self, game: str) -> GameDetail:
         overview = self.admin.game_overview(game)
         return GameDetail(name=game,
+                          state=overview.state,
                           standing=self.admin.standing(game),
                           factions={f.name: [s for s in f.ships if s.alive]
                                     for f in overview.factions},
@@ -192,6 +194,9 @@ class AppFacade(object):
     def archived_games(self) -> list:
         return self.admin.list_archived_games()
 
+    def finished_games(self) -> list:
+        return self.admin.list_finished_games()
+
     def valhalla_games(self) -> list:
         return self.admin.list_valhalla_games()
 
@@ -210,6 +215,12 @@ class AppFacade(object):
     def registrations(self, game: str) -> list:
         return self.admin.registrations(game)
 
+    def register(self, game: str, player: str, names: list[str]) -> None:
+        self.admin.register(game, player, names)
+
+    def withdraw(self, game: str, player: str) -> None:
+        self.admin.withdraw(game, player)
+
     def assign(self, game: str, factions: dict) -> None:
         self.admin.assign(game, factions)
 
@@ -227,11 +238,14 @@ class AppFacade(object):
     def is_reopenable(self, game: str) -> bool:
         return self.admin.is_reopenable(game)
 
+    def activate_game(self, name: str) -> None:
+        self.admin.activate_game(name)
+
+    def finish_game(self, name: str) -> None:
+        self.admin.finish_game(name)
+
     def archive_game(self, name: str) -> None:
         self.admin.archive_game(name)
-
-    def unarchive_game(self, name: str) -> None:
-        self.admin.unarchive_game(name)
 
     def delete_archived_game(self, name: str) -> None:
         self.admin.delete_archived_game(name)

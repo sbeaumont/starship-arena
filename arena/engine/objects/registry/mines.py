@@ -1,5 +1,6 @@
 from arena.engine.history import Tick, TICK_ZERO
-from arena.engine.objects.components.warhead import SplinterWarhead, NanocyteWarhead
+from arena.engine.objects.components.warhead import (EMPWarhead, SplinterWarhead,
+                                                     NanocyteWarhead)
 from arena.engine.objects.machineinspace import MachineType
 from arena.engine.objects.mine import Mine
 from arena.engine.objects.geometry import Vector
@@ -33,6 +34,20 @@ class SplinterMine(MineType):
     def weapons(self):
         return [
             SplinterWarhead('warhead'),
+        ]
+
+
+class EMPMine(MineType):
+    """Takes the battery rather than the hull, so a pursuer loses its cloak and its speed."""
+    base_type = Mine
+    max_battery = 50
+    start_battery = 50
+    max_hull = 5
+
+    @property
+    def weapons(self):
+        return [
+            EMPWarhead('warhead'),
         ]
 
 

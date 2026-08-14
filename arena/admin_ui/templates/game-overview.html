@@ -60,6 +60,12 @@
 
 <section data-tab="processing" hidden>
     <div class="rowactions">
+        {% if finished %}
+            <p class="lede">This game is finished. It takes no orders and runs no rounds.</p>
+            <form method="POST" action="{{ url_for('activate', game=game) }}">
+                <button class="go" type="submit">Back into play</button>
+            </form>
+        {% else %}
         <form method="POST" action="{{ url_for('process_turn', game=game) }}">
             <button class="go" type="submit" id="process" {{ 'disabled' if not standing.all_in }}>
                 {{ 'Process round ' ~ standing.round_nr if standing.all_in else 'Waiting for orders' }}
@@ -69,6 +75,7 @@
               onsubmit="return confirm('Process round {{ standing.round_nr }} now? Anyone without orders gets an empty file and does nothing.')">
             <button type="submit">Force it</button>
         </form>
+        {% endif %}
         <form method="POST" action="{{ url_for('regenerate', game=game) }}"
               onsubmit="return confirm('Replay {{ display }} from its ships file and orders? Its saved rounds are rebuilt.')">
             <button type="submit">Regenerate</button>

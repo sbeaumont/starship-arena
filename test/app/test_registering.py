@@ -29,6 +29,12 @@ class TestRegisteringGames(TestCase):
     def test_it_holds_its_scenario(self):
         self.assertEqual('five-faction-war', self.admin.scenario_of('war'))
 
+    def test_it_still_holds_it_once_it_is_being_played(self):
+        self.register_four()
+        ships = [{'name': 'Voyager', 'type': 'H2545', 'faction': 'Human', 'player': 'Rik'}]
+        self.admin.start_game('war', ships, GameSettings(on_all_ready=True, process_hours=[8]))
+        self.assertEqual('five-faction-war', self.admin.scenario_of('war'))
+
     def test_the_name_is_claimed_while_it_registers(self):
         self.assertIn('war', self.admin.game_names_in_use())
         with self.assertRaises(ValueError):

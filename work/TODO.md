@@ -306,6 +306,12 @@ time" prevents the re-proposal.
 - [ ] **New ADRs as decisions come up.** Not a backlog to work through: write one when something is
       decided, especially when an alternative was rejected for a reason worth remembering.
 
+- [ ] **A game's outcome does not reach Valhalla.** `outcome.json` says which side took a scenario
+      game and what the objective paid, and the export carries neither, so a finished game in the
+      museum still reads as combat score alone. Carrying it means a version of the schema, which is
+      the decision to make first: [ADR 0034](../docs/adr/0034-a-finished-game-is-exported-to-a-schema-of-its-own.md).
+      The same version would settle whether objective points belong in the standing or beside it.
+
 ## Making a game easily
 
 - [ ] **Tooling for large rosters.** A row per ship stops scaling somewhere above twenty ships, and

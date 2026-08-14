@@ -74,6 +74,10 @@ class Body(ObjectInSpace):
         return True
 
     @property
+    def is_terrain(self) -> bool:
+        return True
+
+    @property
     def radius(self) -> float:
         return self._type.radius
 

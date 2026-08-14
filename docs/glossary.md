@@ -46,7 +46,9 @@ missiles and mines are machines.
 
 **Body, or terrain.** An object in space that was not built: an asteroid today, a planet or a
 station later. No hull, no battery, no components. What it has is a **radius**, and carrying a
-radius is what makes something impassable. There is no `is_solid` anywhere.
+radius is what makes something impassable and what makes it block a scan. There is no `is_solid`
+anywhere. Terrain is on every chart from the start and is never scanned:
+[GDDR 0038](gddr/0038-terrain-blocks-what-you-can-see.md).
 
 **Impulse.** A direction and a magnitude handed to whatever ran into something. The object receiving
 it decides what it means: a ship bounces and takes damage, a missile detonates, a mine settles.

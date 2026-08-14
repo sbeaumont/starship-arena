@@ -44,8 +44,9 @@ class _Stubbing(pickle.Unpickler):
 
 class GamesIn(str, Enum):
     """One of the roots a game can be in, named after it."""
-    Playing = GAMES_DIR_NAME
+    Active = GAMES_DIR_NAME
     Archived = ARCHIVE_DIR_NAME
+    Finished = FINISHED_DIR_NAME
     Registering = REGISTERING_DIR_NAME
     Solo = SOLO_DIR_NAME
     Valhalla = VALHALLA_DIR_NAME
@@ -54,14 +55,19 @@ class GamesIn(str, Enum):
         return self.value
 
     @property
-    def planned(self) -> bool:
-        """Whether a round is being planned in here. Nothing is owed for the other three."""
-        return self in (GamesIn.Playing, GamesIn.Solo)
+    def active(self) -> bool:
+        """Whether a round can still be planned and processed in here."""
+        return self in (GamesIn.Active, GamesIn.Solo)
+
+    @property
+    def readable(self) -> bool:
+        """Whether a game in here can still be opened by the people who played it."""
+        return self.active or self is GamesIn.Finished
 
 
 @dataclass(frozen=True)
 class GamesRoot:
-    """A data root, and the five places a game directory can be in it."""
+    """A data root, and the places a game directory can be in it."""
 
     root: Path
 
@@ -70,11 +76,15 @@ class GamesRoot:
 
     @property
     def games(self) -> Path:
-        return self.path(GamesIn.Playing)
+        return self.path(GamesIn.Active)
 
     @property
     def archived(self) -> Path:
         return self.path(GamesIn.Archived)
+
+    @property
+    def finished(self) -> Path:
+        return self.path(GamesIn.Finished)
 
     @property
     def registering(self) -> Path:
@@ -92,14 +102,16 @@ class GamesRoot:
         return GameDirectory(str(self.path(where)), game, where)
 
     def directory(self, game: str) -> 'GameDirectory':
-        """A playable game, wherever it is playable from.
+        """A game that can still be opened, wherever it is kept."""
+        return self._found_in(game, [w for w in GamesIn if w.readable])
 
-        There is nothing to disambiguate: a shared game may not be named what a solo game is or
-        could be called. Resolving it here is what lets one set of operations serve both, so a
-        solo game is planned, ordered and processed through exactly the calls a shared game is.
-        See docs/adr/0030-solo-games-live-in-their-own-root.md."""
-        where = GamesIn.Solo if (self.solo / game).is_dir() else GamesIn.Playing
-        return self.directory_in(where, game)
+    def locate(self, game: str) -> 'GameDirectory':
+        """A game in any root it can be in, opened or not. Valhalla holds copies, not games."""
+        return self._found_in(game, [w for w in GamesIn if w is not GamesIn.Valhalla])
+
+    def _found_in(self, game: str, roots: list[GamesIn]) -> 'GameDirectory':
+        found = next((w for w in roots if (self.path(w) / game).is_dir()), GamesIn.Active)
+        return self.directory_in(found, game)
 
     def directories_in(self, where: GamesIn) -> list['GameDirectory']:
         """Every game in one root, in name order. Empty while the root has never been made."""
@@ -111,20 +123,20 @@ class GamesRoot:
 
     def playable(self) -> list['GameDirectory']:
         """Shared games and everybody's own, which are the two a round is planned in."""
-        return [gd for where in GamesIn if where.planned
+        return [gd for where in GamesIn if where.active
                 for gd in self.directories_in(where)]
 
 
 class GameDirectory(object):
-    def __init__(self, data_root: str, game_name: str, where: GamesIn = GamesIn.Playing):
+    def __init__(self, data_root: str, game_name: str, where: GamesIn = GamesIn.Active):
         self._dir = os.path.join(data_root, game_name)
         self.game_name = game_name
         self.where = where
 
     @property
-    def planned(self) -> bool:
-        """Whether a round is being planned here, which is a fact about where it is kept."""
-        return self.where.planned
+    def active(self) -> bool:
+        """Whether a round can still be planned here, which is a fact about where it is kept."""
+        return self.where.active
 
     @property
     def has_been_setup(self):
@@ -171,6 +183,30 @@ class GameDirectory(object):
     def write_settings(self, settings: dict) -> None:
         with open(os.path.join(self._dir, SETTINGS_FILE_NAME), 'w') as f:
             f.write(json.dumps(settings, sort_keys=True) + '\n')
+
+    def read_scenario(self) -> str | None:
+        """Which scenario built this game, or nothing for one set up from a roster by hand."""
+        path = os.path.join(self._dir, SCENARIO_FILE_NAME)
+        if not os.path.exists(path):
+            return None
+        with open(path) as f:
+            return json.load(f)['scenario']
+
+    def write_scenario(self, key: str) -> None:
+        with open(os.path.join(self._dir, SCENARIO_FILE_NAME), 'w') as f:
+            f.write(json.dumps({'scenario': key}) + '\n')
+
+    def read_outcome(self) -> dict | None:
+        """How the game ended, or nothing while it has not."""
+        path = os.path.join(self._dir, OUTCOME_FILE_NAME)
+        if not os.path.exists(path):
+            return None
+        with open(path) as f:
+            return json.load(f)
+
+    def write_outcome(self, outcome: dict) -> None:
+        with open(os.path.join(self._dir, OUTCOME_FILE_NAME), 'w') as f:
+            f.write(json.dumps(outcome, sort_keys=True) + '\n')
 
     def write_replay(self, text: str) -> None:
         """The game as text, which is the whole of it once the pickles are gone. ADR 0034.
@@ -443,10 +479,10 @@ class ShipFile(JsonLinesFile):
 
 
 class BodyFile(JsonLinesFile):
-    """The terrain a game is played over: what is solid, and where it sits.
+    """The fixtures a game is played among: terrain, beacons, and where each of them sits.
 
     Optional, because a game without any is a game on empty space. Nothing writes coordinates
-    back the way ships do, since a body never moves off the ones it was given."""
+    back the way ships do, since a fixture never moves off the ones it was given."""
 
     @dataclass
     class BodyFileLine:

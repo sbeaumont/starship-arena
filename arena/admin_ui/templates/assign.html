@@ -7,8 +7,48 @@
 <p class="lede">{{ scenario.name }}. Drag anyone into a faction. Whoever is left in the pool is
     spread at random, evening out the numbers. A faction nobody lands in is not in the game.</p>
 
+{% macro signup(player, names, submit) -%}
+<form method="POST" action="{{ url_for('register', game=game) }}" class="signup">
+    {% if player %}
+        <input type="hidden" name="player" value="{{ player }}">
+        <span class="nm">{{ player }}</span>
+    {% else %}
+        <select name="player" required>
+            <option value="" disabled selected>Who</option>
+            {% for who in unregistered %}<option value="{{ who }}">{{ who }}</option>{% endfor %}
+        </select>
+    {% endif %}
+    {% for n in range(scenario.max_ships) %}
+        <input type="text" name="names" placeholder="ship {{ n + 1 }}"
+               value="{{ names[n] if n < names | length else '' }}"
+               {{ 'required' if n == 0 }}>
+    {% endfor %}
+    <button type="submit">{{ submit }}</button>
+</form>
+{%- endmacro %}
+
+<h2>Who is playing</h2>
+<p class="lede">Players put themselves down in the game UI. You can add anybody here, change what
+    they are flying, or take them out again.</p>
+<div class="signups">
+    {% for e in entries %}
+        {{ signup(e.player, e.names, 'Save') }}
+        <form method="POST" action="{{ url_for('withdraw', game=game) }}" class="signup out">
+            <input type="hidden" name="player" value="{{ e.player }}">
+            <button type="submit" class="danger">Remove</button>
+        </form>
+    {% endfor %}
+    {% if unregistered %}{{ signup('', [], 'Add') }}{% endif %}
+</div>
+
+{% if messages %}
+    <ul class="messages">
+        {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+    </ul>
+{% endif %}
+
 {% if not entries %}
-    <p class="empty">Nobody has registered yet. They put themselves down in the game UI.</p>
+    <p class="empty">Nobody is playing yet.</p>
 {% else %}
 {% macro block(e) -%}
 <div class="who" draggable="true" data-player="{{ e.player }}">
@@ -42,12 +82,6 @@
         <span class="hint">Save keeps what you have dragged and stays here. Next deals the rest
             and goes on to the roster.</span>
     </div>
-
-    {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}<li>{{ message }}</li>{% endfor %}
-        </ul>
-    {% endif %}
 </form>
 
 <script>

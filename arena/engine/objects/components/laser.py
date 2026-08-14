@@ -30,10 +30,10 @@ class Laser(Weapon):
     def energy_ok(self):
         return self.container.battery >= self.energy_per_shot
 
-    def can_fire_at(self, ois):
+    def can_fire_at(self, ois, world):
         return (self.temperature_ok
                 and self.energy_ok
-                and self.container.can_scan(ois)
+                and self.container.can_scan(ois, world)
                 and self.in_firing_arc(self.container.direction_to(ois.xy))
                 and self.damage_to(ois))
 
@@ -63,11 +63,11 @@ class Laser(Weapon):
             self.add_internal_event(f"{self.name} can not fire at angle {round(firing_angle, 1)}: {self.firing_arc}.")
             return None
 
-        if self.container.can_scan(target_ship) and not self.damage_to(target_ship):
+        if self.container.can_scan(target_ship, world) and not self.damage_to(target_ship):
             self.add_internal_event(f"{self.name} is out of reach at this distance: no damage.")
             return None
 
-        if target_ship and self.can_fire_at(target_ship):
+        if target_ship and self.can_fire_at(target_ship, world):
             hit_event = BeamEvent(target_ship.pos, DamageType.Laser, self.owner, target_ship,
                                   self.damage_to(target_ship), fired_from=self.owner.pos)
             target_ship.take_damage_from(hit_event)
@@ -81,7 +81,7 @@ class Laser(Weapon):
         else:
             temp_status = 'Overheated' if not self.temperature_ok else ''
             battery_status = 'Low Battery' if not self.energy_ok else ''
-            target_status = 'Target not visible' if not self.owner.can_scan(target_ship) else ''
+            target_status = 'Target not visible' if not self.owner.can_scan(target_ship, world) else ''
             self.add_internal_event(f"Ship {self.owner.name} failed to laser {target_ship.name}: {' '.join([temp_status, battery_status, target_status])}")
         self.temperature += self.heat_per_shot
         self.container.battery -= self.energy_per_shot

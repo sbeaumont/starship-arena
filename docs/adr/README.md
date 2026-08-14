@@ -36,7 +36,7 @@ we already moved away from.
 | [0017](0017-two-svg-layers.md) | The map is two SVG layers, world and screen |
 | [0019](0019-machines-drive-components-through-one-vocabulary.md) | Machines drive their components through one vocabulary |
 | [0021](0021-scenarios-sit-in-the-services-layer.md) | Scenarios sit in the services layer |
-| [0022](0022-a-game-directory-moves-between-three-places.md) | A game directory moves between three places |
+| [0022](0022-a-game-directory-moves-between-three-places.md) | A game's state is the root it is kept in |
 | [0023](0023-a-tick-advances-by-encounters.md) | A tick advances by encounters, and contact transmits an impulse |
 | [0026](0026-a-game-keeps-a-journal.md) | A game keeps a journal of its processing |
 | [0027](0027-the-server-keeps-one-timezone.md) | The server keeps one timezone, and shifting is a UI concern |

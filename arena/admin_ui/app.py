@@ -16,6 +16,7 @@ from arena.errors import UnreadableWorld
 from arena.app.players import LOGIN_COOKIE, LOGIN_COOKIE_MAX_AGE, LOGIN_COOKIE_SECURE
 from arena.cfg import WEB_ROOT, GAME_UI_URL, PLAY_URL
 from arena.app import scenarios
+from arena.app.dto import GameState
 from arena.app.registrations import Registration
 from arena.app.naming import as_stored, for_display
 from arena.admin_ui.appfacade import AppFacade, NameValidator
@@ -88,6 +89,7 @@ def overview():
     """Every game, and whether its round can be processed."""
     return render_template('index.html',
                            games=facade().game_lines(),
+                           finished=facade().finished_games(),
                            archived=facade().archived_games(),
                            valhalla=facade().valhalla_games())
 
@@ -138,9 +140,15 @@ def archive(game: str):
     return redirect(url_for('overview'))
 
 
-@app.route('/unarchive/<game>', methods=['POST'])
-def unarchive(game: str):
-    facade().unarchive_game(game)
+@app.route('/finish/<game>', methods=['POST'])
+def finish(game: str):
+    facade().finish_game(game)
+    return redirect(url_for('overview', _anchor='finished'))
+
+
+@app.route('/activate/<game>', methods=['POST'])
+def activate(game: str):
+    facade().activate_game(game)
     return redirect(url_for('overview'))
 
 
@@ -289,9 +297,30 @@ def assign(game: str):
                 return roster_page(game, dealt, [], starting=game)
             except ValueError as e:
                 messages.append(str(e))
+    if request.args.get('msg'):
+        messages.append(request.args['msg'])
+    entries = facade().registrations(game)
     return render_template('assign.html', game=game, display=for_display(game),
-                           scenario=scenario, entries=facade().registrations(game),
-                           messages=messages)
+                           scenario=scenario, entries=entries, messages=messages,
+                           unregistered=[p.name for p in facade().active_players()
+                                         if p.name not in {e.player for e in entries}])
+
+
+@app.route('/registering/<game>/register', methods=['POST'])
+def register(game: str):
+    """Put somebody down, or change what they put themselves down for."""
+    names = [n.strip() for n in request.form.getlist('names') if n.strip()]
+    try:
+        facade().register(game, request.form['player'], names)
+    except ValueError as e:
+        return redirect(url_for('assign', game=game, msg=str(e)))
+    return redirect(url_for('assign', game=game))
+
+
+@app.route('/registering/<game>/withdraw', methods=['POST'])
+def withdraw(game: str):
+    facade().withdraw(game, request.form['player'])
+    return redirect(url_for('assign', game=game))
 
 
 @app.route('/start/<game>', methods=['POST'])
@@ -322,6 +351,7 @@ def game_overview(game_name: str):
                            detail=detail,
                            game=detail.name,
                            display=detail.display,
+                           finished=detail.state == GameState.FINISHED,
                            standing=detail.standing,
                            reopenable=facade().is_reopenable(game_name),
                            settings=facade().settings(game_name),

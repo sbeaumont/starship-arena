@@ -21,5 +21,12 @@ class GenericGame:
         """Whatever factions the typed roster turned out to have, spread around the middle."""
         return distribute_factions(ships, rng, FACTION_DISTANCE)
 
-    def bodies(self) -> list[dict]:
+    def bodies(self, rng=None) -> list[dict]:
+        return []
+
+    def outcome(self, world) -> None:
+        """Nothing decided for you here either. The director closes it."""
+        return None
+
+    def charted_for(self, world, factions) -> list:
         return []

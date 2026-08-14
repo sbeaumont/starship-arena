@@ -22,6 +22,7 @@ One decision per file, numbered in the order they were accepted.
 | [0032](0032-a-starbase-replenishes-you.md) | A starbase replenishes you, and picks who |
 | [0033](0033-colour-answers-one-question.md) | Colour answers one question |
 | [0035](0035-a-finished-game-is-watched-from-any-side.md) | A finished game is watched from any side |
+| [0038](0038-terrain-blocks-what-you-can-see.md) | Terrain blocks what you can see |
 
 ## What belongs here
 

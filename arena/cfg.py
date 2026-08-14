@@ -80,6 +80,7 @@ if not os.path.isabs(GAME_DATA_DIR):
 logger.info(f"cfg.py: Loading game data from {GAME_DATA_DIR}")
 
 ARCHIVE_DIR_NAME = "archived"
+FINISHED_DIR_NAME = "finished"
 REGISTERING_DIR_NAME = "registering"
 GAMES_DIR_NAME = "games"
 SOLO_DIR_NAME = "solo-games"
@@ -105,6 +106,7 @@ REGISTRATION_FILE_NAME = "registrations.jsonl"
 SETTINGS_FILE_NAME = "settings.jsonl"
 JOURNAL_FILE_NAME = "journal.jsonl"
 SCENARIO_FILE_NAME = "scenario.json"
+OUTCOME_FILE_NAME = "outcome.json"
 REPLAY_FILE_NAME = "replay.json"
 VALIDATED_FILE_NAME = "replay.validated"
 SYNOPSIS_FILE_NAME = "synopsis.txt"

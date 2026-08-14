@@ -12,7 +12,11 @@ export const w2v = (x, y) => ({ vx: x, vy: -y });
 
 // Presentation rule: these categories are named on the map, everything else (missiles, mines,
 // ...) is drawn as a small glyph. Categories come from the API.
-export const NAMED = new Set(["Ship", "Starbase"]);
+export const NAMED = new Set(["Ship", "Starbase", "Beacon"]);
+
+// Scenery: drawn at its true size and never marked or counted. A beacon also carries a size and
+// is none of these, which is why the question is the category and not the radius.
+export const SCENERY = new Set(["Terrain"]);
 
 // A starbase carries weapons but cannot be given a course.
 export const canMove = (s) => s.category_name === "Ship" && s.alive;

@@ -49,7 +49,7 @@ class GameSetup(object):
             ois.history.update()
 
     def _init_bodies(self, body_file: list) -> dict:
-        """Terrain, placed exactly where it was written. Nothing scatters a body."""
+        """Fixtures, placed exactly where they were written. Nothing scatters one."""
         bodies = dict()
         for line in body_file:
             body = builder.create(line.name, line.type, line.xy)

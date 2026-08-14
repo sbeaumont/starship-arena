@@ -75,6 +75,8 @@
       <button type="button" class="badge moved" onclick={() => onRound(planning.moved)}>
         R{planning.moved} played
       </button>
+    {:else if plan && plan.state === "finished"}
+      <span class="badge past">finished</span>
     {:else if plan && !planning.editable}
       <span class="badge past">read only</span>
     {:else if plan}

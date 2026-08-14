@@ -68,9 +68,12 @@ class Ship(MachineInSpace):
     def scans_sorted_by(self, attribute_name):
         return self.history.current.scans_sorted_by(attribute_name)
 
-    def can_scan(self, ois: ObjectInSpace):
+    def can_scan(self, ois: ObjectInSpace, world: World):
+        """In reach, and with nothing solid in the way. Range first: it is the cheaper question."""
         scan_distance = ois.modify_scan_range(self._type.max_scan_distance)
-        return (ois != self) and self.distance_to(ois.xy) < scan_distance
+        return (ois != self
+                and self.distance_to(ois.xy) < scan_distance
+                and not world.blocks_sight(self, ois))
 
     def modify_scan_range(self, scan_range: float) -> float:
         """How far a scanner has to reach for this ship: how big it is, then what it hides behind.
@@ -115,7 +118,9 @@ class Ship(MachineInSpace):
         self.add_internal_event(f"Generated {self.generators} energy: battery at {self.battery}/{self._type.max_battery}")
 
     def scan(self, world: World):
-        for ois in [ob for ob in world.objects.values() if self.can_scan(ob)]:
+        """Terrain is on the chart already, so a sweep records only what has to be found."""
+        for ois in [ob for ob in world.objects.values()
+                    if not ob.is_terrain and self.can_scan(ob, world)]:
             self.add_event(ScanEvent.create_scan(self, ois))
 
     def take_impulse_from(self, impulse: Impulse):

@@ -220,10 +220,45 @@ class TestConsoleFlow(TestCase):
         for faction in ALL_FIVE:
             self.assertIn(f'data-faction="{faction}"', page)
 
-    def test_an_empty_signup_says_so(self):
+    def test_an_empty_signup_says_so_and_offers_to_fill_it(self):
         self.open_war()
-        self.assertIn('Nobody has registered',
-                      self.client.get('/registering/war').get_data(as_text=True))
+        page = self.client.get('/registering/war').get_data(as_text=True)
+        self.assertIn('Nobody is playing yet', page)
+        self.assertIn('/registering/war/register', page)
+
+    def test_the_director_can_put_somebody_down(self):
+        """Nobody has to have registered themselves for a game to be set up."""
+        self.open_war()
+        self.admin.issue_login('Rik')
+        self.client.post('/registering/war/register',
+                         data={'player': 'Rik', 'names': ['Voyager', 'Pathfinder', '']})
+
+        self.assertEqual([('Rik', ['Voyager', 'Pathfinder'])],
+                         [(e.player, e.names) for e in self.admin.registrations('war')])
+
+    def test_the_director_can_change_what_somebody_flies(self):
+        self.open_war()
+        self.register_four()
+        self.client.post('/registering/war/register',
+                         data={'player': 'Menno', 'names': ['Canterbury', 'Roci']})
+
+        entry = next(e for e in self.admin.registrations('war') if e.player == 'Menno')
+        self.assertEqual(['Canterbury', 'Roci'], entry.names)
+
+    def test_the_director_can_take_somebody_out(self):
+        self.open_war()
+        self.register_four()
+        self.client.post('/registering/war/withdraw', data={'player': 'Dennis'})
+
+        self.assertNotIn('Dennis', [e.player for e in self.admin.registrations('war')])
+
+    def test_a_refused_signup_says_why(self):
+        self.open_war()
+        self.register_four()
+        page = self.client.post('/registering/war/register',
+                                data={'player': 'Menno', 'names': ['Voyager']},
+                                follow_redirects=True).get_data(as_text=True)
+        self.assertIn('Already taken', page)
 
     def test_dealing_lands_on_the_roster_screen_ready_to_start(self):
         self.open_war()

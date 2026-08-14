@@ -23,8 +23,11 @@ def replay(document: dict, faction: str | None = None) -> GameReplay:
 
 def _v1(document: dict, faction: str | None) -> GameReplay:
     rows = {o['name']: o for o in document['objects']}
-    mine = {name: o for name, o in rows.items() if faction is None or o['faction'] == faction}
-    if faction is not None and not mine:
+    # Terrain, which carries a radius, is on every side's chart rather than something a side had
+    # to find, so it is whole in any picture. See docs/gddr/0038.
+    mine = {name: o for name, o in rows.items()
+            if faction is None or o['radius'] or o['faction'] == faction}
+    if faction is not None and not [o for o in mine.values() if o['faction'] == faction]:
         raise ValueError(f"No faction {faction} ever flew in {document['game']}.")
 
     objects: dict[str, ReplayObject] = dict()

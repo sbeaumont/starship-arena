@@ -57,7 +57,8 @@
       </button>
     {/if}
     {#if planning.aiming}<span class="badge aiming">click a target for {planning.aiming}</span>{/if}
-    {#if plan && !planning.editable}<span class="badge past">read only</span>{/if}
+    {#if plan && plan.state === "finished"}<span class="badge past">finished</span>
+    {:else if plan && !planning.editable}<span class="badge past">read only</span>{/if}
     <span class="badge">{planning.game}</span>
   </header>
 

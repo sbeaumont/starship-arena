@@ -55,8 +55,10 @@
                     <form method="POST" action="{{ url_for('to_valhalla', game=g.name) }}">
                         <button type="submit" class="quiet">To Valhalla</button>
                     </form>
-                    <form method="POST" action="{{ url_for('archive', game=g.name) }}"
-                          onsubmit="return confirm('Archive {{ g.display }}? It leaves every list; nothing is deleted.')">
+                    <form method="POST" action="{{ url_for('finish', game=g.name) }}">
+                        <button type="submit" class="quiet">Finish</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('archive', game=g.name) }}">
                         <button type="submit" class="quiet">Archive</button>
                     </form>
                 </span>
@@ -88,6 +90,38 @@
     </div>
 {% endif %}
 
+{% if finished %}
+    <h2 id="finished">Finished</h2>
+    <p class="lede">Over. No orders and no rounds, and everyone who played can still open it.</p>
+    <div class="games">
+        {% for g in finished %}
+            <div class="game">
+                <span class="dot idle"></span>
+                <span class="name">
+                    <a href="{{ url_for('game_overview', game_name=g.name) }}">{{ g.display }}</a>
+                </span>
+                <span class="round">{{ g.current_round - 1 }} rounds played</span>
+                <span class="sides">
+                    {%- if g.outcome %}<b>{{ g.outcome.faction }}</b> · {{ g.outcome.reason }}
+                    {%- for who, points in g.outcome.points.items() %} · {{ who }} {{ points }}
+                    {%- endfor %}{% endif %}
+                </span>
+                <span class="act">
+                    <form method="POST" action="{{ url_for('to_valhalla', game=g.name) }}">
+                        <button type="submit" class="quiet">To Valhalla</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('activate', game=g.name) }}">
+                        <button type="submit" class="quiet">Back into play</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('archive', game=g.name) }}">
+                        <button type="submit" class="quiet">Archive</button>
+                    </form>
+                </span>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
 {% if archived %}
     <h2>Archived</h2>
     <p class="lede">Out of every list, including the players'. The data is still there.</p>
@@ -99,8 +133,11 @@
                 <span class="round">{{ g.current_round - 1 }} rounds played</span>
                 <span></span>
                 <span class="act">
-                    <form method="POST" action="{{ url_for('unarchive', game=g.name) }}">
-                        <button type="submit" class="quiet">Unarchive</button>
+                    <form method="POST" action="{{ url_for('activate', game=g.name) }}">
+                        <button type="submit" class="quiet">Back into play</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('finish', game=g.name) }}">
+                        <button type="submit" class="quiet">Finish</button>
                     </form>
                     <form method="POST" action="{{ url_for('delete_archived', game=g.name) }}"
                           onsubmit="return confirm('Delete {{ g.display }} for good? Its ships file, orders and rounds are gone.')">

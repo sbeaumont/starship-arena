@@ -1,7 +1,7 @@
 import { SvelteSet } from "svelte/reactivity";
 import {
   N, ORDER_VERB, orderable, parseOrders, orderLines, simulate,
-  defaultParams, needsATarget, NAMED,
+  defaultParams, needsATarget, NAMED, SCENERY,
 } from "./plan.js";
 
 // One round of planning for one player: the picture the API sent, the orders being drawn on top
@@ -72,8 +72,10 @@ export class Planning {
     this.moved = null;
   }
 
-  // Only the newest round can still be planned: everything before it already happened.
-  editable = $derived(this.plan ? this.plan.round === this.plan.last_round : false);
+  // Only the newest round of a game still being played: everything else already happened.
+  editable = $derived(this.plan
+    ? this.plan.round === this.plan.last_round && this.plan.state === "active"
+    : false);
 
   ownShips = $derived(this.plan ? this.plan.ships.filter((s) => s.owned) : []);
 
@@ -123,7 +125,7 @@ export class Planning {
 
   counts = $derived.by(() => {
     if (!this.plan) return { ships: 0, enemyOrd: 0, friendlyOrd: 0, enemyShips: 0 };
-    const cs = this.plan.contacts.filter((c) => !c.radius);
+    const cs = this.plan.contacts.filter((c) => !SCENERY.has(c.category_name));
     const ord = cs.filter((c) => !NAMED.has(c.category_name));
     return {
       ships: cs.filter((c) => NAMED.has(c.category_name)).length,

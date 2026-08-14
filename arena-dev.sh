@@ -3,7 +3,7 @@
 #
 #   api   :8000  FastAPI, reloads on Python changes
 #   ui    :5173  Vite, hot module reload for the Svelte game UI
-#   admin :8080  Flask director console
+#   admin :8080  Flask director console, reloads on Python and template changes
 #
 # Open http://localhost:5173 for the game UI and http://localhost:8080 for the console; the
 # console's "map" links point at :5173, which is why all three belong up together.
@@ -45,7 +45,7 @@ npm run dev --prefix game-ui 2>&1 \
     | prefix ui "$GREEN" &
 
 GAME_UI_URL="${GAME_UI_URL:-http://localhost:5173}" \
-    uv run flask --app arena.admin_ui.app:app run --host=0.0.0.0 -p 8080 2>&1 \
+    uv run flask --app arena.admin_ui.app:app run --host=0.0.0.0 -p 8080 --reload 2>&1 \
     | prefix admin "$AMBER" &
 
 wait

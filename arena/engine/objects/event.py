@@ -145,6 +145,18 @@ class ReplenishEvent(InternalEvent):
         return 'replenish'
 
 
+class ArrivalEvent(InternalEvent):
+    """A ship reaching somewhere the game was played for. What that is worth is nobody's here."""
+
+    def __init__(self, message, ship):
+        super().__init__(message)
+        self.ship = ship
+
+    @property
+    def kind(self) -> str:
+        return 'arrival'
+
+
 class ScanEvent(Event):
     """A single instance of one object scanning another."""
     def __init__(self, ois, distance, direction, heading):

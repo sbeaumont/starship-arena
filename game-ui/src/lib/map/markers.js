@@ -4,7 +4,7 @@
 // Sizes are screen pixels: `upp` (view units per pixel) turns them into world units, which is what
 // keeps a marker the same size at any zoom. A real distance is never drawn through here.
 
-export const SIZE = { Ship: 11, Starbase: 7.5, Missile: 5.5, Mine: 5 };
+export const SIZE = { Ship: 11, Starbase: 7.5, Beacon: 9, Missile: 5.5, Mine: 5 };
 
 const rad = (d) => (d * Math.PI) / 180;
 const pts = (arr) => arr.map((q) => q.join(",")).join(" ");
@@ -25,10 +25,20 @@ export function square(vx, vy, rPx, upp) {
   return pts([[vx - r, vy - r], [vx + r, vy - r], [vx + r, vy + r], [vx - r, vy + r]]);
 }
 
+// Six points, for something fixed that is worth flying to.
+export function star(vx, vy, rPx, upp) {
+  const r = rPx * upp;
+  return pts(Array.from({ length: 12 }, (_, i) => {
+    const a = rad(i * 30), k = i % 2 ? 0.42 : 1;
+    return [vx + Math.sin(a) * r * k, vy - Math.cos(a) * r * k];
+  }));
+}
+
 // A course of null is something whose heading is not known, which is a single sighting.
 export function markerFor(category, vx, vy, course, upp) {
   const r = SIZE[category] ?? 5;
   if (category === "Starbase") return square(vx, vy, r, upp);
+  if (category === "Beacon") return star(vx, vy, r, upp);
   if (category === "Mine") return diamond(vx, vy, r, upp);
   if (course === null) return diamond(vx, vy, r * 0.5, upp);
   return tri(vx, vy, course, r, upp);

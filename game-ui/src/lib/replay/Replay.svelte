@@ -1,7 +1,7 @@
 <script>
   import { Camera } from "../map/camera.svelte.js";
   import { burst, markerFor } from "../map/markers.js";
-  import { NAMED, clamp, w2v } from "../map/plan.js";
+  import { NAMED, SCENERY, clamp, w2v } from "../map/plan.js";
   import { Playhead } from "./playhead.svelte.js";
   import Transport from "./Transport.svelte";
 
@@ -208,7 +208,7 @@
         {/each}
 
         <!-- Terrain first, at its true size, so everything else is read against it. -->
-        {#each ph.shown.filter((o) => o.radius) as o (o.name)}
+        {#each ph.shown.filter((o) => SCENERY.has(o.category_name)) as o (o.name)}
           {@const v = w2v(o.now.x, o.now.y)}
           <circle class="body-mark" cx={v.vx} cy={v.vy} r={o.radius} stroke-width={upp} />
         {/each}
@@ -229,7 +229,7 @@
                 stroke-width={1.6 * upp} />
         {/each}
 
-        {#each ph.shown.filter((o) => !o.radius) as o (o.name)}
+        {#each ph.shown.filter((o) => !SCENERY.has(o.category_name)) as o (o.name)}
           {@const v = w2v(o.now.x, o.now.y)}
           {#if o.trail.length > 1}
             <polyline class="trail" class:seen={o.contact} points={trailOf(o)}
@@ -249,9 +249,9 @@
       <!-- Text, in screen pixels, so it never scales. -->
       <svg class="text-layer" viewBox={`0 0 ${Math.max(1, camera.boxW)} ${Math.max(1, camera.boxH)}`}
            preserveAspectRatio="none" aria-hidden="true">
-        {#each ph.shown.filter((o) => NAMED.has(o.category_name) || o.radius) as o (o.name)}
+        {#each ph.shown.filter((o) => NAMED.has(o.category_name) || SCENERY.has(o.category_name)) as o (o.name)}
           {@const v = w2v(o.now.x, o.now.y)}
-          <text class="label" class:seen={o.contact} fill={o.radius ? "#5c6784" : ph.colourOf(o)}
+          <text class="label" class:seen={o.contact} fill={SCENERY.has(o.category_name) ? "#5c6784" : ph.colourOf(o)}
                 x={camera.sx(v.vx) + 12} y={camera.sy(v.vy)} font-size="12.5">{o.name}</text>
         {/each}
         {#if camera.boxH}

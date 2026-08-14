@@ -221,6 +221,11 @@ class ObjectInSpace(ABC):
         """Effectively infinite mass, said without the arithmetic: the world moves around it."""
         return False
 
+    @property
+    def is_terrain(self) -> bool:
+        """On every chart from the start, so nobody scans it. See docs/gddr/0038."""
+        return False
+
     def stance_towards(self, other: 'ObjectInSpace') -> Stance:
         """Nothing in space is on a side until something puts it on one."""
         return Stance.Neutral

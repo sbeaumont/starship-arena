@@ -121,7 +121,7 @@ def logout(response: Response) -> dict:
 
 @router.get("/games")
 def list_games() -> list[GameSummary]:
-    return service.list_games()
+    return service.list_readable_games()
 
 
 @router.get("/time")

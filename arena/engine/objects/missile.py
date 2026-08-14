@@ -78,9 +78,11 @@ class GuidedMissile(Missile):
 
     # ---------------------------------------------------------------------- QUERIES
 
-    def can_scan(self, ois: ObjectInSpace) -> bool:
+    def can_scan(self, ois: ObjectInSpace, world: World) -> bool:
         scan_distance = ois.modify_scan_range(self._type.max_scan_distance)
-        return (ois != self) and self.distance_to(ois.xy) < scan_distance
+        return (ois != self
+                and self.distance_to(ois.xy) < scan_distance
+                and not world.blocks_sight(self, ois))
 
     def in_scan_cone(self, ois: ObjectInSpace) -> bool:
         direction_to_target = self.direction_to(ois.xy)
@@ -100,7 +102,7 @@ class GuidedMissile(Missile):
         """Find the nearest enemy object in the scan cone"""
         self.target = None
         for ois in [o for o in world.objects.values() if o.stance_towards(self) == Stance.Foe]:
-            if self.can_scan(ois) and self.in_scan_cone(ois):
+            if self.can_scan(ois, world) and self.in_scan_cone(ois):
                 if self.target:
                     if self.distance_to(ois.xy) < self.distance_to(self.target.xy):
                         self.target = ois

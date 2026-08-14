@@ -203,7 +203,7 @@ Every information element in the engine, classified.
 | `base_type`, `max_hull`, `start_battery`, `mass`, `visibility` | model constant | `MachineType` |
 | `visibility` | model constant | `StarbaseType`, five times a ship's |
 | `max_speed`, `max_turn`, `max_delta_v`, `generators`, `max_battery`, `max_scan_distance` | model constant | `ShipType` |
-| `mass`, `radius`, `is_immovable` | model constant, neutral default | `ObjectInSpace` |
+| `mass`, `radius`, `is_immovable`, `is_terrain` | model constant, neutral default | `ObjectInSpace` |
 | `radius`, `visibility`, `max_scan_distance` | model constant | `BodyType` |
 | `energy_per_move`, `max_speed`, `max_turn`, `scan_cone` | model constant | `MissileType` |
 | `slow_down_rate`, `energy_per_tick` | model constant | `MineType` |

@@ -23,3 +23,27 @@ def asteroid_ring(radius: float, count: int = STANDARD_BODIES,
              'x': round(radius * sin(radians(n * 360 / count))),
              'y': round(radius * cos(radians(n * 360 / count)))}
             for n in range(count)]
+
+
+# How many places to try per body before calling a field unpackable. Well past what a field
+# this game would play over needs, so hitting it means the numbers are wrong rather than the draw.
+TRIES_PER_BODY = 200
+
+
+def scatter(rng, count: int, width: float, height: float, apart: float,
+            clear_of: list[tuple] = (), body: str = STANDARD_BODY) -> list[dict]:
+    """Bodies dropped at random over a box centred on (0, 0), none nearer than `apart`."""
+    placed = [(x, y) for x, y in clear_of]
+    field = []
+    for _ in range(TRIES_PER_BODY * count):
+        if len(field) == count:
+            return field
+        # Rounded before it is checked, so what goes into the file is what was held apart.
+        x = round(rng.uniform(-width / 2, width / 2))
+        y = round(rng.uniform(-height / 2, height / 2))
+        if any((x - px) ** 2 + (y - py) ** 2 <= apart * apart for px, py in placed):
+            continue
+        placed.append((x, y))
+        field.append({'name': f"{body}-{len(field) + 1}", 'type': body, 'x': x, 'y': y})
+    raise ValueError(f"Cannot fit {count} bodies {apart} apart in {width} by {height}: "
+                     f"got {len(field)}.")

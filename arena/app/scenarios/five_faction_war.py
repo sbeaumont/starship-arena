@@ -29,13 +29,21 @@ class FiveFactionWar:
     max_ships = 3
     registers = True
 
-    def bodies(self) -> list[dict]:
-        """A ring of asteroids between the factions and the middle."""
+    def bodies(self, rng=None) -> list[dict]:
+        """A ring of asteroids between the factions and the middle. The same one every game."""
         return asteroid_ring(RING_RADIUS)
 
     def place(self, ships: list[dict], rng) -> list[dict]:
         """Each faction its own corner of the circle, everyone pointed at the middle."""
         return distribute_factions(ships, rng, FACTION_DISTANCE)
+
+    def outcome(self, world) -> None:
+        """It runs until the director says otherwise. There is nothing to reach and no clock."""
+        return None
+
+    def charted_for(self, world, factions) -> list:
+        """Nobody is briefed on anything. Everything but terrain has to be scanned."""
+        return []
 
     def deal(self, entries: list[Registration], rng) -> list[dict]:
         """Ship records for everyone, each in the faction they were assigned to or dealt into."""

@@ -34,7 +34,7 @@ class SoloGame:
     max_ships = len(SPOTS[PLAYER_FACTION])
     registers = False
 
-    def bodies(self) -> list[dict]:
+    def bodies(self, rng=None) -> list[dict]:
         """The same five rocks the game is fought over, so practice is practice for that."""
         return asteroid_ring(RING_RADIUS)
 
@@ -63,6 +63,13 @@ class SoloGame:
         if len(set(names)) != len(names):
             raise ValueError("Two ships in one game cannot share a name.")
         return ships
+
+    def outcome(self, world) -> None:
+        """It runs until the player stops caring. An end condition is on the backlog."""
+        return None
+
+    def charted_for(self, world, factions) -> list:
+        return []
 
     def place(self, ships: list[dict], rng) -> list[dict]:
         """Everybody on their own spot, in the order the roster built them."""

@@ -12,8 +12,8 @@ Everything needed to fly a round already exists. The map plans it, `process_on_a
 processes it the moment everyone has said they are done, and a ship with no player needs no
 command file. What was missing is a game to do it in.
 
-A game directory lives in one of three places ([0022](0022-a-game-directory-moves-between-three-places.md)),
-and all three are stages of one life: collecting registrations, being played, over. A practice
+A game directory lives in one of the roots ([0022](0022-a-game-directory-moves-between-three-places.md)),
+and each is a stage of one life: collecting registrations, being played, over. A practice
 game is not a stage of that. It is a second kind of game, with the same files in it.
 
 ## Decision

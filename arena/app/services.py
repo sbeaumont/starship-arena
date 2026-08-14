@@ -3,12 +3,12 @@
 GameService is player-facing and restricted, AdminService is the director's. Storage stays below
 this line. See docs/adr/0001-layered-architecture.md."""
 
-import json
 import logging
 import random
 import re
 import shutil
 from collections import defaultdict
+from dataclasses import asdict
 from datetime import datetime, time, timedelta
 from math import atan2, degrees
 from pathlib import Path
@@ -16,7 +16,7 @@ from zoneinfo import available_timezones
 
 from arena.announce import Announcer
 from arena.cfg import (ADMIN_UI_URL, COMMANDS_DIR, INIT_FILE_NAME, MANUAL_FILENAME, PLAY_URL,
-                       REGISTRATION_FILE_NAME, SCENARIO_FILE_NAME, STATUS_FILE_TEMPLATE)
+                       REGISTRATION_FILE_NAME, STATUS_FILE_TEMPLATE)
 from arena.errors import UnreadableWorld
 from arena.engine.admin import GameSetup, regenerate_game as engine_regenerate_game
 from arena.engine.command import parse_commands
@@ -39,12 +39,24 @@ from arena.app.dto import (
     TrackPoint, TickEvent, TickCondition, ComponentStatus, Contact, ShipPlan, PlayerPlan, Explosion,
     Effect, Beam, GameReplay, ReplayObject, ObjectTick, StaleRound,
     WeaponInfo, ComponentInput,
-    ShipSummary, FactionSummary, GameOverview, GameStanding, ShipTypeInfo, Me, LoginInfo,
-    GameSettings, Pulse, GamePulse, JournalEntry, By, ProcessingTrigger, ReminderTrigger,
+    Outcome, ShipSummary, FactionSummary, GameOverview, GameStanding, ShipTypeInfo, Me, LoginInfo,
+    GameSettings, GameState, Pulse, GamePulse, JournalEntry, By, ProcessingTrigger,
+    ReminderTrigger,
     Reminders, ServerTime, SoloGame, Story, WinStory,
 )
 
 logger = logging.getLogger('starship-arena.services')
+
+# The roots a shared game moves between once it has been started.
+MOVABLE_ROOTS = (GamesIn.Active, GamesIn.Finished, GamesIn.Archived)
+
+# Where a game is kept, said in the words above this line. Valhalla is not one: a game there is
+# a copy, read through `valhalla_game`.
+STATE_OF = {GamesIn.Active: GameState.ACTIVE,
+            GamesIn.Solo: GameState.ACTIVE,
+            GamesIn.Finished: GameState.FINISHED,
+            GamesIn.Archived: GameState.ARCHIVED,
+            GamesIn.Registering: GameState.REGISTERING}
 
 
 def _entry(raw: dict) -> JournalEntry:
@@ -64,18 +76,66 @@ class _EngineAccess:
         """A playable game, so nothing above this line asks which root it is kept in."""
         return self.dirs.directory(game)
 
+    def _active_gd(self, game: str) -> GameDirectory:
+        gd = self._gd(game)
+        if not gd.active:
+            raise ValueError(f"'{game}' is finished. Put it back into play to change it.")
+        return gd
+
     def _build_game(self, gd: GameDirectory, scenario, ships: list[dict]) -> None:
         """Deploy a roster over a scenario's terrain, and save the world that makes.
 
         Where a ship starts is the scenario's call, and it is written into the roster file, so a
         regenerate replays the deployment rather than drawing a new one."""
-        placed = scenario.place(ships, random.Random())
-        GameSetup(gd, ShipFile(gd, placed), BodyFile(gd, scenario.bodies())).execute()
+        rng = random.Random()
+        placed = scenario.place(ships, rng)
+        GameSetup(gd, ShipFile(gd, placed), BodyFile(gd, scenario.bodies(rng))).execute()
+        gd.write_scenario(scenario.key)
 
     def _append_journal(self, game: str, event: str, **detail) -> None:
         """Add a line to the game's journal. Real time enters here, never below."""
         self._gd(game).append_journal({'at': server_now().isoformat(timespec='seconds'),
                                        'event': event, **detail})
+
+    @staticmethod
+    def _scenario_of(gd: GameDirectory):
+        """What built a game, or nothing for one set up from a roster by hand."""
+        key = gd.read_scenario()
+        return scenarios.by_key(key) if key else None
+
+    def _settle(self, game: str) -> Outcome | None:
+        """Ask the scenario whether that round ended the game, and close it if it did.
+
+        The engine cannot do this: it knows nothing of scenarios and must not know a game can be
+        moved. See docs/adr/0021-scenarios-sit-in-the-services-layer.md."""
+        gd = self._gd(game)
+        scenario = self._scenario_of(gd)
+        outcome = scenario.outcome(gd.load_current_world()) if scenario else None
+        if outcome is None:
+            return None
+        gd.write_outcome(asdict(outcome))
+        self._append_journal(game, 'finished', faction=outcome.faction, why=outcome.reason)
+        self.finish_game(game)
+        return outcome
+
+    def outcome(self, game: str) -> Outcome | None:
+        raw = self._gd(game).read_outcome()
+        return Outcome(**raw) if raw else None
+
+    def finish_game(self, name: str) -> None:
+        """Over: no more orders and no more rounds, still there for everyone who played it."""
+        self._move_game(name, GamesIn.Finished)
+
+    def _move_game(self, name: str, to: GamesIn) -> None:
+        source = next((where for where in MOVABLE_ROOTS
+                       if (self.dirs.path(where) / name).is_dir()), None)
+        if source is None:
+            raise ValueError(f"There is no shared game called '{name}'.")
+        target = self.dirs.path(to) / name
+        if target.exists():
+            raise ValueError(f"A game called '{name}' is already {to}.")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(self.dirs.path(source) / name), str(target))
 
     def _announce_round_processed(self, game: str, round_nr: int) -> None:
         """Tell the players a round is out, if this game is set to."""
@@ -88,10 +148,17 @@ class _EngineAccess:
         return [_entry(raw) for raw in reversed(self._gd(game).read_journal(limit))]
 
     def list_games(self) -> list[GameSummary]:
-        return self._summaries(GamesIn.Playing)
+        return self._summaries(GamesIn.Active)
 
     def list_archived_games(self) -> list[GameSummary]:
         return self._summaries(GamesIn.Archived)
+
+    def list_finished_games(self) -> list[GameSummary]:
+        return self._summaries(GamesIn.Finished)
+
+    def list_readable_games(self) -> list[GameSummary]:
+        """Every shared game a player can still open: in play, and over."""
+        return self.list_games() + self.list_finished_games()
 
     def list_registering_games(self) -> list[GameSummary]:
         return self._summaries(GamesIn.Registering)
@@ -166,11 +233,11 @@ class _EngineAccess:
         Valhalla counts for as long as anything does: a game that is over keeps its name forever,
         so nothing later can be set up that a museum link would then point at."""
         return {g.name for g in (self.list_games() + self.list_archived_games()
-                                 + self.list_registering_games() + self.list_solo_games()
-                                 + self.list_valhalla_games())}
+                                 + self.list_finished_games() + self.list_registering_games()
+                                 + self.list_solo_games() + self.list_valhalla_games())}
 
     def scenario_of(self, game: str) -> str:
-        return json.loads((self.dirs.registering / game / SCENARIO_FILE_NAME).read_text())['scenario']
+        return self.dirs.locate(game).read_scenario()
 
     def registrations(self, game: str) -> list[Registration]:
         """Whoever registered, wherever the game is: still forming, or already started."""
@@ -214,10 +281,13 @@ class _EngineAccess:
     def _summary_of(cls, gd: GameDirectory) -> GameSummary:
         hours = cls._settings_of(gd).process_hours
         due = next_occurrence(hours, server_now())
-        return GameSummary(name=gd.game_name, current_round=gd.last_round_number + 1,
+        raw = gd.read_outcome()
+        return GameSummary(name=gd.game_name, state=STATE_OF[gd.where],
+                           current_round=gd.last_round_number + 1,
                            process_hours=hours,
                            next_processing=due.isoformat(timespec='seconds') if due else None,
-                           standing=cls._listed_standing(gd))
+                           standing=cls._listed_standing(gd),
+                           outcome=Outcome(**raw) if raw else None)
 
     @classmethod
     def _listed_standing(cls, gd: GameDirectory) -> GameStanding | None:
@@ -225,7 +295,7 @@ class _EngineAccess:
 
         A list is where a game gets fixed from, so one bad round leaves the rest of it standing.
         Asking a game for its standing on its own still raises."""
-        if not gd.planned:
+        if not gd.active:
             return None
         try:
             return cls._standing_of(gd)
@@ -311,7 +381,7 @@ class _EngineAccess:
 
     def set_ready(self, game: str, player: str, ready: bool) -> bool:
         """Returns whether saying so processed the round."""
-        gd = self._gd(game)
+        gd = self._active_gd(game)
         gd.set_ready(player, gd.last_round_number + 1, ready)
         if ready and self.settings(game).on_all_ready and self.all_ready(game):
             g = Game(self._gd(game))
@@ -321,6 +391,7 @@ class _EngineAccess:
                 self._append_journal(game, 'processed', round=round_nr,
                                      by=By.PLAYER, trigger=ProcessingTrigger.ALL_READY)
                 self._announce_round_processed(game, round_nr)
+                self._settle(game)
                 return True
         return False
 
@@ -371,7 +442,8 @@ class _EngineAccess:
                     for f, ships in by_faction.items()]
         # Best first, so the overview doubles as the scoreboard.
         factions.sort(key=lambda f: (-f.score, f.name))
-        return GameOverview(name=game, last_round=gd.last_round_number, factions=factions)
+        return GameOverview(name=game, state=STATE_OF[gd.where],
+                            last_round=gd.last_round_number, factions=factions)
 
     @staticmethod
     def _specs(ship_type) -> dict[str, str]:
@@ -390,8 +462,16 @@ class _EngineAccess:
         return specs
 
     def games_for_player(self, name: str) -> list[str]:
-        return [g.name for g in self.list_games()
-                if g.standing and name in self._roster(g.name).values()]
+        """Every game they have ships in, finished ones included. A game it cannot read is
+        skipped rather than raising, because one broken game must not cost them the rest."""
+        found = []
+        for g in self.list_games() + self.list_finished_games():
+            try:
+                if name in self._roster(g.name).values():
+                    found.append(g.name)
+            except UnreadableWorld:
+                continue
+        return found
 
 
 class GameService(_EngineAccess):
@@ -412,7 +492,8 @@ class GameService(_EngineAccess):
                              "numbers, dashes and underscores.")
         if self.players.by_name(name):
             raise ValueError(f"'{name}' is already registered.")
-        if any(name in self._roster(g.name).values() for g in self.list_games()):
+        if any(name in self._roster(g.name).values()
+               for g in self.list_games() + self.list_finished_games()):
             raise ValueError(f"'{name}' already commands ships. Ask the director for a link.")
         return self.players.issue(name)
 
@@ -528,7 +609,7 @@ class GameService(_EngineAccess):
         return checks
 
     def save_commands(self, game: str, ship_name: str, lines: list[str]) -> None:
-        gd = self._gd(game)
+        gd = self._active_gd(game)
         round_nr = gd.last_round_number + 1
         with open(gd.command_file(ship_name, round_nr), 'w') as f:
             f.write('\n'.join(lines))
@@ -604,6 +685,8 @@ class GameService(_EngineAccess):
                     for scan in s.history[t].scans:
                         if scan.name in own_names:
                             continue  # allies are ground truth, not fog-of-war contacts
+                        if scan.source.is_terrain:
+                            continue  # a round played before 0038 still holds scans of it
                         acc = seen.get(scan.name)
                         if acc is None:
                             src = scan.source
@@ -619,6 +702,17 @@ class GameService(_EngineAccess):
                             stance=a['stance'], radius=a['radius'],
                             track=[a['pts'][k] for k in sorted(a['pts'])])
                     for name, a in seen.items()]
+        # Terrain is on everybody's chart rather than something to be found, so it goes in whole
+        # and never as sightings (docs/gddr/0038). A scenario may brief one side on more than
+        # that, which is how an escort knows where it is going and a hunter does not.
+        scenario = self._scenario_of(gd)
+        charted = [o for o in ois.values() if o.is_terrain]
+        if scenario:
+            charted += scenario.charted_for(world, factions)
+        contacts += [Contact(name=b.name, type_name=b.type_name, category_name=b.category_name,
+                             stance=self._stance(b, factions), radius=b.radius,
+                             track=[TrackPoint(tick=round_ticks[0].tick, x=b.pos.x, y=b.pos.y)])
+                     for b in charted if b.name not in seen]
 
         # Explosions the faction witnessed. The engine hands an ExplosionEvent to every
         # object close enough to scan it, so a ship's history already holds exactly the
@@ -675,7 +769,8 @@ class GameService(_EngineAccess):
                                        outcome=str(x.outcome), amount=x.amount, points=x.points))
 
         return PlayerPlan(game=game, player=player, factions=sorted(factions), round=round_nr,
-                          last_round=last_round, ready=gd.is_ready(player, last_round + 1),
+                          last_round=last_round, state=STATE_OF[gd.where],
+                          ready=gd.is_ready(player, last_round + 1),
                           ships=ships, contacts=contacts, explosions=list(blasts.values()),
                           effects=list(landed.values()), beams=list(beams.values()))
 
@@ -691,8 +786,10 @@ class GameService(_EngineAccess):
         blasts: dict[tuple, Explosion] = {}
         for tick in replay.ticks:
             in_space = replay.objects_at(tick)
+            # Terrain is on every side's chart, so it is recorded whole rather than waiting to
+            # be scanned by the side being watched. See docs/gddr/0038.
             mine = {name: ois for name, ois in in_space.items()
-                    if faction is None or self._side_of(ois) == faction}
+                    if faction is None or ois.is_terrain or self._side_of(ois) == faction}
             for name, ois in mine.items():
                 snapshot = ois.history[tick]
                 self._recorded(objects, ois, contact=False).path.append(
@@ -1025,20 +1122,13 @@ class AdminService(_EngineAccess):
 
     # ---------------------------------------------------------------------- GAMES
 
-    def archive_game(self, name: str) -> None:
-        """Move a game out of every list. Its data is untouched."""
-        self.dirs.archived.mkdir(parents=True, exist_ok=True)
-        target = self.dirs.archived / name
-        if target.exists():
-            raise ValueError(f"'{name}' is already archived.")
-        shutil.move(str(self.dirs.games / name), str(target))
+    def activate_game(self, name: str) -> None:
+        """Back into play, from finished or from the archive."""
+        self._move_game(name, GamesIn.Active)
 
-    def unarchive_game(self, name: str) -> None:
-        self.dirs.games.mkdir(parents=True, exist_ok=True)
-        target = self.dirs.games / name
-        if target.exists():
-            raise ValueError(f"A game called '{name}' is already being played.")
-        shutil.move(str(self.dirs.archived / name), str(target))
+    def archive_game(self, name: str) -> None:
+        """Out of every list. Its data is untouched."""
+        self._move_game(name, GamesIn.Archived)
 
     def delete_archived_game(self, name: str) -> None:
         """Delete for good. Only reaches into the archive, so a live game cannot be lost here."""
@@ -1107,7 +1197,7 @@ class AdminService(_EngineAccess):
         """Name a game and build it: its roster deployed, its terrain in place."""
         self._claim_name(name)
         self.dirs.games.mkdir(parents=True, exist_ok=True)
-        self._build_game(self.dirs.directory_in(GamesIn.Playing, name),
+        self._build_game(self.dirs.directory_in(GamesIn.Active, name),
                          scenarios.by_key(scenario), ships)
 
     # ---------------------------------------------------------------------- BEFORE IT STARTS
@@ -1116,13 +1206,12 @@ class AdminService(_EngineAccess):
         """Name a game and start collecting registrations for it."""
         scenarios.by_key(scenario)
         self._claim_name(name)
-        target = self.dirs.registering / name
-        target.mkdir(parents=True)
-        (target / SCENARIO_FILE_NAME).write_text(json.dumps({'scenario': scenario}) + '\n')
+        (self.dirs.registering / name).mkdir(parents=True)
+        self.dirs.directory_in(GamesIn.Registering, name).write_scenario(scenario)
 
     def is_reopenable(self, name: str) -> bool:
         """Built from registrations and no round played yet, so the roster can still be redealt."""
-        gd = self.dirs.directory_in(GamesIn.Playing, name)
+        gd = self.dirs.directory_in(GamesIn.Active, name)
         return (gd.last_round_number <= 0
                 and (self.dirs.games / name / REGISTRATION_FILE_NAME).exists())
 
@@ -1131,7 +1220,7 @@ class AdminService(_EngineAccess):
 
         Only before its first round: after that the roster is what people have been playing."""
         source = self.dirs.games / name
-        gd = self.dirs.directory_in(GamesIn.Playing, name)
+        gd = self.dirs.directory_in(GamesIn.Active, name)
         if gd.last_round_number > 0:
             raise ValueError(f"'{name}' has played rounds. Archive it instead.")
         if not (source / REGISTRATION_FILE_NAME).exists():
@@ -1152,7 +1241,7 @@ class AdminService(_EngineAccess):
         scenario = self.scenario_of(name)
         shutil.move(str(self.dirs.registering / name), str(target))
         # The name was claimed when registrations opened, and the directory is already here.
-        self._build_game(self.dirs.directory_in(GamesIn.Playing, name),
+        self._build_game(self.dirs.directory_in(GamesIn.Active, name),
                          scenarios.by_key(scenario), ships)
         self.save_settings(name, settings)
 
@@ -1186,7 +1275,7 @@ class AdminService(_EngineAccess):
 
     def process_turn(self, game: str) -> bool:
         """Process only when every order is in. Returns whether it ran."""
-        g = Game(self._gd(game))
+        g = Game(self._active_gd(game))
         if not g.current_round_ready:
             return False
         round_nr = g.current_round_nr
@@ -1194,6 +1283,7 @@ class AdminService(_EngineAccess):
         self._append_journal(game, 'processed', round=round_nr,
                              by=By.DIRECTOR, trigger=ProcessingTrigger.MANUAL)
         self._announce_round_processed(game, round_nr)
+        self._settle(game)
         return True
 
     def force_process_turn(self, game: str, by: By, trigger: ProcessingTrigger) -> list[str]:
@@ -1201,7 +1291,7 @@ class AdminService(_EngineAccess):
 
         An empty command file reads as "no orders arrived in time", which is what a deadline
         means. Returns the ships it had to do that for."""
-        gd = self._gd(game)
+        gd = self._active_gd(game)
         g = Game(gd)
         round_nr = g.current_round_nr
         silent = sorted(g.missing_command_files)
@@ -1214,6 +1304,7 @@ class AdminService(_EngineAccess):
             detail['no_orders_from'] = ', '.join(silent)
         self._append_journal(game, 'processed', **detail)
         self._announce_round_processed(game, round_nr)
+        self._settle(game)
         return silent
 
     def stale_rounds(self, game: str) -> list[StaleRound]:

@@ -187,7 +187,7 @@ def main():
     else:
         if not args.gamedir:
             sys.exit("Which game? Give its name.")
-        game_dir = GAMES_ROOT.directory_in(GamesIn.Playing, args.gamedir)
+        game_dir = GAMES_ROOT.directory_in(GamesIn.Active, args.gamedir)
         game_dir.check_ok()
 
         if args.action == 'setup':

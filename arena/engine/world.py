@@ -6,6 +6,8 @@ keeps a round's wrecks the ones that had died by then."""
 
 from enum import Enum
 
+from arena.engine.objects.geometry import Leg
+
 
 class Whereabouts(str, Enum):
     """One of the world's collections, named after it."""
@@ -111,6 +113,17 @@ class World(object):
                 if with_tags <= o.tags
                 and not (without_tags & o.tags)
                 and (faction is None or o.faction == faction)}
+
+    def blocks_sight(self, looker, target) -> bool:
+        """Whether anything solid stands between the two. See docs/gddr/0038.
+
+        Neither end blocks itself: something solid enough to be looked at is inside its own
+        radius at the end of the line."""
+        here, there = looker.xy, target.xy
+        sight = Leg(here, (there.x - here.x, there.y - here.y))
+        return any(sight.closest_fraction(Leg(o.xy, (0, 0)), o.radius) is not None
+                   for o in self.objects.values()
+                   if o.radius and o is not looker and o is not target)
 
     def known_to(self, ship) -> dict:
         """Every name this ship may legitimately use in an order.

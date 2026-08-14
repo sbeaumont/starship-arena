@@ -11,6 +11,8 @@
   const games = $derived(directing
     ? allGames
     : allGames.filter((g) => me.games.includes(g.name)));
+  const active = $derived(games.filter((g) => g.state === "active"));
+  const finished = $derived(games.filter((g) => g.state === "finished"));
   let game = $state(null);
   let loading = $state(true);
   let loadingOverview = $state(false);
@@ -54,9 +56,11 @@
         const res = await fetch("/api/game/games");
         if (!res.ok) throw new Error(`API returned ${res.status}`);
         // A game that has been set up can be played: at round 0 there is nothing to look
-        // back on yet, but that is exactly when the first round gets planned. No standing is
-        // the server saying it cannot read the game, which the console is where you fix.
-        allGames = (await res.json()).filter((g) => g.current_round > 0 && g.standing);
+        // back on yet, but that is exactly when the first round gets planned. An active game
+        // with no standing is the server saying it cannot read it, which the console is where
+        // you fix. A finished game waits for nothing and has none by rights.
+        allGames = (await res.json())
+          .filter((g) => g.current_round > 0 && (g.standing || g.state === "finished"));
       } catch (e) {
         error = String(e);
       } finally {
@@ -124,6 +128,49 @@
     <span class="dot" class:filled={done && !lost} class:none={lost}></span>
     <span class="long">{lost ? "—" : done ? doneWord : owedWord}</span>
   </span>
+{/snippet}
+
+{#snippet gameRow(g)}
+  <li>
+    <button type="button" class="pick" class:on={g.name === game}
+            onclick={() => chooseGame(g.name)}>
+      <span class="head">
+        <span class="nm">{g.display}</span>
+        <span class="rnd">
+          {#if g.state === "finished"}{g.current_round - 1} rounds
+          {:else}Round {g.standing.round_nr}{/if}
+        </span>
+      </span>
+      {#if g.state === "finished"}
+        <span class="meta next">
+          {#if g.outcome}<b class="won">{g.outcome.faction}</b> · {g.outcome.reason}
+          {:else}over · nothing left to plan{/if}
+        </span>
+      {:else}
+        <span class="meta next">
+          {#if g.next_processing}
+            next {whenLocal(g.next_processing)} · <span class="soon">{until(g.next_processing)}</span>
+          {:else}
+            no deadline, the director runs it
+          {/if}
+        </span>
+        <span class="meta gauge">
+          <span class="lbl">saved</span>
+          <span class="bar"><i style="width: {pct(g.standing.players_saved, g.standing.players)}%"></i></span>
+          <span class="cnt">{g.standing.players_saved}/{g.standing.players}</span>
+        </span>
+        <span class="meta gauge">
+          <span class="lbl">ready</span>
+          <span class="bar ready"><i style="width: {pct(g.standing.players_ready, g.standing.players)}%"></i></span>
+          <span class="cnt">{g.standing.players_ready}/{g.standing.players}</span>
+        </span>
+      {/if}
+    </button>
+
+    {#if inline && g.name === game}
+      <div class="opened">{@render standings()}</div>
+    {/if}
+  </li>
 {/snippet}
 
 {#snippet standings()}
@@ -216,53 +263,38 @@
           </ul>
         {/if}
 
-        <h2 class:later={solo?.game}>Games</h2>
+        <h2 class:later={solo?.game}>Active</h2>
         {#if !games.length}
           <p class="msg quiet">
             No games yet. The director will add you to one{#if !solo?.game}, or
             <button type="button" class="link" onclick={() => onPage("solo")}>start a solo game</button>
             of your own{/if}.
           </p>
+        {:else if !active.length}
+          <p class="msg quiet">Nothing being played right now.</p>
         {/if}
         <ul>
-          {#each games as g (g.name)}
-            <li>
-              <button type="button" class="pick" class:on={g.name === game}
-                      onclick={() => chooseGame(g.name)}>
-                <span class="head">
-                  <span class="nm">{g.display}</span>
-                  <span class="rnd">Round {g.standing.round_nr}</span>
-                </span>
-                <span class="meta next">
-                  {#if g.next_processing}
-                    next {whenLocal(g.next_processing)} · <span class="soon">{until(g.next_processing)}</span>
-                  {:else}
-                    no deadline, the director runs it
-                  {/if}
-                </span>
-                <span class="meta gauge">
-                  <span class="lbl">saved</span>
-                  <span class="bar"><i style="width: {pct(g.standing.players_saved, g.standing.players)}%"></i></span>
-                  <span class="cnt">{g.standing.players_saved}/{g.standing.players}</span>
-                </span>
-                <span class="meta gauge">
-                  <span class="lbl">ready</span>
-                  <span class="bar ready"><i style="width: {pct(g.standing.players_ready, g.standing.players)}%"></i></span>
-                  <span class="cnt">{g.standing.players_ready}/{g.standing.players}</span>
-                </span>
-              </button>
-
-              {#if inline && g.name === game}
-                <div class="opened">{@render standings()}</div>
-              {/if}
-            </li>
+          {#each active as g (g.name)}
+            {@render gameRow(g)}
           {/each}
         </ul>
+        {#if finished.length}
+          <h2 class="later">Finished</h2>
+          <ul>
+            {#each finished as g (g.name)}
+              {@render gameRow(g)}
+            {/each}
+          </ul>
+        {/if}
       </section>
 
       {#if !inline}
         <section class="detail">
-          <h2>{game ? `${game} · planning round ${(overview?.last_round ?? 0) + 1}, best first` : "Factions"}</h2>
+          <h2>
+            {#if !game}Factions
+            {:else if overview?.state === "finished"}{game} · final standing
+            {:else}{game} · planning round {(overview?.last_round ?? 0) + 1}, best first{/if}
+          </h2>
           {#if !game}
             <p class="msg quiet">Pick a game first.</p>
           {:else}
@@ -307,6 +339,7 @@
   .meta { font-size: 11px; color: var(--ink-dim); }
   .next { margin-top: 2px; color: var(--ink); }
   .next .soon { color: var(--amber); }
+  .next .won { color: var(--hull); }
 
   /* How far the round has got, per commander: what the director's console shows, for the
      people waiting on each other. */

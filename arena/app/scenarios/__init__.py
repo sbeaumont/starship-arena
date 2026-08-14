@@ -7,11 +7,12 @@ here rather than in the engine: see plans/scenario-setup-plan.md.
 from arena.app.scenarios.five_faction_war import FiveFactionWar
 from arena.app.scenarios.generic import GenericGame
 from arena.app.scenarios.solo import SoloGame
+from arena.app.scenarios.vip_escort import VipEscort
 
 # What a director can start a game from. The solo scenario is not one of them: a player starts
 # their own, from hulls they pick, in a root of its own.
 # See docs/adr/0030-solo-games-live-in-their-own-root.md.
-ALL = [FiveFactionWar(), GenericGame()]
+ALL = [FiveFactionWar(), VipEscort(), GenericGame()]
 SOLO = SoloGame()
 
 

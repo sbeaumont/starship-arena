@@ -1,6 +1,6 @@
 <script>
   import {
-    N, NAMED, canMove, clamp, rad, normDelta, w2v,
+    N, NAMED, SCENERY, canMove, clamp, rad, normDelta, w2v,
     directionIndex, clampToArc, coneInput, coneRadius, coneWidthAt, SCAN_REACH,
   } from "./plan.js";
   import { burst, markerFor, tri } from "./markers.js";
@@ -52,7 +52,7 @@
     if (!plan) return [];
     return plan.contacts
       .filter((c) => {
-        if (c.radius) return false;
+        if (SCENERY.has(c.category_name)) return false;
         if (NAMED.has(c.category_name)) return true;
         return c.stance === "Friend" ? layers.friendlyOrdnance : layers.enemyOrdnance;
       })
@@ -74,9 +74,9 @@
     return c?.length ? [c[0], c[c.length - 1]] : [{ x: selected.x, y: selected.y }];
   });
 
-  // Anything with a size is terrain: drawn true to scale rather than as a marker, because a
-  // player plots around it. The radius comes from the API, never from a number kept here.
-  const terrain = $derived(plan ? plan.contacts.filter((c) => c.radius) : []);
+  // Scenery is drawn true to scale rather than as a marker, because a player plots around it.
+  // The radius comes from the API, never from a number kept here.
+  const terrain = $derived(plan ? plan.contacts.filter((c) => SCENERY.has(c.category_name)) : []);
 
   // ===== Geometry helpers (all marker sizes in screen px via upp) =====
 
